@@ -66,3 +66,9 @@ Body: (use the HN text; add) Ollama brains are supported in the pipeline engine;
 
 Headline: Give AI agents a phone — and proof of what happened.
 Tagline: Playable simulator · real calls · verified outcomes · bring your own carrier & model.
+
+## Battle 動画（投稿済み 2026-09-12）
+
+- X（日本語、動画付き）: https://x.com/i/status/2098496503493136600
+- 素材: `docs/media/oathra-battle-ja.mp4`（英語版 `oathra-battle-en.mp4`、GIF・ポスター・1:1 も同名で同梱）
+- 再生成: `node scripts/render-scene.mjs --template video/battle.html --data video/.work/battle.json --lang ja --name oathra-battle-ja`
