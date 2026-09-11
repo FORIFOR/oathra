@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Oathra launch video — frame renderer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Deterministic renderer: everything is a pure function of `t` (ms). No CSS transitions/animations. */
+:root{--bg:#131210;--bg2:#1b1916;--ink:#f3efe6;--muted:#8f887a;--line:#2b2823;--amber:#e3a13a;--green:#79c78a;--red:#e07a6e;
+  --serif:"Instrument Serif",Georgia,serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;--sans:"IBM Plex Sans","Hiragino Sans","Noto Sans JP",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:6px 6px;mix-blend-mode:overlay}
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
+.scene{position:absolute;inset:0}.scene:not(.on){display:none!important}
+/* hook */
+.hook{display:flex;flex-direction:column;justify-content:center;padding:0 200px}
+.hook h1{font-family:var(--serif);font-weight:400;font-size:120px;line-height:1.02;margin:0;letter-spacing:-.01em}
+.hook h1 em{font-style:italic;color:var(--amber)}
+.hook .k{font-family:var(--mono);font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:28px}
+/* terminal */
+.term{position:absolute;left:260px;top:170px;width:1400px;height:740px;background:#0c0b0a;border:1px solid var(--line);border-radius:14px;box-shadow:0 60px 120px -40px rgba(0,0,0,.8)}
+.term .bar{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 18px;font-family:var(--mono);font-size:15px;color:var(--muted)}
+.term .bar i{width:12px;height:12px;border-radius:50%;background:#2e2b26;display:inline-block}
+.term pre{margin:0;padding:34px 40px;font-family:var(--mono);font-size:30px;line-height:1.55;color:#e9e4d8;white-space:pre}
+.term .ok{color:var(--green)}.term .dim{color:var(--muted)}.term .amb{color:var(--amber)}
+.cursor{display:inline-block;width:16px;height:34px;background:var(--ink);vertical-align:-6px;margin-left:4px}
+/* arena footage */
+.footage{position:absolute;left:0;top:0;width:1920px;height:1080px}
+.footage img{position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover;transform-origin:50% 40%}
+.cap{position:absolute;left:0;right:0;bottom:70px;display:flex;justify-content:center;pointer-events:none}
+.cap span{display:inline-block;max-width:1400px;background:rgba(12,11,10,.82);border:1px solid rgba(255,255,255,.08);color:var(--ink);font-family:var(--sans);font-weight:500;font-size:44px;line-height:1.25;padding:20px 36px;border-radius:12px;box-shadow:0 30px 60px -30px rgba(0,0,0,.8);text-align:center}
+.cap span b{color:var(--amber);font-weight:600}
+.chip{position:absolute;top:46px;left:60px;font-family:var(--mono);font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:rgba(12,11,10,.75);border:1px solid var(--line);padding:10px 16px;border-radius:8px}
+.chip i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--amber);margin-right:10px}
+/* proof */
+.proof{display:grid;grid-template-columns:1.1fr .9fr;gap:60px;padding:120px 160px;align-items:center}
+.proof pre{margin:0;background:#0c0b0a;border:1px solid var(--line);border-radius:14px;padding:40px 44px;font-family:var(--mono);font-size:27px;line-height:1.5;color:#e9e4d8;white-space:pre;box-shadow:0 60px 120px -40px rgba(0,0,0,.8)}
+.proof pre .k{color:var(--muted)}.proof pre .s{color:#f0c98a}.proof pre .t{color:var(--green)}.proof pre .hl{background:rgba(227,161,58,.18);outline:1px solid rgba(227,161,58,.5);border-radius:4px}
+.proof h2{font-family:var(--serif);font-weight:400;font-size:74px;line-height:1.05;margin:0 0 30px;letter-spacing:-.01em}
+.proof h2 em{color:var(--amber)}
+.big{font-family:var(--mono);font-size:120px;font-weight:500;line-height:1;color:var(--ink);letter-spacing:-.02em}
+.big small{display:block;font-size:24px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:18px;font-weight:400}
+/* real call */
+.real{padding:120px 200px}
+.real h2{font-family:var(--serif);font-weight:400;font-size:80px;line-height:1.05;margin:0 0 40px}
+.real h2 em{color:var(--amber)}
+.lines{display:grid;gap:22px;max-width:1400px}
+.line{display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start;font-size:40px;line-height:1.35}
+.line .who{font-family:var(--mono);font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-top:12px}
+.line.callee .who{color:var(--amber)}
+.tag{display:inline-block;font-family:var(--mono);font-size:22px;color:var(--green);border:1px solid rgba(121,199,138,.4);padding:8px 14px;border-radius:8px;margin-top:40px}
+/* end */
+.end{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.end .mark{font-family:var(--mono);font-size:34px;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin-bottom:34px}
+.end .mark i{width:22px;height:22px;border:3px solid var(--ink);border-radius:50%;display:inline-block}
+.end h1{font-family:var(--serif);font-weight:400;font-size:88px;line-height:1.05;margin:0 0 44px}
+.end h1 em{color:var(--amber)}
+.end .cmd{font-family:var(--mono);font-size:44px;background:#0c0b0a;border:1px solid var(--line);padding:22px 40px;border-radius:12px}
+.end .cmd b{color:var(--muted);font-weight:400}
+.end .url{font-family:var(--mono);font-size:28px;color:var(--muted);margin-top:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <section class="scene hook" id="s-hook"><div class="k">Open source · Apache-2.0</div><h1 id="hook-h1"></h1></section>
+  <section class="scene" id="s-term"><div class="term"><div class="bar"><i></i><i></i><i></i>&nbsp; zsh — oathra</div><pre id="term-pre"></pre></div></section>
+  <section class="scene" id="s-arena"><div class="footage"><img id="arena-img" alt=""></div><div class="chip" id="arena-chip" style="display:none"></div><div class="cap" id="arena-cap"></div></section>
+  <section class="scene proof" id="s-proof"><pre id="proof-pre"></pre><div><h2 id="proof-h2"></h2><div class="big" id="proof-big"></div></div></section>
+  <section class="scene real" id="s-real"><h2>Same runtime. <em>Real phone.</em></h2><div class="lines" id="real-lines"></div><div class="tag" id="real-tag"></div></section>
+  <section class="scene end" id="s-end"><div class="mark"><i></i>Oathra</div><h1>Bring your own carrier.<br><em>Bring your own model.</em></h1><div class="cmd"><b>$</b> npx oathra demo</div><div class="url">github.com/FORIFOR/oathra</div></section>
+  <div class="vignette"></div><div class="grain"></div>
+</div>
+<script>
+// ---- timeline (ms) ----
+const T = window.__TIMELINE__ = {
+  hook: [0, 2800],
+  term: [2800, 7600],
+  arena: [7600, 33600],
+  proof: [33600, 39600],
+  real: [39600, 45200],
+  end: [45200, 48500],
+};
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const lerp = (a, b, x) => a + (b - a) * x;
+
+// Footage + captions are injected by the renderer via window.__FOOTAGE__ = { frames: [...paths], fps, offsetMs, captions: [{at, text}], result: {...} }
+const getF = () => window.__FOOTAGE__ || { frames: [], fps: 10, offsetMs: 0, captions: [] };
+
+function show(id) { for (const s of document.querySelectorAll('.scene')) s.classList.toggle('on', s.id === id); }
+
+function typed(text, t0, t1, t) { const n = Math.round(text.length * ease((t - t0) / (t1 - t0))); return text.slice(0, Math.max(0, n)); }
+
+function render(t) {
+  const [h0, h1] = T.hook, [t0, t1] = T.term, [a0, a1] = T.arena, [p0, p1] = T.proof, [r0, r1] = T.real, [e0, e1] = T.end;
+  const stage = document.getElementById('stage');
+  if (t < h1) {
+    show('s-hook');
+    const l1 = ease((t - h0) / 700), l2 = ease((t - (h0 + 1200)) / 700);
+    document.getElementById('hook-h1').innerHTML =
+      `<span style="display:block;opacity:${l1};transform:translateY(${lerp(20, 0, l1)}px)">Give AI agents a phone —</span>` +
+      `<span style="display:block;opacity:${l2};transform:translateY(${lerp(20, 0, l2)}px)">and <em>proof</em> of what happened.</span>`;
+    return;
+  }
+  if (t < t1) {
+    show('s-term');
+    const cmd = 'npx oathra demo';
+    const typedCmd = typed(cmd, t0 + 300, t0 + 1600, t);
+    const lines = [
+      ['', ''],
+      ['<span class="ok">✓</span> Runtime        v25', t0 + 2000],
+      ['<span class="ok">✓</span> Simulator      scripted characters, <span class="amb">no API key</span>', t0 + 2350],
+      ['<span class="ok">✓</span> Scenarios      5', t0 + 2700],
+      ['<span class="ok">✓</span> Arena          <span class="amb">http://localhost:4242</span>', t0 + 3050],
+      ['', ''],
+      ['<span class="dim">Opening Arena…</span>', t0 + 3700],
+    ];
+    let html = `<span class="dim">$</span> ${typedCmd}${t < t0 + 1900 ? '<span class="cursor"></span>' : ''}\n`;
+    for (const [l, at] of lines) if (at === '' || t >= at) html += l + '\n';
+    document.getElementById('term-pre').innerHTML = html;
+    return;
+  }
+  if (t < a1) {
+    show('s-arena');
+    const F = getF();
+    const img = document.getElementById('arena-img');
+    const local = t - a0 + (F.offsetMs || 0);
+    const idx = clamp(Math.floor(local / (1000 / (F.fps || 10))), 0, Math.max(0, F.frames.length - 1));
+    if (F.frames[idx]) img.src = F.frames[idx];
+    // slow push-in
+    const z = lerp(1.0, 1.06, clamp((t - a0) / (a1 - a0)));
+    img.style.transform = `scale(${z})`;
+    // fade in
+    img.style.opacity = ease((t - a0) / 500);
+    // caption
+    const cap = (F.captions || []).filter((c) => t >= c.at && t < (c.until ?? Infinity)).pop();
+    const el = document.getElementById('arena-cap');
+    if (cap) {
+      const k = ease((t - cap.at) / 350);
+      el.innerHTML = `<span style="opacity:${k};transform:translateY(${lerp(14, 0, k)}px)">${cap.text}</span>`;
+    } else el.innerHTML = '';
+    document.getElementById('arena-chip').style.opacity = ease((t - a0 - 400) / 400);
+    return;
+  }
+  if (t < p1) {
+    show('s-proof');
+    const code = [
+      ['{', 0], ['  <span class="k">"field"</span>: <span class="s">"time"</span>,', 100], ['  <span class="k">"value"</span>: <span class="s">"19:30"</span>,', 200],
+      ['  <span class="k">"source"</span>: <span class="s">"callee"</span>,', 300], ['  <span class="k">"transcript"</span>: <span class="s">"19時はいっぱいですが、19時半でしたら空いております。"</span>,', 400],
+      ['  <span class="k">"span"</span>: <span class="s hl">"19時半"</span>,', 520], ['  <span class="k">"explicit"</span>: <span class="t">true</span>,', 640],
+      ['  <span class="k">"verified"</span>: <span class="t hl">true</span>,', 760], ['  <span class="k">"note"</span>: <span class="s">"accepted by caller"</span>', 880], ['}', 980],
+    ];
+    document.getElementById('proof-pre').innerHTML = code.filter(([, d]) => t >= p0 + 200 + d).map(([l]) => l).join('\n');
+    const k = ease((t - p0 - 300) / 600);
+    document.getElementById('proof-h2').innerHTML = `<span style="display:block;opacity:${k}">The result is <em>evidence</em>,<br>not a summary.</span>`;
+    const n = Math.round(lerp(0, 10000, ease((t - p0 - 1500) / 1800)));
+    const k2 = ease((t - p0 - 1400) / 400);
+    document.getElementById('proof-big').innerHTML = `<span style="display:block;opacity:${k2}">0 / ${n.toLocaleString()}<small>false completions · adversarial simulator runs</small></span>`;
+    return;
+  }
+  if (t < r1) {
+    show('s-real');
+    // Lines are from a recorded real call (Twilio + GPT-Live), lightly trimmed.
+    const lines = [
+      ['callee', 'もしもし', 200],
+      ['agent', 'もしもし、田中と申します。9月12日に2名で予約をお願いしたいのですが。', 900],
+      ['callee', '夜八時です。', 2100],
+      ['agent', '9月12日、20時に2名ですね。予約を確定してもよろしいでしょうか？', 3000],
+      ['callee', '大丈夫ですよ。', 4000],
+    ];
+    document.getElementById('real-lines').innerHTML = lines.map(([who, text, d]) => {
+      const k = ease((t - r0 - d) / 350);
+      return `<div class="line ${who}" style="opacity:${k};transform:translateX(${lerp(-16, 0, k)}px)"><div class="who">${who === 'agent' ? 'Agent' : 'Callee'}</div><div>${text}</div></div>`;
+    }).join('');
+    const k = ease((t - r0 - 4700) / 350);
+    document.getElementById('real-tag').innerHTML = `<span style="opacity:${k}">recorded on a real call · Twilio + GPT-Live · first reply ≈ 0.4 s</span>`;
+    return;
+  }
+  show('s-end');
+  const k = ease((t - e0) / 600);
+  stage.querySelector('#s-end').style.opacity = k;
+}
+window.render = render;
+const q = new URLSearchParams(location.search);
+if (q.has('t')) render(Number(q.get('t')));
+</script>
+</body>
+</html>

@@ -342,6 +342,7 @@
     $("#transcript").replaceChildren(el("p", { class: "transcript-empty", text: c.replay ? "Replaying…" : "Dialing…" }));
     $("#mission-list").replaceChildren();
     $("#evidence-list").replaceChildren();
+    missionState.clear();
     $("#evidence-count").textContent = "0";
     $("#result-wrap").hidden = true; $("#result-wrap").replaceChildren();
     $("#timeline").replaceChildren(); $("#events-raw").textContent = ""; $("#snapshot").hidden = true;
@@ -365,7 +366,7 @@
   function renderAll() {
     renderTranscript();
     renderMission();
-    renderEvidence();
+    renderEvidence(true);
     renderMetrics();
     renderDrawer();
     setUx(app.call.ux);
@@ -415,16 +416,23 @@
     const c = app.call;
     const box = $("#transcript");
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
-    const nodes = c.transcript.map((l) => {
+    const existing = new Set($$(".line", box).map((n) => n.dataset.turn));
+    const empty = $(".transcript-empty", box);
+    if (!c.transcript.length) {
+      if (!empty) box.replaceChildren(el("p", { class: "transcript-empty", text: c.status === "running" ? "Dialing…" : "No transcript." }));
+      return;
+    }
+    if (empty) empty.remove();
+    for (const l of c.transcript) {
+      if (existing.has(l.turnId)) continue;
       const cls = l.source === "caller" ? "agent" : l.source === "callee" ? "callee" : "sys";
       const who = l.source === "caller" ? "Agent" : l.source === "callee" ? (c.mode === "play" ? "You" : c.calleeName) : "system";
-      return el("div", { class: `line ${cls}`, "data-turn": l.turnId }, [
+      box.appendChild(el("div", { class: `line ${cls}`, "data-turn": l.turnId }, [
         el("div", { class: "who", text: who }),
         el("div", { class: "say", text: l.text }),
-      ]);
-    });
-    box.replaceChildren(...(nodes.length ? nodes : [el("p", { class: "transcript-empty", text: c.status === "running" ? "Dialing…" : "No transcript." })]));
-    if (atBottom || nodes.length <= 2) box.scrollTop = box.scrollHeight;
+      ]));
+    }
+    if (atBottom || c.transcript.length <= 2) box.scrollTop = box.scrollHeight;
   }
 
   function missionFields(c) {
@@ -467,13 +475,15 @@
     return false;
   }
 
+  const missionState = new Map(); // field -> last class, to animate transitions only
   function renderMission() {
     const c = app.call;
     const ul = $("#mission-list");
     const verified = latestVerified(c);
     const pending = latestPending(c);
     const constraints = (c.scenario && c.scenario.constraints) || {};
-    const rows = missionFields(c).map((f) => {
+    const fields = missionFields(c);
+    const rows = fields.map((f) => {
       let cls = "missing", mark = "·", val = "";
       if (verified[f] !== undefined) {
         cls = "verified"; mark = "✓"; val = fmtVal(verified[f]);
@@ -481,7 +491,10 @@
       } else if (pending[f] !== undefined) {
         cls = "pending"; mark = "○"; val = fmtVal(pending[f]);
       }
-      return el("li", { class: `mrow ${cls}` }, [
+      const prev = missionState.get(f);
+      const tick = prev !== undefined && prev !== cls && cls === "verified" ? " tick" : "";
+      missionState.set(f, cls);
+      return el("li", { class: `mrow ${cls}${tick}`, "data-field": f }, [
         el("span", { class: "mk", "aria-hidden": "true", text: mark }),
         el("span", {}, [
           el("span", { text: f }),
@@ -494,10 +507,8 @@
     ul.replaceChildren(...(rows.length ? rows : [el("li", { class: "mrow missing" }, [el("span", { class: "mk", text: "·" }), el("span", { text: "no required fields" }), el("span")])]));
   }
 
-  function renderEvidence() {
-    const c = app.call;
-    const ul = $("#evidence-list");
-    const items = c.evidence.slice().reverse().map((e) => el("li", { class: `erow ${e.verified ? "verified" : ""}` }, [
+  function evidenceNode(e, extraClass) {
+    return el("li", { class: `erow ${e.verified ? "verified" : ""}${extraClass || ""}`, "data-eid": e.id, "data-verified": String(!!e.verified) }, [
       el("div", { class: "e-top" }, [
         el("span", { class: "e-field", text: e.field }),
         el("span", { class: "e-val", text: `= ${fmtVal(e.value)}` }),
@@ -508,8 +519,24 @@
         el("span", { class: "e-t", text: mmss(e.t) }),
         el("span", { text: `“${e.span || e.transcript || ""}”` }),
       ]),
-    ]));
-    ul.replaceChildren(...items);
+    ]);
+  }
+  function renderEvidence(all) {
+    const c = app.call;
+    const ul = $("#evidence-list");
+    if (all || !ul.children.length) {
+      ul.replaceChildren(...c.evidence.slice().reverse().map((e) => evidenceNode(e)));
+    } else {
+      // Newest first: insert unseen items at the top with a slide-in; patch verified state in place.
+      const byId = new Map($$(".erow", ul).map((n) => [n.dataset.eid, n]));
+      for (const e of c.evidence) {
+        const node = byId.get(e.id);
+        if (!node) { ul.prepend(evidenceNode(e, " is-new")); continue; }
+        if (node.dataset.verified !== String(!!e.verified)) {
+          node.replaceWith(evidenceNode(e, e.verified ? " just-verified" : ""));
+        }
+      }
+    }
     $("#evidence-count").textContent = String(c.evidence.filter((e) => e.verified).length);
   }
 
@@ -733,7 +760,23 @@
   }
 
   // ------------------------------------------------------------------ boot
+  // URL params: ?theme=dark|light  ?present=1  ?autostart=<scenarioId>&mode=watch|play
+  const params = new URLSearchParams(location.search);
+  const theme = params.get("theme");
+  if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
+  if (params.get("present") === "1") document.body.classList.add("present");
+  const wantMode = params.get("mode");
+  if (wantMode === "play" || wantMode === "watch") {
+    app.mode = wantMode;
+    $$(".mode-btn").forEach((b) => { const on = b.dataset.mode === wantMode; b.classList.toggle("is-on", on); b.setAttribute("aria-pressed", String(on)); });
+  }
   window.addEventListener("beforeunload", closeStream);
   show("start");
-  loadStart();
+  loadStart().then(() => {
+    const auto = params.get("autostart");
+    if (!auto) return;
+    const scenario = app.scenarios.find((s) => s.id === auto);
+    if (scenario) startCall(scenario);
+    else toast(`Unknown scenario "${auto}"`);
+  });
 })();

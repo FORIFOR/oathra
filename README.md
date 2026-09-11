@@ -7,8 +7,8 @@
 npx oathra demo        # npm release pending — until then: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
 ```
 
-<p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/demo-arena.gif" width="820" alt="Oathra Arena: an agent negotiates a restaurant reservation; evidence fills in; MISSION COMPLETE"/></a></p>
-<p align="center"><a href="https://forifor.github.io/oathra/">Website</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a></p>
+<p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/oathra-launch.gif" width="880" alt="Oathra: an agent negotiates a restaurant reservation in the simulator; evidence fills in; only the callee's confirmation completes the call"/></a></p>
+<p align="center"><a href="https://forifor.github.io/oathra/">Website</a> · <a href="docs/media/oathra-launch.mp4">48-second video</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a></p>
 
 ```text
 ✓ Playable simulator        AI vs AI, or you answer the phone. No API key.
