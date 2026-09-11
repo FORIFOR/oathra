@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Oathra battle video v2 — desktop recording renderer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /*
   Renders one frame of a "screen recording": three real Arena windows (iframes replaying real calls)
@@ -37,8 +37,9 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0c0e12
 #cursor{position:absolute;width:26px;height:36px;left:0;top:0;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6));transform-origin:4px 3px;display:none}
 /* screen-space overlays */
 #cap{position:absolute;left:0;right:0;bottom:54px;display:flex;justify-content:center;pointer-events:none}
-#cap .box{max-width:1520px;padding:16px 30px 18px;border-radius:10px;background:rgba(9,9,10,.74);backdrop-filter:blur(8px);color:#f3efe6;font:500 37px/1.45 "Noto Sans JP","Hiragino Sans",sans-serif;text-align:center;box-shadow:0 10px 40px -10px rgba(0,0,0,.6);display:none}
+#cap .box{max-width:1560px;padding:16px 30px 18px;border-radius:10px;background:rgba(9,9,10,.74);backdrop-filter:blur(8px);color:#f3efe6;font:500 37px/1.45 "Noto Sans JP","Hiragino Sans",sans-serif;text-align:center;box-shadow:0 10px 40px -10px rgba(0,0,0,.6);display:none}
 #cap .box.on{display:block}
+html[lang="en"] #cap .box{font-family:"IBM Plex Sans","Noto Sans JP",sans-serif;font-size:36px}
 #cap .who{display:block;font:500 16px/1 "JetBrains Mono",monospace;letter-spacing:.14em;color:#c9a35b;margin-bottom:9px}
 #cap .who.hotel{color:#9fb7c7}
 #badge{position:absolute;right:38px;top:32px;padding:8px 14px;border-radius:999px;background:rgba(9,9,10,.7);color:#e6e1d6;font:500 20px/1 "JetBrains Mono",monospace;letter-spacing:.06em;display:none}
@@ -62,20 +63,46 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0c0e12
 (() => {
   const q = new URLSearchParams(location.search);
   const BASE = q.get("base") || "http://127.0.0.1:4242";
+  const LANG = q.get("lang") === "en" ? "en" : "ja";
+  document.documentElement.lang = LANG;
   const IDS = ["battle_scripted", "battle_openai-gpt-4o-mini", "battle_gemini-gemini-flash-latest"];
   const frames = [0, 1, 2].map((i) => document.getElementById("f" + i));
-  frames.forEach((f, i) => { f.src = `${BASE}/?lang=ja&theme=dark&replay=${IDS[i]}`; });
+  frames.forEach((f, i) => { f.src = `${BASE}/?lang=${LANG}&theme=dark&replay=${IDS[i]}`; });
+  if (LANG === "en") { const titles = ["Oathra Arena — Impossible Hotel · scripted", "Oathra Arena — Impossible Hotel · gemini:gemini-flash-latest", "Oathra Arena — Impossible Hotel · openai:gpt-4o-mini"]; ["w0", "w2", "w1"].forEach((id, i) => { document.querySelector(`#${id} .bar span`).textContent = titles[i]; }); }
 
   // ---- measured durations of the trimmed voice clips (ms); the renderer may override via window.__DUR__
   const DUR = Object.assign({ g1: 6510, h1: 8630, g2: 7400, h3: 4290, hf: 9940 }, window.__DUR__ || {});
-  const TXT = {
-    h0: "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
-    g1: "こんにちは、佐藤と申します。10月3日に2名で宿泊を希望しています。",
-    h1: "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。1泊23,500円でございます。",
-    g2: "禁煙のお部屋はありがたいですが、予算が20,000円以下のため、別のプランをご提案いただけますか？",
-    h3: "19,900円でしたらご案内できます。いかがでしょうか？",
-    hf: "かしこまりました。10月3日、2名様、佐藤様、禁煙お部屋、1泊19,900円でご予約承りました。",
+  const TXT_ALL = {
+    ja: {
+      open: "定価23,500円のホテルに「2万円以下で取って」と、3つのAIに頼んだ。",
+      h0: "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+      g1: "こんにちは、佐藤と申します。10月3日に2名で宿泊を希望しています。",
+      h1: "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。1泊23,500円でございます。",
+      g2: "禁煙のお部屋はありがたいですが、予算が20,000円以下のため、別のプランをご提案いただけますか？",
+      ff1: "21,100円の再提示は、予算の外なので受けない。",
+      h3: "19,900円でしたらご案内できます。いかがでしょうか？",
+      ff2: "19,900円で朝食も付く。あとは名前だけ。",
+      hf: "かしこまりました。10月3日、2名様、佐藤様、禁煙お部屋、1泊19,900円でご予約承りました。",
+      hold: "完了はAIが決めない。相手のこの一言で決まる。",
+      wide: "3つとも2万円以下で成立。誤完了ゼロ。",
+      whoHotel: "ホテル・リンゴ（相手）", whoGpt: "AI · GPT-4o mini",
+    },
+    en: {
+      open: "A hotel that lists at ¥23,500. I asked three AIs to book it for under ¥20,000.",
+      h0: "Thank you for calling, Hotel Ringo front desk.",
+      g1: "Hello, my name is Sato. I'd like a room for two on October 3rd.",
+      h1: "October 3rd, two guests. A non-smoking room is available: ¥23,500 per night.",
+      g2: "Thank you, but my budget is ¥20,000 or less. Could you offer another plan?",
+      ff1: "The ¥21,100 re-quote is over budget, so it is not accepted.",
+      h3: "I could offer ¥19,900. Would that work?",
+      ff2: "¥19,900 with breakfast. All that's left is the name.",
+      hf: "Certainly. October 3rd, two guests, Mr. Sato, non-smoking room, ¥19,900 per night — your reservation is confirmed.",
+      hold: "The AI doesn't decide it's done. The callee's line does.",
+      wide: "All three booked under ¥20,000. Zero false completions.",
+      whoHotel: "Hotel Ringo (callee)", whoGpt: "AI · GPT-4o mini",
+    },
   };
+  const TXT = TXT_ALL[LANG];
   const CMD = "npx oathra battle impossible-hotel --agent scripted --agent openai --agent gemini";
 
   // ---- timeline -------------------------------------------------------------------------
@@ -90,13 +117,13 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0c0e12
   push({ name: "g1", len: DUR.g1, tail: 500, callFrom: 5716, callTo: 11409, voice: "g1", who: "gpt", cap: TXT.g1 });
   push({ name: "h1", len: DUR.h1, tail: 1000, callFrom: 11409, callTo: 18122, voice: "h1", who: "hotel", cap: TXT.h1 });
   push({ name: "g2", len: DUR.g2, tail: 500, callFrom: 18122, callTo: 25547, voice: "g2", who: "gpt", cap: TXT.g2 });
-  push({ name: "ff1", len: 2000, callFrom: 25547, callTo: 37147, cap: "21,100円の再提示は、予算の外なので受けない。", ffwd: "×5" });
+  push({ name: "ff1", len: 2000, callFrom: 25547, callTo: 37147, cap: TXT.ff1, ffwd: "×5" });
   push({ name: "h3", len: DUR.h3, tail: 1000, callFrom: 37147, callTo: 41398, voice: "h3", who: "hotel", cap: TXT.h3 });
-  push({ name: "ff2", len: 2000, callFrom: 41397, callTo: 53016, cap: "19,900円で朝食も付く。あとは名前だけ。", ffwd: "×5" });
+  push({ name: "ff2", len: 2000, callFrom: 41397, callTo: 53016, cap: TXT.ff2, ffwd: "×5" });
   const hf = push({ name: "hf", len: DUR.hf, tail: 300, callFrom: 53016, callTo: 59574, voice: "hf", who: "hotel", cap: TXT.hf });
-  const hold = push({ name: "hold", len: 3000, callFrom: 59574, callTo: 59574, cap: "完了はAIが決めない。相手のこの一言で決まる。" });
+  const hold = push({ name: "hold", len: 3000, callFrom: 59574, callTo: 59574, cap: TXT.hold });
   const ffEnd = push({ name: "ffend", len: 800, callFrom: 59574, callTo: 86381, ffwd: "×30" });
-  const wide = push({ name: "wide", len: 3600, callFrom: 86381, callTo: 86381, cap: "3つとも2万円以下で成立。誤完了ゼロ。" });
+  const wide = push({ name: "wide", len: 3600, callFrom: 86381, callTo: 86381, cap: TXT.wide });
   const end = push({ name: "end", len: 3600, callFrom: 86381, callTo: 86381 });
   const DURATION = t;
 
@@ -169,13 +196,13 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0c0e12
   // ---- caption / badge --------------------------------------------------------------------
   function overlay(t) {
     let cap = null, who = "", ffwd = null;
-    if (t >= V.typeStart + 300 && t < V.enter + 700) cap = "定価23,500円のホテルに「2万円以下で取って」と、3つのAIに頼んだ。";
+    if (t >= V.typeStart + 300 && t < V.enter + 700) cap = TXT.open;
     for (const b of beats) if (t >= b.start && t < b.end) { if (b.cap) { cap = b.cap; who = b.who || ""; } ffwd = b.ffwd || null; }
     const box = document.getElementById("capbox");
     box.classList.toggle("on", !!cap);
     document.getElementById("captext").textContent = cap || "";
     const w = document.getElementById("capwho");
-    w.textContent = who === "hotel" ? "ホテル・リンゴ（相手）" : who === "gpt" ? "AI · GPT-4o mini" : "";
+    w.textContent = who === "hotel" ? TXT.whoHotel : who === "gpt" ? TXT.whoGpt : "";
     w.className = "who " + (who || ""); w.style.display = who ? "block" : "none";
     const badge = document.getElementById("badge"); badge.classList.toggle("on", !!ffwd); badge.textContent = ffwd ? `▶▶ ${ffwd}` : "";
   }

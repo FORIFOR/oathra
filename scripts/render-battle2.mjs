@@ -12,7 +12,8 @@ const args = process.argv.slice(2);
 const flag = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] ?? true : d; };
 const TEMPLATE = resolve(flag("--template", "video/battle2.html"));
 const DATA = JSON.parse(readFileSync(resolve(flag("--data", "video/.work/battle.json")), "utf8"));
-const NAME = flag("--name", "oathra-battle-ja");
+const LANG = flag("--lang", "ja");
+const NAME = flag("--name", `oathra-battle-${LANG}`);
 const OUT = resolve(flag("--out", "docs/media"));
 const BASE = flag("--base", "http://127.0.0.1:4242");
 const PREVIEW = flag("--preview") ? String(flag("--preview")).split(",").map(Number) : null;
@@ -37,7 +38,7 @@ const evaluate = async (expression) => { const r = await send("Runtime.evaluate"
 await send("Page.enable"); await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 // durations must be known before the template builds its timeline
 await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__DUR__ = ${JSON.stringify(DUR)}; window.__DATA__ = ${JSON.stringify(DATA)};` });
-await send("Page.navigate", { url: pathToFileURL(TEMPLATE).href + `?base=${encodeURIComponent(BASE)}` });
+await send("Page.navigate", { url: pathToFileURL(TEMPLATE).href + `?base=${encodeURIComponent(BASE)}&lang=${LANG}` });
 for (let i = 0; i < 60; i++) { await sleep(500); if (await evaluate("window.__READY__ && window.__READY__()")) break; if (i === 59) throw new Error("Arena iframes did not become ready — is the demo server running on " + BASE + "?"); }
 await sleep(800);
 const shot = async (file) => { const r = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(file, Buffer.from(r.data, "base64")); };
