@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Oathra battle video v2 — desktop recording renderer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/*
+  Renders one frame of a "screen recording": three real Arena windows (iframes replaying real calls)
+  on a desktop, a terminal, a cursor, a camera that zooms to where the action is, and burned-in
+  captions. window.render(t) draws the frame at t ms and resolves when the iframes have seeked.
+  Nothing here is mocked: the windows are the product; the transcript is the recorded run.
+*/
+*{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0c0e12;font-family:"Noto Sans JP","Hiragino Sans",sans-serif}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden}
+.wall{position:absolute;inset:0;background:
+  radial-gradient(1300px 900px at 14% 8%,#2b3342 0%,rgba(43,51,66,0) 62%),
+  radial-gradient(1000px 800px at 88% 96%,#1f2b2b 0%,rgba(31,43,43,0) 60%),
+  linear-gradient(165deg,#171c25 0%,#0b0d11 100%)}
+.wall::after{content:"";position:absolute;inset:0;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+#cam{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+.win{position:absolute;border-radius:11px;overflow:hidden;background:#0e0d0c;opacity:0;transform:translateY(10px) scale(.985);
+  box-shadow:0 40px 90px -24px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.07),0 1px 0 rgba(255,255,255,.05) inset}
+.win.on{opacity:1;transform:none}
+.win .bar{height:38px;background:linear-gradient(#232220,#1b1a18);border-bottom:1px solid #050505;display:flex;align-items:center;padding:0 14px;gap:8px;position:relative}
+.win .bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.win .bar i:nth-child(1){background:#ff5f57}.win .bar i:nth-child(2){background:#febc2e}.win .bar i:nth-child(3){background:#28c840}
+.win .bar span{position:absolute;left:0;right:0;text-align:center;font:500 13px/38px "Noto Sans JP",sans-serif;color:#a6a093;letter-spacing:.01em}
+.win iframe{display:block;width:900px;height:920px;border:0;background:#0e0d0c}
+#term{width:1120px;height:680px;left:400px;top:170px}
+#term .body{padding:22px 30px;font:400 24px/1.5 "JetBrains Mono",ui-monospace,Menlo,monospace;color:#e6e1d6;white-space:pre;height:642px;overflow:hidden}
+#term .p{color:#8f887a}#term .g{color:#79c78a}#term .a{color:#e3a13a}#term .d{color:#8f887a}
+#term .cur{display:inline-block;width:14px;height:28px;background:#e6e1d6;vertical-align:-5px;margin-left:2px}
+#cursor{position:absolute;width:26px;height:36px;left:0;top:0;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6));transform-origin:4px 3px;display:none}
+/* screen-space overlays */
+#cap{position:absolute;left:0;right:0;bottom:54px;display:flex;justify-content:center;pointer-events:none}
+#cap .box{max-width:1520px;padding:16px 30px 18px;border-radius:10px;background:rgba(9,9,10,.74);backdrop-filter:blur(8px);color:#f3efe6;font:500 37px/1.45 "Noto Sans JP","Hiragino Sans",sans-serif;text-align:center;box-shadow:0 10px 40px -10px rgba(0,0,0,.6);display:none}
+#cap .box.on{display:block}
+#cap .who{display:block;font:500 16px/1 "JetBrains Mono",monospace;letter-spacing:.14em;color:#c9a35b;margin-bottom:9px}
+#cap .who.hotel{color:#9fb7c7}
+#badge{position:absolute;right:38px;top:32px;padding:8px 14px;border-radius:999px;background:rgba(9,9,10,.7);color:#e6e1d6;font:500 20px/1 "JetBrains Mono",monospace;letter-spacing:.06em;display:none}
+#badge.on{display:block}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="wall"></div>
+  <div id="cam">
+    <div class="win" id="w0" style="left:30px;top:60px;z-index:2"><div class="bar"><i></i><i></i><i></i><span>Oathra Arena — 無理難題ホテル · scripted</span></div><iframe id="f0"></iframe></div>
+    <div class="win" id="w2" style="left:990px;top:120px;z-index:1"><div class="bar"><i></i><i></i><i></i><span>Oathra Arena — 無理難題ホテル · gemini:gemini-flash-latest</span></div><iframe id="f2"></iframe></div>
+    <div class="win" id="w1" style="left:510px;top:90px;z-index:3"><div class="bar"><i></i><i></i><i></i><span>Oathra Arena — 無理難題ホテル · openai:gpt-4o-mini</span></div><iframe id="f1"></iframe></div>
+    <div class="win on" id="term" style="z-index:5"><div class="bar"><i></i><i></i><i></i><span>zsh — oathra</span></div><div class="body" id="termbody"></div></div>
+    <svg id="cursor" viewBox="0 0 26 36"><path d="M2 2 L2 28 L8.5 22 L13 33 L18 31 L13.5 20.5 L22 20.5 Z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  </div>
+  <div id="badge">▶▶ ×5</div>
+  <div id="cap"><div class="box" id="capbox"><span class="who" id="capwho"></span><span id="captext"></span></div></div>
+</div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const BASE = q.get("base") || "http://127.0.0.1:4242";
+  const IDS = ["battle_scripted", "battle_openai-gpt-4o-mini", "battle_gemini-gemini-flash-latest"];
+  const frames = [0, 1, 2].map((i) => document.getElementById("f" + i));
+  frames.forEach((f, i) => { f.src = `${BASE}/?lang=ja&theme=dark&replay=${IDS[i]}`; });
+
+  // ---- measured durations of the trimmed voice clips (ms); the renderer may override via window.__DUR__
+  const DUR = Object.assign({ g1: 6510, h1: 8630, g2: 7400, h3: 4290, hf: 9940 }, window.__DUR__ || {});
+  const TXT = {
+    h0: "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+    g1: "こんにちは、佐藤と申します。10月3日に2名で宿泊を希望しています。",
+    h1: "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。1泊23,500円でございます。",
+    g2: "禁煙のお部屋はありがたいですが、予算が20,000円以下のため、別のプランをご提案いただけますか？",
+    h3: "19,900円でしたらご案内できます。いかがでしょうか？",
+    hf: "かしこまりました。10月3日、2名様、佐藤様、禁煙お部屋、1泊19,900円でご予約承りました。",
+  };
+  const CMD = "npx oathra battle impossible-hotel --agent scripted --agent openai --agent gemini";
+
+  // ---- timeline -------------------------------------------------------------------------
+  const V = { typeStart: 420, typeMs: 34, popIn: 0, ring: 0, pickup: 0, connect: 0 };
+  V.enter = V.typeStart + CMD.length * V.typeMs + 260;      // ~3.3 s
+  V.popIn = V.enter + 600; V.ring = V.popIn + 400; V.pickup = V.ring + 1600; V.connect = V.pickup + 100;
+  const beats = []; let t = V.connect;
+  const push = (b) => { b.tail = b.tail || 0; b.len += b.tail; b.start = t; b.end = t + b.len; beats.push(b); t = b.end; return b; };
+  // GPT window call-clock anchors are derived from these beats (callFrom -> callTo across the beat).
+  push({ name: "greet", len: Math.round((5716 - 851) / 2), callFrom: 851, callTo: 5716, who: "hotel", cap: TXT.h0, ffwd: "×2" });
+  const zoom = push({ name: "zoom", len: 200, callFrom: 5716, callTo: 5716 });
+  push({ name: "g1", len: DUR.g1, tail: 500, callFrom: 5716, callTo: 11409, voice: "g1", who: "gpt", cap: TXT.g1 });
+  push({ name: "h1", len: DUR.h1, tail: 1000, callFrom: 11409, callTo: 18122, voice: "h1", who: "hotel", cap: TXT.h1 });
+  push({ name: "g2", len: DUR.g2, tail: 500, callFrom: 18122, callTo: 25547, voice: "g2", who: "gpt", cap: TXT.g2 });
+  push({ name: "ff1", len: 2000, callFrom: 25547, callTo: 37147, cap: "21,100円の再提示は、予算の外なので受けない。", ffwd: "×5" });
+  push({ name: "h3", len: DUR.h3, tail: 1000, callFrom: 37147, callTo: 41398, voice: "h3", who: "hotel", cap: TXT.h3 });
+  push({ name: "ff2", len: 2000, callFrom: 41397, callTo: 53016, cap: "19,900円で朝食も付く。あとは名前だけ。", ffwd: "×5" });
+  const hf = push({ name: "hf", len: DUR.hf, tail: 300, callFrom: 53016, callTo: 59574, voice: "hf", who: "hotel", cap: TXT.hf });
+  const hold = push({ name: "hold", len: 3000, callFrom: 59574, callTo: 59574, cap: "完了はAIが決めない。相手のこの一言で決まる。" });
+  const ffEnd = push({ name: "ffend", len: 800, callFrom: 59574, callTo: 86381, ffwd: "×30" });
+  const wide = push({ name: "wide", len: 3600, callFrom: 86381, callTo: 86381, cap: "3つとも2万円以下で成立。誤完了ゼロ。" });
+  const end = push({ name: "end", len: 3600, callFrom: 86381, callTo: 86381 });
+  const DURATION = t;
+
+  // camera keyframes: {t, x, y, s} — centre in desktop coords and scale
+  const camKeys = [
+    { t: 0, x: 960, y: 510, s: 1.25 }, { t: V.popIn - 150, x: 960, y: 510, s: 1.25 }, { t: V.popIn + 650, x: 960, y: 540, s: 1 },
+    { t: zoom.start, x: 960, y: 540, s: 1 }, { t: zoom.start + 750, x: 960, y: 725, s: 1.9 },
+    { t: hf.end - 2600, x: 960, y: 725, s: 1.9 }, { t: hf.end - 1700, x: 960, y: 905, s: 2.3 },
+    { t: ffEnd.start, x: 960, y: 905, s: 2.3 }, { t: ffEnd.end + 200, x: 960, y: 540, s: 1 },
+    { t: end.start, x: 960, y: 540, s: 1 }, { t: end.start + 700, x: 960, y: 510, s: 1.25 },
+  ];
+  const curKeys = [
+    { t: zoom.start - 700, x: 1520, y: 420, show: false }, { t: zoom.start - 690, x: 1520, y: 420, show: true }, { t: zoom.start, x: 1040, y: 110 },
+    { t: ffEnd.start, x: 1040, y: 110 }, { t: wide.start + 500, x: 980, y: 218 }, { t: DURATION, x: 980, y: 218 },
+  ];
+  const clicks = [zoom.start + 40, wide.start + 560];   // cursor "press" pulses
+
+  const ease = (u) => (u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+  function interp(keys, t) {
+    if (t <= keys[0].t) return keys[0];
+    for (let i = 1; i < keys.length; i++) {
+      if (t <= keys[i].t) { const a = keys[i - 1], b = keys[i]; const u = ease((t - a.t) / Math.max(1, b.t - a.t)); const o = {}; for (const k of ["x", "y", "s"]) if (typeof a[k] === "number") o[k] = a[k] + (b[k] - a[k]) * u; o.show = b.show ?? a.show ?? true; return o; }
+    }
+    return keys[keys.length - 1];
+  }
+  // call clock of the GPT window at video time t
+  function gptClock(t) {
+    if (t < V.connect) return 0;
+    for (const b of beats) if (t >= b.start && t < b.end) return Math.round(b.callFrom + (b.callTo - b.callFrom) * Math.min(1, (t - b.start) / Math.max(1, b.len - b.tail)));
+    return 86381;
+  }
+  const linClock = (t, endCall, endAt) => (t < V.connect ? 0 : Math.min(endCall, Math.round(851 + (endCall - 851) * ((t - V.connect) / (endAt - V.connect)))));
+  const clocks = (t) => [linClock(t, 68636, wide.start), gptClock(t), linClock(t, 72861, wide.start)];
+
+  // ---- audio schedule (read by the renderer) --------------------------------------------
+  const audio = [];
+  let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  for (let i = 0; i < CMD.length; i++) audio.push({ file: `sfx/key${1 + Math.floor(rnd() * 6)}.wav`, at: V.typeStart + i * V.typeMs, gain: -13 + rnd() * 4 });
+  audio.push({ file: "sfx/enter.wav", at: V.enter, gain: -14 });
+  audio.push({ file: "sfx/ringtone.wav", at: V.ring, gain: -9 });
+  audio.push({ file: "sfx/pickup.wav", at: V.pickup, gain: -8 });
+  for (const b of beats) if (b.voice) audio.push({ file: `tts/${b.voice}-ft.wav`, at: b.start, gain: b.who === "hotel" ? 7 : -4, phone: b.who === "hotel" });
+  audio.push({ file: "sfx/tick.wav", at: hold.start, gain: 0 });
+  audio.push({ file: "sfx/hangup.wav", at: ffEnd.end, gain: -4 });
+  for (const c of clicks) audio.push({ file: "sfx/click.wav", at: c, gain: -10 });
+  window.__AUDIO__ = audio; window.__DURATION__ = DURATION;
+  window.__BEATS__ = beats.map((b) => ({ name: b.name, start: b.start, end: b.end }));
+
+  // ---- terminal ------------------------------------------------------------------------
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  function termText(t) {
+    const typed = Math.max(0, Math.min(CMD.length, Math.floor((t - V.typeStart) / V.typeMs)));
+    let s = `<span class="p">~ $</span> ${esc(CMD.slice(0, typed))}`;
+    if (t < V.enter) return s + `<span class="cur"></span>`;
+    s += "\n\n";
+    if (t >= V.enter + 300) s += `Impossible Hotel\n<span class="d">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>\n\n`;
+    const D = window.__DATA__;
+    if (t >= wide.start + 900 && D) {
+      const names = D.entries.map((e) => e.brain); const w = Math.max(...names.map((n) => n.length));
+      const max = Math.max(...D.entries.map((e) => e.points));
+      for (const e of D.entries) { const n = Math.round((e.points / max) * 20 * 8) / 8; const full = "█".repeat(Math.floor(n)); const frac = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉"][Math.round((n % 1) * 8) % 8]; s += `${e.brain.padEnd(w)}  <span class="a">${full}${frac}</span>${" ".repeat(Math.max(1, 22 - full.length - frac.length))}${String(e.points).padStart(5)}\n`; }
+      s += `\n${" ".repeat(w)}  SUCCESS  TIME   COST  SCORE\n`;
+      for (const e of D.entries) s += `${e.brain.padEnd(w)}  <span class="g">✓</span>        ${String(Math.round(e.durationMs / 1000)).padStart(3)}s  $${(e.costUsd || 0).toFixed(2)}   ${(e.overall ?? 0).toFixed(1)}\n`;
+      s += `\n<span class="g">False completions: 0</span>\n`;
+    }
+    if (t >= end.start + 900) s += `\n<span class="p">~ $</span> <span class="d">github.com/FORIFOR/oathra</span><span class="cur"></span>`;
+    return s;
+  }
+
+  // ---- caption / badge --------------------------------------------------------------------
+  function overlay(t) {
+    let cap = null, who = "", ffwd = null;
+    if (t >= V.typeStart + 300 && t < V.enter + 700) cap = "定価23,500円のホテルに「2万円以下で取って」と、3つのAIに頼んだ。";
+    for (const b of beats) if (t >= b.start && t < b.end) { if (b.cap) { cap = b.cap; who = b.who || ""; } ffwd = b.ffwd || null; }
+    const box = document.getElementById("capbox");
+    box.classList.toggle("on", !!cap);
+    document.getElementById("captext").textContent = cap || "";
+    const w = document.getElementById("capwho");
+    w.textContent = who === "hotel" ? "ホテル・リンゴ（相手）" : who === "gpt" ? "AI · GPT-4o mini" : "";
+    w.className = "who " + (who || ""); w.style.display = who ? "block" : "none";
+    const badge = document.getElementById("badge"); badge.classList.toggle("on", !!ffwd); badge.textContent = ffwd ? `▶▶ ${ffwd}` : "";
+  }
+
+  // ---- iframe seeking with acks --------------------------------------------------------------
+  let seq = 0; const waiting = new Map();
+  window.addEventListener("message", (e) => { const d = e.data; if (d && d.type === "oathra.seeked" && waiting.has(d.id)) { waiting.get(d.id)(d.ok); waiting.delete(d.id); } });
+  const last = [null, null, null];
+  function seekAll(t) {
+    const cl = clocks(t);
+    return Promise.all(frames.map((f, i) => {
+      if (last[i] === cl[i]) return Promise.resolve();
+      last[i] = cl[i];
+      const id = ++seq;
+      return new Promise((res) => { const to = setTimeout(() => { waiting.delete(id); res(); }, 600); waiting.set(id, () => { clearTimeout(to); res(); }); f.contentWindow.postMessage({ type: "oathra.seek", ms: cl[i], id }, "*"); });
+    }));
+  }
+
+  window.render = async function render(t) {
+    // windows
+    const on = t >= V.popIn;
+    ["w0", "w1", "w2"].forEach((id, i) => document.getElementById(id).classList.toggle("on", t >= V.popIn + i * 180));
+    const term = document.getElementById("term");
+    term.style.zIndex = t < V.popIn ? 5 : t >= wide.start + 600 ? 9 : 0;
+    document.getElementById("termbody").innerHTML = termText(t);
+    // camera
+    const c = interp(camKeys, t);
+    document.getElementById("cam").style.transform = `translate(${960 - c.x * c.s}px, ${540 - c.y * c.s}px) scale(${c.s})`;
+    // cursor
+    const k = interp(curKeys, t); const cur = document.getElementById("cursor");
+    cur.style.display = k.show === false ? "none" : "block";
+    const pressed = clicks.some((ct) => t >= ct && t < ct + 120);
+    cur.style.transform = `translate(${k.x}px, ${k.y}px) scale(${pressed ? .86 : 1})`;
+    overlay(t);
+    if (on) await seekAll(t);
+    return true;
+  };
+  window.__READY__ = () => Promise.all(frames.map((f) => new Promise((res) => {
+    const id = ++seq; const to = setTimeout(() => { waiting.delete(id); res(false); }, 800);
+    waiting.set(id, (ok) => { clearTimeout(to); res(!!ok); });
+    try { f.contentWindow.postMessage({ type: "oathra.seek", ms: 0, id }, "*"); } catch { res(false); }
+  }))).then((r) => r.every(Boolean));
+})();
+</script>
+</body>
+</html>

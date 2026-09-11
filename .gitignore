@@ -10,3 +10,10 @@ coverage/
 packages/cli/assets/
 packages/cli/README.md
 site/media/
+# video render workspace: keep only the recorded run and the voice clips it needs
+video/.work/*
+!video/.work/battle.json
+!video/.work/tts/
+video/.work/tts/*
+!video/.work/tts/*-ft.wav
+!video/.work/tts/lines.json

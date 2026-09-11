@@ -28,7 +28,7 @@ npx oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:
 
 A real run against the "impossible" hotel (lists at ¥23,500, budget ¥20,000): the built-in agent, GPT-4o mini and Gemini Flash all closed under budget, zero false completions. Only calls where the hotel says "your reservation is confirmed" count.
 
-<p align="center"><a href="docs/media/oathra-battle-en.mp4"><img src="docs/media/oathra-battle-en.gif" width="880" alt="Three agents call the impossible hotel; three live transcript columns and each closing price"/></a></p>
+<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>Click for the 63-second video with sound (Japanese audio and captions)</sub></p>
 
 ### CALL
 

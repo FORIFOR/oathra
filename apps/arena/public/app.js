@@ -858,12 +858,35 @@
     if (rec.metrics) app.call.metrics = rec.metrics;
     app.call.status = "done";
     app.call.speaking = null;
+    app.call.allEvents = rec.events || [];
     renderAll();
     setLive(false, t("replay"));
   }
 
+  // Scrub an open replay to a point in time: window.oathraSeek(ms) re-renders the call as it was
+  // at `ms` (also via postMessage {type:"oathra.seek", ms}). Used by the video renderer and QA.
+  function seekReplay(ms) {
+    const c = app.call;
+    if (!c || !c.replay || !c.allEvents) return;
+    const upto = c.allEvents.filter((e) => typeof e.t !== "number" || e.t <= ms);
+    rebuildFromEvents(upto);
+    app.call.allEvents = c.allEvents;
+    const ended = upto.some((e) => e.type === "call.ended");
+    app.call.status = ended ? "done" : "running";
+    renderAll();
+    setLive(!ended, ended ? t("ended") : t("replay"));
+    if (!ended) { $("#result-wrap").hidden = true; }
+  }
+  window.oathraSeek = seekReplay;
+  window.addEventListener("message", (e) => {
+    const d = e && e.data;
+    if (!d || d.type !== "oathra.seek") return;
+    seekReplay(Number(d.ms) || 0);
+    if (e.source && typeof e.source.postMessage === "function") e.source.postMessage({ type: "oathra.seeked", ms: d.ms, id: d.id, ok: !!(app.call && app.call.replay && app.call.allEvents) }, "*");
+  });
+
   // ------------------------------------------------------------------ boot
-  // URL params: ?lang=ja|en  ?theme=dark|light  ?present=1  ?autostart=<scenarioId>&mode=watch|play
+  // URL params: ?lang=ja|en  ?theme=dark|light  ?present=1  ?autostart=<scenarioId>&mode=watch|play  ?replay=<callId>
   const theme = params.get("theme");
   if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
   if (params.get("present") === "1") document.body.classList.add("present");
@@ -875,6 +898,8 @@
   window.addEventListener("beforeunload", closeStream);
   show("start");
   loadStart().then(() => {
+    const replayId = params.get("replay");
+    if (replayId) { openReplay(replayId); return; }
     const auto = params.get("autostart");
     if (!auto) return;
     const scenario = app.scenarios.find((s) => s.id === auto);
