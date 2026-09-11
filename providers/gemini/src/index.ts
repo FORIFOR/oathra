@@ -41,7 +41,7 @@ export class GeminiBrain implements BrainProvider {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents,
-        generationConfig: { temperature: this.temperature, responseMimeType: "application/json", maxOutputTokens: 300 },
+        generationConfig: { temperature: this.temperature, responseMimeType: "application/json", maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
       }),
       signal: AbortSignal.timeout(this.timeoutMs),
     });

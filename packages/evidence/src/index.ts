@@ -6,6 +6,8 @@ export {
   isAcceptance,
   isAgreement,
   isConfirmRequest,
+  isAffirmativeAnswer,
+  AFFIRMATIVE_RE,
   CONFIRM_REQUEST_RE,
   REFUSAL_RE,
   CONFIRMATION_RE,

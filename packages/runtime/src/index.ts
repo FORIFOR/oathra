@@ -443,6 +443,7 @@ export class CallRuntime {
 
     // Permission check: deterministic, outside the LLM.
     let text = response.text;
+    if (!text.trim()) text = contract.language === "ja" ? "少々お待ちください。" : "One moment, please.";
     if (response.requestedAction) {
       const { action, detail } = response.requestedAction;
       this.state.transition("VERIFYING");

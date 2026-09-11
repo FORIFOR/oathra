@@ -41,10 +41,14 @@ pnpm oathra play impossible-hotel --fast       # 仮想時計で一瞬
 pnpm oathra eval                               # 全シナリオと誤完了の数
 pnpm oathra eval --adversarial 10000           # 意地悪な店員1万通り（never-confirm, wrong-restate, …）
 pnpm oathra replay <callId> --at 00:18.420     # その時点の状態に巻き戻す
-pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemini --png card.png
+pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemini --png card.png --json run.json
 ```
 
 Arena では「AI同士を見る」か「自分が電話に出る」かを選べます。後者はあなたが店員役になって、AI の交渉を受ける側になります。
+
+同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
+
+<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する30秒。3列の文字起こしと、それぞれの成立価格"/></a></p>
 
 ## 本物の電話
 

@@ -281,6 +281,32 @@ export async function cmdBattle(positional: string[], flags: Flags): Promise<voi
   console.log(`\n${fc === 0 ? green("False completions: 0") : bad(`False completions: ${fc}`)}`);
   if (chosen.length === 1) console.log(dim("\nTip: compare real models — oathra battle impossible-hotel --agent scripted --agent openai --agent gemini --agent ollama:qwen2.5:7b"));
   if (flags.markdown) console.log(`\n${renderBattleMarkdown(scenario, entries)}`);
+  const jsonPath = str(flags.json);
+  if (jsonPath) {
+    writeFileSync(
+      jsonPath,
+      JSON.stringify(
+        {
+          scenario: { id: scenario.id, title: scenario.title, brief: scenario.mission.brief ?? "", constraints: scenario.mission.constraints, callee: scenario.callee.persona.name, knowledge: scenario.callee.knowledge },
+          entries: entries.map((e) => ({
+            brain: e.brain,
+            points: e.points,
+            success: e.success,
+            durationMs: e.durationMs,
+            costUsd: e.costUsd,
+            overall: e.overall,
+            falseCompletion: e.falseCompletion,
+            status: e.run.outcome.result.status,
+            fields: e.run.outcome.result.fields,
+            transcript: e.run.outcome.transcript.map((t) => ({ source: t.source, text: t.text, t: t.t })),
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    console.log(dim(`JSON: ${jsonPath}`));
+  }
   const svgPath = str(flags.svg);
   const pngPath = str(flags.png);
   if (svgPath || pngPath) {

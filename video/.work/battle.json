@@ -1,0 +1,279 @@
+{
+  "scenario": {
+    "id": "impossible-hotel",
+    "title": "Impossible Hotel",
+    "brief": "2万円以下で、朝食付き・禁煙の部屋を予約してください。定価は2万3,500円です。",
+    "constraints": {
+      "price": {
+        "lte": 20000
+      },
+      "breakfast": {
+        "eq": true
+      },
+      "smoking": {
+        "eq": false
+      }
+    },
+    "callee": "ホテル・リンゴ",
+    "knowledge": {
+      "now": "2026-09-11T10:00:00+09:00",
+      "standard_price": 23500,
+      "minimum_price": 18800,
+      "breakfast_price": 0,
+      "non_smoking_available": true,
+      "require_name": true
+    }
+  },
+  "entries": [
+    {
+      "brain": "scripted",
+      "points": 6540,
+      "success": true,
+      "durationMs": 68641,
+      "costUsd": 0,
+      "overall": 95.4,
+      "falseCompletion": false,
+      "status": "completed",
+      "fields": {
+        "date": "2026-10-03",
+        "partySize": 2,
+        "breakfast": true,
+        "smoking": false,
+        "price": 19900,
+        "confirmed": true
+      },
+      "transcript": [
+        {
+          "source": "callee",
+          "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+          "t": 5717
+        },
+        {
+          "source": "caller",
+          "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+          "t": 14030
+        },
+        {
+          "source": "callee",
+          "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+          "t": 22129
+        },
+        {
+          "source": "caller",
+          "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+          "t": 27710
+        },
+        {
+          "source": "callee",
+          "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+          "t": 34025
+        },
+        {
+          "source": "caller",
+          "text": "朝食付きで20,000円にしていただくことはできませんか？",
+          "t": 38654
+        },
+        {
+          "source": "callee",
+          "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+          "t": 44791
+        },
+        {
+          "source": "caller",
+          "text": "では、19,900円でお願いします。",
+          "t": 47439
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+          "t": 53483
+        },
+        {
+          "source": "caller",
+          "text": "佐藤と申します。",
+          "t": 54910
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+          "t": 62815
+        },
+        {
+          "source": "caller",
+          "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+          "t": 68222
+        }
+      ]
+    },
+    {
+      "brain": "openai:gpt-4o-mini",
+      "points": 6444,
+      "success": true,
+      "durationMs": 94821,
+      "costUsd": 0.00111,
+      "overall": 89.5,
+      "falseCompletion": false,
+      "status": "completed",
+      "fields": {
+        "date": "2026-10-03",
+        "partySize": 2,
+        "smoking": false,
+        "price": 19900,
+        "breakfast": true,
+        "confirmed": true
+      },
+      "transcript": [
+        {
+          "source": "callee",
+          "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+          "t": 5716
+        },
+        {
+          "source": "caller",
+          "text": "こんにちは、佐藤と申します。10月3日に2名で宿泊を希望しています。",
+          "t": 12272
+        },
+        {
+          "source": "callee",
+          "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。1泊23,500円でございます。",
+          "t": 19598
+        },
+        {
+          "source": "caller",
+          "text": "禁煙のお部屋はありがたいですが、予算が20,000円以下のため、別のプランをご提案いただけますか？",
+          "t": 28015
+        },
+        {
+          "source": "callee",
+          "text": "21,100円でしたらご案内できます。いかがでしょうか？",
+          "t": 33099
+        },
+        {
+          "source": "caller",
+          "text": "その価格は予算を超えていますので、もう少しお安いプランをお願いできますか？",
+          "t": 39891
+        },
+        {
+          "source": "callee",
+          "text": "19,900円でしたらご案内できます。いかがでしょうか？",
+          "t": 44797
+        },
+        {
+          "source": "caller",
+          "text": "19,900円ですね。朝食は含まれていますか？",
+          "t": 49530
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+          "t": 55574
+        },
+        {
+          "source": "caller",
+          "text": "佐藤と申します。",
+          "t": 58146
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。10月3日、2名様、佐藤様、禁煙お部屋、1泊19,900円でご予約承りました。",
+          "t": 65282
+        },
+        {
+          "source": "caller",
+          "text": "朝食は含まれていますか？",
+          "t": 68409
+        },
+        {
+          "source": "callee",
+          "text": "はい、朝食は付いております。19,900円のままで結構です。",
+          "t": 73078
+        },
+        {
+          "source": "caller",
+          "text": "では、10月3日、2名様、佐藤様、禁煙のお部屋、朝食付きで19,900円でご予約を確定してもよろしいでしょうか？",
+          "t": 82007
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+          "t": 89808
+        },
+        {
+          "source": "caller",
+          "text": "ありがとうございます。それでは失礼いたします。",
+          "t": 94225
+        }
+      ]
+    },
+    {
+      "brain": "gemini:gemini-flash-latest",
+      "points": 6410,
+      "success": true,
+      "durationMs": 79292,
+      "costUsd": 0,
+      "overall": 90.1,
+      "falseCompletion": false,
+      "status": "completed",
+      "fields": {
+        "date": "2026-10-03",
+        "partySize": 2,
+        "breakfast": true,
+        "smoking": false,
+        "price": 20000,
+        "confirmed": true
+      },
+      "transcript": [
+        {
+          "source": "callee",
+          "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+          "t": 5716
+        },
+        {
+          "source": "caller",
+          "text": "宿泊の予約をお願いしたいのですが、10月3日に2名で、朝食付き・禁煙のお部屋の空きはございますか？",
+          "t": 15140
+        },
+        {
+          "source": "callee",
+          "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+          "t": 23236
+        },
+        {
+          "source": "caller",
+          "text": "予算を2万円以内で考えているのですが、2万円以下で朝食付きのプランやお部屋はございませんでしょうか？",
+          "t": 32202
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。朝食付きで20,000円で承ります。",
+          "t": 36978
+        },
+        {
+          "source": "caller",
+          "text": "ありがとうございます。それでは、佐藤の名前で、10月3日に2名、禁煙の朝食付き、合計20,000円で予約を確定してもよろしいでしょうか？",
+          "t": 48236
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+          "t": 54374
+        },
+        {
+          "source": "caller",
+          "text": "佐藤と申します。10月3日に2名、禁煙の朝食付き、合計20,000円で予約を確定していただけますでしょうか？",
+          "t": 63600
+        },
+        {
+          "source": "callee",
+          "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊20,000円でご予約承りました。",
+          "t": 71491
+        },
+        {
+          "source": "caller",
+          "text": "ご対応いただきありがとうございました。当日よろしくお願いいたします。失礼いたします。",
+          "t": 78714
+        }
+      ]
+    }
+  ]
+}

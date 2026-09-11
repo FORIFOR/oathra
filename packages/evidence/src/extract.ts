@@ -152,6 +152,21 @@ export function isAcceptance(text: string, source: Speaker): boolean {
 export const CONFIRM_REQUEST_RE =
   /(?:予約|ご予約|注文|ご注文|購入)[^。！？!?]*?(?:確定|確保|お取り|お願い)[^。！？!?]*?(?:よろしい(?:でしょうか|ですか)|いい(?:でしょうか|ですか)|大丈夫(?:でしょうか|ですか)|できますか|可能でしょうか)|(?:can|could) (?:you|we) confirm (?:the|my) (?:reservation|booking|order)\??|is (?:the|my) (?:reservation|booking|order) confirmed\?/i;
 
+/**
+ * A real "yes" to a confirmation question: starts with an affirmative, carries
+ * no counter-question, and is not a hedge. A re-quote such as
+ * 「禁煙のお部屋でしたらご用意できます。1泊19,900円でございます。」 is not an answer.
+ */
+export const AFFIRMATIVE_RE =
+  /^[\s「]*(?:はい|ええ|そうです|大丈夫です|問題ございません|問題ありません|かしこまりました|承知(?:いたし|し)ました|もちろん|了解(?:です|しました)|お願いします|yes|sure|of course|certainly|absolutely|that works|sounds good|correct)/i;
+
+export function isAffirmativeAnswer(text: string): boolean {
+  const t = text.trim();
+  if (!t || HEDGE_RE.test(t) || REFUSAL_RE.test(t)) return false;
+  if (/[?？]|いかがでしょうか|いかがですか|でしょうか$/.test(t)) return false;
+  return AFFIRMATIVE_RE.test(t) || CONFIRMATION_RE.test(t);
+}
+
 export function isConfirmRequest(text: string, source: Speaker): boolean {
   return source === "caller" && CONFIRM_REQUEST_RE.test(text) && /[?？]|でしょうか|ですか/.test(text);
 }

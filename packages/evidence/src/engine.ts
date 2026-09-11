@@ -14,7 +14,7 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAgreement, isConfirmRequest, type Claim } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isConfirmRequest, type Claim } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 export type EngineOptions = {
@@ -78,7 +78,7 @@ export class EvidenceEngine {
 
     // 1b. A "yes" to the caller's explicit confirmation question is callee
     //     evidence of the commitment, even without the ritual phrase.
-    if (u.source === "callee" && this.pendingConfirmRequest && agreement && !positive.some((c) => c.field === "confirmed")) {
+    if (u.source === "callee" && this.pendingConfirmRequest && isAffirmativeAnswer(u.text) && !positive.some((c) => c.field === "confirmed")) {
       const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: u.text, semantic: 0.85, polarity: "positive" }, true);
       ev.explicit = false;
       ev.note = `agreed to confirmation request ${this.pendingConfirmRequest.id}`;

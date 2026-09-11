@@ -266,3 +266,15 @@ describe("confirmation by answering the caller's question", () => {
     expect(e.values().confirmed).toBeUndefined();
   });
 });
+
+describe("re-quote is not a yes", () => {
+  it("does not confirm when the callee answers a confirm question by repeating the quote", () => {
+    const e = new EvidenceEngine({ now: NOW });
+    e.ingest(u("u1", "caller", "10月3日、2名様、禁煙のお部屋、朝食付きで1泊19,900円ですね。これでご予約を確定してもよろしいでしょうか？", 1000));
+    e.ingest(u("u2", "callee", "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊19,900円でございます。", 2000));
+    expect(e.values().confirmed).toBeUndefined();
+    e.ingest(u("u3", "caller", "これでご予約を確定してもよろしいでしょうか？", 3000));
+    e.ingest(u("u4", "callee", "はい、確定で大丈夫です。", 4000));
+    expect(e.values().confirmed).toBe(true);
+  });
+});

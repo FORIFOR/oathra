@@ -82,8 +82,10 @@ export class HotelCharacter implements CalleeCharacter {
       }
     }
 
-    // Accepting the current offer.
-    const accepts = ACCEPTANCE_RE.test(text) && !/になりません|できません|お安く|割引|値引/.test(text);
+    // Accepting the current offer, or asking to finalise it ("…19,900円ですね。確定してもよろしいでしょうか？").
+    const agreed = this.offered ?? this.current;
+    const finalises = /確定|でよろしい|ですね[。]?\s*(?:これで|では|それで)?|予約を(?:お願い|進め)/.test(text) && (prices.length === 0 || prices.includes(agreed));
+    const accepts = (ACCEPTANCE_RE.test(text) || finalises) && !/になりません|できません|お安く|割引|値引/.test(text);
     if (this.quoted && accepts && (prices.length === 0 || prices.includes(this.offered ?? this.current))) {
       if (this.offered !== undefined) this.current = this.offered;
       this.offered = undefined;
@@ -126,8 +128,17 @@ export class HotelCharacter implements CalleeCharacter {
       return { text: `${bundle}${jaPrice(next)}でしたらご案内できます。いかがでしょうか？` };
     }
 
-    // Initial inquiry / quote.
-    if (/料金|いくら|値段|価格|price|rate|cost|空い|予約|泊/.test(text) || this.date || this.party) {
+    // Questions about breakfast after a quote are answered, not re-quoted.
+    if (this.quoted && /朝食/.test(text) && /含|付い|付き|ますか|でしょうか/.test(text) && prices.length === 0) {
+      if (this.breakfast || this.k.breakfast_price === 0 || this.bundleBreakfast) {
+        this.breakfast = true;
+        return { text: `はい、朝食は付いております。${jaPrice(agreed)}のままで結構です。` };
+      }
+      return { text: `朝食は別途${jaPrice(this.k.breakfast_price ?? 0)}でございます。` };
+    }
+
+    // Initial inquiry / quote (only once; later turns are handled above).
+    if (!this.quoted && (/料金|いくら|値段|価格|price|rate|cost|空い|予約|泊/.test(text) || this.date || this.party)) {
       if (!this.date) return { text: "ご宿泊のお日にちはいつでしょうか？" };
       if (!this.party) return { text: "何名様でのご宿泊でしょうか？" };
       if (wantsBreakfast && (this.k.breakfast_price === 0 || this.bundleBreakfast)) this.breakfast = true;

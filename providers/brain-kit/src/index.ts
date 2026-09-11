@@ -79,7 +79,19 @@ export function parseBrainJson(raw: string): BrainResponse {
   const text = String(raw ?? "");
   const fallback = (): BrainResponse => ({ text: clip(stripFences(text).trim()), action: "continue" });
   const candidate = extractJsonObject(stripFences(text));
-  if (!candidate) return fallback();
+  if (!candidate) {
+    // Truncated JSON (e.g. a thinking model ran out of output tokens): salvage the spoken text instead of reading JSON aloud.
+    const partial = /"text"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(stripFences(text));
+    if (partial && partial[1]) {
+      try {
+        return { text: clip(JSON.parse(`"${partial[1]}"`).trim()), action: "continue" };
+      } catch {
+        return { text: clip(partial[1].replace(/\\n/g, " ").trim()), action: "continue" };
+      }
+    }
+    if (/^\s*\{/.test(text)) return { text: "", action: "continue" };
+    return fallback();
+  }
   let obj: unknown;
   try {
     obj = JSON.parse(candidate);

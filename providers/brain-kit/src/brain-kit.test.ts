@@ -37,7 +37,10 @@ describe("parseBrainJson", () => {
   });
   it("falls back to raw text on invalid JSON", () => {
     expect(parseBrainJson("19時半でお願いします。")).toEqual({ text: "19時半でお願いします。", action: "continue" });
-    expect(parseBrainJson('{"text": broken')).toEqual({ text: '{"text": broken', action: "continue" });
+    // Broken JSON must never be read aloud: an empty text lets the runtime substitute a neutral filler.
+    expect(parseBrainJson('{"text": broken')).toEqual({ text: "", action: "continue" });
+    // Truncated output from a thinking model: salvage the spoken part.
+    expect(parseBrainJson('{"text":"禁煙のお部屋でそちらの19,3')).toEqual({ text: "禁煙のお部屋でそちらの19,3", action: "continue" });
   });
   it("keeps only valid requestedAction values", () => {
     expect(parseBrainJson('{"text":"x","requestedAction":{"action":"payment","detail":"pay 100"}}').requestedAction).toEqual({ action: "payment", detail: "pay 100" });

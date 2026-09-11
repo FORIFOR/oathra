@@ -26,7 +26,9 @@ Pick a mission, watch an agent negotiate with a simulated restaurant or hotel, o
 npx oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:qwen2.5:7b --png card.png
 ```
 
-<p align="center"><img src="docs/media/battle-impossible-hotel.png" width="600" alt="Oathra Agent Battle card"/></p>
+A real run against the "impossible" hotel (lists at ¥23,500, budget ¥20,000): the built-in agent, GPT-4o mini and Gemini Flash all closed under budget, zero false completions. Only calls where the hotel says "your reservation is confirmed" count.
+
+<p align="center"><a href="docs/media/oathra-battle-en.mp4"><img src="docs/media/oathra-battle-en.gif" width="880" alt="Three agents call the impossible hotel; three live transcript columns and each closing price"/></a></p>
 
 ### CALL
 

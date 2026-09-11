@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Oathra battle video — frame renderer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Serif+JP:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#131210;--panel:#0c0b0a;--ink:#f3efe6;--muted:#8f887a;--line:#2b2823;--amber:#e3a13a;--green:#79c78a;--red:#e07a6e;
+  --serif:"Instrument Serif",Georgia,serif;--serifja:"Noto Serif JP","Hiragino Mincho ProN",serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;--sans:"IBM Plex Sans","Noto Sans JP","Hiragino Sans",sans-serif;--sansja:"Noto Sans JP","Hiragino Sans",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:6px 6px;mix-blend-mode:overlay}
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
+.scene{position:absolute;inset:0}.scene:not(.on){display:none!important}
+.hook{display:flex;flex-direction:column;justify-content:center;padding:0 200px}
+.hook .k{font-family:var(--mono);font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:28px}
+.hook h1{font-family:var(--serif);font-weight:400;font-size:112px;line-height:1.04;margin:0;letter-spacing:-.01em}
+html[lang="ja"] .hook h1{font-family:var(--serifja);font-weight:500;font-size:72px;line-height:1.3;letter-spacing:.01em}
+.hook h1 em{font-style:italic;color:var(--amber)}html[lang="ja"] .hook h1 em{font-style:normal}
+.hook .sub{font-family:var(--mono);font-size:26px;color:var(--muted);margin-top:34px}
+.term{position:absolute;left:260px;top:210px;width:1400px;height:660px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 60px 120px -40px rgba(0,0,0,.8)}
+.term .bar{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 18px;font-family:var(--mono);font-size:15px;color:var(--muted)}
+.term .bar i{width:12px;height:12px;border-radius:50%;background:#2e2b26;display:inline-block}
+.term pre{margin:0;padding:34px 40px;font-family:var(--mono);font-size:28px;line-height:1.55;color:#e9e4d8;white-space:pre}
+.term .ok{color:var(--green)}.term .dim{color:var(--muted)}.term .amb{color:var(--amber)}
+.cursor{display:inline-block;width:16px;height:32px;background:var(--ink);vertical-align:-6px;margin-left:4px}
+/* three transcripts */
+.race{padding:56px 70px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:26px;height:960px}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.col .head{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:19px;color:var(--muted);padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.col .head b{color:var(--ink);font-weight:500;font-size:22px}
+.col .head .st{font-size:15px;letter-spacing:.1em;text-transform:uppercase}
+.col .lines{display:flex;flex-direction:column;gap:10px;justify-content:flex-end;flex:1;overflow:hidden}
+.ln{font-family:var(--sansja);font-size:22px;line-height:1.45;padding:10px 14px;border-radius:10px;max-width:96%}
+.ln.callee{background:#1b1916;color:#e6e0d3;align-self:flex-start;border:1px solid var(--line)}
+.ln.caller{background:rgba(227,161,58,.12);border:1px solid rgba(227,161,58,.35);align-self:flex-end;color:var(--ink)}
+.ln.hl{outline:2px solid var(--green);background:rgba(121,199,138,.14)}
+.ln .who{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.col .price{position:absolute;right:24px;top:80px;font-family:var(--mono);font-size:22px;color:var(--amber)}
+.col .done{position:absolute;left:0;right:0;bottom:0;padding:16px;text-align:center;font-family:var(--mono);font-size:22px;background:linear-gradient(0deg,var(--panel) 70%,transparent)}
+.done.ok{color:var(--green)}.done.no{color:var(--red)}
+.cap{position:absolute;left:0;right:0;bottom:22px;display:flex;justify-content:center;pointer-events:none}
+.cap span{display:inline-block;max-width:1500px;background:rgba(12,11,10,.85);border:1px solid rgba(255,255,255,.08);color:var(--ink);font-family:var(--sansja);font-weight:500;font-size:34px;line-height:1.25;padding:14px 28px;border-radius:12px;text-align:center}
+.cap span b{color:var(--amber);font-weight:600}
+/* board */
+.board{padding:120px 200px}
+.board h2{font-family:var(--serif);font-weight:400;font-size:74px;margin:0 0 40px;line-height:1.05}
+html[lang="ja"] .board h2{font-family:var(--serifja);font-weight:500;font-size:56px;line-height:1.3}
+.board h2 em{color:var(--amber)}html[lang="ja"] .board h2 em{font-style:normal}
+.row{display:grid;grid-template-columns:360px 1fr 200px 260px;gap:24px;align-items:center;margin:22px 0;font-family:var(--mono);font-size:30px}
+.row .name{color:var(--ink)}.row .name small{display:block;font-size:16px;color:var(--muted)}
+.row .bar{height:40px;background:#1b1916;border-radius:6px;overflow:hidden}
+.row .bar i{display:block;height:100%;background:var(--amber);border-radius:6px}
+.row .pts{text-align:right}.row .meta{font-size:20px;color:var(--muted)}
+.row .meta b{color:var(--green);font-weight:500}
+.fc{margin-top:44px;font-family:var(--mono);font-size:36px;color:var(--green)}
+.end{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.end .mark{font-family:var(--mono);font-size:34px;letter-spacing:.1em;display:flex;align-items:center;gap:16px;margin-bottom:34px}
+.end .mark i{width:22px;height:22px;border:3px solid var(--ink);border-radius:50%;display:inline-block}
+.end h1{font-family:var(--serif);font-weight:400;font-size:84px;line-height:1.05;margin:0 0 44px}
+html[lang="ja"] .end h1{font-family:var(--serifja);font-weight:500;font-size:60px;line-height:1.3}
+.end h1 em{color:var(--amber)}html[lang="ja"] .end h1 em{font-style:normal}
+.end .cmd{font-family:var(--mono);font-size:40px;background:var(--panel);border:1px solid var(--line);padding:22px 40px;border-radius:12px}
+.end .cmd b{color:var(--muted);font-weight:400}
+.end .url{font-family:var(--mono);font-size:28px;color:var(--muted);margin-top:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <section class="scene hook" id="s-hook"><div class="k">Oathra · Agent Battle</div><h1 id="hook-h1"></h1><div class="sub" id="hook-sub"></div></section>
+  <section class="scene" id="s-term"><div class="term"><div class="bar"><i></i><i></i><i></i>&nbsp; zsh — oathra</div><pre id="term-pre"></pre></div></section>
+  <section class="scene" id="s-race"><div class="race" id="race"></div><div class="cap" id="race-cap"></div></section>
+  <section class="scene board" id="s-board"><h2 id="board-h2"></h2><div id="board-rows"></div><div class="fc" id="board-fc"></div></section>
+  <section class="scene end" id="s-end"><div class="mark"><i></i>Oathra</div><h1 id="end-h1"></h1><div class="cmd"><b>$</b> npx oathra battle impossible-hotel</div><div class="url">github.com/FORIFOR/oathra</div></section>
+  <div class="vignette"></div><div class="grain"></div>
+</div>
+<script>
+const T = window.__TIMELINE__ = { hook: [0, 3000], term: [3000, 6800], race: [6800, 21800], board: [21800, 27800], end: [27800, 31000] };
+const LANG = new URLSearchParams(location.search).get('lang') || 'ja';
+document.documentElement.lang = LANG; const JA = LANG === 'ja';
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const lerp = (a, b, x) => a + (b - a) * x;
+const getD = () => window.__DATA__ || { entries: [], scenario: {} };
+const label = (b) => b === 'scripted' ? (JA ? '組み込み' : 'Built-in') : b.startsWith('openai') ? 'GPT-4o mini' : b.startsWith('gemini') ? 'Gemini Flash' : b;
+const yen = (n) => '¥' + Number(n).toLocaleString('ja-JP');
+function show(id) { for (const s of document.querySelectorAll('.scene')) s.classList.toggle('on', s.id === id); }
+function typed(text, t0, t1, t) { const n = Math.round(text.length * ease((t - t0) / (t1 - t0))); return text.slice(0, Math.max(0, n)); }
+function priceIn(text) { const m = /(\d{1,3}(?:,\d{3})+|\d{4,6})円/.exec(text); return m ? Number(m[1].replace(/,/g, '')) : null; }
+
+function render(t) {
+  const D = getD();
+  const [h0, h1] = T.hook, [t0, t1] = T.term, [r0, r1] = T.race, [b0, b1] = T.board, [e0] = T.end;
+  if (t < h1) {
+    show('s-hook');
+    const l1 = ease((t - h0) / 700), l2 = ease((t - h0 - 1100) / 700);
+    document.getElementById('hook-h1').innerHTML = JA
+      ? `<span style="display:block;opacity:${l1}">同じ無理難題ホテルに、</span><span style="display:block;opacity:${l1}">3つのAIが電話した。</span>`
+      : `<span style="display:block;opacity:${l1}">Three AIs called the same</span><span style="display:block;opacity:${l1}"><em>impossible</em> hotel.</span>`;
+    document.getElementById('hook-sub').innerHTML = `<span style="opacity:${l2}">${JA ? '予算 2万円以下 · 朝食付き · 禁煙 · 定価は 23,500円' : 'Budget ≤ ¥20,000 · breakfast · non-smoking · list price ¥23,500'}</span>`;
+    return;
+  }
+  if (t < t1) {
+    show('s-term');
+    const cmd = 'npx oathra battle impossible-hotel --agent scripted --agent openai --agent gemini';
+    const typedCmd = typed(cmd, t0 + 200, t0 + 2000, t);
+    let html = `<span class="dim">$</span> ${typedCmd}${t < t0 + 2200 ? '<span class="cursor"></span>' : ''}\n`;
+    if (t >= t0 + 2500) html += `\n<span class="dim">Impossible Hotel</span>\n<span class="dim">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>\n`;
+    if (t >= t0 + 2900) html += `<span class="amb">●</span> ${JA ? '3件の通話を開始…' : 'placing 3 calls…'}\n`;
+    document.getElementById('term-pre').innerHTML = html;
+    return;
+  }
+  if (t < r1) {
+    show('s-race');
+    const local = t - r0;
+    const race = document.getElementById('race');
+    const cols = D.entries.map((e) => {
+      const total = Math.max(...e.transcript.map((x) => x.t), 1);
+      // compress each transcript into the scene window (minus 1.5 s at the end for the verdict)
+      const scale = (r1 - r0 - 2500) / total;
+      const shown = e.transcript.filter((x) => x.t * scale <= local);
+      const last = shown.slice(-4);
+      const price = [...shown].reverse().map((x) => priceIn(x.text)).find((p) => p !== null);
+      const doneAt = total * scale;
+      const done = local >= doneAt + 300;
+      const lines = last.map((x, i) => {
+        const k = i === last.length - 1 ? ease((local - x.t * scale) / 300) : 1;
+        const hl = /承りました|confirmed|booked/.test(x.text) && x.source === 'callee';
+        return `<div class="ln ${x.source} ${hl ? 'hl' : ''}" style="opacity:${k};transform:translateY(${lerp(8, 0, k)}px)"><span class="who">${x.source === 'callee' ? (JA ? 'ホテル' : 'Hotel') : label(e.brain)}</span>${x.text}</div>`;
+      }).join('');
+      const verdict = done ? `<div class="done ${e.success ? 'ok' : 'no'}">${e.success ? (JA ? '✓ 予約成立 · ' : '✓ booked · ') + yen(e.fields && e.fields.price) : (JA ? '✗ 未成立' : '✗ not booked')}</div>` : '';
+      return `<div class="col"><div class="head"><b>${label(e.brain)}</b><span class="st">${done ? (e.success ? (JA ? '成立' : 'done') : (JA ? '未成立' : 'failed')) : (JA ? '通話中' : 'live')}</span></div>${price ? `<div class="price">${yen(price)}</div>` : ''}<div class="lines">${lines}</div>${verdict}</div>`;
+    }).join('');
+    race.innerHTML = cols;
+    const caps = JA
+      ? [[0, 'ホテルの定価は <b>23,500円</b>。予算は 2万円。'], [4500, '各AIが値下げを交渉する。ホテルは少しずつ譲る。'], [10500, '<b>「ご予約承りました」</b> が出た通話だけが成立になる。']]
+      : [[0, 'List price <b>¥23,500</b>. Budget ¥20,000.'], [4500, 'Each AI negotiates; the hotel concedes step by step.'], [10500, 'Only a call with <b>「ご予約承りました」</b> counts as booked.']];
+    const cap = caps.filter(([at]) => local >= at).pop();
+    document.getElementById('race-cap').innerHTML = cap ? `<span style="opacity:${ease((local - cap[0]) / 350)}">${cap[1]}</span>` : '';
+    return;
+  }
+  if (t < b1) {
+    show('s-board');
+    const k = ease((t - b0) / 500);
+    document.getElementById('board-h2').innerHTML = `<span style="display:block;opacity:${k}">${JA ? '結果。<em>誰も嘘をつかなかった。</em>' : 'Results. <em>Nobody lied.</em>'}</span>`;
+    const max = Math.max(1, ...D.entries.map((e) => e.points));
+    const g = ease((t - b0 - 400) / 1400);
+    document.getElementById('board-rows').innerHTML = [...D.entries].sort((a, b) => b.points - a.points).map((e, i) => {
+      const w = Math.max(0, e.points) / max * 100 * g;
+      const kk = ease((t - b0 - 300 - i * 200) / 400);
+      return `<div class="row" style="opacity:${kk}"><div class="name">${label(e.brain)}<small>${e.brain}</small></div><div class="bar"><i style="width:${w}%"></i></div><div class="pts">${Math.round(e.points * g).toLocaleString()}</div><div class="meta"><b>${e.success ? '✓' : '✗'}</b> ${(e.durationMs / 1000).toFixed(0)}s · $${e.costUsd.toFixed(2)}</div></div>`;
+    }).join('');
+    const kf = ease((t - b0 - 2400) / 500);
+    document.getElementById('board-fc').innerHTML = `<span style="opacity:${kf}">${JA ? '誤完了' : 'False completions'}: ${D.entries.filter((e) => e.falseCompletion).length}</span>`;
+    return;
+  }
+  show('s-end');
+  document.getElementById('end-h1').innerHTML = JA ? 'あなたのモデルも、<br><em>同じ土俵で</em>。' : 'Your model, <em>same arena</em>.';
+  document.querySelector('#s-end').style.opacity = ease((t - e0) / 600);
+}
+window.render = render;
+const q = new URLSearchParams(location.search);
+if (q.has('t')) render(Number(q.get('t')));
+</script>
+</body>
+</html>
