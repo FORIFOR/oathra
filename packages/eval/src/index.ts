@@ -101,6 +101,8 @@ export type RunScenarioOptions = {
   onEvent?: Parameters<typeof runCall>[0]["onEvent"];
   pace?: "fast" | "realtime";
   callId?: string;
+  /** How long the agent waits for the callee to speak first before opening. */
+  openingTimeoutMs?: number;
 };
 
 export async function runScenario(scenario: Scenario, opts: RunScenarioOptions): Promise<ScenarioRun> {
@@ -119,7 +121,7 @@ export async function runScenario(scenario: Scenario, opts: RunScenarioOptions):
     brain: opts.brain,
     now,
     scenarioId: scenario.id,
-    openingTimeoutMs: opts.pace === "realtime" ? 1500 : 50,
+    openingTimeoutMs: opts.openingTimeoutMs ?? (opts.pace === "realtime" ? 1500 : 50),
     ...(opts.onEvent ? { onEvent: opts.onEvent } : {}),
     ...(opts.callId ? { callId: opts.callId } : {}),
   });

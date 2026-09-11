@@ -59,8 +59,8 @@ function openBrowser(url: string): void {
 
 export async function cmdDemo(flags: Flags): Promise<void> {
   console.log(`\n${bold("Oathra")}\n`);
-  console.log(ok(`Runtime        ${process.version}`));
-  console.log(ok("Simulator      scripted characters, no API key"));
+  console.log(ok(`Runtime        Node ${process.version}`));
+  console.log(ok("Simulator      built-in characters, no API key needed"));
   const scenarios = loadScenarioDir(scenariosDir());
   console.log(ok(`Scenarios      ${scenarios.length}`));
   const port = num(flags.port, 4242);
@@ -68,7 +68,7 @@ export async function cmdDemo(flags: Flags): Promise<void> {
   console.log(ok(`Arena          ${arena.url}`));
   console.log(`\nOpening Arena...\n\n  ${cyan(arena.url)}\n`);
   if (!flags["no-open"]) openBrowser(arena.url);
-  console.log(dim("Watch AI call AI, or pick Play to answer the phone yourself. Ctrl+C to stop.\n"));
+  console.log(dim("Watch two agents on a call, or choose Play and answer the phone yourself. Ctrl+C stops the server.\n"));
   await new Promise<void>((res) => {
     process.on("SIGINT", () => {
       void arena.close().then(res);
@@ -350,13 +350,13 @@ export async function cmdDoctor(): Promise<void> {
   for (const [env, label] of keys) {
     console.log(process.env[env] ? ok(`${label.padEnd(14)} key present`) : dim(`· ${label.padEnd(14)} not configured (${env})`));
   }
-  console.log(`\n${bold("Your Oathra")}\n`);
-  console.log(ok("Simulator       Ready"));
-  console.log(ok("Arena           Ready"));
-  console.log(ok("Replay / Eval   Ready"));
-  console.log(ok("Japanese        Ready"));
-  console.log(ok("Verification    Ready (deterministic evidence engine)"));
-  console.log(dim("· Real phone     see `oathra phone doctor` (carrier, SIP gateway, media, voice engine, latency, cost)"));
+  console.log(`\n${bold("Ready on this machine")}\n`);
+  console.log(ok("Simulator       AI-vs-AI and Play mode, offline"));
+  console.log(ok("Arena           browser UI (oathra demo)"));
+  console.log(ok("Replay / Eval   saved calls, scoring, adversarial runs"));
+  console.log(ok("Japanese        dates, times, prices, phone numbers, serials parsed deterministically"));
+  console.log(ok("Verification    evidence engine decides completion, not the model"));
+  console.log(dim("· Real phone     run `oathra phone doctor` for carrier, gateway, media, engine, latency and cost"));
   console.log(`\n${bold("Brains")}\n`);
   for (const b of listBrains()) {
     console.log(b.ready ? ok(`${b.name.padEnd(10)} ready${b.reason ? dim(`  ${b.reason}`) : ""}`) : dim(`· ${b.name.padEnd(10)} ${b.reason ?? "not ready"}`));
@@ -393,23 +393,33 @@ export async function cmdScenario(positional: string[], flags: Flags): Promise<v
 
 export function help(): string {
   return `
-${bold("Oathra")}  ${dim("Playable, verifiable phone actions for AI agents.")}
+${bold("Oathra")}  ${dim("Give AI agents a phone, and proof of what happened.")}
 
-${bold("Usage")}
-  oathra demo                      open the Arena (AI vs AI, no API key)
-  oathra play [scenario]           run a scenario in the terminal   ${dim("--brain scripted --fast --seed n --json")}
-  oathra call --to +81...          real phone call via your carrier   ${dim("--engine gpt-live|realtime|pipeline --provider twilio|plivo|sip")}
-  oathra setup phone                 guided carrier + voice engine setup
-  oathra phone add|list|doctor|test|remove   ${dim("test: --level local|gateway|pstn")}
-  oathra provider create phone <id>  scaffold a community carrier provider
-  oathra replay [callId] [--at mm:ss.mmm]   re-render a saved call / time-travel
-  oathra eval [dir]                score every scenario, count false completions   ${dim("--runs n --json")}
-  oathra eval --adversarial 10000  mutated callees try to fool the evidence engine  ${dim("--seed n --json")}
-  oathra battle [scenario]         agents head-to-head   ${dim("--agent scripted --agent ... --markdown --svg card.svg --png card.png")}
-  oathra scenario validate <yaml>  check a community scenario
+${bold("Try it")}
+  oathra demo                        open the Arena: two agents on a simulated call, no API key
+  oathra play [scenario]             run one scenario in the terminal        ${dim("--brain scripted|openai|gemini|ollama  --fast  --seed <n>  --json")}
+  oathra battle [scenario]           several brains, same scenario, one card ${dim("--agent <brain> …  --markdown  --svg <file>  --png <file>")}
+
+${bold("Real phone")}
+  oathra setup phone                 pick a carrier and a voice engine, answer a few questions
+  oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
+  oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
+  oathra phone test [--level …]      local (¥0) · gateway (¥0) · pstn (paid)
+  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id>  --engine gpt-live|realtime|pipeline  --provider <id>")}
+
+${bold("Trust")}
+  oathra eval [dir]                  run every scenario; false completions must be 0   ${dim("--runs <n>  --json")}
+  oathra eval --adversarial <n>      mutated callees try to fool the evidence engine   ${dim("--seed <n>  --json")}
+  oathra replay [callId]             re-render a saved call; --at mm:ss.mmm for time travel
+
+${bold("Extend")}
+  oathra scenario validate <yaml>    check a community scenario
   oathra scenario list
-  oathra doctor                    environment and provider readiness
+  oathra provider create phone <id>  scaffold a carrier provider
 
-${dim("Docs: https://github.com/oathra-ai/oathra")}
+${bold("Check")}
+  oathra doctor                      runtime, keys, brains, phone readiness
+
+${dim("Docs   https://github.com/FORIFOR/oathra")}
 `;
 }

@@ -14,6 +14,7 @@ const OUT = resolve(flag("--out", "docs/media"));
 const BASE = flag("--base", "http://127.0.0.1:4242");
 const SCENARIO = flag("--scenario", "restaurant-reservation");
 const SKIP_CAPTURE = args.includes("--skip-capture");
+const LANG = flag("--lang", "en");
 const FPS = 30, W = 1920, H = 1080;
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const WORK = resolve("video/.work");
@@ -89,13 +90,21 @@ function buildCaptions(footage, arenaStart, arenaLen, speed = 1) {
   const callToWall = 1000; // ms between navigation and call.started, approximate
   // call clock -> scene clock (footage may be played faster than real time)
   const at = (callMs, fallback) => arenaStart + Math.min(arenaLen - 2500, ((callMs ?? fallback) + callToWall) / speed);
-  const caps = [
-    { at: arenaStart + 600, text: 'AI vs AI in the simulator, no API key. Mission: a table for two, tomorrow <b>after 19:00</b>.' },
-    { at: at(tOffer, 9000) + 300, text: '19:00 is full. The restaurant offers <b>19:30</b>.' },
-    { at: at(tVerified, 13000) + 400, text: 'Every field becomes <b>evidence</b> — from the callee’s own words.' },
-    { at: at(tConfirmed, 24000) + 200, text: 'Only 「<b>ご予約承りました</b>」 can complete the call.' },
-    { at: at(tResult, 30000) + 900, text: '<b>MISSION COMPLETE</b> · verified, not summarized.' },
-  ].sort((a, b) => a.at - b.at);
+  const caps = (LANG === "ja"
+    ? [
+        { at: arenaStart + 600, text: 'シミュレータでAI同士が電話中。APIキー不要。ミッションは「明日19時以降に<b>2名</b>で予約」。' },
+        { at: at(tOffer, 9000) + 300, text: '19時は満席。店側が<b>19時半</b>を提示してきた。' },
+        { at: at(tVerified, 13000) + 400, text: '日時・人数は<b>相手の発言</b>から証拠として記録される。' },
+        { at: at(tConfirmed, 24000) + 200, text: '店側の「<b>ご予約承りました</b>」だけが、完了の条件。' },
+        { at: at(tResult, 30000) + 900, text: '<b>MISSION COMPLETE</b> ── 要約ではなく、検証済みの結果。' },
+      ]
+    : [
+        { at: arenaStart + 600, text: 'AI vs AI in the simulator, no API key. Mission: a table for two, tomorrow <b>after 19:00</b>.' },
+        { at: at(tOffer, 9000) + 300, text: '19:00 is full. The restaurant offers <b>19:30</b>.' },
+        { at: at(tVerified, 13000) + 400, text: 'Every field becomes <b>evidence</b> — from the callee’s own words.' },
+        { at: at(tConfirmed, 24000) + 200, text: 'Only 「<b>ご予約承りました</b>」 can complete the call.' },
+        { at: at(tResult, 30000) + 900, text: '<b>MISSION COMPLETE</b> · verified, not summarized.' },
+      ]).sort((a, b) => a.at - b.at);
   for (let i = 0; i < caps.length; i++) caps[i].until = caps[i + 1]?.at ?? Infinity;
   // trim footage so the result card lands before the scene ends
   return caps;
@@ -109,7 +118,7 @@ async function renderFrames() {
   const footage = existsSync(join(WORK, "footage.json")) ? JSON.parse(readFileSync(join(WORK, "footage.json"), "utf8")) : { frames: 0, times: [], events: [] };
   const frameFiles = existsSync(FOOT) ? readdirSync(FOOT).filter((f) => f.endsWith(".png")).sort().map((f) => pathToFileURL(join(FOOT, f)).href) : [];
   const c = await chrome(9342, ["--allow-file-access-from-files"]);
-  await c.send("Page.navigate", { url: pathToFileURL(resolve("video/template.html")).href });
+  await c.send("Page.navigate", { url: pathToFileURL(resolve("video/template.html")).href + `?lang=${LANG}` });
   await sleep(2500); // fonts
   const T = await c.evaluate("window.__TIMELINE__");
   const [a0, a1] = T.arena;
@@ -144,9 +153,10 @@ async function renderFrames() {
 // 3. Encode
 // ---------------------------------------------------------------------------
 function encode() {
-  const mp4 = join(OUT, "oathra-launch.mp4"), gif = join(OUT, "oathra-launch.gif"), poster = join(OUT, "oathra-launch-poster.png"), sq = join(OUT, "oathra-launch-square.mp4");
+  const sfx = LANG === "en" ? "" : `-${LANG}`;
+  const mp4 = join(OUT, `oathra-launch${sfx}.mp4`), gif = join(OUT, `oathra-launch${sfx}.gif`), poster = join(OUT, `oathra-launch${sfx}-poster.png`), sq = join(OUT, `oathra-launch${sfx}-square.mp4`);
   execSync(`ffmpeg -y -loglevel error -framerate ${FPS} -i ${FRAMES}/f%05d.png -vf "format=yuv420p" -c:v libx264 -preset slow -crf 20 -movflags +faststart ${mp4}`);
-  execSync(`ffmpeg -y -loglevel error -framerate ${FPS} -i ${FRAMES}/f%05d.png -vf "fps=12,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" ${gif}`);
+  execSync(`ffmpeg -y -loglevel error -ss 7.6 -t 26 -i ${mp4} -vf "fps=10,scale=880:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" ${gif}`);
   execSync(`ffmpeg -y -loglevel error -ss 1.9 -i ${mp4} -frames:v 1 ${poster}`);
   // 1:1 crop for feeds (center 1080×1080)
   execSync(`ffmpeg -y -loglevel error -i ${mp4} -vf "crop=1080:1080:420:0" -c:v libx264 -preset slow -crf 20 -movflags +faststart ${sq}`);

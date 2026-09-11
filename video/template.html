@@ -4,16 +4,25 @@
 <meta charset="utf-8">
 <title>Oathra launch video — frame renderer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Serif+JP:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* Deterministic renderer: everything is a pure function of `t` (ms). No CSS transitions/animations. */
 :root{--bg:#131210;--bg2:#1b1916;--ink:#f3efe6;--muted:#8f887a;--line:#2b2823;--amber:#e3a13a;--green:#79c78a;--red:#e07a6e;
-  --serif:"Instrument Serif",Georgia,serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;--sans:"IBM Plex Sans","Hiragino Sans","Noto Sans JP",system-ui,sans-serif}
+  --serif:"Instrument Serif",Georgia,serif;--serifja:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;--sans:"IBM Plex Sans","Hiragino Sans","Noto Sans JP",system-ui,sans-serif}
 *{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans)}
 #stage{position:relative;width:1920px;height:1080px;overflow:hidden}
 .grain{position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:6px 6px;mix-blend-mode:overlay}
 .vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
 .scene{position:absolute;inset:0}.scene:not(.on){display:none!important}
+/* ja */
+html[lang="ja"] .hook h1{font-family:var(--serifja);font-weight:500;font-size:76px;line-height:1.3;letter-spacing:.01em}
+html[lang="ja"] .hook h1 em{font-style:normal;color:var(--amber)}
+html[lang="ja"] .proof h2,html[lang="ja"] .real h2,html[lang="ja"] .end h1{font-family:var(--serifja);font-weight:500;line-height:1.3;letter-spacing:.01em}
+html[lang="ja"] .proof h2{font-size:50px}html[lang="ja"] .real h2{font-size:64px}html[lang="ja"] .end h1{font-size:60px}html[lang="ja"] .big{font-size:104px;white-space:nowrap}
+html[lang="ja"] .end h1 em,html[lang="ja"] .proof h2 em,html[lang="ja"] .real h2 em{font-style:normal}
+html[lang="ja"] .cap span{font-family:"Noto Sans JP","Hiragino Sans",sans-serif;font-weight:500;font-size:42px}
+html[lang="ja"] .line{font-family:"Noto Sans JP","Hiragino Sans",sans-serif}
+html[lang="ja"] .big small{font-family:"Noto Sans JP","Hiragino Sans",sans-serif;letter-spacing:.06em}
 /* hook */
 .hook{display:flex;flex-direction:column;justify-content:center;padding:0 200px}
 .hook h1{font-family:var(--serif);font-weight:400;font-size:120px;line-height:1.02;margin:0;letter-spacing:-.01em}
@@ -68,8 +77,8 @@
   <section class="scene" id="s-term"><div class="term"><div class="bar"><i></i><i></i><i></i>&nbsp; zsh — oathra</div><pre id="term-pre"></pre></div></section>
   <section class="scene" id="s-arena"><div class="footage"><img id="arena-img" alt=""></div><div class="chip" id="arena-chip" style="display:none"></div><div class="cap" id="arena-cap"></div></section>
   <section class="scene proof" id="s-proof"><pre id="proof-pre"></pre><div><h2 id="proof-h2"></h2><div class="big" id="proof-big"></div></div></section>
-  <section class="scene real" id="s-real"><h2>Same runtime. <em>Real phone.</em></h2><div class="lines" id="real-lines"></div><div class="tag" id="real-tag"></div></section>
-  <section class="scene end" id="s-end"><div class="mark"><i></i>Oathra</div><h1>Bring your own carrier.<br><em>Bring your own model.</em></h1><div class="cmd"><b>$</b> npx oathra demo</div><div class="url">github.com/FORIFOR/oathra</div></section>
+  <section class="scene real" id="s-real"><h2 id="real-h2">Same runtime. <em>Real phone.</em></h2><div class="lines" id="real-lines"></div><div class="tag" id="real-tag"></div></section>
+  <section class="scene end" id="s-end"><div class="mark"><i></i>Oathra</div><h1 id="end-h1">Bring your own carrier.<br><em>Bring your own model.</em></h1><div class="cmd"><b>$</b> npx oathra demo</div><div class="url">github.com/FORIFOR/oathra</div></section>
   <div class="vignette"></div><div class="grain"></div>
 </div>
 <script>
@@ -82,6 +91,9 @@ const T = window.__TIMELINE__ = {
   real: [39600, 45200],
   end: [45200, 48500],
 };
+const LANG = new URLSearchParams(location.search).get('lang') || (window.__LANG__ || 'en');
+document.documentElement.lang = LANG;
+const JA = LANG === 'ja';
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
 const lerp = (a, b, x) => a + (b - a) * x;
@@ -100,8 +112,11 @@ function render(t) {
     show('s-hook');
     const l1 = ease((t - h0) / 700), l2 = ease((t - (h0 + 1200)) / 700);
     document.getElementById('hook-h1').innerHTML =
-      `<span style="display:block;opacity:${l1};transform:translateY(${lerp(20, 0, l1)}px)">Give AI agents a phone —</span>` +
-      `<span style="display:block;opacity:${l2};transform:translateY(${lerp(20, 0, l2)}px)">and <em>proof</em> of what happened.</span>`;
+      (JA
+        ? `<span style="display:block;opacity:${l1};transform:translateY(${lerp(20, 0, l1)}px)">AIに、電話をかけさせた。</span>` +
+          `<span style="display:block;opacity:${l2};transform:translateY(${lerp(20, 0, l2)}px)">本当に予約できたかは、<em>AIに言わせない</em>。</span>`
+        : `<span style="display:block;opacity:${l1};transform:translateY(${lerp(20, 0, l1)}px)">Give AI agents a phone —</span>` +
+          `<span style="display:block;opacity:${l2};transform:translateY(${lerp(20, 0, l2)}px)">and <em>proof</em> of what happened.</span>`);
     return;
   }
   if (t < t1) {
@@ -154,10 +169,12 @@ function render(t) {
     ];
     document.getElementById('proof-pre').innerHTML = code.filter(([, d]) => t >= p0 + 200 + d).map(([l]) => l).join('\n');
     const k = ease((t - p0 - 300) / 600);
-    document.getElementById('proof-h2').innerHTML = `<span style="display:block;opacity:${k}">The result is <em>evidence</em>,<br>not a summary.</span>`;
+    document.getElementById('proof-h2').innerHTML = JA
+      ? `<span style="display:block;opacity:${k}">結果は要約ではなく、<br>相手の発言に<br>紐づいた<em>証拠</em>。</span>`
+      : `<span style="display:block;opacity:${k}">The result is <em>evidence</em>,<br>not a summary.</span>`;
     const n = Math.round(lerp(0, 10000, ease((t - p0 - 1500) / 1800)));
     const k2 = ease((t - p0 - 1400) / 400);
-    document.getElementById('proof-big').innerHTML = `<span style="display:block;opacity:${k2}">0 / ${n.toLocaleString()}<small>false completions · adversarial simulator runs</small></span>`;
+    document.getElementById('proof-big').innerHTML = `<span style="display:block;opacity:${k2}">0 / ${n.toLocaleString()}<small>${JA ? '意地悪な店員シミュレーション1万通りで、誤完了ゼロ' : 'false completions · adversarial simulator runs'}</small></span>`;
     return;
   }
   if (t < r1) {
@@ -170,15 +187,17 @@ function render(t) {
       ['agent', '9月12日、20時に2名ですね。予約を確定してもよろしいでしょうか？', 3000],
       ['callee', '大丈夫ですよ。', 4000],
     ];
+    document.getElementById('real-h2').innerHTML = JA ? '同じ仕組みで、<em>本物の電話</em>。' : 'Same runtime. <em>Real phone.</em>';
     document.getElementById('real-lines').innerHTML = lines.map(([who, text, d]) => {
       const k = ease((t - r0 - d) / 350);
-      return `<div class="line ${who}" style="opacity:${k};transform:translateX(${lerp(-16, 0, k)}px)"><div class="who">${who === 'agent' ? 'Agent' : 'Callee'}</div><div>${text}</div></div>`;
+      return `<div class="line ${who}" style="opacity:${k};transform:translateX(${lerp(-16, 0, k)}px)"><div class="who">${who === 'agent' ? (JA ? 'AI' : 'Agent') : (JA ? '相手' : 'Callee')}</div><div>${text}</div></div>`;
     }).join('');
     const k = ease((t - r0 - 4700) / 350);
-    document.getElementById('real-tag').innerHTML = `<span style="opacity:${k}">recorded on a real call · Twilio + GPT-Live · first reply ≈ 0.4 s</span>`;
+    document.getElementById('real-tag').innerHTML = `<span style="opacity:${k}">${JA ? '実際の通話の記録から · Twilio + GPT-Live · 最初の返答まで約0.4秒' : 'recorded on a real call · Twilio + GPT-Live · first reply ≈ 0.4 s'}</span>`;
     return;
   }
   show('s-end');
+  document.getElementById('end-h1').innerHTML = JA ? '電話会社も、音声モデルも、<br><em>好きなものを</em>。オープンソース。' : 'Bring your own carrier.<br><em>Bring your own model.</em>';
   const k = ease((t - e0) / 600);
   stage.querySelector('#s-end').style.opacity = k;
 }

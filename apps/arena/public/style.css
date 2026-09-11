@@ -490,3 +490,62 @@ body.present .result-badge { font-size: 14px; padding: 3px 12px; }
 body.present .result-meta { font-size: 16px; gap: 4px; }
 body.present .score-grid { font-size: 15px; }
 body.present .result-fc { font-size: 15px; }
+
+/* ---------- refinement pass ---------- */
+/* Rhythm: controls 4px radius, cards/frames 8px. */
+.call-frame, .result, .scenario-btn, .popover, .erow { border-radius: 8px; }
+.scenario-btn { padding: 16px; gap: 16px; }
+.scenario-btn:hover { background: var(--bg-2); }
+.scenario-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-color: var(--ink); }
+.scenario-btn .s-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.scenario-btn .s-title-en { font-family: var(--mono); font-weight: 400; font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
+.scenario-btn .s-brief { line-height: 1.5; }
+.scenario-btn .s-meta { margin-top: 8px; }
+.mode-btn { padding: 10px 20px; gap: 2px; }
+.mode-d { opacity: 0.8; }
+
+/* Evidence quote: one line, full text on hover (title attribute). */
+.erow .e-quote { align-items: baseline; min-width: 0; }
+.erow .e-q { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.e-empty { font-size: 13px; padding: 6px 2px; }
+.evidence-list .e-empty + .erow { margin-top: 2px; }
+
+/* Transcript: labels align to the first line of the sentence. */
+.line .who { padding-top: 4px; }
+.line .say { overflow-wrap: anywhere; }
+
+/* Provider panel copy */
+.note code { font-family: var(--mono); font-size: 12px; background: var(--bg-2); padding: 1px 5px; border-radius: 3px; }
+.provider small { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; margin-left: 6px; }
+
+/* Play mode brief */
+.brief-k { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* Japanese: sans for labels that were uppercase mono, natural letter-spacing, slightly taller lines. */
+html[lang="ja"] body { line-height: 1.65; }
+html[lang="ja"] .start-title { font-size: clamp(28px, 4.8vw, 42px); letter-spacing: 0.02em; line-height: 1.3; font-weight: 600; }
+html[lang="ja"] .party-label, html[lang="ja"] .panel-title, html[lang="ja"] .live, html[lang="ja"] .drawer-toggle,
+html[lang="ja"] .s-diff, html[lang="ja"] .tab, html[lang="ja"] .tt-btn, html[lang="ja"] .local-btn, html[lang="ja"] .brief-k,
+html[lang="ja"] .ux-pill, html[lang="ja"] .mode-d, html[lang="ja"] .play-label, html[lang="ja"] .link-btn,
+html[lang="ja"] .pop-need, html[lang="ja"] .brain-row label, html[lang="ja"] .result-h, html[lang="ja"] .result-badge,
+html[lang="ja"] .erow .e-src, html[lang="ja"] .erow .e-ok, html[lang="ja"] .snapshot h4, html[lang="ja"] .latency-table th {
+  font-family: var(--sans); text-transform: none; letter-spacing: 0.06em;
+}
+html[lang="ja"] .party-label { font-size: 11px; }
+html[lang="ja"] .panel-title { font-size: 12px; }
+html[lang="ja"] .live { font-size: 12px; letter-spacing: 0.1em; }
+html[lang="ja"] .ux-pill { font-size: 12px; letter-spacing: 0.08em; }
+html[lang="ja"] .line .who { font-family: var(--sans); font-size: 12px; letter-spacing: 0.02em; }
+html[lang="ja"] .result { font-family: var(--sans); }
+html[lang="ja"] .result-h { font-size: 15px; font-weight: 700; letter-spacing: 0.12em; }
+html[lang="ja"] .result-lines, html[lang="ja"] .result-meta, html[lang="ja"] .score-grid, html[lang="ja"] .result-fc { font-family: var(--mono); }
+html[lang="ja"] .result-lines li, html[lang="ja"] .result-meta div { font-family: var(--sans); font-variant-numeric: tabular-nums; }
+html[lang="ja"] .metrics { font-family: var(--sans); }
+html[lang="ja"] .metrics b { font-family: var(--mono); }
+html[lang="ja"] .erow .e-src { font-size: 11px; padding: 0 6px; }
+html[lang="ja"] .transcript-empty, html[lang="ja"] .e-empty, html[lang="ja"] .replay-btn .muted { font-family: var(--sans); }
+body.present html[lang="ja"] .line .who, html[lang="ja"] body.present .line .who { font-size: 15px; }
+html[lang="ja"] body.present .party-label { font-size: 14px; }
+html[lang="ja"] body.present .panel-title { font-size: 15px; }
+html[lang="ja"] body.present .live { font-size: 15px; }
+html[lang="ja"] body.present .ux-pill { font-size: 15px; }

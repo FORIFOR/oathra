@@ -8,36 +8,36 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-name">Oathra</span>
-      <span class="brand-sub">Arena</span>
+      <span class="brand-sub" data-i18n="arena">Arena</span>
     </div>
     <div class="topbar-right">
-      <div class="transport-toggle" role="group" aria-label="Transport">
+      <div class="transport-toggle" role="group" data-i18n-aria="transport" aria-label="Transport">
         <button type="button" class="tt-btn is-on" data-transport="simulator" aria-pressed="true">
-          <span class="dot" aria-hidden="true"></span>Simulator
+          <span class="dot" aria-hidden="true"></span><span data-i18n="simulator">Simulator</span>
         </button>
         <button type="button" class="tt-btn" data-transport="real" aria-pressed="false">
-          <span class="dot" aria-hidden="true"></span>Real Phone
+          <span class="dot" aria-hidden="true"></span><span data-i18n="realPhone">Real Phone</span>
         </button>
       </div>
       <div class="local-wrap">
         <button type="button" class="local-btn" id="local-btn" aria-expanded="false" aria-controls="local-pop">
-          Local <span class="dot on" aria-hidden="true"></span>
+          <span data-i18n="local">Local</span> <span class="dot on" aria-hidden="true"></span>
         </button>
-        <div class="popover" id="local-pop" hidden role="dialog" aria-label="Running locally">
-          <p class="pop-title">Running locally.</p>
-          <p class="pop-sub">Everything is yours.</p>
-          <p class="pop-need">Need:</p>
+        <div class="popover" id="local-pop" hidden role="dialog" data-i18n-aria="popTitle" aria-label="Running locally">
+          <p class="pop-title" data-i18n="popTitle">Running locally.</p>
+          <p class="pop-sub" data-i18n="popSub">Everything is yours.</p>
+          <p class="pop-need" data-i18n="popNeed">Need:</p>
           <ul>
-            <li>phone numbers</li>
-            <li>managed SIP</li>
-            <li>team deployment</li>
-            <li>hosted inference</li>
+            <li data-i18n="popNumbers">phone numbers</li>
+            <li data-i18n="popSip">managed SIP</li>
+            <li data-i18n="popTeam">team deployment</li>
+            <li data-i18n="popHosted">hosted inference</li>
           </ul>
           <p class="pop-foot">Oathra Cloud</p>
         </div>
@@ -50,28 +50,28 @@
     <!-- ============ START SCREEN ============ -->
     <section class="screen" id="screen-start">
       <div class="start-inner">
-        <h1 class="start-title">Give your agent<br />a mission.</h1>
+        <h1 class="start-title" data-i18n-html="startTitle">Give your agent<br />a mission.</h1>
 
-        <div class="mode-toggle" role="group" aria-label="Mode">
+        <div class="mode-toggle" role="group" data-i18n-aria="mode" aria-label="Mode">
           <button type="button" class="mode-btn is-on" data-mode="watch" aria-pressed="true">
-            <span class="mode-k">Watch</span><span class="mode-d">AI vs AI</span>
+            <span class="mode-k" data-i18n="watch">Watch</span><span class="mode-d" data-i18n="watchSub">AI vs AI</span>
           </button>
           <button type="button" class="mode-btn" data-mode="play" aria-pressed="false">
-            <span class="mode-k">Play</span><span class="mode-d">you answer the phone</span>
+            <span class="mode-k" data-i18n="play">Play</span><span class="mode-d" data-i18n="playSub">you answer the phone</span>
           </button>
         </div>
 
         <div class="brain-row" id="brain-row" hidden>
-          <label for="brain-select" class="mono">Agent</label>
+          <label for="brain-select" class="mono" data-i18n="agentSelect">Agent</label>
           <select id="brain-select"></select>
         </div>
 
-        <div class="scenario-list" id="scenario-list" aria-label="Missions">
-          <p class="muted mono">Loading missions…</p>
+        <div class="scenario-list" id="scenario-list" data-i18n-aria="missions" aria-label="Missions">
+          <p class="muted mono" data-i18n="loadingMissions">Loading missions…</p>
         </div>
 
         <div class="start-foot">
-          <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel">Replays</button>
+          <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel" data-i18n="replays">Replays</button>
         </div>
         <div class="replays-panel" id="replays-panel" hidden>
           <ul class="replay-list" id="replay-list"></ul>
@@ -82,15 +82,15 @@
     <!-- ============ REAL PHONE PANEL ============ -->
     <section class="screen" id="screen-real" hidden>
       <div class="start-inner narrow">
-        <h2 class="panel-h">Connect a phone provider</h2>
-        <div class="provider-list" role="radiogroup" aria-label="Phone provider">
+        <h2 class="panel-h" data-i18n="connectProvider">Connect a phone provider</h2>
+        <div class="provider-list" role="radiogroup" data-i18n-aria="provider" aria-label="Phone provider">
           <label class="provider"><input type="radio" name="provider" disabled /> <span>Twilio</span></label>
-          <label class="provider"><input type="radio" name="provider" disabled /> <span>Telnyx</span></label>
-          <label class="provider"><input type="radio" name="provider" disabled /> <span>LiveKit SIP</span></label>
-          <label class="provider"><input type="radio" name="provider" disabled /> <span>Custom SIP</span></label>
+          <label class="provider"><input type="radio" name="provider" disabled /> <span>Plivo</span></label>
+          <label class="provider"><input type="radio" name="provider" disabled /> <span data-i18n="customSip">Custom SIP</span></label>
+          <label class="provider"><input type="radio" name="provider" disabled /> <span>Telnyx <small class="muted" data-i18n="v02">v0.2</small></span></label>
         </div>
-        <p class="note">Real phone transports arrive in v0.2 — same UI, different transport.</p>
-        <button type="button" class="btn" id="real-back">Back</button>
+        <p class="note" data-i18n-html="realNote">Real calls run from the CLI today: <code>oathra setup phone</code> then <code>oathra call --to +81…</code>. Dialing from the Arena comes next.</p>
+        <button type="button" class="btn" id="real-back" data-i18n="back">Back</button>
       </div>
     </section>
 
@@ -99,7 +99,7 @@
       <div class="call-frame">
         <div class="call-head">
           <div class="call-title-wrap">
-            <button type="button" class="back-btn" id="call-back" aria-label="Back to missions">←</button>
+            <button type="button" class="back-btn" id="call-back" data-i18n-aria="backToMissions" aria-label="Back to missions">←</button>
             <h2 class="call-title" id="call-title">—</h2>
           </div>
           <span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span>
@@ -107,7 +107,7 @@
 
         <div class="parties">
           <div class="party" id="party-agent" data-side="agent">
-            <div class="party-label mono">AGENT</div>
+            <div class="party-label mono" data-i18n="partyAgent">AGENT</div>
             <div class="party-face"><span class="party-ring" aria-hidden="true"></span><span class="party-glyph" id="agent-glyph">◉</span></div>
             <div class="party-name" id="agent-name">scripted</div>
           </div>
@@ -115,7 +115,7 @@
             <div class="activity-bar" id="activity-bar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           </div>
           <div class="party" id="party-callee" data-side="callee">
-            <div class="party-label mono">CALLEE</div>
+            <div class="party-label mono" data-i18n="partyCallee">CALLEE</div>
             <div class="party-face"><span class="party-ring" aria-hidden="true"></span><span class="party-glyph avatar" id="callee-avatar">◉</span></div>
             <div class="party-name" id="callee-name">—</div>
           </div>
@@ -125,37 +125,37 @@
           <span class="ux-pill"><span class="ux-dot" aria-hidden="true"></span><span id="ux-text">Idle</span></span>
         </div>
 
-        <div class="transcript" id="transcript" aria-live="polite" aria-label="Transcript"></div>
+        <div class="transcript" id="transcript" aria-live="polite" data-i18n-aria="transcript" aria-label="Transcript"></div>
 
         <div class="play-brief" id="play-brief" hidden>
-          <span class="mono muted">YOUR MISSION</span>
+          <span class="mono muted brief-k" data-i18n="yourMission">YOUR MISSION</span>
           <p id="play-brief-text"></p>
         </div>
 
         <form class="play-input" id="play-form" hidden>
           <label for="play-text" class="play-label" id="play-label">You are the callee. Answer the phone.</label>
           <div class="play-row">
-            <input type="text" id="play-text" autocomplete="off" placeholder="Type what you say…" />
-            <button type="submit" class="btn primary">Send</button>
-            <button type="button" class="btn" id="play-hangup">Hang up</button>
+            <input type="text" id="play-text" autocomplete="off" data-i18n-placeholder="playPlaceholder" placeholder="Type what you say…" />
+            <button type="submit" class="btn primary" data-i18n="send">Send</button>
+            <button type="button" class="btn" id="play-hangup" data-i18n="hangUp">Hang up</button>
           </div>
         </form>
 
         <div class="panels">
           <section class="panel" aria-labelledby="mission-h">
-            <h3 class="panel-title mono" id="mission-h">MISSION</h3>
+            <h3 class="panel-title mono" id="mission-h" data-i18n="mission">MISSION</h3>
             <ul class="mission-list" id="mission-list"></ul>
           </section>
           <section class="panel" aria-labelledby="evidence-h">
-            <h3 class="panel-title mono" id="evidence-h">EVIDENCE <span class="count" id="evidence-count">0</span></h3>
+            <h3 class="panel-title mono" id="evidence-h"><span data-i18n="evidence">EVIDENCE</span> <span class="count" id="evidence-count">0</span></h3>
             <ul class="evidence-list" id="evidence-list"></ul>
           </section>
         </div>
 
         <div class="metrics mono" id="metrics">
-          <span>Latency <b id="m-latency">—</b> ms</span>
+          <span><span data-i18n="latency">Latency</span> <b id="m-latency">—</b> ms</span>
           <span class="sep" aria-hidden="true">·</span>
-          <span>Cost <b id="m-cost">$0.000</b></span>
+          <span><span data-i18n="cost">Cost</span> <b id="m-cost">$0.000</b></span>
           <span class="sep" aria-hidden="true">·</span>
           <span><b id="m-elapsed">00:00</b></span>
         </div>
@@ -163,12 +163,12 @@
         <div class="result-wrap" id="result-wrap" hidden></div>
 
         <div class="drawer">
-          <button type="button" class="drawer-toggle mono" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-body">Details</button>
+          <button type="button" class="drawer-toggle mono" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-body" data-i18n="details">Details</button>
           <div class="drawer-body" id="drawer-body" hidden>
             <div class="tabs" role="tablist">
-              <button type="button" role="tab" class="tab is-on" data-tab="timeline" aria-selected="true">Timeline</button>
-              <button type="button" role="tab" class="tab" data-tab="events" aria-selected="false">Events</button>
-              <button type="button" role="tab" class="tab" data-tab="latency" aria-selected="false">Latency</button>
+              <button type="button" role="tab" class="tab is-on" data-tab="timeline" aria-selected="true" data-i18n="timeline">Timeline</button>
+              <button type="button" role="tab" class="tab" data-tab="events" aria-selected="false" data-i18n="events">Events</button>
+              <button type="button" role="tab" class="tab" data-tab="latency" aria-selected="false" data-i18n="latency">Latency</button>
             </div>
             <div class="tabpanes">
               <div class="tabpane" data-pane="timeline">
@@ -182,7 +182,7 @@
               </div>
               <div class="tabpane" data-pane="latency" hidden>
                 <table class="latency-table mono" id="latency-table">
-                  <thead><tr><th>turn</th><th>ttfa</th><th>brain</th></tr></thead>
+                  <thead><tr><th data-i18n="thTurn">turn</th><th data-i18n="thTtfa">ttfa</th><th data-i18n="thBrain">brain</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>

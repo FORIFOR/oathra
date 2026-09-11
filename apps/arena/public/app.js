@@ -22,8 +22,8 @@
   const mmss = (t) => `${pad(Math.floor((t || 0) / 60000))}:${pad(Math.floor(((t || 0) % 60000) / 1000))}`;
   const mmssms = (t) => `${mmss(t)}.${pad((t || 0) % 1000, 3)}`;
   const fmtVal = (v) => {
-    if (v === true) return "yes";
-    if (v === false) return "no";
+    if (v === true) return t("yes");
+    if (v === false) return t("no");
     if (v === undefined || v === null) return "—";
     if (typeof v === "number") return v.toLocaleString();
     return String(v);
@@ -44,6 +44,107 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
   };
+
+
+  // ------------------------------------------------------------------ i18n
+  // ?lang=ja|en, else the browser language. Every user-facing string goes through t().
+  const params = new URLSearchParams(location.search);
+  const LANG = (params.get("lang") === "ja" || params.get("lang") === "en") ? params.get("lang")
+    : ((navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en");
+
+  const FIELD_LABELS = {
+    ja: { date: "日付", time: "時刻", partySize: "人数", confirmed: "確定", price: "金額", breakfast: "朝食", smoking: "喫煙", serial: "シリアル番号", phone: "電話番号", name: "名前" },
+    en: { date: "date", time: "time", partySize: "party size", confirmed: "confirmed", price: "price", breakfast: "breakfast", smoking: "smoking", serial: "serial", phone: "phone", name: "name" },
+  };
+  const END_LABELS = {
+    ja: { agent_hangup: "AIが通話を終了", callee_hangup: "相手が通話を終了", voicemail: "留守番電話を検出して終了", completed: "完了", budget_exceeded: "上限に達して終了", cancelled: "中止", error: "エラー", inactivity: "無音のため終了" },
+    en: { agent_hangup: "agent hung up", callee_hangup: "callee hung up", voicemail: "voicemail detected", completed: "completed", budget_exceeded: "budget exceeded", cancelled: "cancelled", error: "error", inactivity: "inactivity" },
+  };
+  const fieldLabel = (f) => (FIELD_LABELS[LANG] && FIELD_LABELS[LANG][f]) || f;
+  const endLabel = (r) => (END_LABELS[LANG] && END_LABELS[LANG][r]) || r;
+  document.documentElement.lang = LANG;
+  const STR = {
+    en: {
+      skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Simulator", realPhone: "Real Phone", local: "Local",
+      popTitle: "Running locally.", popSub: "Everything is yours.", popNeed: "Need:", popNumbers: "phone numbers", popSip: "managed SIP", popTeam: "team deployment", popHosted: "hosted inference",
+      startTitle: "Give your agent<br />a mission.", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
+      agentSelect: "Agent", missions: "Missions", loadingMissions: "Loading missions…", noMissions: "No missions found in scenarios/.", loadMissionsFailed: "Could not load missions: {msg}",
+      replays: "Past calls", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
+      connectProvider: "Connect a phone provider", provider: "Phone provider", customSip: "Custom SIP", v02: "v0.2",
+      realNote: "Real calls run from the CLI today: <code>oathra setup phone</code>, then <code>oathra call --to +81…</code>. Dialing from the Arena comes next.", back: "Back", backToMissions: "Back to missions",
+      partyAgent: "AGENT", partyCallee: "CALLEE", transcript: "Transcript", you: "You", agent: "Agent", system: "system",
+      live: "LIVE", ended: "ENDED", error: "ERROR", offline: "OFFLINE", replay: "REPLAY",
+      idle: "Idle", listening: "Listening", understanding: "Understanding", acting: "Acting", speaking: "Speaking",
+      dialing: "Dialing…", replaying: "Replaying…", noTranscript: "No transcript.",
+      yourMission: "YOUR MISSION", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up",
+      mission: "MISSION", evidence: "EVIDENCE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool",
+      latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
+      yes: "yes", no: "no",
+      stCompleted: "MISSION COMPLETE", stIncomplete: "INCOMPLETE", stViolation: "CONSTRAINT VIOLATION", stFailed: "FAILED", stFalse: "FALSE COMPLETION", stUnknown: "UNKNOWN",
+      badgeOk: "VERIFIED", badgeNo: "NOT VERIFIED", missing: "(missing)",
+      evidenceN: "Evidence: {n}", confidence: "Confidence: {v}", latencyP50: "Latency p50: {v}", last: "{v} ms (last)", turns: "Turns: {n}", endedReason: "Ended: {r}",
+      scOutcome: "Outcome", scEvidence: "Evidence", scConversation: "Conversation", scLatency: "Latency", scEfficiency: "Efficiency", scOverall: "Overall",
+      fc0: "False Completion: 0", fc1: "False Completion: 1 — reported fields disagree with the callee ({f})",
+      runAgain: "Run again", newMission: "New mission", copyMd: "Copy result as Markdown", copied: "Copied", copyPrompt: "Copy:",
+      startFailed: "Could not start call: {msg}", connLost: "Connection lost: {msg}", sendFailed: "Could not send: {msg}", hangupFailed: "Could not hang up: {msg}", replayFailed: "Could not load replay: {msg}", unknownScenario: "Unknown scenario \"{id}\"",
+      permReq: "Permission requested: {a} — {d}", permDec: "Permission {r} ({by}): {a}", approved: "approved", denied: "denied", errLine: "Error: {msg}",
+      ttTitle: "TIME TRAVEL · {t}", ttState: "agent state", ttVerified: "verified", ttPending: "pending", ttLast: "last ttfa", ttTranscript: "TRANSCRIPT SO FAR",
+      diffEasy: "easy", diffNormal: "normal", diffHard: "hard", diffExtreme: "extreme", builtin: "Built-in agent",
+      mdVerified: "VERIFIED", mdNotVerified: "NOT VERIFIED", mdScore: "Oathra Score",
+    },
+    ja: {
+      skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "シミュレータ", realPhone: "実電話", local: "ローカル実行",
+      popTitle: "この Mac の中だけで動いています。", popSub: "データも通話記録も、あなたの手元にあります。", popNeed: "次が必要になったら Oathra Cloud:", popNumbers: "電話番号", popSip: "マネージド SIP", popTeam: "チームでの運用", popHosted: "推論のホスティング",
+      startTitle: "AIに、ミッションを。", mode: "モード", watch: "AI同士を見る", watchSub: "AI が店に電話する", play: "自分が電話に出る", playSub: "あなたが店員役",
+      agentSelect: "エージェント", missions: "ミッション", loadingMissions: "ミッションを読み込んでいます…", noMissions: "scenarios/ にミッションがありません。", loadMissionsFailed: "ミッションを読み込めませんでした: {msg}",
+      replays: "過去の通話", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
+      connectProvider: "電話会社をつなぐ", provider: "電話会社", customSip: "自前の SIP", v02: "v0.2 で対応",
+      realNote: "実電話は今日から CLI で使えます。<code>oathra setup phone</code> で設定し、<code>oathra call --to +81…</code> で発信します。Arena からの発信は次の版で対応します。", back: "戻る", backToMissions: "ミッション一覧へ戻る",
+      partyAgent: "AI", partyCallee: "相手", transcript: "会話", you: "あなた", agent: "AI", system: "システム",
+      live: "通話中", ended: "終了", error: "エラー", offline: "接続断", replay: "再生",
+      idle: "待機", listening: "聞いています", understanding: "考えています", acting: "実行中", speaking: "話しています",
+      dialing: "発信中…", replaying: "再生中…", noTranscript: "会話はありません。",
+      yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る",
+      mission: "ミッション", evidence: "証拠", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール",
+      latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
+      yes: "はい", no: "いいえ",
+      stCompleted: "ミッション完了", stIncomplete: "未完了", stViolation: "制約違反", stFailed: "失敗", stFalse: "誤った完了", stUnknown: "不明",
+      badgeOk: "検証済み", badgeNo: "未検証", missing: "（未取得）",
+      evidenceN: "証拠 {n} 件", confidence: "信頼度 {v}", latencyP50: "応答 p50 {v}", last: "{v} ms（直近）", turns: "ターン数 {n}", endedReason: "終了理由 {r}",
+      scOutcome: "結果", scEvidence: "証拠", scConversation: "会話", scLatency: "応答速度", scEfficiency: "効率", scOverall: "総合",
+      fc0: "誤った完了: 0", fc1: "誤った完了: 1 — 報告した内容が相手の発言と食い違っています（{f}）",
+      runAgain: "もう一度", newMission: "別のミッション", copyMd: "結果をコピー", copied: "コピーしました", copyPrompt: "コピー:",
+      startFailed: "通話を開始できませんでした: {msg}", connLost: "接続が切れました: {msg}", sendFailed: "送信できませんでした: {msg}", hangupFailed: "切断できませんでした: {msg}", replayFailed: "通話を読み込めませんでした: {msg}", unknownScenario: "シナリオ「{id}」が見つかりません",
+      permReq: "許可を求めています: {a} — {d}", permDec: "許可を{r}（{by}）: {a}", approved: "承認", denied: "拒否", errLine: "エラー: {msg}",
+      ttTitle: "この時点の状態 · {t}", ttState: "AI の状態", ttVerified: "検証済み", ttPending: "未確定", ttLast: "直近の応答", ttTranscript: "ここまでの会話",
+      diffEasy: "かんたん", diffNormal: "ふつう", diffHard: "むずかしい", diffExtreme: "極", builtin: "組み込みエージェント",
+      mdVerified: "検証済み", mdNotVerified: "未検証", mdScore: "Oathra スコア",
+    },
+  };
+  const t = (key, vars) => {
+    let s = (STR[LANG] && STR[LANG][key]) ?? STR.en[key] ?? key;
+    if (vars) for (const k of Object.keys(vars)) s = s.split(`{${k}}`).join(String(vars[k]));
+    return s;
+  };
+  const TITLE_JA = {
+    "restaurant-reservation": "レストラン予約", "impossible-hotel": "無理難題ホテル", "bulk-buy": "まとめ買い交渉",
+    "serial-number": "シリアル番号の復唱", "false-completion-trap": "満席の罠", "friend-chat": "友達と雑談",
+  };
+  const scenarioTitle = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? TITLE_JA[s.id] : (s && s.title) || (s && s.id) || "";
+  const scenarioTitleSub = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? s.title : "";
+  const briefOf = (s) => (LANG === "ja" ? (s.brief || s.description) : (s.description || s.brief)) || "";
+  const langLabel = (l) => (l === "ja" ? (LANG === "ja" ? "日本語" : "Japanese") : l === "en" ? (LANG === "ja" ? "英語" : "English") : String(l || ""));
+  const diffLabel = (d) => t({ easy: "diffEasy", normal: "diffNormal", hard: "diffHard", extreme: "diffExtreme" }[d] || "diffNormal");
+  const brainLabel = (b) => (!b || b === "scripted") ? t("builtin") : String(b);
+  const srcLabel = (src) => t(src === "callee" ? "srcCallee" : src === "caller" ? "srcCaller" : "srcTool");
+  function applyStatic() {
+    for (const n of document.querySelectorAll("[data-i18n]")) n.textContent = t(n.dataset.i18n);
+    for (const n of document.querySelectorAll("[data-i18n-html]")) n.innerHTML = t(n.dataset.i18nHtml);
+    for (const n of document.querySelectorAll("[data-i18n-aria]")) n.setAttribute("aria-label", t(n.dataset.i18nAria));
+    for (const n of document.querySelectorAll("[data-i18n-placeholder]")) n.setAttribute("placeholder", t(n.dataset.i18nPlaceholder));
+    document.title = LANG === "ja" ? "Oathra Arena — AIに電話をかけさせる" : "Oathra Arena";
+  }
+  applyStatic();
 
   // ------------------------------------------------------------------ state
   const app = {
@@ -72,7 +173,7 @@
       elapsed: 0,
       traces: [],
       brainLatency: {},     // turnId -> ms
-      calleeName: scenario && scenario.callee ? scenario.callee.name : "Callee",
+      calleeName: scenario && scenario.callee ? scenario.callee.name : t("partyCallee"),
       result: null,
       score: null,
       metrics: null,
@@ -96,11 +197,11 @@
       app.brains = Array.isArray(brains) && brains.length ? brains : ["scripted"];
       if (!app.brains.includes(app.brain)) app.brain = app.brains[0];
     } catch (e) {
-      $("#scenario-list").replaceChildren(el("p", { class: "muted mono", text: `Could not load missions: ${e.message}` }));
+      $("#scenario-list").replaceChildren(el("p", { class: "muted mono", text: t("loadMissionsFailed", { msg: e.message }) }));
       return;
     }
     const sel = $("#brain-select");
-    sel.replaceChildren(...app.brains.map((b) => el("option", { value: b, text: b })));
+    sel.replaceChildren(...app.brains.map((b) => el("option", { value: b, text: brainLabel(b) })));
     sel.value = app.brain;
     $("#brain-row").hidden = app.brains.length < 2;
     renderScenarioList();
@@ -109,7 +210,7 @@
   function renderScenarioList() {
     const list = $("#scenario-list");
     if (!app.scenarios.length) {
-      list.replaceChildren(el("p", { class: "muted mono", text: "No missions found in scenarios/." }));
+      list.replaceChildren(el("p", { class: "muted mono", text: t("noMissions") }));
       return;
     }
     list.replaceChildren(
@@ -117,11 +218,11 @@
         const btn = el("button", { type: "button", class: "scenario-btn", style: `animation-delay:${60 + i * 50}ms` }, [
           el("div", { class: "face", "aria-hidden": "true", text: s.callee && s.callee.avatar ? s.callee.avatar : "○" }),
           el("div", {}, [
-            el("div", { class: "s-title", text: s.title }),
-            el("div", { class: "s-brief", text: s.brief || s.description || "" }),
-            el("div", { class: "s-meta", text: `${s.callee ? s.callee.name : ""} · ${s.domain} · ${s.language}` }),
+            el("div", { class: "s-title" }, [document.createTextNode(scenarioTitle(s)), scenarioTitleSub(s) ? el("span", { class: "s-title-en", text: scenarioTitleSub(s) }) : null]),
+            el("div", { class: "s-brief", text: briefOf(s) }),
+            el("div", { class: "s-meta", text: `${s.callee ? s.callee.name : ""} · ${langLabel(s.language)}` }),
           ]),
-          el("div", { class: `s-diff ${s.difficulty}`, text: s.difficulty }),
+          el("div", { class: `s-diff ${s.difficulty}`, text: diffLabel(s.difficulty) }),
         ]);
         btn.addEventListener("click", () => startCall(s));
         return btn;
@@ -169,18 +270,18 @@
     $("#replays-link").setAttribute("aria-expanded", String(open));
     if (!open) return;
     const ul = $("#replay-list");
-    ul.replaceChildren(el("li", { class: "muted mono", text: "Loading…" }));
+    ul.replaceChildren(el("li", { class: "muted mono", text: t("loading") }));
     try {
       const list = await api("/api/replays");
-      if (!list.length) { ul.replaceChildren(el("li", { class: "muted mono", text: "No saved calls yet. Finished calls are saved to .oathra/calls/." })); return; }
+      if (!list.length) { ul.replaceChildren(el("li", { class: "muted mono", text: t("noReplays") })); return; }
       ul.replaceChildren(...list.slice().reverse().map((r) => el("li", {}, [
         el("button", { type: "button", class: "replay-btn", onclick: () => openReplay(r.id) }, [
           el("span", { text: r.id }),
-          el("span", { class: "muted", text: `${r.scenario || "?"} · ${r.status || "?"}${r.durationMs ? ` · ${mmss(r.durationMs)}` : ""}` }),
+          el("span", { class: "muted", text: `${(LANG === "ja" && TITLE_JA[r.scenario]) || r.scenario || "?"} · ${statusTitle(r.status)}${r.durationMs ? ` · ${mmss(r.durationMs)}` : ""}` }),
         ]),
       ])));
     } catch (e) {
-      ul.replaceChildren(el("li", { class: "muted mono", text: `Could not load replays: ${e.message}` }));
+      ul.replaceChildren(el("li", { class: "muted mono", text: t("replaysFailed", { msg: e.message }) }));
     }
   });
 
@@ -191,7 +292,7 @@
     let created;
     try {
       created = await api("/api/calls", { method: "POST", body: JSON.stringify({ scenarioId: scenario.id, brain: app.brain, mode: app.mode }) });
-    } catch (e) { toast(`Could not start call: ${e.message}`); return; }
+    } catch (e) { toast(t("startFailed", { msg: e.message })); return; }
     app.call = newCallModel(created.scenario || scenario, created.mode || app.mode, created.callId);
     app.call.brain = created.brain || app.brain;
     renderCallShell();
@@ -224,8 +325,8 @@
       if (c.status === "running") openStream(id);
       else finish(c);
     } catch (e) {
-      toast(`Connection lost: ${e.message}`);
-      setLive(false, "OFFLINE");
+      toast(t("connLost", { msg: e.message }));
+      setLive(false, t("offline"));
     }
   }
 
@@ -243,7 +344,7 @@
       }
     } catch { /* keep what we have from events */ }
     c.status = c.status === "running" ? "done" : c.status;
-    setLive(false, c.status === "error" ? "ERROR" : "ENDED");
+    setLive(false, c.status === "error" ? t("error") : t("ended"));
     setSpeaking(null);
     $("#play-form").hidden = true;
     renderResult();
@@ -300,10 +401,10 @@
         if (ev.trace) { c.traces.push(ev.trace); if (typeof ev.trace.ttfaMs === "number") c.lastTtfa = ev.trace.ttfaMs; }
         break;
       case "permission.requested":
-        pushLine(c, { turnId: `perm_${ev.seq}`, source: "sys", text: `Permission requested: ${ev.action} — ${ev.detail}`, t: ev.t });
+        pushLine(c, { turnId: `perm_${ev.seq}`, source: "sys", text: t("permReq", { a: ev.action, d: ev.detail }), t: ev.t });
         break;
       case "permission.decided":
-        pushLine(c, { turnId: `permd_${ev.seq}`, source: "sys", text: `Permission ${ev.approved ? "approved" : "denied"} (${ev.by}): ${ev.action}`, t: ev.t });
+        pushLine(c, { turnId: `permd_${ev.seq}`, source: "sys", text: t("permDec", { r: t(ev.approved ? "approved" : "denied"), by: ev.by, a: ev.action }), t: ev.t });
         break;
       case "call.ended":
         c.endReason = ev.reason;
@@ -313,7 +414,7 @@
         c.result = ev.result;
         break;
       case "error":
-        pushLine(c, { turnId: `err_${ev.seq}`, source: "sys", text: `Error: ${ev.message}`, t: ev.t });
+        pushLine(c, { turnId: `err_${ev.seq}`, source: "sys", text: t("errLine", { msg: ev.message }), t: ev.t });
         if (ev.fatal) c.status = "error";
         break;
       default: break;
@@ -334,12 +435,12 @@
   // ------------------------------------------------------------------ rendering
   function renderCallShell() {
     const c = app.call;
-    $("#call-title").textContent = c.scenario ? c.scenario.title : c.id;
-    $("#agent-name").textContent = c.brain || "agent";
-    $("#callee-name").textContent = c.mode === "play" ? "You" : c.calleeName;
+    $("#call-title").textContent = c.scenario ? scenarioTitle(c.scenario) : c.id;
+    $("#agent-name").textContent = brainLabel(c.brain);
+    $("#callee-name").textContent = c.mode === "play" ? t("you") : c.calleeName;
     const avatar = c.scenario && c.scenario.callee && c.scenario.callee.avatar;
-    $("#callee-avatar").textContent = c.mode === "play" ? "you" : (avatar || "◉");
-    $("#transcript").replaceChildren(el("p", { class: "transcript-empty", text: c.replay ? "Replaying…" : "Dialing…" }));
+    $("#callee-avatar").textContent = c.mode === "play" ? "◉" : (avatar || "◉");
+    $("#transcript").replaceChildren(el("p", { class: "transcript-empty", text: c.replay ? t("replaying") : t("dialing") }));
     $("#mission-list").replaceChildren();
     $("#evidence-list").replaceChildren();
     missionState.clear();
@@ -349,15 +450,15 @@
     $(".timeline-wrap").classList.remove("has-snap");
     $("#latency-table tbody").replaceChildren();
     $("#m-latency").textContent = "—"; $("#m-cost").textContent = "$0.000"; $("#m-elapsed").textContent = "00:00";
-    setLive(!c.replay, c.replay ? "REPLAY" : "LIVE");
+    setLive(!c.replay, c.replay ? t("replay") : t("live"));
     setUx("idle");
     setSpeaking(null);
     const play = c.mode === "play" && !c.replay;
     $("#play-form").hidden = !play;
     $("#play-brief").hidden = !play;
     if (play) {
-      $("#play-label").textContent = `You are ${c.calleeName}. Answer the phone.`;
-      $("#play-brief-text").textContent = c.scenario.brief || c.scenario.description || "";
+      $("#play-label").textContent = t("playLabel", { name: c.calleeName });
+      $("#play-brief-text").textContent = briefOf(c.scenario);
       setTimeout(() => $("#play-text").focus(), 50);
     }
     renderMission();
@@ -385,7 +486,7 @@
       case "evidence.created": case "evidence.verified": renderEvidence(); renderMission(); break;
       case "mission.progress": renderMission(); break;
       case "turn.trace": case "brain.response": renderMetrics(); break;
-      case "call.connected": $("#callee-name").textContent = c.mode === "play" ? "You" : c.calleeName; break;
+      case "call.connected": $("#callee-name").textContent = c.mode === "play" ? t("you") : c.calleeName; break;
       case "result": renderResult(); break;
       default: break;
     }
@@ -396,13 +497,12 @@
   function setLive(on, text) {
     const b = $("#live-badge");
     b.classList.toggle("is-live", !!on);
-    $("#live-text").textContent = text || (on ? "LIVE" : "ENDED");
+    $("#live-text").textContent = text || (on ? t("live") : t("ended"));
   }
-  const UX_LABEL = { listening: "Listening", understanding: "Understanding", acting: "Acting", speaking: "Speaking", idle: "Idle" };
   function setUx(ux) {
     const n = $("#ux-state");
     n.dataset.ux = ux || "idle";
-    $("#ux-text").textContent = UX_LABEL[ux] || "Idle";
+    $("#ux-text").textContent = t(["listening", "understanding", "acting", "speaking"].includes(ux) ? ux : "idle");
   }
   function setSpeaking(side) {
     $("#party-agent").classList.toggle("is-speaking", side === "agent");
@@ -419,14 +519,14 @@
     const existing = new Set($$(".line", box).map((n) => n.dataset.turn));
     const empty = $(".transcript-empty", box);
     if (!c.transcript.length) {
-      if (!empty) box.replaceChildren(el("p", { class: "transcript-empty", text: c.status === "running" ? "Dialing…" : "No transcript." }));
+      if (!empty) box.replaceChildren(el("p", { class: "transcript-empty", text: c.status === "running" ? t("dialing") : t("noTranscript") }));
       return;
     }
     if (empty) empty.remove();
     for (const l of c.transcript) {
       if (existing.has(l.turnId)) continue;
       const cls = l.source === "caller" ? "agent" : l.source === "callee" ? "callee" : "sys";
-      const who = l.source === "caller" ? "Agent" : l.source === "callee" ? (c.mode === "play" ? "You" : c.calleeName) : "system";
+      const who = l.source === "caller" ? t("agent") : l.source === "callee" ? (c.mode === "play" ? t("you") : c.calleeName) : t("system");
       box.appendChild(el("div", { class: `line ${cls}`, "data-turn": l.turnId }, [
         el("div", { class: "who", text: who }),
         el("div", { class: "say", text: l.text }),
@@ -497,14 +597,14 @@
       return el("li", { class: `mrow ${cls}${tick}`, "data-field": f }, [
         el("span", { class: "mk", "aria-hidden": "true", text: mark }),
         el("span", {}, [
-          el("span", { text: f }),
+          el("span", { text: fieldLabel(f) }),
           constraints[f] ? el("span", { class: "mc", text: `  ${constraintText(constraints[f])}` }) : null,
           el("span", { class: "sr", hidden: true, text: cls }),
         ]),
         el("span", { class: "mv", text: val }),
       ]);
     });
-    ul.replaceChildren(...(rows.length ? rows : [el("li", { class: "mrow missing" }, [el("span", { class: "mk", text: "·" }), el("span", { text: "no required fields" }), el("span")])]));
+    ul.replaceChildren(...(rows.length ? rows : [el("li", { class: "mrow missing" }, [el("span", { class: "mk", text: "·" }), el("span", { text: t("noRequired") }), el("span")])]));
   }
 
   function evidenceNode(e, extraClass) {
@@ -512,19 +612,21 @@
       el("div", { class: "e-top" }, [
         el("span", { class: "e-field", text: e.field }),
         el("span", { class: "e-val", text: `= ${fmtVal(e.value)}` }),
-        el("span", { class: `e-src ${e.source}`, text: e.source }),
-        el("span", { class: `e-ok ${e.verified ? "" : "pending"}`, text: e.verified ? "✓ verified" : "○ pending" }),
+        el("span", { class: `e-src ${e.source}`, text: srcLabel(e.source) }),
+        el("span", { class: `e-ok ${e.verified ? "" : "pending"}`, text: `${e.verified ? "✓" : "○"} ${t(e.verified ? "verified" : "pending")}` }),
       ]),
-      el("div", { class: "e-quote" }, [
+      el("div", { class: "e-quote", title: e.transcript || "" }, [
         el("span", { class: "e-t", text: mmss(e.t) }),
-        el("span", { text: `“${e.span || e.transcript || ""}”` }),
+        el("span", { class: "e-q", text: `“${e.span || e.transcript || ""}”` }),
       ]),
     ]);
   }
   function renderEvidence(all) {
     const c = app.call;
     const ul = $("#evidence-list");
-    if (all || !ul.children.length) {
+    if (!c.evidence.length) {
+      ul.replaceChildren(el("li", { class: "e-empty muted", text: t("noEvidence") }));
+    } else if (all || !$$(".erow", ul).length) {
       ul.replaceChildren(...c.evidence.slice().reverse().map((e) => evidenceNode(e)));
     } else {
       // Newest first: insert unseen items at the top with a slide-in; patch verified state in place.
@@ -537,7 +639,7 @@
         }
       }
     }
-    $("#evidence-count").textContent = String(c.evidence.filter((e) => e.verified).length);
+    $("#evidence-count").textContent = c.evidence.length ? `${c.evidence.filter((e) => e.verified).length} / ${c.evidence.length}` : "0";
   }
 
   function renderMetrics() {
@@ -549,18 +651,19 @@
 
   // ------------------------------------------------------------------ result
   function statusTitle(status) {
-    return { completed: "MISSION COMPLETE", incomplete: "INCOMPLETE", constraint_violation: "CONSTRAINT VIOLATION", failed: "FAILED" }[status] || String(status || "UNKNOWN").toUpperCase();
+    const k = { completed: "stCompleted", incomplete: "stIncomplete", constraint_violation: "stViolation", failed: "stFailed" }[status];
+    return k ? t(k) : status ? String(status).toUpperCase() : t("stUnknown");
   }
   function resultMarkdown() {
     const c = app.call, r = c.result || {};
     const req = missionFields(c);
-    const lines = [`**${c.scenario ? c.scenario.title : c.id}** — ${statusTitle(r.status)}`, ""];
+    const lines = [`**${c.scenario ? scenarioTitle(c.scenario) : c.id}** — ${statusTitle(r.status)}`, ""];
     for (const f of req) lines.push(`- ${r.fields && r.fields[f] !== undefined ? "✓" : "·"} ${f}: ${fmtVal(r.fields ? r.fields[f] : undefined)}`);
     const verifiedN = (r.evidence || []).filter((e) => e.verified).length;
-    lines.push("", `${r.complete ? "VERIFIED" : "NOT VERIFIED"} · Evidence: ${verifiedN} · Confidence: ${typeof r.confidence === "number" ? r.confidence.toFixed(3) : "—"}`);
-    if (c.metrics && c.metrics.latency) lines.push(`Latency p50: ${c.metrics.latency.ttfaP50Ms ?? "—"} ms · Turns: ${c.metrics.turns ?? c.transcript.length}`);
+    lines.push("", `${t(r.complete ? "mdVerified" : "mdNotVerified")} · ${t("evidenceN", { n: verifiedN })} · ${t("confidence", { v: typeof r.confidence === "number" ? r.confidence.toFixed(3) : "—" })}`);
+    if (c.metrics && c.metrics.latency) lines.push(`${t("latencyP50", { v: `${c.metrics.latency.ttfaP50Ms ?? "—"} ms` })} · ${t("turns", { n: c.metrics.turns ?? c.transcript.length })}`);
     if (c.score) {
-      lines.push("", "Oathra Score", `- Outcome ${c.score.outcome} · Evidence ${c.score.evidence} · Conversation ${c.score.conversation} · Latency ${c.score.latency} · Efficiency ${c.score.efficiency}`, `- Overall **${c.score.overall}**`, `- False Completion: ${c.score.falseCompletion ? "1 ⚠" : "0"}`);
+      lines.push("", t("mdScore"), `- ${t("scOutcome")} ${c.score.outcome} · ${t("scEvidence")} ${c.score.evidence} · ${t("scConversation")} ${c.score.conversation} · ${t("scLatency")} ${c.score.latency} · ${t("scEfficiency")} ${c.score.efficiency}`, `- ${t("scOverall")} **${c.score.overall}**`, `- ${c.score.falseCompletion ? t("fc1", { f: (c.score.disagreements || []).join(", ") }) : t("fc0")}`);
     }
     lines.push("", `call_id: ${c.id}`, "— Oathra");
     return lines.join("\n");
@@ -577,36 +680,36 @@
     const cls = fc || r.status === "failed" || r.status === "constraint_violation" ? "bad" : r.status === "completed" ? "" : "warn";
     const missing = new Set(r.missing || []);
     const violations = new Set(((r.constraints && r.constraints.violations) || []).map((v) => v.field));
-    const card = el("div", { class: `result ${cls}`, role: "region", "aria-label": "Result" }, [
-      el("h3", { class: "result-h", text: fc ? "FALSE COMPLETION" : statusTitle(r.status) }),
+    const card = el("div", { class: `result ${cls}`, role: "region", "aria-label": LANG === "ja" ? "結果" : "Result" }, [
+      el("h3", { class: "result-h", text: fc ? t("stFalse") : statusTitle(r.status) }),
       el("ul", { class: "result-lines" }, req.map((f) => {
         const has = r.fields && r.fields[f] !== undefined;
         const k = violations.has(f) ? "x" : has ? "v" : "m";
-        return el("li", { class: k, text: `${f}${has ? `  ${fmtVal(r.fields[f])}` : missing.has(f) ? "  (missing)" : ""}` });
+        return el("li", { class: k, text: `${fieldLabel(f)}${has ? `  ${fmtVal(r.fields[f])}` : missing.has(f) ? `  ${t("missing")}` : ""}` });
       })),
-      el("div", { class: `result-badge ${r.complete && !fc ? "ok" : "no"}`, text: r.complete && !fc ? "VERIFIED" : "NOT VERIFIED" }),
+      el("div", { class: `result-badge ${r.complete && !fc ? "ok" : "no"}`, text: t(r.complete && !fc ? "badgeOk" : "badgeNo") }),
       el("div", { class: "result-meta" }, [
-        el("div", { text: `Evidence: ${verifiedN}` }),
-        el("div", { text: `Confidence: ${typeof r.confidence === "number" ? r.confidence.toFixed(3) : "—"}` }),
-        el("div", { text: `Latency p50: ${c.metrics && c.metrics.latency && c.metrics.latency.ttfaP50Ms !== undefined ? `${c.metrics.latency.ttfaP50Ms} ms` : c.lastTtfa !== null ? `${c.lastTtfa} ms (last)` : "—"}` }),
-        el("div", { text: `Turns: ${c.metrics ? c.metrics.turns : c.transcript.filter((l) => l.source !== "sys").length}` }),
-        c.endReason ? el("div", { text: `Ended: ${c.endReason}` }) : null,
+        el("div", { text: t("evidenceN", { n: verifiedN }) }),
+        el("div", { text: t("confidence", { v: typeof r.confidence === "number" ? r.confidence.toFixed(3) : "—" }) }),
+        el("div", { text: t("latencyP50", { v: c.metrics && c.metrics.latency && c.metrics.latency.ttfaP50Ms !== undefined ? `${c.metrics.latency.ttfaP50Ms} ms` : c.lastTtfa !== null ? t("last", { v: c.lastTtfa }) : "—" }) }),
+        el("div", { text: t("turns", { n: c.metrics ? c.metrics.turns : c.transcript.filter((l) => l.source !== "sys").length }) }),
+        c.endReason ? el("div", { text: t("endedReason", { r: endLabel(c.endReason) }) }) : null,
       ]),
       c.score ? el("div", { class: "score-grid" }, [
-        el("span", { text: "Outcome" }), el("span", { text: `${c.score.outcome} / 100` }),
-        el("span", { text: "Evidence" }), el("span", { text: `${c.score.evidence} / 100` }),
-        el("span", { text: "Conversation" }), el("span", { text: `${c.score.conversation} / 100` }),
-        el("span", { text: "Latency" }), el("span", { text: `${c.score.latency} / 100` }),
-        el("span", { text: "Efficiency" }), el("span", { text: `${c.score.efficiency} / 100` }),
-        el("span", { class: "ov", text: "Overall" }), el("span", { class: "ov", text: String(c.score.overall) }),
+        el("span", { text: t("scOutcome") }), el("span", { text: `${c.score.outcome} / 100` }),
+        el("span", { text: t("scEvidence") }), el("span", { text: `${c.score.evidence} / 100` }),
+        el("span", { text: t("scConversation") }), el("span", { text: `${c.score.conversation} / 100` }),
+        el("span", { text: t("scLatency") }), el("span", { text: `${c.score.latency} / 100` }),
+        el("span", { text: t("scEfficiency") }), el("span", { text: `${c.score.efficiency} / 100` }),
+        el("span", { class: "ov", text: t("scOverall") }), el("span", { class: "ov", text: String(c.score.overall) }),
       ]) : null,
-      c.score ? el("div", { class: `result-fc ${fc ? "fail" : ""}`, text: fc ? `False Completion: 1 — reported fields disagree with the callee (${(c.score.disagreements || []).join(", ")})` : "False Completion: 0" }) : null,
+      c.score ? el("div", { class: `result-fc ${fc ? "fail" : ""}`, text: fc ? t("fc1", { f: (c.score.disagreements || []).join(", ") }) : t("fc0") }) : null,
       el("div", { class: "result-actions" }, [
-        !c.replay ? el("button", { type: "button", class: "btn primary", text: "Run again", onclick: () => startCall(c.scenario) }) : null,
-        el("button", { type: "button", class: "btn", text: "New mission", onclick: () => { closeStream(); show("start"); } }),
-        el("button", { type: "button", class: "btn", text: "Copy result as Markdown", onclick: async () => {
+        !c.replay ? el("button", { type: "button", class: "btn primary", text: t("runAgain"), onclick: () => startCall(c.scenario) }) : null,
+        el("button", { type: "button", class: "btn", text: t("newMission"), onclick: () => { closeStream(); show("start"); } }),
+        el("button", { type: "button", class: "btn", text: t("copyMd"), onclick: async () => {
           const md = resultMarkdown();
-          try { await navigator.clipboard.writeText(md); toast("Copied"); } catch { window.prompt("Copy:", md); }
+          try { await navigator.clipboard.writeText(md); toast(t("copied")); } catch { window.prompt(t("copyPrompt"), md); }
         } }),
       ]),
     ]);
@@ -624,14 +727,14 @@
     if (!c || !text) return;
     input.value = "";
     try { await api(`/api/calls/${encodeURIComponent(c.id)}/reply`, { method: "POST", body: JSON.stringify({ text }) }); }
-    catch (err) { toast(`Could not send: ${err.message}`); input.value = text; }
+    catch (err) { toast(t("sendFailed", { msg: err.message })); input.value = text; }
     input.focus();
   });
   $("#play-hangup").addEventListener("click", async () => {
     const c = app.call;
     if (!c) return;
     try { await api(`/api/calls/${encodeURIComponent(c.id)}/hangup`, { method: "POST", body: "{}" }); }
-    catch (err) { toast(`Could not hang up: ${err.message}`); }
+    catch (err) { toast(t("hangupFailed", { msg: err.message })); }
   });
   $("#call-back").addEventListener("click", () => { closeStream(); show("start"); });
 
@@ -718,15 +821,15 @@
     const box = $("#snapshot");
     const kv = (obj) => Object.keys(obj).length ? Object.keys(obj).map((k) => `${k} = ${fmtVal(obj[k])}`).join("\n") : "—";
     box.replaceChildren(
-      el("h4", { text: `TIME TRAVEL · ${mmssms(s.t)}` }),
+      el("h4", { text: t("ttTitle", { t: mmssms(s.t) }) }),
       el("div", { class: "kv" }, [
-        el("b", { text: "agent state" }), el("span", { text: `${s.state} (${s.ux})` }),
-        el("b", { text: "verified" }), el("span", { style: "white-space:pre-line", text: kv(s.verified) }),
-        el("b", { text: "pending" }), el("span", { style: "white-space:pre-line", text: kv(s.pending) }),
-        el("b", { text: "last ttfa" }), el("span", { text: s.lastTrace && s.lastTrace.ttfaMs !== undefined ? `${s.lastTrace.ttfaMs} ms` : "—" }),
+        el("b", { text: t("ttState") }), el("span", { text: `${s.state} (${t(["listening", "understanding", "acting", "speaking"].includes(s.ux) ? s.ux : "idle")})` }),
+        el("b", { text: t("ttVerified") }), el("span", { style: "white-space:pre-line", text: kv(s.verified) }),
+        el("b", { text: t("ttPending") }), el("span", { style: "white-space:pre-line", text: kv(s.pending) }),
+        el("b", { text: t("ttLast") }), el("span", { text: s.lastTrace && s.lastTrace.ttfaMs !== undefined ? `${s.lastTrace.ttfaMs} ms` : "—" }),
       ]),
-      el("h4", { text: "TRANSCRIPT SO FAR" }),
-      ...(s.transcript.length ? s.transcript.map((l) => el("p", { class: "sn-line" }, [el("span", { text: l.source === "caller" ? "agent" : "callee" }), document.createTextNode(l.text)])) : [el("p", { class: "sn-line muted", text: "—" })]),
+      el("h4", { text: t("ttTranscript") }),
+      ...(s.transcript.length ? s.transcript.map((l) => el("p", { class: "sn-line" }, [el("span", { text: srcLabel(l.source) }), document.createTextNode(l.text)])) : [el("p", { class: "sn-line muted", text: "—" })]),
     );
     box.hidden = false;
     $(".timeline-wrap").classList.add("has-snap");
@@ -736,14 +839,14 @@
   async function openReplay(id) {
     let rec;
     try { rec = await api(`/api/replays/${encodeURIComponent(id)}`); }
-    catch (e) { toast(`Could not load replay: ${e.message}`); return; }
+    catch (e) { toast(t("replayFailed", { msg: e.message })); return; }
     closeStream();
     const started = (rec.events || []).find((e) => e.type === "call.started");
     const sid = started && started.scenario;
     let scenario = app.scenarios.find((s) => s.id === sid);
     if (!scenario) {
       const ct = rec.contract || {};
-      scenario = { id: sid || id, title: ct.goal || id, require: ct.require || {}, constraints: ct.constraints || {}, callee: { name: (ct.target && ct.target.name) || "Callee", avatar: null }, brief: "" };
+      scenario = { id: sid || id, title: ct.goal || id, require: ct.require || {}, constraints: ct.constraints || {}, callee: { name: (ct.target && ct.target.name) || t("partyCallee"), avatar: null }, brief: "" };
     }
     app.call = newCallModel(scenario, "watch", rec.callId || id);
     app.call.replay = true;
@@ -756,12 +859,11 @@
     app.call.status = "done";
     app.call.speaking = null;
     renderAll();
-    setLive(false, "REPLAY");
+    setLive(false, t("replay"));
   }
 
   // ------------------------------------------------------------------ boot
-  // URL params: ?theme=dark|light  ?present=1  ?autostart=<scenarioId>&mode=watch|play
-  const params = new URLSearchParams(location.search);
+  // URL params: ?lang=ja|en  ?theme=dark|light  ?present=1  ?autostart=<scenarioId>&mode=watch|play
   const theme = params.get("theme");
   if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
   if (params.get("present") === "1") document.body.classList.add("present");
@@ -777,6 +879,6 @@
     if (!auto) return;
     const scenario = app.scenarios.find((s) => s.id === auto);
     if (scenario) startCall(scenario);
-    else toast(`Unknown scenario "${auto}"`);
+    else toast(t("unknownScenario", { id: auto }));
   });
 })();

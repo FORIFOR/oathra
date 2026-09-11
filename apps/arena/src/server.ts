@@ -119,6 +119,8 @@ export function createArenaServer(opts: ArenaOptions): Server {
       brain,
       pace: "realtime",
       callId: id,
+      // A human answering the phone needs time to say hello before the agent opens.
+      ...(call.human ? { openingTimeoutMs: 6000 } : {}),
       ...(call.human ? { character: call.human } : {}),
       onEvent: (e) => {
         call.events.push(e);

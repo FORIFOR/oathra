@@ -1,55 +1,19 @@
-<p align="center">
-  <strong style="font-size:1.6em">Oathra</strong><br/>
-  Give AI agents a phone — and proof of what happened.
-</p>
+<p align="center"><strong>Oathra</strong><br>AIに、電話をかけさせた。本当に予約できたかは、AIに言わせない。</p>
 
 ```bash
-npx oathra demo        # npm release pending — until then: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
+npx oathra demo        # npm 公開までは: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
 ```
 
-<p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/oathra-launch.gif" width="880" alt="Oathra: an agent negotiates a restaurant reservation in the simulator; evidence fills in; only the callee's confirmation completes the call"/></a></p>
-<p align="center"><a href="https://forifor.github.io/oathra/">Website</a> · <a href="docs/media/oathra-launch.mp4">48-second video</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a></p>
+<p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/oathra-launch-ja.gif" width="880" alt="シミュレータでAIがレストランの席を交渉し、相手の発言が証拠として埋まり、店側の「ご予約承りました」で完了になる"/></a></p>
+<p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="docs/media/oathra-launch-ja.mp4">48秒の動画</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a></p>
 
-```text
-✓ Playable simulator        AI vs AI, or you answer the phone. No API key.
-✓ Real phone calls          Twilio + Deepgram + OpenAI TTS, one command.
-✓ Verified outcomes         every field backed by the other party's words.
-✓ Replay & eval             time travel, five-axis scoring, 0 / 10,000 false completions.
-✓ Local models              Ollama brains, offline scripted baseline.
-```
+## これは何か
 
-### PLAY
+Oathra は、AI エージェントが電話をかけて交渉し、予約や注文を取るためのオープンソースのランタイムです（Apache-2.0、TypeScript）。
 
-Pick a mission, watch an agent negotiate with a simulated restaurant or hotel, or answer the phone yourself and try to stop it. Pit models against each other:
+普通に作ると、AI は席が取れていなくても「予約できました」と言い切ります。留守番電話に予約を頼み続けたり、予算を超えた値段を話の流れで受けたりもします。実際に全部起きました。
 
-```bash
-npx oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:qwen2.5:7b --png card.png
-```
-
-<p align="center"><img src="docs/media/battle-impossible-hotel.png" width="600" alt="Oathra Agent Battle card"/></p>
-
-### CALL
-
-Same runtime, real phone. **Bring your own carrier. Bring your own model.**
-
-```text
-Carrier                       Voice engine
-Twilio       ✓ direct         GPT-Live          ✓ recommended
-Plivo        ✓ SIP            OpenAI Realtime   ✓
-Custom SIP   ✓ SIP            Pipeline (STT+LLM+TTS) ✓
-Telnyx · Wavix · Sinch  v0.2  Local             experimental
-```
-
-```bash
-npx oathra setup phone            # pick a carrier + engine, answer 2–3 questions, done
-npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
-npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
-npx oathra call --to +81… --scenario restaurant-reservation
-```
-
-Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio keeps its direct Media Streams fast path. Providers that need a human step (caller-ID verification, geo permissions) get a guided one-click step instead of a wall of SIP settings. Add a carrier with `oathra provider create phone <id>`.
-
-### PROVE
+だから Oathra では、**完了の判定をモデルから取り上げてコードに移しています**。日時・人数・金額・確定の有無は、相手の発言から取り出した証拠が揃ったときだけ埋まります。AI 側が「確定しました」と言っても、記録されるだけで証拠にはなりません。
 
 ```text
 ╭──────────────────────────╮
@@ -63,54 +27,58 @@ Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio ke
 ╰──────────────────────────╯
 ```
 
-An agent that says "予約できました" is not evidence. Oathra returns a **VerifiedResult**: each field is anchored to an utterance from the *other* party (and to audio on real calls), and completion is decided by code, never by asking the model whether it succeeded.
+同じランタイムがシミュレータでも本物の電話でも動きます。まずブラウザで AI 同士に交渉させて遊び、納得したら電話会社を繋いでください。
 
----
-
-## Try it from source
+## 試す
 
 ```bash
 git clone https://github.com/FORIFOR/oathra && cd oathra
 pnpm install && pnpm build
-pnpm demo                                      # http://localhost:4242
+pnpm demo                                      # http://localhost:4242 で AI 同士の電話が始まる
 
-pnpm oathra play restaurant-reservation        # same call in the terminal
-pnpm oathra play impossible-hotel --fast       # instant, virtual clock
-pnpm oathra eval                               # every scenario, False Completion count
-pnpm oathra eval --adversarial 10000           # mutated callees: never-confirm, wrong restate, hedges…
-pnpm oathra replay <callId> --at 00:18.420     # time travel
-pnpm oathra doctor
+pnpm oathra play restaurant-reservation        # 同じ通話をターミナルで
+pnpm oathra play impossible-hotel --fast       # 仮想時計で一瞬
+pnpm oathra eval                               # 全シナリオと誤完了の数
+pnpm oathra eval --adversarial 10000           # 意地悪な店員1万通り（never-confirm, wrong-restate, …）
+pnpm oathra replay <callId> --at 00:18.420     # その時点の状態に巻き戻す
+pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemini --png card.png
 ```
 
-## The idea in one object
+Arena では「AI同士を見る」か「自分が電話に出る」かを選べます。後者はあなたが店員役になって、AI の交渉を受ける側になります。
 
-The top-level object is not an "Agent". It is a **CallContract**: what the call must achieve, what it may do, and what counts as done.
+## 本物の電話
 
-```ts
-import { defineCall } from "@oathra/contract";
-
-const contract = defineCall({
-  goal: "restaurant.reservation",
-  target: { phone: "+81..." },
-  input: { date: "2026-09-12", partySize: 2, name: "田中" },
-  require: { date: true, time: true, partySize: true, confirmed: true },
-  constraints: { time: { gte: "19:00" } },
-  permissions: { ask: true, reserve: true, share_name: true, payment: false, cancel: false },
-});
+```bash
+npx oathra setup phone             # 音声エンジンと電話会社を選び、質問に2〜3個答える
+npx oathra phone doctor --to +81…  # 電話会社 · SIPゲートウェイ · 音声 · モデル · 遅延 · 料金
+npx oathra phone test              # Local ¥0 → Gateway ¥0 → PSTN（有料）
+npx oathra call --to +81… --scenario restaurant-reservation
 ```
 
-Completion is a boolean over evidence, not an opinion:
+電話会社と音声モデルは別々に選びます。
 
-```text
-Success = Connected ∧ date.verified ∧ time.verified ∧ partySize.verified
-        ∧ confirmed.verified ∧ constraintsSatisfied
-```
+| 電話会社 | | 音声モデル | |
+|--|--|--|--|
+| Twilio（直結） | 実通話で検証済み | GPT-Live | 推奨。全二重、$0.05/分 |
+| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | OpenAI Realtime | speech-to-speech |
+| Custom SIP | 任意のトランク | Pipeline | Deepgram + 任意の LLM + OpenAI TTS |
+| Telnyx · Wavix · Sinch | v0.2 | LLM | OpenAI · Gemini · Ollama · 組み込み |
 
-`confirmed` can only be verified by an explicit confirmation from the callee («ご予約承りました»). The caller claiming success is recorded and ignored.
+人の操作が必要な手順（発信元番号の本人確認、海外発信の許可）はリンク付きの一手順として案内し、終わるまで待ちます。「ワンクリック」とは言いません。
 
-## Evidence
+## 実際に電話してみた記録
 
-Every claim is typed, anchored, and either verified by the counter-party or not:
+| 回 | 構成 | 起きたこと |
+|--|--|--|
+| 1 | Deepgram + GPT-4o-mini + TTS | 最初の返答まで 11.8 秒。「聞こえますか」を繰り返された。店員役が「大丈夫です」としか言わなかったので結果は正しく INCOMPLETE。AI は「確定です」と言ったが証拠にならなかった |
+| 2 | 同上、TTS ストリーミング | 応答 2.2 秒。ただし最初の 2 分は留守番電話に予約を頼み続け、雑音を割り込みと誤認して 13 回話を止めた。留守電検出と相槌判定を追加 |
+| 3 | GPT-Live（全二重） | 「もしもし」から返答まで約 0.4 秒。6 分 25 秒、112 ターン、エラーなし。「バイバイ」で切れなかったので終話ツールと無音 25 秒の安全装置を追加 |
+
+通話料は Twilio で日本の携帯宛 ¥28.78/分、GPT-Live はセッション $0.05/分です。
+
+## 証拠のルール
+
+各項目は相手側の発話（実電話では音声区間）に紐づきます。
 
 ```json
 {
@@ -126,43 +94,30 @@ Every claim is typed, anchored, and either verified by the counter-party or not:
 }
 ```
 
-`19時はいっぱいですが` never becomes evidence for 19:00: utterances are split into clauses and negative clauses do not produce offers. Dates, times, party sizes, prices, phone numbers and serial codes are parsed by deterministic, tested normalisers — never by the LLM.
+- **断りは提示にならない**。「19時はいっぱいですが」から 19:00 の証拠は作られない。
+- **言い直しは上書き**。「13日、いや14日」なら 14 日が残り、上書きの履歴が付く。
+- **曖昧な返事は確定にならない**。「たぶん大丈夫」は同意でも確定でもない。
+- **確定できるのは相手だけ**。AI が「予約しました」と言っても記録されるだけ。
+- **確定は古くなる**。「承りました」の後に金額が変われば、確定し直しが必要。
+- **引き下がりは受諾ではない**。「わかりました、他を探します」で何も検証されない。
 
-Claims form a graph (`accepted_by`, `confirmed_by`, `supersedes`) so Replay, Eval and Audit share one data structure.
-
-## Architecture
+完了は次の論理式で決まります。
 
 ```text
-Audio Transport ─▶ Turn Stream ─▶ Transcript Stream ─▶ Conversation Engine ─▶ Evidence Engine ─▶ Verified Result
-                                                        ├ Dialogue (BrainProvider)
-                                                        ├ Policy   (permissions, constraints)
-                                                        └ Action
+完了 = 接続済み ∧ 日付.検証済み ∧ 時刻.検証済み ∧ 人数.検証済み ∧ 確定.検証済み ∧ 制約を満たす
 ```
 
-Dependency direction is enforced in CI (`pnpm lint:deps`):
+意地悪な店員（確定しない、違う値で確定する、断ってから提示する、無言で切る、「予約できましたね？」と聞き返す）を 1 万通り生成して回した結果は誤完了ゼロで、CI でも毎回確認しています。
+
+## 設計
 
 ```text
 contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
 ```
 
-| Package | Responsibility |
-|--|--|
-| `@oathra/contract` | `defineCall`, constraints, permissions |
-| `@oathra/evidence` | parsers, `EvidenceEngine`, `evaluate()` |
-| `@oathra/core` | `TransportProvider`, `STTProvider`, `TTSProvider`, `BrainProvider`, `TurnEngine`, event log, state machine, speech normaliser, latency traces |
-| `@oathra/scenario` | Scenario DSL (YAML) validation |
-| `@oathra/runtime` | `CallRuntime`: the loop that drives simulator and real calls alike |
-| `@oathra/simulator` | scripted characters (restaurant, hotel, shop, serial), `HumanCharacter`, offline `ScriptedAgent` |
-| `@oathra/replay` | save/load call directories, time-travel snapshots |
-| `@oathra/eval` | Oathra Score, **false completion detection** against simulator ground truth, Agent Battle |
-| `@oathra/arena` | dependency-free HTTP + SSE server and the browser UI |
-| `oathra` | CLI |
+依存の向きは `pnpm lint:deps` が CI で検査します。電話会社（`providers/phone-*`）と音声モデル（`providers/openai-realtime`、`providers/voice-pipeline`）は互いを知らず、`packages/phone` のブリッジが音声形式を変換します。LiveKit は SIP ゲートウェイの最初の実装であって仕様ではありません。詳しくは [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
-Internal agent states (`LISTENING … VERIFYING … SPEAKING`) are compressed to four UX states: **Listening · Understanding · Acting · Speaking**.
-
-## Scenario DSL
-
-Challenges are YAML and can be added by pull request. CI validates, runs and rejects any scenario that produces a false completion.
+## シナリオを書く
 
 ```yaml
 version: 1
@@ -183,7 +138,6 @@ callee:
   rules:
     - never reveal minimum_price
     - discount only when justified
-    - breakfast may be bundled
 win:
   confirmed: true
   price: { lte: 20000 }
@@ -194,50 +148,25 @@ pnpm oathra scenario validate ./my-challenge.yaml
 pnpm oathra play ./my-challenge.yaml
 ```
 
-Official v0.1 challenges: `restaurant-reservation`, `impossible-hotel`, `bulk-buy`, `serial-number`, `false-completion-trap`.
+PR で追加されたシナリオは CI が検証し、誤完了を出すものは通しません。
 
-## Eval
+## 正直な現状（v0.1 リリース候補）
 
-Five axes, and one metric we refuse to hide:
+- [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
+- [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
+- [x] Phone Layer：`setup phone`、`phone doctor`、3 段階テスト、フォールバック付きルーティング
+- [x] Twilio 直結（実通話で検証済み）、Plivo と Custom SIP（LiveKit 経由、ドキュメント準拠で実装、PSTN 未検証）
+- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、OpenAI Realtime、Deepgram + LLM + TTS
+- [ ] Telnyx、Wavix、Sinch、ElevenLabs TTS
+- [ ] 金額・番号の二重 ASR、パイプライン 650 ms 目標
+- [ ] MCP サーバ（call · inspect_call · intervene · cancel_call）は v0.2
 
-```text
-Outcome · Evidence · Conversation · Latency · Efficiency
-False Completion: 0 / 10,000 simulator adversarial runs
-```
+ここに書いた数字は全部自分で計測したもので、書いてあるコマンドで再現できます。
 
-A false completion is a call the runtime reports as `completed` while the simulated callee never committed to it. Eval compares the VerifiedResult against the character's ground truth on every run.
+## 参加する
 
-```bash
-pnpm oathra eval --adversarial 10000   # ~6s, seeded, reproducible
-```
+`pnpm install && pnpm test`。シナリオは `scenarios/`、店員キャラクターは `providers/simulator/src/characters/`、電話会社は `oathra provider create phone <id>` で雛形を生成できます。依存の向きだけ守ってください。
 
-Adversarial runs wrap every scripted callee with a mutation that tries to fool the evidence engine: hedged confirmations (`たぶん承りました`), confirmations that restate a different time or price than was agreed, refusals prefixed to every offer, hang-ups before confirming, and "ご予約できましたね？" echo traps. Measured on the current build: **0 / 10,000** false completions (seeds 1 and 7), plus ~10,000 generated property cases in `packages/evidence/src/fuzz.test.ts` (price formats, negation, corrections, caller/hedge authority, full dialogues).
+## ライセンス
 
-Bugs this harness caught before it went green: thousands separators splitting `21,100円` into `100円`; a confirmation staying valid after the price was re-negotiated without a new confirmation; a callee "confirming" a different value than the one accepted. Each has a regression test.
-
-## Status
-
-v0.1 (launch candidate):
-
-- [x] CallContract, Evidence engine, deterministic completion
-- [x] Simulator transport, scripted characters, offline agent
-- [x] Arena (Watch / Play), CLI, Replay, Eval, Battle (SVG/PNG cards)
-- [x] Scenario DSL + CI gate; 0 / 10,000 adversarial simulator runs
-- [x] LLM brains: OpenAI, Gemini, Ollama via `BrainProvider` (Anthropic next)
-- [x] Phone Layer: `oathra setup phone`, `phone add|list|doctor|test|remove`, preferred-order routing with fallback, reference pricing
-- [x] Twilio direct (verified on real calls), Plivo SIP + custom SIP via the LiveKit gateway (implemented against provider docs, PSTN unverified)
-- [x] Voice Layer: GPT-Live (recommended, verified on real calls), OpenAI Realtime, Deepgram + LLM + OpenAI TTS pipeline
-- [ ] Telnyx, Wavix, Sinch, didlogic providers; ElevenLabs TTS; self-hosted SIP gateways beyond LiveKit
-- [ ] Dual-ASR safe path for dates / amounts / numbers, preemptive generation
-- [ ] MCP server (`call`, `inspect_call`, `intervene`, `cancel_call`) — v0.2
-- [ ] Provider benchmarks
-
-Simulator numbers (latency, scores) are from the simulator. Real-call latency today is roughly 2 s to first audio (LLM + TTS); the 650 ms target is the Phase 4 work.
-
-## Contributing
-
-`pnpm install && pnpm test`. Add a scenario under `scenarios/`, a character under `providers/simulator/src/characters/`, or a provider under `providers/`. Keep the dependency direction; CI checks it.
-
-## License
-
-Apache-2.0. Oathra Cloud (managed SIP, numbers, hosted inference, teams) will be a separate offering; the OSS runtime is complete on its own.
+Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や並列通話、チーム機能は別サービスとして検討中です。
