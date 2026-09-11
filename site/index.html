@@ -142,7 +142,8 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;font-size:13px;color
     <p class="prose">シナリオは5本。19時が満席のレストラン、底値を隠しているホテル、まとめ買いの値引き交渉、シリアル番号の復唱、そして全時間帯が満席で「取れませんでした」と言うのが唯一の正解になる罠。モデル同士を同じ条件で戦わせて、カードにして共有できます。</p>
     <div class="two">
       <pre>$ npx oathra battle impossible-hotel \
-    --agent scripted --agent openai --agent gemini --png card.png
+    --agent scripted --agent openai --agent gemini \
+    --png card.png --json run.json
 
 Impossible Hotel
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

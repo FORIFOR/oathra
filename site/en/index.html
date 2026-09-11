@@ -130,7 +130,8 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;font-family:var(--mo
     <p class="sub">Five scenarios ship with the simulator: a restaurant that is full at 19:00, an "impossible" hotel with a secret floor price, a bulk purchase, a serial number read-back, and a trap where every slot is full and the only correct answer is "I could not book it." Pit models against each other and share the card.</p>
     <div class="two">
       <pre>$ npx oathra battle impossible-hotel \
-    --agent scripted --agent openai --agent gemini --png card.png
+    --agent scripted --agent openai --agent gemini \
+    --png card.png --json run.json
 
 Impossible Hotel
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
