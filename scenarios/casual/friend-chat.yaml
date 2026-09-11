@@ -1,0 +1,34 @@
+version: 1
+id: friend-chat
+title: Friend Chat
+description: A casual phone call with a friend. No mission to verify — just a natural conversation. Real calls only (speech-to-speech).
+difficulty: easy
+language: ja
+domain: generic
+tags: [casual, realtime, voice-ux]
+
+mission:
+  objective: chat.casual
+  brief: 友達からの電話です。近況を話したり聞いたり、自然に雑談してください。
+  input:
+    topic: 最近ハマっていること
+    persona: 明るくて聞き上手。相手の話に短く反応して、質問を返す。
+  require: {}
+  constraints: {}
+  permissions:
+    ask: true
+
+callee:
+  persona:
+    name: 友達
+    patience: 0.9
+    flexibility: 0.9
+    friendliness: 0.9
+    avatar: "^_^"
+  knowledge: {}
+  rules: []
+
+win: {}
+
+score:
+  success: 0

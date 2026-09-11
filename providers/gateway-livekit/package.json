@@ -1,0 +1,31 @@
+{
+  "name": "@oathra/gateway-livekit",
+  "version": "0.1.0",
+  "description": "LiveKit SIP gateway (Cloud or self-hosted): outbound trunks and room media for Oathra calls",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@oathra/contract": "workspace:*",
+    "@oathra/evidence": "workspace:*",
+    "@oathra/core": "workspace:*",
+    "@oathra/voice": "workspace:*",
+    "@oathra/phone": "workspace:*",
+    "livekit-server-sdk": "^2.19.0",
+    "@livekit/rtc-node": "^1.0.0"
+  }
+}

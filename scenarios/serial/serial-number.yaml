@@ -1,0 +1,39 @@
+version: 1
+id: serial-number
+title: Serial Number
+description: The support desk reads out a 10-character serial. Repeat it back exactly.
+difficulty: normal
+language: ja
+domain: serial
+tags: [entity, stt, accuracy]
+
+mission:
+  objective: serial.readback
+  brief: サポート窓口が読み上げるシリアル番号を正確に復唱してください。
+  require:
+    serial: true
+  constraints:
+    serial: { eq: "RZ7K3Q91XA" }
+  permissions:
+    ask: true
+
+callee:
+  persona:
+    name: リンゴ製作所
+    patience: 0.6
+    flexibility: 0.2
+    friendliness: 0.5
+    avatar: "._."
+  knowledge:
+    serial: RZ7K3Q91XA
+    label: シリアル番号
+  rules:
+    - read the serial at most three times
+
+win:
+  serial: "RZ7K3Q91XA"
+
+score:
+  success: 5000
+  latency: 0.2
+  turns: 0.2

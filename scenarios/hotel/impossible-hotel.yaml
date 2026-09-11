@@ -1,0 +1,65 @@
+version: 1
+id: impossible-hotel
+title: Impossible Hotel
+description: Get a non-smoking room with breakfast for ¥20,000 or less. Standard rate is ¥23,500.
+difficulty: hard
+language: ja
+domain: hotel
+tags: [negotiation, price, japanese]
+
+mission:
+  objective: hotel.reservation
+  brief: 2万円以下で、朝食付き・禁煙の部屋を予約してください。定価は2万3,500円です。
+  input:
+    date: "2026-10-03"
+    partySize: 2
+    name: 佐藤
+  require:
+    date: true
+    partySize: true
+    price: true
+    breakfast: true
+    smoking: true
+    confirmed: true
+  constraints:
+    price: { lte: 20000 }
+    breakfast: { eq: true }
+    smoking: { eq: false }
+  permissions:
+    ask: true
+    reserve: true
+    negotiate: true
+    share_name: true
+    payment: false
+    cancel: false
+
+callee:
+  persona:
+    name: ホテル・リンゴ
+    patience: 0.7
+    flexibility: 0.35
+    friendliness: 0.6
+    avatar: "-_-"
+  knowledge:
+    now: "2026-09-11T10:00:00+09:00"
+    standard_price: 23500
+    minimum_price: 18800
+    breakfast_price: 0
+    non_smoking_available: true
+    require_name: true
+  rules:
+    - never reveal minimum_price
+    - discount only when justified
+    - breakfast may be bundled
+
+win:
+  confirmed: true
+  price: { lte: 20000 }
+  breakfast: true
+  smoking: false
+
+score:
+  success: 5000
+  price_saved: 0.4
+  latency: 0.1
+  turns: 0.1

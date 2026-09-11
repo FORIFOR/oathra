@@ -1,0 +1,86 @@
+{
+  "name": "oathra",
+  "version": "0.1.0",
+  "description": "Playable, verifiable phone actions for AI agents. `npx oathra demo`",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "oathra": "./dist/bundle/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/bundle",
+    "assets",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "bundle": "node ../../scripts/bundle-cli.mjs",
+    "prepack": "node ../../scripts/bundle-cli.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "yaml": "^2.8.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@oathra/arena": "workspace:*",
+    "@oathra/contract": "workspace:*",
+    "@oathra/core": "workspace:*",
+    "@oathra/deepgram": "workspace:*",
+    "@oathra/eval": "workspace:*",
+    "@oathra/evidence": "workspace:*",
+    "@oathra/gemini": "workspace:*",
+    "@oathra/ollama": "workspace:*",
+    "@oathra/openai": "workspace:*",
+    "@oathra/replay": "workspace:*",
+    "@oathra/runtime": "workspace:*",
+    "@oathra/scenario": "workspace:*",
+    "@oathra/simulator": "workspace:*",
+    "@oathra/openai-realtime": "workspace:*",
+    "@oathra/phone": "workspace:*",
+    "@oathra/voice": "workspace:*",
+    "@oathra/phone-twilio": "workspace:*",
+    "@oathra/phone-plivo": "workspace:*",
+    "@oathra/phone-sip": "workspace:*",
+    "@oathra/gateway-livekit": "workspace:*",
+    "@oathra/voice-pipeline": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FORIFOR/oathra"
+  },
+  "keywords": [
+    "voice-agent",
+    "phone",
+    "ai-agents",
+    "twilio",
+    "deepgram",
+    "evidence",
+    "simulator"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "livekit-server-sdk": "^2.19.0",
+    "@livekit/rtc-node": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "livekit-server-sdk": {
+      "optional": true
+    },
+    "@livekit/rtc-node": {
+      "optional": true
+    }
+  },
+  "homepage": "https://forifor.github.io/oathra/"
+}

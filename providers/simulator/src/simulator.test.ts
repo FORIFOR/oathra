@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import { resolve } from "node:path";
+import { contractFromScenario, loadScenarioFile } from "@oathra/scenario";
+import { runCall } from "@oathra/runtime";
+import { ScriptedAgent } from "./agent.js";
+import { SimulatorTransport } from "./transport.js";
+
+const ROOT = resolve(import.meta.dirname, "../../../scenarios");
+const NOW = new Date("2026-09-11T10:00:00+09:00");
+
+async function play(file: string) {
+  const scenario = loadScenarioFile(resolve(ROOT, file));
+  const contract = contractFromScenario(scenario);
+  return runCall({
+    contract,
+    transport: new SimulatorTransport({ scenario, pace: "fast" }),
+    brain: new ScriptedAgent(),
+    now: NOW,
+    scenarioId: scenario.id,
+    openingTimeoutMs: 50,
+  });
+}
+
+describe("scripted agent vs scripted characters", () => {
+  it("books the restaurant at 19:30 with verified evidence", async () => {
+    const o = await play("restaurant/restaurant-reservation.yaml");
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.result.fields).toMatchObject({ date: "2026-09-12", time: "19:30", partySize: 2, confirmed: true });
+    expect(o.result.evidence.some((e) => e.field === "time" && e.value === "19:00" && e.verified)).toBe(false);
+    expect(o.endReason).toBe("agent_hangup");
+  });
+
+  it("negotiates the hotel under budget with breakfast", async () => {
+    const o = await play("hotel/impossible-hotel.yaml");
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.result.fields.price as number).toBeLessThanOrEqual(20000);
+    expect(o.result.fields).toMatchObject({ breakfast: true, smoking: false, confirmed: true });
+  });
+
+  it("buys in bulk under budget", async () => {
+    const o = await play("shop/bulk-buy.yaml");
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.result.fields.price as number).toBeLessThanOrEqual(5500);
+  });
+
+  it("reads back the serial exactly", async () => {
+    const o = await play("serial/serial-number.yaml");
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.result.fields.serial).toBe("RZ7K3Q91XA");
+  });
+
+  it("never reports a false completion when everything is full", async () => {
+    const o = await play("adversarial/false-completion-trap.yaml");
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.complete, dialogue).toBe(false);
+    expect(o.result.fields.confirmed).toBeUndefined();
+    expect(o.result.status).toBe("incomplete");
+  });
+
+  it("produces a replayable event log with latency traces", async () => {
+    const o = await play("restaurant/restaurant-reservation.yaml");
+    const types = o.events.map((e) => e.type);
+    expect(types[0]).toBe("call.started");
+    expect(types).toContain("evidence.verified");
+    expect(types).toContain("turn.trace");
+    expect(types.at(-1)).toBe("result");
+    expect(o.metrics.latency.turns).toBeGreaterThan(0);
+    expect(o.events.every((e, i) => e.seq === i)).toBe(true);
+  });
+});

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+.oathra/
+calls/
+coverage/
+.DS_Store
+packages/cli/assets/
+packages/cli/README.md
+site/media/

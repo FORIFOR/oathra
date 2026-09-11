@@ -1,0 +1,30 @@
+{
+  "name": "@oathra/phone",
+  "version": "0.1.0",
+  "description": "Phone Layer: carrier-independent call bridge, provider protocol, provisioning steps, routing, doctor and config",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@oathra/contract": "workspace:*",
+    "@oathra/evidence": "workspace:*",
+    "@oathra/core": "workspace:*",
+    "@oathra/voice": "workspace:*",
+    "yaml": "^2.8.0",
+    "zod": "^3.24.0"
+  }
+}

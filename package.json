@@ -1,0 +1,30 @@
+{
+  "name": "oathra-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Playable, verifiable phone actions for AI agents.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@10.12.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json && node scripts/bundle-cli.mjs",
+    "typecheck": "tsc -b tsconfig.build.json",
+    "test": "vitest run",
+    "lint:deps": "node scripts/check-deps.mjs",
+    "oathra": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js",
+    "demo": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js demo",
+    "clean": "rm -rf packages/*/dist providers/*/dist apps/*/dist",
+    "bundle": "node scripts/bundle-cli.mjs",
+    "qa:arena": "node scripts/qa-arena.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

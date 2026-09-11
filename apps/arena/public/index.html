@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Oathra Arena</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Oathra</span>
+      <span class="brand-sub">Arena</span>
+    </div>
+    <div class="topbar-right">
+      <div class="transport-toggle" role="group" aria-label="Transport">
+        <button type="button" class="tt-btn is-on" data-transport="simulator" aria-pressed="true">
+          <span class="dot" aria-hidden="true"></span>Simulator
+        </button>
+        <button type="button" class="tt-btn" data-transport="real" aria-pressed="false">
+          <span class="dot" aria-hidden="true"></span>Real Phone
+        </button>
+      </div>
+      <div class="local-wrap">
+        <button type="button" class="local-btn" id="local-btn" aria-expanded="false" aria-controls="local-pop">
+          Local <span class="dot on" aria-hidden="true"></span>
+        </button>
+        <div class="popover" id="local-pop" hidden role="dialog" aria-label="Running locally">
+          <p class="pop-title">Running locally.</p>
+          <p class="pop-sub">Everything is yours.</p>
+          <p class="pop-need">Need:</p>
+          <ul>
+            <li>phone numbers</li>
+            <li>managed SIP</li>
+            <li>team deployment</li>
+            <li>hosted inference</li>
+          </ul>
+          <p class="pop-foot">Oathra Cloud</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ START SCREEN ============ -->
+    <section class="screen" id="screen-start">
+      <div class="start-inner">
+        <h1 class="start-title">Give your agent<br />a mission.</h1>
+
+        <div class="mode-toggle" role="group" aria-label="Mode">
+          <button type="button" class="mode-btn is-on" data-mode="watch" aria-pressed="true">
+            <span class="mode-k">Watch</span><span class="mode-d">AI vs AI</span>
+          </button>
+          <button type="button" class="mode-btn" data-mode="play" aria-pressed="false">
+            <span class="mode-k">Play</span><span class="mode-d">you answer the phone</span>
+          </button>
+        </div>
+
+        <div class="brain-row" id="brain-row" hidden>
+          <label for="brain-select" class="mono">Agent</label>
+          <select id="brain-select"></select>
+        </div>
+
+        <div class="scenario-list" id="scenario-list" aria-label="Missions">
+          <p class="muted mono">Loading missions…</p>
+        </div>
+
+        <div class="start-foot">
+          <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel">Replays</button>
+        </div>
+        <div class="replays-panel" id="replays-panel" hidden>
+          <ul class="replay-list" id="replay-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ REAL PHONE PANEL ============ -->
+    <section class="screen" id="screen-real" hidden>
+      <div class="start-inner narrow">
+        <h2 class="panel-h">Connect a phone provider</h2>
+        <div class="provider-list" role="radiogroup" aria-label="Phone provider">
+          <label class="provider"><input type="radio" name="provider" disabled /> <span>Twilio</span></label>
+          <label class="provider"><input type="radio" name="provider" disabled /> <span>Telnyx</span></label>
+          <label class="provider"><input type="radio" name="provider" disabled /> <span>LiveKit SIP</span></label>
+          <label class="provider"><input type="radio" name="provider" disabled /> <span>Custom SIP</span></label>
+        </div>
+        <p class="note">Real phone transports arrive in v0.2 — same UI, different transport.</p>
+        <button type="button" class="btn" id="real-back">Back</button>
+      </div>
+    </section>
+
+    <!-- ============ CALL SCREEN ============ -->
+    <section class="screen call" id="screen-call" hidden>
+      <div class="call-frame">
+        <div class="call-head">
+          <div class="call-title-wrap">
+            <button type="button" class="back-btn" id="call-back" aria-label="Back to missions">←</button>
+            <h2 class="call-title" id="call-title">—</h2>
+          </div>
+          <span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span>
+        </div>
+
+        <div class="parties">
+          <div class="party" id="party-agent" data-side="agent">
+            <div class="party-label mono">AGENT</div>
+            <div class="party-face"><span class="party-ring" aria-hidden="true"></span><span class="party-glyph" id="agent-glyph">◉</span></div>
+            <div class="party-name" id="agent-name">scripted</div>
+          </div>
+          <div class="activity" aria-hidden="true">
+            <div class="activity-bar" id="activity-bar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="party" id="party-callee" data-side="callee">
+            <div class="party-label mono">CALLEE</div>
+            <div class="party-face"><span class="party-ring" aria-hidden="true"></span><span class="party-glyph avatar" id="callee-avatar">◉</span></div>
+            <div class="party-name" id="callee-name">—</div>
+          </div>
+        </div>
+
+        <div class="ux-state mono" id="ux-state" aria-live="polite">
+          <span class="ux-dot" aria-hidden="true"></span><span id="ux-text">Idle</span>
+        </div>
+
+        <div class="transcript" id="transcript" aria-live="polite" aria-label="Transcript"></div>
+
+        <div class="play-brief" id="play-brief" hidden>
+          <span class="mono muted">YOUR MISSION</span>
+          <p id="play-brief-text"></p>
+        </div>
+
+        <form class="play-input" id="play-form" hidden>
+          <label for="play-text" class="play-label" id="play-label">You are the callee. Answer the phone.</label>
+          <div class="play-row">
+            <input type="text" id="play-text" autocomplete="off" placeholder="Type what you say…" />
+            <button type="submit" class="btn primary">Send</button>
+            <button type="button" class="btn" id="play-hangup">Hang up</button>
+          </div>
+        </form>
+
+        <div class="panels">
+          <section class="panel" aria-labelledby="mission-h">
+            <h3 class="panel-title mono" id="mission-h">MISSION</h3>
+            <ul class="mission-list" id="mission-list"></ul>
+          </section>
+          <section class="panel" aria-labelledby="evidence-h">
+            <h3 class="panel-title mono" id="evidence-h">EVIDENCE <span class="count" id="evidence-count">0</span></h3>
+            <ul class="evidence-list" id="evidence-list"></ul>
+          </section>
+        </div>
+
+        <div class="metrics mono" id="metrics">
+          <span>Latency <b id="m-latency">—</b> ms</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span>Cost <b id="m-cost">$0.000</b></span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span><b id="m-elapsed">00:00</b></span>
+        </div>
+
+        <div class="result-wrap" id="result-wrap" hidden></div>
+
+        <div class="drawer">
+          <button type="button" class="drawer-toggle mono" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-body">Details</button>
+          <div class="drawer-body" id="drawer-body" hidden>
+            <div class="tabs" role="tablist">
+              <button type="button" role="tab" class="tab is-on" data-tab="timeline" aria-selected="true">Timeline</button>
+              <button type="button" role="tab" class="tab" data-tab="events" aria-selected="false">Events</button>
+              <button type="button" role="tab" class="tab" data-tab="latency" aria-selected="false">Latency</button>
+            </div>
+            <div class="tabpanes">
+              <div class="tabpane" data-pane="timeline">
+                <div class="timeline-wrap">
+                  <ol class="timeline mono" id="timeline"></ol>
+                  <div class="snapshot" id="snapshot" hidden></div>
+                </div>
+              </div>
+              <div class="tabpane" data-pane="events" hidden>
+                <pre class="events-raw mono" id="events-raw"></pre>
+              </div>
+              <div class="tabpane" data-pane="latency" hidden>
+                <table class="latency-table mono" id="latency-table">
+                  <thead><tr><th>turn</th><th>ttfa</th><th>brain</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

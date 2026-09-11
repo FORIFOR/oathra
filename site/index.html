@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oathra — Give AI agents a phone, and proof of what happened</title>
+<meta name="description" content="Oathra is an open-source runtime for AI agents that call, negotiate and act on the real world — with verified results. Playable simulator, real phone calls, evidence engine. npx oathra demo.">
+<meta property="og:title" content="Oathra — Give AI agents a phone, and proof of what happened">
+<meta property="og:description" content="Playable, verifiable phone actions for AI agents. Bring your own carrier. Bring your own model. False completions: 0 / 10,000.">
+<meta property="og:image" content="https://forifor.github.io/oathra/media/battle-impossible-hotel.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f2ec;--paper-2:#fbfaf6;--ink:#141311;--ink-2:#4b4842;--muted:#7d786e;--line:#d8d3c7;--line-2:#e8e4da;
+  --amber:#d98c1f;--amber-ink:#8a5510;--green:#2f7a3a;--red:#b3362a;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{--paper:#121110;--paper-2:#191816;--ink:#f1eee6;--ink-2:#c9c4b8;--muted:#8f897c;--line:#2d2a25;--line-2:#242220;--amber:#e39a2f;--amber-ink:#f0b45a;--green:#6fbf7a;--red:#e07a6e}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(circle at 1px 1px,rgba(0,0,0,.06) 1px,transparent 0);background-size:22px 22px}
+@media (prefers-color-scheme:dark){body{background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.05) 1px,transparent 0)}}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:500;letter-spacing:.02em;text-decoration:none}
+.brand i{width:11px;height:11px;border:2px solid var(--ink);border-radius:50%;display:inline-block}
+nav a{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-decoration:none;margin-left:22px}
+nav a:hover{color:var(--ink)}
+.gh{border:1px solid var(--ink);padding:6px 12px;border-radius:3px;color:var(--ink)!important}
+/* hero */
+.hero{padding:88px 0 40px;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(44px,6.2vw,76px);line-height:1.02;letter-spacing:-.01em;margin:0 0 20px}
+h1 em{font-style:italic;color:var(--amber-ink)}
+.lede{font-size:18px;color:var(--ink-2);max-width:52ch;margin:0 0 28px}
+.cmd{display:inline-flex;align-items:center;gap:14px;border:1px solid var(--ink);background:var(--paper-2);padding:12px 16px;border-radius:4px;font-family:var(--mono);font-size:15px;cursor:pointer}
+.cmd b{color:var(--muted);font-weight:400}.cmd span.copy{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--line);padding-left:12px}
+.cmd:hover span.copy{color:var(--amber-ink)}
+.ticks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;margin:28px 0 0;padding:0;list-style:none;font-family:var(--mono);font-size:13px;color:var(--ink-2)}
+.ticks li::before{content:"✓ ";color:var(--green)}
+.screen{border:1px solid var(--line);background:var(--paper-2);border-radius:6px;overflow:hidden;box-shadow:0 30px 60px -40px rgba(0,0,0,.45)}
+.screen .bar{height:28px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 12px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.screen .bar i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.screen video,.screen img{display:block;width:100%;height:auto}
+.cap{font-family:var(--mono);font-size:12px;color:var(--muted);margin:10px 2px 0}
+/* strip */
+.strip{margin:56px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr)}
+.strip div{padding:22px 18px;border-right:1px solid var(--line)}.strip div:last-child{border-right:0}
+.strip b{display:block;font-family:var(--serif);font-size:34px;font-weight:400;line-height:1.1}
+.strip small{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+/* sections */
+section{padding:56px 0}
+h2{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1.08;margin:0 0 10px;letter-spacing:-.01em}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber-ink);margin:0 0 12px}
+.sub{color:var(--ink-2);max-width:64ch;margin:0 0 28px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{border:1px solid var(--line);background:var(--paper-2);padding:22px;border-radius:6px;position:relative}
+.card .n{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.card h3{font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px}
+.card p{margin:0 0 14px;color:var(--ink-2);font-size:15px}
+pre{margin:0;background:var(--ink);color:#efe9dc;border-radius:5px;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.55;overflow:auto;white-space:pre}
+pre.paper{background:var(--paper-2);color:var(--ink);border:1px solid var(--line)}
+pre .ok{color:var(--green)}pre .amb{color:var(--amber)}pre .dim{color:#9a948a}pre .bad{color:var(--red)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+table.matrix{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:13.5px}
+table.matrix th{text-align:left;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:11px;color:var(--muted);padding:0 0 10px;border-bottom:1px solid var(--line)}
+table.matrix td{padding:9px 0;border-bottom:1px solid var(--line-2);vertical-align:top}
+table.matrix td.s{color:var(--muted);text-align:right;white-space:nowrap}
+.tag{display:inline-block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);padding:1px 6px;border-radius:3px;color:var(--muted);margin-left:6px}
+.tag.rec{border-color:var(--amber);color:var(--amber-ink)}
+.arch{font-family:var(--mono);font-size:13px;line-height:1.5;color:var(--ink-2)}
+.quote{font-family:var(--serif);font-size:30px;line-height:1.25;max-width:26ch;margin:0}
+.quote em{color:var(--amber-ink)}
+.status ul{columns:2;gap:32px;padding-left:18px;margin:0;color:var(--ink-2);font-size:15px}
+.status li{break-inside:avoid;margin-bottom:6px}
+.status li.todo{color:var(--muted)}
+footer{border-top:1px solid var(--line);padding:32px 0 48px;font-family:var(--mono);font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.reveal{opacity:0;transform:translateY(10px);animation:rise .7s ease forwards}
+.reveal.d1{animation-delay:.08s}.reveal.d2{animation-delay:.16s}.reveal.d3{animation-delay:.28s}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.reveal{animation:none;opacity:1;transform:none}}
+@media (max-width:900px){.hero{grid-template-columns:1fr;padding-top:56px}.three,.two{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,1fr)}.strip div:nth-child(2){border-right:0}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line)}.status ul{columns:1}nav a:not(.gh){display:none}h2{font-size:32px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="brand" href="#"><i></i>Oathra</a>
+  <nav><a href="#play">Play</a><a href="#call">Call</a><a href="#prove">Prove</a><a href="#carriers">Carriers</a><a class="gh" href="https://github.com/FORIFOR/oathra">GitHub ↗</a></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <p class="kicker reveal">Open source · Apache-2.0 · TypeScript</p>
+      <h1 class="reveal d1">Give AI agents a phone —<br>and <em>proof</em> of what happened.</h1>
+      <p class="lede reveal d2">Oathra is a runtime for agents that call, negotiate and act on the real world. Every field in the result is backed by the other party's own words. Completion is decided by code, never by asking the model whether it succeeded.</p>
+      <button class="cmd reveal d2" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.querySelector('.copy').textContent='copied'"><b>$</b> npx oathra demo <span class="copy">copy</span></button>
+      <ul class="ticks reveal d3">
+        <li>Playable simulator, no API key</li>
+        <li>Real phone calls in one command</li>
+        <li>Verified outcomes, not summaries</li>
+        <li>Bring your own carrier &amp; model</li>
+      </ul>
+    </div>
+    <div class="reveal d2">
+      <div class="screen"><div class="bar"><i></i><i></i><i></i>&nbsp; oathra demo · localhost:4242 · AI vs AI</div>
+        <video autoplay muted loop playsinline poster="media/demo-poster.png"><source src="media/demo-arena.mp4" type="video/mp4"><img src="media/demo-arena.gif" alt="Oathra Arena: an agent negotiates a restaurant reservation, evidence fills in, MISSION COMPLETE"></video>
+      </div>
+      <p class="cap">Recorded from a real run of the simulator: 19:00 is full, the agent takes 19:30, gives its name, and the callee's 「ご予約承りました」 becomes the only thing that can mark the call complete.</p>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div><b>0 / 10,000</b><small>false completions, adversarial simulator runs</small></div>
+    <div><b>~0.4 s</b><small>first reply on a real call with GPT-Live</small></div>
+    <div><b>1 cmd</b><small>from clone to AI-vs-AI call</small></div>
+    <div><b>3 + N</b><small>carriers: Twilio, Plivo, custom SIP, yours</small></div>
+  </div>
+
+  <section id="play">
+    <p class="kicker">Play</p>
+    <h2>Watch two agents haggle. Then answer the phone yourself.</h2>
+    <p class="sub">Five scenarios ship with the simulator: a restaurant that is full at 19:00, an "impossible" hotel with a secret floor price, a bulk purchase, a serial number read-back, and a trap where every slot is full and the only correct answer is "I could not book it." Pit models against each other and share the card.</p>
+    <div class="two">
+      <pre>$ npx oathra battle impossible-hotel \
+    --agent scripted --agent openai --agent gemini --png card.png
+
+Impossible Hotel
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+scripted     ████████████████████    6,500
+openai       ·                           0
+gemini       ·                           0
+
+               SUCCESS  TIME   COST
+scripted         ✓       67s  $0.00
+openai:gpt-4o-mini ✗     95s  $0.00
+gemini:flash     ✗      223s  $0.00
+
+<span class="ok">False completions: 0</span></pre>
+      <div>
+        <div class="screen"><div class="bar"><i></i><i></i><i></i>&nbsp; battle card · svg/png</div><img src="media/battle-impossible-hotel.png" alt="Agent Battle card"></div>
+        <p class="cap">Real result: GPT-4o-mini and Gemini Flash both walked away above budget. Neither claimed success. That is the point.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="call">
+    <p class="kicker">Call</p>
+    <h2>Same runtime, real phone. Bring your own carrier. Bring your own model.</h2>
+    <p class="sub">Twilio keeps its direct media-streams fast path. Plivo and any SIP trunk go through a SIP gateway (LiveKit by default, Cloud or self-hosted). The voice engine is a separate choice: GPT-Live is recommended because it was simply the most natural on our test calls; a Deepgram + LLM + TTS pipeline is there when you want control or lower cost.</p>
+    <div class="two">
+      <pre>$ npx oathra setup phone
+
+Choose voice engine
+❯ GPT-Live        Recommended · best conversation quality
+  OpenAI Realtime speech-to-speech
+  Pipeline        Deepgram + any brain + OpenAI TTS
+
+How would you like to make calls?
+❯ Twilio          direct media streams · verified
+  Plivo           SIP via gateway
+  Custom SIP
+
+Setting up Twilio
+  <span class="ok">✓</span> Verify credentials              account · Full
+  <span class="ok">✓</span> Find a voice-capable number      +1 947 ···
+  <span class="ok">✓</span> Check outbound permission for Japan
+  <span class="ok">✓</span> Media Streams                    configured per call
+
+<span class="ok">✓ Twilio is ready.</span>
+
+$ npx oathra phone doctor --to +81…
+Carrier        <span class="ok">✓</span> authenticated · active · caller ID owned · Japan enabled
+Media          <span class="dim">· requires a live call — oathra phone test</span>
+Voice Engine   <span class="ok">✓</span> GPT-Live (gpt-live-1)
+Latency        Oathra → api.twilio.com   244 ms
+Cost           JP mobile · twilio · $0.185/min
+<span class="ok">READY ✓</span></pre>
+      <div>
+        <p class="quote">Automate what the API allows.<br>For everything else, <em>one guided click</em> — never a wall of SIP settings.</p>
+        <p class="sub" style="margin-top:18px">Providers that need a human (caller-ID verification, geo permissions, regulatory bundles) return a <code>user_action</code> step with a link; Oathra polls until it is done. <code>oathra phone test</code> has three levels — Local ¥0, Gateway ¥0, PSTN paid — so you stop paying for a phone minute every time you fix a bug.</p>
+        <pre class="paper">$ npx oathra phone test --level local
+  <span class="ok">✓</span> agent audio       21600 ms
+  <span class="ok">✓</span> callee transcript
+  <span class="ok">✓</span> agent transcript
+  first agent audio  5475 ms before the callee finished (full-duplex)
+<span class="ok">✓ Voice engine works. Telephony cost: ¥0</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="prove">
+    <p class="kicker">Prove</p>
+    <h2>"予約できました" is not evidence.</h2>
+    <p class="sub">Oathra returns a VerifiedResult. Each field is anchored to an utterance from the other party (and to audio on real calls). Refusals never become offers, corrections supersede, hedges do not confirm, and a confirmation goes stale if the deal changes after it was spoken. Ten thousand mutated callees — never-confirm, wrong restate, negate-then-offer, silent hangup, echo trap — produce zero false completions.</p>
+    <div class="two">
+      <pre>{
+  "field": "time",
+  "value": "19:30",
+  "source": "callee",
+  "transcript": "19時はいっぱいですが、19時半でしたら空いております。",
+  "span": "19時半",
+  "explicit": true,
+  "verified": true,
+  "note": "accepted with value restated by caller",
+  "audio": { "startMs": 14210, "endMs": 18960 }
+}
+
+Success = Connected
+        ∧ date.verified ∧ time.verified
+        ∧ partySize.verified ∧ confirmed.verified
+        ∧ constraintsSatisfied</pre>
+      <pre>$ npx oathra eval --adversarial 10000
+
+Mutation           Runs  Completed  FalseComp
+never-confirm      2000          0          0
+wrong-restate      2000          0          0
+negate-then-offer  2000       1600          0
+silent-hangup      2000          0          0
+caller-echo-trap   2000          0          0
+
+╭──────────────────────────────────────────╮
+│ <span class="ok">False Completion: 0 / 10000 adversarial runs</span> │
+│ 6.2s                                     │
+╰──────────────────────────────────────────╯
+
+$ npx oathra replay call_mtwp16a80 --at 00:20
+00:20  state SPEAKING
+Callee  1個8,000円でございます。
+verified {}   pending {"price":8000}</pre>
+    </div>
+  </section>
+
+  <section id="carriers">
+    <p class="kicker">Mix and match</p>
+    <h2>Carriers on one side, voice engines on the other.</h2>
+    <div class="two">
+      <table class="matrix">
+        <tr><th>Carrier</th><th></th></tr>
+        <tr><td>Twilio <span class="tag">direct</span></td><td class="s">verified on real calls</td></tr>
+        <tr><td>Plivo <span class="tag">sip</span></td><td class="s">via gateway · PSTN unverified</td></tr>
+        <tr><td>Custom SIP <span class="tag">sip</span></td><td class="s">any trunk</td></tr>
+        <tr><td>Telnyx · Wavix · Sinch · didlogic</td><td class="s">v0.2</td></tr>
+        <tr><td>Yours</td><td class="s">oathra provider create phone &lt;id&gt;</td></tr>
+      </table>
+      <table class="matrix">
+        <tr><th>Voice engine</th><th></th></tr>
+        <tr><td>GPT-Live <span class="tag rec">recommended</span></td><td class="s">full-duplex · $0.05/min</td></tr>
+        <tr><td>OpenAI Realtime</td><td class="s">speech-to-speech</td></tr>
+        <tr><td>Pipeline</td><td class="s">Deepgram + any brain + TTS</td></tr>
+        <tr><td>Brains</td><td class="s">OpenAI · Gemini · Ollama · scripted</td></tr>
+        <tr><td>Local</td><td class="s">experimental</td></tr>
+      </table>
+    </div>
+    <pre class="paper arch" style="margin-top:28px">                        OATHRA
+                           │
+                    Call Runtime ── Evidence Engine ── VerifiedResult
+                           │
+                ┌──────────┴──────────┐
+            Phone Layer          Voice Layer
+                │                     │
+   Twilio Direct · SIP Gateway   GPT-Live · Realtime · Pipeline · Local
+                      │
+         LiveKit Cloud / self-host  →  Plivo · Custom SIP · (Telnyx …)</pre>
+  </section>
+
+  <section class="status">
+    <p class="kicker">Status · v0.1 launch candidate</p>
+    <h2>What is real today, and what is not.</h2>
+    <ul>
+      <li>CallContract, evidence engine, deterministic completion</li>
+      <li>Simulator, Arena (Watch / Play), Battle, Replay, time travel</li>
+      <li>Scenario DSL with a CI gate: 0 / 10,000 adversarial runs</li>
+      <li>Twilio direct path, verified on real calls to a Japanese mobile</li>
+      <li>GPT-Live voice engine, verified on a 6-minute real call</li>
+      <li>Phone Layer: setup, doctor, three-level test, routing with fallback</li>
+      <li class="todo">Plivo / custom SIP via LiveKit: implemented from provider docs, PSTN not yet verified</li>
+      <li class="todo">Telnyx, Wavix, Sinch providers; ElevenLabs TTS</li>
+      <li class="todo">Dual-ASR safe path for amounts and numbers; 650 ms pipeline target</li>
+      <li class="todo">MCP server (call · inspect_call · intervene · cancel_call) — v0.2</li>
+    </ul>
+    <p class="sub" style="margin-top:24px">Numbers on this page come from our own runs and are reproducible with the commands shown. We publish no benchmark we did not measure.</p>
+    <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star it</span></a>
+  </section>
+</main>
+
+<footer class="wrap">
+  <span>Oathra · Apache-2.0 · built in Tokyo</span>
+  <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">Architecture</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">Scenarios</a></span>
+</footer>
+</body>
+</html>

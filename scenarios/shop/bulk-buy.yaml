@@ -1,0 +1,53 @@
+version: 1
+id: bulk-buy
+title: Bulk Buy
+description: Buy 3 units for ¥5,500 or less each. List price ¥8,000, the shop's bulk floor is ¥5,500.
+difficulty: normal
+language: ja
+domain: shop
+tags: [negotiation, price, play]
+
+mission:
+  objective: shop.purchase
+  brief: 商品を1個5,500円以下で3個購入してください。定価は8,000円です。
+  input:
+    item: ワイヤレスイヤホン
+    quantity: 3
+  require:
+    price: true
+    confirmed: true
+  constraints:
+    price: { lte: 5500 }
+  permissions:
+    ask: true
+    negotiate: true
+    reserve: true
+    payment: false
+
+callee:
+  persona:
+    name: リンゴ電器
+    patience: 0.8
+    flexibility: 0.6
+    friendliness: 0.7
+    avatar: "o_o"
+  knowledge:
+    item: ワイヤレスイヤホン
+    list_price: 8000
+    minimum_price: 6000
+    bulk_qty: 3
+    bulk_minimum_price: 5500
+    stock: 10
+  rules:
+    - never reveal minimum_price
+    - bulk floor applies from 3 units
+
+win:
+  confirmed: true
+  price: { lte: 5500 }
+
+score:
+  success: 5000
+  price_saved: 0.4
+  latency: 0.1
+  turns: 0.1

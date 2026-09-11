@@ -1,0 +1,29 @@
+{
+  "name": "@oathra/arena",
+  "version": "0.1.0",
+  "description": "Oathra Arena: watch, play and battle in the browser",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "public"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@oathra/contract": "workspace:*",
+    "@oathra/core": "workspace:*",
+    "@oathra/eval": "workspace:*",
+    "@oathra/replay": "workspace:*",
+    "@oathra/runtime": "workspace:*",
+    "@oathra/scenario": "workspace:*",
+    "@oathra/simulator": "workspace:*"
+  }
+}

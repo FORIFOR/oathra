@@ -1,0 +1,79 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.test.ts"
+  ],
+  "references": [
+    {
+      "path": "../../apps/arena"
+    },
+    {
+      "path": "../../packages/contract"
+    },
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/eval"
+    },
+    {
+      "path": "../../packages/evidence"
+    },
+    {
+      "path": "../../packages/replay"
+    },
+    {
+      "path": "../../packages/runtime"
+    },
+    {
+      "path": "../../packages/scenario"
+    },
+    {
+      "path": "../../providers/simulator"
+    },
+    {
+      "path": "../../providers/openai"
+    },
+    {
+      "path": "../../providers/gemini"
+    },
+    {
+      "path": "../../providers/ollama"
+    },
+    {
+      "path": "../../providers/deepgram"
+    },
+    {
+      "path": "../../providers/openai-realtime"
+    },
+    {
+      "path": "../../packages/phone"
+    },
+    {
+      "path": "../../packages/voice"
+    },
+    {
+      "path": "../../providers/phone-twilio"
+    },
+    {
+      "path": "../../providers/phone-plivo"
+    },
+    {
+      "path": "../../providers/phone-sip"
+    },
+    {
+      "path": "../../providers/gateway-livekit"
+    },
+    {
+      "path": "../../providers/voice-pipeline"
+    }
+  ]
+}

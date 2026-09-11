@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint:deps
+      - run: pnpm build
+      - run: pnpm test
+      - name: Scenarios validate
+        run: pnpm oathra scenario validate scenarios/**/*.yaml
+      - name: Eval (False Completion must be 0)
+        run: pnpm oathra eval --runs 3
+
+  scenario-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Community scenarios must be valid, solvable and free of false completions
+        run: |
+          pnpm oathra scenario validate scenarios/**/*.yaml
+          pnpm oathra eval scenarios --runs 2

@@ -1,0 +1,77 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/contract"
+    },
+    {
+      "path": "packages/evidence"
+    },
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/scenario"
+    },
+    {
+      "path": "packages/runtime"
+    },
+    {
+      "path": "providers/simulator"
+    },
+    {
+      "path": "packages/replay"
+    },
+    {
+      "path": "packages/eval"
+    },
+    {
+      "path": "apps/arena"
+    },
+    {
+      "path": "providers/ollama"
+    },
+    {
+      "path": "providers/gemini"
+    },
+    {
+      "path": "providers/openai"
+    },
+    {
+      "path": "providers/brain-kit"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "providers/audio-kit"
+    },
+    {
+      "path": "providers/deepgram"
+    },
+    {
+      "path": "providers/openai-realtime"
+    },
+    {
+      "path": "packages/voice"
+    },
+    {
+      "path": "packages/phone"
+    },
+    {
+      "path": "providers/phone-twilio"
+    },
+    {
+      "path": "providers/phone-sip"
+    },
+    {
+      "path": "providers/phone-plivo"
+    },
+    {
+      "path": "providers/gateway-livekit"
+    },
+    {
+      "path": "providers/voice-pipeline"
+    }
+  ]
+}
