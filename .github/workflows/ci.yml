@@ -23,6 +23,13 @@ jobs:
         run: pnpm oathra scenario validate scenarios/**/*.yaml
       - name: Eval (False Completion must be 0)
         run: pnpm oathra eval --runs 3
+      - name: Adversarial eval (10,000 simulator runs, no API keys)
+        run: pnpm oathra eval --adversarial 10000
+      - name: Pack smoke (npx oathra from a tarball)
+        run: |
+          cd packages/cli && npm pack --pack-destination /tmp && cd /tmp
+          mkdir npx-smoke && cd npx-smoke && npm init -y >/dev/null && npm i --silent /tmp/oathra-*.tgz
+          npx oathra play restaurant-reservation --fast --no-save --quiet
 
   scenario-pr:
     if: github.event_name == 'pull_request'
