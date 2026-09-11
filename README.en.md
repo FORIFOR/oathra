@@ -7,8 +7,8 @@
 npx oathra demo        # npm release pending — until then: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
 ```
 
-<p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/oathra-launch.gif" width="880" alt="Oathra: an agent negotiates a restaurant reservation in the simulator; evidence fills in; only the callee's confirmation completes the call"/></a></p>
-<p align="center"><a href="README.md">日本語</a> · <a href="https://forifor.github.io/oathra/en/">Website</a> · <a href="docs/media/oathra-launch.mp4">48-second video</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a></p>
+<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>The built-in agent, GPT-4o mini and Gemini Flash calling a hotel that lists at ¥23,500. Click for the 63-second video with sound (Japanese audio and captions)</sub></p>
+<p align="center"><a href="README.md">日本語</a> · <a href="https://forifor.github.io/oathra/en/">Website</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a></p>
 
 ```text
 ✓ Playable simulator        AI vs AI, or you answer the phone. No API key.
@@ -28,7 +28,7 @@ npx oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:
 
 A real run against the "impossible" hotel (lists at ¥23,500, budget ¥20,000): the built-in agent, GPT-4o mini and Gemini Flash all closed under budget, zero false completions. Only calls where the hotel says "your reservation is confirmed" count.
 
-<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>Click for the 63-second video with sound (Japanese audio and captions)</sub></p>
+<p align="center"><img src="docs/media/arena-confirmed.png" width="720" alt="Arena: the hotel's confirmation flips the confirmed check; evidence shows confirmed = yes from the callee"/><br><sub>The moment the hotel confirms: the confirmed row gets its check and confirmed = yes (callee) lands at the top of the evidence</sub></p>
 
 ### CALL
 

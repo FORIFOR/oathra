@@ -4,8 +4,8 @@
 npx oathra demo        # npm 公開までは: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
 ```
 
-<p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/oathra-launch-ja.gif" width="880" alt="シミュレータでAIがレストランの席を交渉し、相手の発言が証拠として埋まり、店側の「ご予約承りました」で完了になる"/></a></p>
-<p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="docs/media/oathra-launch-ja.mp4">48秒の動画</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a></p>
+<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>
+<p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a></p>
 
 ## これは何か
 
@@ -48,7 +48,7 @@ Arena では「AI同士を見る」か「自分が電話に出る」かを選べ
 
 同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
 
-<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>音声付きの動画（63秒）は画像をクリック</sub></p>
+<p align="center"><img src="docs/media/arena-confirmed.png" width="720" alt="Arena の画面。ホテルの「ご予約承りました」で確定に✓が付き、証拠に confirmed = はい（相手）が並ぶ"/><br><sub>ホテルが「ご予約承りました」と言った瞬間。「確定」に✓が付き、証拠の先頭に confirmed = はい（相手）が入る</sub></p>
 
 ## 本物の電話
 

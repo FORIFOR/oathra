@@ -7,7 +7,7 @@
 <meta name="description" content="Oathra is an open-source runtime for AI agents that call, negotiate and act on the real world — with verified results. Playable simulator, real phone calls, evidence engine. npx oathra demo.">
 <meta property="og:title" content="Oathra — Give AI agents a phone, and proof of what happened">
 <meta property="og:description" content="Playable, verifiable phone actions for AI agents. Bring your own carrier. Bring your own model. 0 / 10,000 false completions.">
-<meta property="og:image" content="https://forifor.github.io/oathra/media/oathra-launch-poster.png">
+<meta property="og:image" content="https://forifor.github.io/oathra/media/oathra-battle-ja-poster.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#131210">
@@ -48,7 +48,8 @@ h1 em{font-style:italic;color:var(--amber)}
 .player .lbl{position:absolute;top:12px;left:14px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:rgba(12,11,10,.7);border:1px solid var(--line);padding:5px 9px;border-radius:6px}
 .cap{font-family:var(--mono);font-size:12px;color:var(--muted);margin:10px 2px 0}
 /* strip */
-.strip{margin:52px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr)}
+.strip{margin:52px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.strip div{min-width:0}
 .strip div{padding:22px 18px;border-right:1px solid var(--line)}.strip div:last-child{border-right:0}
 .strip b{display:block;font-family:var(--mono);font-size:34px;font-weight:500;line-height:1.1;letter-spacing:-.02em}
 .strip small{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -57,6 +58,7 @@ section{padding:72px 0}
 h2{font-family:var(--serif);font-weight:400;font-size:clamp(34px,4.4vw,52px);line-height:1.05;margin:0 0 12px;letter-spacing:-.012em}
 h2 em{color:var(--amber);font-style:italic}
 .sub{color:var(--ink2);max-width:66ch;margin:0 0 30px;font-size:17px}
+.two>*,.three>*,.hero .grid>*{min-width:0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
 pre{margin:0;background:var(--panel);color:#ece6d8;border:1px solid var(--line);border-radius:10px;padding:18px 20px;font-family:var(--mono);font-size:13.5px;line-height:1.6;overflow:auto;white-space:pre}
 pre .ok{color:var(--green)}pre .amb{color:var(--amber)}pre .dim{color:var(--muted)}pre .k{color:var(--muted)}pre .s{color:var(--amber2)}pre .t{color:var(--green)}
@@ -84,7 +86,8 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;font-family:var(--mo
 .reveal.d1{animation-delay:.08s}.reveal.d2{animation-delay:.16s}.reveal.d3{animation-delay:.28s}
 @keyframes rise{to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.reveal{animation:none;opacity:1;transform:none}}
-@media (max-width:900px){.hero .grid,.two,.three,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,1fr)}.strip div:nth-child(2){border-right:0}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line)}.status ul{columns:1}nav a:not(.gh){display:none}.hero{padding-top:44px}}
+@media (max-width:520px){.cta{padding:26px 18px}.cmd{font-size:13.5px;padding:11px 12px;gap:10px;max-width:100%}.cmd .copy{display:none}}
+@media (max-width:900px){.hero .grid,.two,.three,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(2){border-right:0}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line)}.status ul{columns:1}nav a:not(.gh){display:none}.hero{padding-top:44px}}
 </style>
 </head>
 <body>
@@ -110,10 +113,10 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;font-family:var(--mo
       </div>
       <div class="reveal d2">
         <div class="player">
-          <video autoplay muted loop playsinline poster="../media/oathra-launch-poster.png"><source src="../media/oathra-launch.mp4" type="video/mp4"></video>
-          <span class="lbl">48 s · real run</span>
+          <video controls playsinline preload="metadata" poster="../media/oathra-battle-ja-poster.png"><source src="../media/oathra-battle-ja.mp4" type="video/mp4"></video>
+          <span class="lbl">63 s · screen recording · sound on</span>
         </div>
-        <p class="cap">Every frame is the real product: the simulator negotiating a table, evidence filling in, and a completion that only the callee's 「ご予約承りました」 can trigger.</p>
+        <p class="cap">A hotel that lists at ¥23,500; the mission is "under ¥20,000, breakfast, non-smoking". The built-in agent, GPT-4o mini and Gemini Flash call it at once. The three windows are the Arena replaying the recorded calls, the voices are the recorded lines, and the "confirmed" check only flips when the hotel says 「ご予約承りました」. Japanese audio and captions.</p>
       </div>
     </div>
     <div class="strip">
@@ -123,6 +126,13 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;font-family:var(--mo
       <div><b>3 + N</b><small>carriers: Twilio · Plivo · SIP · yours</small></div>
     </div>
   </div>
+
+  <section id="screen" style="padding-top:0">
+    <div class="two" style="gap:20px;align-items:start">
+      <figure style="margin:0"><img src="../media/arena-negotiating.png" alt="Arena: GPT-4o mini negotiating with the hotel; the price field is still unverified at 21,100" style="width:100%;border:1px solid var(--line);border-radius:10px;display:block"><figcaption class="cap">Mid-negotiation. The hotel just offered ¥21,100; "price ≤ 20,000" stays unfilled. Evidence stacks up on the right, one card per utterance.</figcaption></figure>
+      <figure style="margin:0"><img src="../media/arena-confirmed.png" alt="Arena: the hotel's confirmation flips the confirmed check; evidence shows confirmed = yes from the callee" style="width:100%;border:1px solid var(--line);border-radius:10px;display:block"><figcaption class="cap">The moment the hotel says "¥19,900 per night, your reservation is confirmed". The confirmed row gets its check and <code>confirmed = yes</code> (callee) lands at the top of the evidence. Nothing the agent says can fill that row.</figcaption></figure>
+    </div>
+  </section>
 
   <section id="play">
     <p class="kicker">Play</p>
@@ -135,21 +145,19 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;font-family:var(--mo
 
 Impossible Hotel
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-scripted     ████████████████████    6,540
-openai       ███████████████████▋    6,444
-gemini       ███████████████████▌    6,410
+scripted                    ████████████████████    6540
+openai:gpt-4o-mini          ███████████████████▋    6444
+gemini:gemini-flash-latest  ███████████████████▌    6410
 
-                    SUCCESS  TIME   COST    PRICE
-scripted              ✓       69s  $0.00  ¥19,900
-openai:gpt-4o-mini    ✓       95s  $0.00  ¥19,900
-gemini:flash          ✓       79s  $0.00  ¥20,000
+                            SUCCESS  TIME   COST  SCORE
+scripted                    ✓         69s  $0.00   95.4
+openai:gpt-4o-mini          ✓         95s  $0.00   89.5
+gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
 
 <span class="ok">False completions: 0</span></pre>
       <div>
-        <p class="quote">Three agents, one hotel that lists at ¥23,500. All three closed under ¥20,000 — <em>and every "win" is anchored to the hotel saying "your reservation is confirmed."</em></p>
-        <p class="sub" style="margin-top:18px">That is the point. A battle card is only interesting if a win means the callee actually committed. Points reflect price and time; cards export as SVG/PNG and the run as JSON.</p>
-        <video controls playsinline preload="metadata" poster="../media/oathra-battle-ja-poster.png" style="width:100%;border:1px solid var(--line);border-radius:10px;background:#0e0d0c"><source src="../media/oathra-battle-ja.mp4" type="video/mp4"></video>
-        <p class="sub" style="font-size:.85em;opacity:.7;margin-top:8px">A screen recording of that run (63 s, with sound; Japanese audio and captions). The three windows are the Arena replaying the recorded calls.</p>
+        <p class="quote">The run behind the video. All three closed under ¥20,000 (¥19,900 / ¥19,900 / ¥20,000) — <em>and every "win" is anchored to the hotel saying "your reservation is confirmed."</em></p>
+        <p class="sub" style="margin-top:18px">This run first produced one false completion: a hotel line that merely restated the price was being counted as a "yes". The evidence engine was fixed and the same three calls re-run to zero. That is what the battle command is for. Points reflect price and time; cards export as SVG/PNG and the run as JSON.</p>
       </div>
     </div>
   </section>
@@ -280,7 +288,7 @@ silent-hangup · caller-echo-trap
     </ul>
     <p class="sub" style="margin-top:24px">Numbers on this page come from our own runs and are reproducible with the commands shown. We publish no benchmark we did not measure.</p>
     <div class="cta">
-      <h2>Give your agent a mission.</h2>
+      <h2>Start with two agents on the phone.</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <button class="cmd" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.querySelector('.copy').textContent='copied'"><b>$</b> npx oathra demo <span class="copy">copy</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
