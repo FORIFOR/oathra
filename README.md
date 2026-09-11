@@ -4,7 +4,7 @@
 </p>
 
 ```bash
-npx oathra demo
+npx oathra demo        # npm release pending — until then: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
 ```
 
 <p align="center"><a href="https://forifor.github.io/oathra/"><img src="docs/media/demo-arena.gif" width="820" alt="Oathra Arena: an agent negotiates a restaurant reservation; evidence fills in; MISSION COMPLETE"/></a></p>
