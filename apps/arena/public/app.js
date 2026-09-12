@@ -621,25 +621,42 @@
       ]),
     ]);
   }
+  // The agent restating its request ("9月12日の19時以降で2名") would otherwise add a second
+  // pending row for the same field/value/speaker; keep one row per distinct claim (latest time,
+  // verified if any occurrence was verified) so the count reflects distinct fields.
+  function foldEvidence(list) {
+    const m = new Map();
+    for (const e of list) {
+      const k = `${e.field}|${fmtVal(e.value)}|${e.source}`;
+      const prev = m.get(k);
+      if (!prev) { m.set(k, e); continue; }
+      const latest = e.t >= prev.t ? e : prev;
+      m.set(k, latest.verified || !(prev.verified || e.verified) ? latest : { ...latest, verified: true });
+    }
+    return [...m.values()].sort((a, b) => a.t - b.t);
+  }
   function renderEvidence(all) {
     const c = app.call;
     const ul = $("#evidence-list");
-    if (!c.evidence.length) {
+    const items = foldEvidence(c.evidence);
+    if (!items.length) {
       ul.replaceChildren(el("li", { class: "e-empty muted", text: t("noEvidence") }));
-    } else if (all || !$$(".erow", ul).length) {
-      ul.replaceChildren(...c.evidence.slice().reverse().map((e) => evidenceNode(e)));
     } else {
-      // Newest first: insert unseen items at the top with a slide-in; patch verified state in place.
+      // Newest first: insert unseen items at the top with a slide-in; patch verified state in place;
+      // drop rows that were folded into a later duplicate.
+      const first = !$$(".erow", ul).length;
       const byId = new Map($$(".erow", ul).map((n) => [n.dataset.eid, n]));
-      for (const e of c.evidence) {
+      const keep = new Set(items.map((e) => e.id));
+      for (const [id, node] of byId) if (!keep.has(id)) node.remove();
+      for (const e of items) {
         const node = byId.get(e.id);
-        if (!node) { ul.prepend(evidenceNode(e, " is-new")); continue; }
+        if (!node) { ul.prepend(evidenceNode(e, all || first ? "" : " is-new")); continue; }
         if (node.dataset.verified !== String(!!e.verified)) {
           node.replaceWith(evidenceNode(e, e.verified ? " just-verified" : ""));
         }
       }
     }
-    $("#evidence-count").textContent = c.evidence.length ? `${c.evidence.filter((e) => e.verified).length} / ${c.evidence.length}` : "0";
+    $("#evidence-count").textContent = items.length ? `${items.filter((e) => e.verified).length} / ${items.length}` : "0";
   }
 
   function renderMetrics() {
