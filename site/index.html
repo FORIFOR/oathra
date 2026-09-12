@@ -187,7 +187,7 @@ footer a{color:var(--ink2)}
 
   <section id="play">
     <h2>まず遊ぶ。<em>AI同士</em>か、自分が店員になるか。</h2>
-    <p class="prose">シナリオは5本。19時が満席のレストラン、底値を隠しているホテル、まとめ買いの値引き交渉、シリアル番号の復唱、そして全時間帯が満席で「取れませんでした」と言うのが唯一の正解になる罠。モデル同士を同じ条件で戦わせて、カードにして共有できます。</p>
+    <p class="prose">シナリオは6本。19時が満席のレストラン（日本語版と英語版）、底値を隠しているホテル、まとめ買いの値引き交渉、シリアル番号の復唱、そして全時間帯が満席で「取れませんでした」と言うのが唯一の正解になる罠。モデル同士を同じ条件で戦わせて、カードにして共有できます。</p>
     <div class="two">
       <pre>$ npx oathra battle impossible-hotel \
     --agent scripted --agent openai --agent gemini \
@@ -327,7 +327,7 @@ silent-hangup · caller-echo-trap
     <h2>使い方</h2>
     <ol class="steps">
       <li><b>ブラウザで見る</b><span><code>npx oathra demo</code>。シナリオを選ぶと AI 同士が電話を始めます。「自分が電話に出る」を選べば、あなたが店員として AI の交渉を受けられます。</span></li>
-      <li><b>ターミナルで回す</b><span><code>oathra play impossible-hotel --fast</code> で一瞬、<code>oathra eval</code> で全シナリオと誤完了の数、<code>oathra replay &lt;id&gt; --at 00:18</code> でその時点の状態に戻れます。</span></li>
+      <li><b>ターミナルで回す</b><span><code>oathra play impossible-hotel --fast</code> で一瞬、<code>oathra eval</code> で全シナリオと誤完了の数、<code>oathra eval --callee openai</code> で店員役を GPT-4o mini に任せた評価（数円）、<code>oathra replay &lt;id&gt; --at 00:18</code> でその時点の状態に戻れます。</span></li>
       <li><b>電話会社を繋ぐ</b><span><code>oathra setup phone</code> で質問に2〜3個答えるだけ。<code>oathra phone doctor</code> で各層を確認し、<code>oathra phone test --level local</code> は通話料ゼロです。</span></li>
       <li><b>本物の番号に電話する</b><span><code>oathra call --to +81… --scenario restaurant-reservation</code>。録音と全イベントが <code>.oathra/calls/</code> に残り、結果は相手が実際に確定したときだけ <code>completed</code> になります。</span></li>
     </ol>
