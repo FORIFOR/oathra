@@ -106,3 +106,8 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 - X（v0.1.0 英語告知）: https://x.com/i/status/2098794398595297406
 - 未実施（アカウントが必要）: dev.to 投稿、Show HN（新規アカウント制限）、Reddit
 - 2026-09-13 01:xx JST: e2b-dev/awesome-ai-sdks#364 の CLA をユーザーが署名、チェック pass、mergeState CLEAN（メンテナのレビュー待ち）
+
+## dev.to（2026-09-13 00:39 JST）
+
+- 英語記事を API で投稿（下書き → 内容確認 → 公開）: https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484
+- README.en とサイト英語版フッターにリンク追加
