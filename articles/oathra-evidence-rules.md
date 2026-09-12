@@ -6,7 +6,7 @@ topics: ["ai", "typescript", "regex", "voiceagent", "oss"]
 published: false
 ---
 
-前回の記事（[AIが電話で予約を取るOSSを作った](https://zenn.dev/forifori/articles/oathra-launch)）で「予約できたかどうかは店側の発言で判定する」と書いたら、「具体的にどう判定しているのか」と聞かれたので、判定部分だけ切り出して書きます。コードは [packages/evidence](https://github.com/FORIFOR/oathra/tree/main/packages/evidence) にあります。LLM は一切使っていません。
+前回の記事（[AIが電話で予約を取るOSSを作った](https://zenn.dev/forifori/articles/oathra-launch)）で「予約できたかどうかは店側の発言で判定する」と書きました。今回はその判定部分だけを切り出して書きます。コードは [packages/evidence](https://github.com/FORIFOR/oathra/tree/main/packages/evidence) にあります。LLM は一切使っていません。
 
 ## 何を防ぎたいか
 
