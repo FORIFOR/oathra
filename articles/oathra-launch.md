@@ -1,5 +1,5 @@
 ---
-title: "AIに電話をかけさせて、本当に予約できたかはAIに言わせないOSSを作った"
+title: "AIが電話で予約を取るOSSを作った。予約できたかどうかは、AIではなく店側の発言で判定する"
 emoji: "📞"
 type: "tech"
 topics: ["ai", "typescript", "twilio", "voiceagent", "oss"]

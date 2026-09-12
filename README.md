@@ -1,4 +1,4 @@
-<p align="center"><strong>Oathra</strong><br>AIに、電話をかけさせた。本当に予約できたかは、AIに言わせない。</p>
+<p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
 ```bash
 npx oathra demo        # APIキー不要。ブラウザで AI 同士の電話が始まる（npm: oathra 0.1.0）
