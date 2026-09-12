@@ -72,3 +72,21 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.events.every((e, i) => e.seq === i)).toBe(true);
   });
 });
+
+describe("ScriptedAgent stall guard", () => {
+  it("walks away instead of asking the same question forever", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "hotel/impossible-hotel.yaml"));
+    const contract = contractFromScenario(scenario);
+    const agent = new ScriptedAgent();
+    const ctx = (last: string, i: number) => ({
+      contract, language: "ja" as const, turnIndex: i, elapsedMs: i * 5000, permitted: ["ask", "reserve", "negotiate", "share_name"] as const,
+      transcript: [{ id: `c${i}`, source: "callee" as const, text: last, t: i * 5000 }],
+      mission: { verified: {}, pending: {}, missing: ["price", "breakfast", "smoking", "confirmed"], violations: [] },
+    });
+    const a = await agent.respond(ctx("はい、朝食は付いております。", 1));
+    const b = await agent.respond(ctx("はい、朝食は付いております。", 2));
+    const c = await agent.respond(ctx("はい、朝食は付いております。", 3));
+    expect(a.text).toBe(b.text);
+    expect(c.action).toBe("hangup");
+  });
+});

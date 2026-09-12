@@ -423,7 +423,9 @@ export class CallRuntime {
         { ...ctx, hints: ["The callee did not respond to your previous line. Do NOT repeat it. Say something different, much shorter, or ask one simple question."] },
         hooks,
       );
-      if (normalizeLine(lastAgent.text) === normalizeLine(response.text)) {
+      // On a voice line a repeated line usually means the callee did not hear it; in a text
+      // simulation it just means the brain is stuck, and "can you hear me?" would be nonsense.
+      if (normalizeLine(lastAgent.text) === normalizeLine(response.text) && typeof session.ack === "function") {
         response = { ...response, text: contract.language === "ja" ? "もしもし、お声は届いておりますでしょうか？" : "Hello, can you hear me?" };
       }
     }

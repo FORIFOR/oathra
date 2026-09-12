@@ -25,8 +25,21 @@ export class ScriptedAgent implements BrainProvider {
   private priceAttempts = 0;
   private altAsks = 0;
   private closing = false;
+  private lastLine = "";
+  private repeats = 0;
 
   async respond(ctx: BrainContext): Promise<BrainResponse> {
+    const r = this.decide(ctx);
+    // Stall guard: asking the same thing a third time never helps; leave politely instead of looping.
+    if (r.action !== "hangup") {
+      this.repeats = r.text === this.lastLine ? this.repeats + 1 : 0;
+      this.lastLine = r.text;
+      if (this.repeats >= 2) return { text: "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
+    }
+    return r;
+  }
+
+  private decide(ctx: BrainContext): BrainResponse {
     const { contract, mission, transcript } = ctx;
     const domain = domainOf(contract);
     const input = contract.input as Record<string, unknown>;
@@ -73,7 +86,12 @@ export class ScriptedAgent implements BrainProvider {
       // Date offered that differs from the requested date is not acceptable.
       if (date && typeof pending.date === "string" && pending.date !== date) bad.add("date");
 
-      if (bad.size === 0) {
+      // A pending set with nothing violated is only acceptable when the callee is not refusing
+      // and the price (when the mission has a budget) is actually on the table; otherwise
+      // "はい、それでお願いします" would accept a room whose price was just declined.
+      const refusing = REFUSAL_RE.test(lastText) && !AGREEMENT_RE.test(lastText);
+      const priceUnknown = typeof budget === "number" && mission.verified.price === undefined && pending.price === undefined;
+      if (bad.size === 0 && !refusing && !priceUnknown) {
         // Accept, restating the most important value so the acceptance is explicit.
         const restate =
           typeof pending.time === "string" ? jaTime(pending.time)
@@ -126,9 +144,11 @@ export class ScriptedAgent implements BrainProvider {
       return { text: "では、その内容で予約をお願いします。" };
     }
 
-    // 9. Missing required fields: ask for them explicitly.
-    if (mission.missing.includes("breakfast")) return { text: "朝食は付いておりますでしょうか？" };
-    if (mission.missing.includes("smoking")) return { text: "禁煙のお部屋はございますか？" };
+    // 9. Missing required fields: ask for them explicitly (price first when there is a budget;
+    //    never re-ask something the callee has already put on the table).
+    if (mission.missing.includes("price") && domain !== "restaurant" && pending.price === undefined) return { text: "料金はおいくらでしょうか？" };
+    if (mission.missing.includes("breakfast") && pending.breakfast === undefined) return { text: "朝食は付いておりますでしょうか？" };
+    if (mission.missing.includes("smoking") && pending.smoking === undefined) return { text: "禁煙のお部屋はございますか？" };
     if (mission.missing.includes("price") && domain !== "restaurant") return { text: "料金はおいくらでしょうか？" };
 
     // 10. Fallback: restate the request.

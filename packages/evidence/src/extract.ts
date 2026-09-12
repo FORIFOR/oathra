@@ -21,7 +21,7 @@ export type Claim = {
 };
 
 const NEGATIVE_JA =
-  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|ございません|ありません|承れません|お受けできません|いたしかねます|お断り/;
+  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|ございません|ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可/;
 const NEGATIVE_EN =
   /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have)\b/i;
 
@@ -72,6 +72,8 @@ export function splitClauses(text: string): Clause[] {
   return out;
 }
 
+export const SERIAL_CUE_RE = /シリアル|serial|製造番号|型番|管理番号|S\/N|コード|code\b/i;
+
 export type ExtractOptions = {
   now: Date;
   language: Language;
@@ -100,7 +102,12 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
     clauses.find((c) => index >= c.offset && index < c.offset + c.text.length)?.polarity ?? "positive";
 
   // Serials are spoken with separators ("R、Z、7…"), so they are parsed on the whole utterance.
+  // A bare alphanumeric token is only a serial when the utterance says so ("シリアル番号は…") or when it is
+  // spelled out character by character; otherwise product names like "gpt-4o-mini" would become evidence.
+  const serialCue = SERIAL_CUE_RE.test(u.text);
   for (const p of parseSerials(u.text)) {
+    const spelled = /[、,\s]/.test(p.span.trim());
+    if (!serialCue && !spelled) continue;
     claims.push({ field: "serial", value: p.value, span: p.span, semantic: 0.9, polarity: polarityAt(p.index) });
   }
 

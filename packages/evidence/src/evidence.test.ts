@@ -278,3 +278,29 @@ describe("re-quote is not a yes", () => {
     expect(e.values().confirmed).toBe(true);
   });
 });
+
+describe("serial extraction precision", () => {
+  it("ignores product names that merely look like serials", () => {
+    const e = new EvidenceEngine({ language: "ja" });
+    const r = e.ingest({ id: "c0", source: "callee", text: "お電話ありがとうございます、ホテル・リンゴ（openai:gpt-4o-mini）でございます。", t: 0 });
+    expect(r.created.filter((c) => c.field === "serial")).toHaveLength(0);
+  });
+  it("keeps serials that are announced or spelled out", () => {
+    const e = new EvidenceEngine({ language: "ja" });
+    expect(e.ingest({ id: "c1", source: "callee", text: "シリアル番号はRZ7K3Q91XAです。", t: 0 }).created.some((c) => c.field === "serial" && c.value === "RZ7K3Q91XA")).toBe(true);
+    expect(e.ingest({ id: "c2", source: "callee", text: "R、Z、7、K、3、Q、9、1、X、A、です。", t: 1 }).created.some((c) => c.field === "serial" && c.value === "RZ7K3Q91XA")).toBe(true);
+  });
+});
+
+describe("a refusal that quotes the number is not an offer", () => {
+  it("does not let the caller accept a price the callee just declined", () => {
+    const e = new EvidenceEngine({ language: "ja" });
+    e.ingest({ id: "a0", source: "caller", text: "予算が5,500円なのですが、5,500円以内になりませんでしょうか？", t: 0 });
+    const r1 = e.ingest({ id: "c1", source: "callee", text: "申し訳ありませんが、ワイヤレスイヤホンは3個で5,500円にはなりません。", t: 1 });
+    expect(r1.created.filter((c) => c.field === "price")).toHaveLength(0);
+    const r2 = e.ingest({ id: "a1", source: "caller", text: "では、5,500円でお願いします。", t: 2 });
+    expect(r2.verified.filter((c) => c.field === "price")).toHaveLength(0);
+    const r3 = e.ingest({ id: "c2", source: "callee", text: "6,000円でしたらご提供できかねますが、6,500円ならご用意できます。", t: 3 });
+    expect(r3.created.filter((c) => c.field === "price").map((c) => c.value)).toEqual([6500]);
+  });
+});

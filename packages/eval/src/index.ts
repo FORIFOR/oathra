@@ -145,12 +145,14 @@ export type BrainFactory = () => BrainProvider;
  * per-call state (negotiation attempts, closing flags), so each run gets a
  * fresh instance.
  */
-export async function evalScenarios(scenarios: Scenario[], brain: BrainFactory, opts: { runs?: number; onRun?: (r: ScenarioRun) => void } = {}): Promise<EvalSummary> {
+export type CharacterFactory = (scenario: Scenario) => CalleeCharacter;
+
+export async function evalScenarios(scenarios: Scenario[], brain: BrainFactory, opts: { runs?: number; onRun?: (r: ScenarioRun) => void; character?: CharacterFactory } = {}): Promise<EvalSummary> {
   const runs: ScenarioRun[] = [];
   const n = opts.runs ?? 1;
   for (const s of scenarios) {
     for (let i = 0; i < n; i++) {
-      const r = await runScenario(s, { brain: brain(), seed: s.seed + i });
+      const r = await runScenario(s, { brain: brain(), seed: s.seed + i, ...(opts.character ? { character: opts.character(s) } : {}) });
       runs.push(r);
       opts.onRun?.(r);
     }

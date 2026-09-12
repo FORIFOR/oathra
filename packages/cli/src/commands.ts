@@ -6,6 +6,7 @@ import { battle, evalScenarios, renderBattleMarkdown, renderBattleSvg, runAdvers
 import { listCalls, loadCall, renderTimeline, saveCall, snapshotAt } from "@oathra/replay";
 import { loadScenarioDir, loadScenarioFile, parseScenario, type Scenario } from "@oathra/scenario";
 import { brains, listBrains, resolveBrain } from "./brains.js";
+import { resolveCallee } from "./callee.js";
 import { phoneDoctor, phoneAdd, phoneList, phoneRemove, phoneTest, providerCreate, runPhoneCall, setupPhone } from "./phone.js";
 import { arenaPublicDir, scenariosDir } from "./paths.js";
 import { liveRenderer, resultBox } from "./render.js";
@@ -195,20 +196,31 @@ export async function cmdEval(positional: string[], flags: Flags): Promise<void>
   const brain = () => resolveBrain(brainName);
   const runs = num(flags.runs, 1);
   if (flags.adversarial !== undefined) return cmdEvalAdversarial(scenarios, brain, brainName, flags);
-  console.log(`\n${bold("Oathra Eval")}  ${dim(`${scenarios.length} scenarios × ${runs} runs · brain=${brainName}`)}\n`);
-  const rows: string[][] = [["Scenario", "Status", "Score", "TTFA p50", "Turns", "FalseComp"]];
+  const calleeSpec = str(flags.callee);
+  const character = calleeSpec ? resolveCallee(calleeSpec) : undefined;
+  console.log(`\n${bold("Oathra Eval")}  ${dim(`${scenarios.length} scenarios × ${runs} runs · brain=${brainName}${calleeSpec ? ` · callee=${calleeSpec}` : ""}`)}\n`);
+  const rows: string[][] = [["Scenario", "Status", "Callee says", "Score", "TTFA p50", "Turns", "FalseComp"]];
+  const notes: string[] = [];
   const summary = await evalScenarios(scenarios, brain, {
     runs,
+    ...(character ? { character } : {}),
     onRun: (r) => {
       const status = r.outcome.result.complete ? green("completed") : yellow(r.outcome.result.status);
+      const says = r.truth?.confirmed === true ? "confirmed" : r.truth?.confirmed === false ? "not confirmed" : "-";
+      const missed = r.truth?.confirmed === true && !r.outcome.result.complete;
       rows.push([
         r.scenario.id,
         status,
+        missed ? yellow(says) : says,
         String(r.score.overall),
         `${r.outcome.metrics.latency.ttfaP50Ms ?? "-"} ms`,
         String(r.outcome.metrics.turns),
-        r.score.falseCompletion ? bad("YES") : green("0"),
+        r.score.falseCompletion ? bad("YES " + r.score.disagreements.join(",")) : green("0"),
       ]);
+      if (r.score.falseCompletion || missed) {
+        const why = r.score.falseCompletion ? `false completion on ${r.score.disagreements.join(", ")}` : `callee says confirmed but result is ${r.outcome.result.status} (missing: ${r.outcome.result.missing.join(", ") || "-"})`;
+        notes.push(`${bold(r.scenario.id)}: ${why}\n  truth  ${JSON.stringify(r.truth)}\n  fields ${JSON.stringify(r.outcome.result.fields)}\n` + r.outcome.transcript.slice(-6).map((t) => `  ${t.source === "callee" ? "▸" : " "} ${t.text}`).join("\n"));
+      }
     },
   });
   console.log(table(rows, ["l", "l", "r", "r", "r", "l"]));
@@ -221,7 +233,8 @@ export async function cmdEval(positional: string[], flags: Flags): Promise<void>
       summary.falseCompletions === 0 ? green(`False Completion   0`) : bad(`False Completion   ${summary.falseCompletions}`),
     ]),
   );
-  if (flags.json) console.log(JSON.stringify(summary.runs.map((r) => ({ scenario: r.scenario.id, brain: r.brain, status: r.outcome.result.status, score: r.score, metrics: r.outcome.metrics })), null, 2));
+  if (notes.length) console.log("\n" + notes.join("\n\n") + "\n");
+  if (flags.json) console.log(JSON.stringify(summary.runs.map((r) => ({ scenario: r.scenario.id, brain: r.brain, callee: calleeSpec ?? "scripted", status: r.outcome.result.status, fields: r.outcome.result.fields, missing: r.outcome.result.missing, truth: r.truth, score: r.score, metrics: r.outcome.metrics, transcript: r.outcome.transcript.map((t) => ({ source: t.source, text: t.text, t: t.t })) })), null, 2));
   if (summary.falseCompletions > 0) process.exitCode = 1;
 }
 
@@ -434,7 +447,7 @@ ${bold("Real phone")}
   oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id>  --engine gpt-live|realtime|pipeline  --provider <id>")}
 
 ${bold("Trust")}
-  oathra eval [dir]                  run every scenario; false completions must be 0   ${dim("--runs <n>  --json")}
+  oathra eval [dir]                  run every scenario; false completions must be 0   ${dim("--runs <n>  --json  --callee openai|gemini")}
   oathra eval --adversarial <n>      mutated callees try to fool the evidence engine   ${dim("--seed <n>  --json")}
   oathra replay [callId]             re-render a saved call; --at mm:ss.mmm for time travel
 

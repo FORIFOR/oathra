@@ -4,6 +4,7 @@ import { HotelCharacter } from "./hotel.js";
 import { RestaurantCharacter } from "./restaurant.js";
 import { SerialCharacter } from "./serial.js";
 import { ShopCharacter } from "./shop.js";
+import { LlmCharacter } from "./llm.js";
 
 const registry: Record<string, CharacterFactory> = {
   restaurant: (s) => new RestaurantCharacter(s),
@@ -24,4 +25,5 @@ export function createCharacter(scenario: Scenario, rng: () => number): CalleeCh
   return f(scenario, rng);
 }
 
-export { HotelCharacter, RestaurantCharacter, SerialCharacter, ShopCharacter };
+export { HotelCharacter, RestaurantCharacter, SerialCharacter, ShopCharacter, LlmCharacter };
+export { parseCalleeJson, type ChatFn, type ChatMessage, type LlmCharacterOptions } from "./llm.js";
