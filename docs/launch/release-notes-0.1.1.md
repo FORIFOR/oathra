@@ -1,0 +1,20 @@
+# oathra 0.1.1
+
+試用中に見つかった 3 件を直しました。評価ゲートはすべて通過（tests 127、`oathra eval` False Completion 0、`--adversarial 10000` 0/10000）。
+
+## 直したこと
+
+- **曖昧な返答に確認を求める** (#5): 相手が「たぶん大丈夫」「確認します」と言ったとき、エージェントは同じ依頼を繰り返して諦めるのではなく、「確定でよいか」を最大 2 回たずねる。
+- **AI が挨拶したら通話が終わる** (#6): Play モード（人間が店役）で、エージェントが「失礼します」と言った後も相手の次の発話を待ち続けていた。エージェントの切電で即時に終了する。
+- **証拠パネルの重複行をまとめる** (#7): 同じ項目・同じ値・同じ出所の未確定行を 1 行に畳み、最新時刻と検証済みフラグを保持する。
+
+## 変わらないこと
+
+- 完了判定は相手（店側）の発言から得た証拠のみ。AI の自己申告では完了にならない。
+- スクリプト脳・シミュレータは API キー不要で動く（`npx oathra demo`）。
+
+## Fixes
+
+- Agent asks for a definite answer (at most twice) when the callee hedges instead of restating the request until the stall guard gives up (#5).
+- With a human callee (Play mode), the call ends as soon as the agent hangs up (#6).
+- Evidence panel folds duplicate unverified rows for the same field/value/source (#7).
