@@ -95,3 +95,4 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 
 - 記事が公開: https://zenn.dev/forifori/articles/oathra-launch
 - 反映しなかった原因は Zenn 側ではなく、公開履歴に残っていた `video/.work` の作業ファイル（813 MB）で clone が肥大化していたこと。`git filter-repo` で履歴から除去して force-push（071dd5b → 7a88aa0）した直後の push でデプロイが通った。書き換え前の完全バックアップは作業ディレクトリ外の bundle に保存。
+- X（Zenn 公開の告知、23:46 JST）: https://x.com/i/status/2098785294816583984
