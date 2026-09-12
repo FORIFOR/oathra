@@ -240,7 +240,7 @@ Simulator numbers (latency, scores) are from the simulator. Real-call latency to
 
 ## Try to fool it
 
-Run `npx oathra demo`, pick "Play" (you answer the phone), and say these as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
+Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
 
 - Restaurant: "probably fine, but it's not confirmed yet" → not confirmed
 - Restaurant: "7 pm is full, but 7:30 works" → 7:00 is never taken as the time; 7:30 stays pending until the agent accepts it

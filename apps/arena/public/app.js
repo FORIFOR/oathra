@@ -77,6 +77,7 @@
       idle: "Idle", listening: "Listening", understanding: "Understanding", acting: "Acting", speaking: "Speaking",
       dialing: "Dialing…", replaying: "Replaying…", noTranscript: "No transcript.",
       yourMission: "YOUR MISSION", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up",
+      foolTitle: "TRY TO FOOL IT", foolHint: "Say one of these as the shop. None of them should count as booked.",
       mission: "MISSION", evidence: "EVIDENCE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool",
       latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
       yes: "yes", no: "no",
@@ -105,6 +106,7 @@
       idle: "待機", listening: "聞いています", understanding: "考えています", acting: "実行中", speaking: "話しています",
       dialing: "発信中…", replaying: "再生中…", noTranscript: "会話はありません。",
       yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る",
+      foolTitle: "誤完了を誘ってみる", foolHint: "店側としてこの中のどれかを言ってみてください。どれも「予約できた」にはならないはずです。",
       mission: "ミッション", evidence: "証拠", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール",
       latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
       yes: "はい", no: "いいえ",
@@ -133,6 +135,25 @@
   const scenarioTitle = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? TITLE_JA[s.id] : (s && s.title) || (s && s.id) || "";
   const scenarioTitleSub = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? s.title : "";
   const briefOf = (s) => (LANG === "ja" ? (s.brief || s.description) : (s.description || s.brief)) || "";
+  // Callee lines that must NOT settle the call (docs/launch/miscompletion-cases.md). Shown in Play mode as one-click chips.
+  const FOOL = {
+    ja: {
+      restaurant: ["たぶん大丈夫ですが、まだ確定ではありません", "19時は満席です。19時半なら空いています", "承りました。ただ、料金は2万3500円になります"],
+      hotel: ["たぶん大丈夫ですが、まだ確定ではありません", "承りました。ただ、料金は2万3500円になります", "1万8000円でご予約承りました。……失礼しました、2万3500円です"],
+      default: ["たぶん大丈夫ですが、まだ確定ではありません", "確認して折り返します", "承りました。ただ、条件は変わります"],
+    },
+    en: {
+      restaurant: ["Probably fine, but it's not confirmed yet", "7 pm is full. 7:30 is open", "Got it. But the price will be 23,500 yen"],
+      hotel: ["Probably fine, but it's not confirmed yet", "Got it. But the price will be 23,500 yen", "Booked at 18,000 yen. Sorry, I mean 23,500"],
+      default: ["Probably fine, but it's not confirmed yet", "Let me check and call you back", "Got it. But the terms will change"],
+    },
+  };
+  function foolLines(s) {
+    const lang = s && s.language === "en" ? "en" : "ja"; // follow the call language, not the UI language
+    const id = String((s && s.id) || "");
+    const kind = /hotel/.test(id) ? "hotel" : /restaurant/.test(id) ? "restaurant" : "default";
+    return FOOL[lang][kind];
+  }
   const langLabel = (l) => (l === "ja" ? (LANG === "ja" ? "日本語" : "Japanese") : l === "en" ? (LANG === "ja" ? "英語" : "English") : String(l || ""));
   const diffLabel = (d) => t({ easy: "diffEasy", normal: "diffNormal", hard: "diffHard", extreme: "diffExtreme" }[d] || "diffNormal");
   const brainLabel = (b) => (!b || b === "scripted") ? t("builtin") : String(b);
@@ -459,7 +480,12 @@
     if (play) {
       $("#play-label").textContent = t("playLabel", { name: c.calleeName });
       $("#play-brief-text").textContent = briefOf(c.scenario);
+      const row = $("#fool-row");
+      row.replaceChildren(...foolLines(c.scenario).map((line) => el("button", { type: "button", class: "fool-chip", title: t("foolHint"), text: line })));
+      $("#fool").hidden = false;
       setTimeout(() => $("#play-text").focus(), 50);
+    } else {
+      $("#fool").hidden = true;
     }
     renderMission();
   }
@@ -745,6 +771,13 @@
     input.value = "";
     try { await api(`/api/calls/${encodeURIComponent(c.id)}/reply`, { method: "POST", body: JSON.stringify({ text }) }); }
     catch (err) { toast(t("sendFailed", { msg: err.message })); input.value = text; }
+    input.focus();
+  });
+  $("#fool-row").addEventListener("click", (e) => {
+    const chip = e.target.closest(".fool-chip");
+    if (!chip) return;
+    const input = $("#play-text");
+    input.value = chip.textContent;
     input.focus();
   });
   $("#play-hangup").addEventListener("click", async () => {
