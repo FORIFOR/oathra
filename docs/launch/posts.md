@@ -4,6 +4,8 @@ All numbers below are from our own runs (see README). No superlatives, no claims
 
 ## Hacker News — Show HN
 
+> 2026-09-12: HN refused the submission from this new account: "We're temporarily restricting Show HNs because of a massive influx, mostly by users who aren't yet familiar with the site or its culture." Plain link submissions from a fresh account tend to get flagged, so HN is parked until the account has some comment history. The English article for dev.to is in `devto-oathra-launch.md` (publish via the dev.to API with DEVTO_API_KEY in .env, or paste it in the editor).
+
 **Title**: Show HN: Oathra – give AI agents a phone, and proof of what happened
 
 **Text**:
