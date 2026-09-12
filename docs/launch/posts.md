@@ -83,3 +83,4 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 ## npm（2026-09-12 16:05 JST）
 
 - `oathra@0.1.0` を公開: https://www.npmjs.com/package/oathra — `npx oathra demo` が動くようになった。レジストリからの `npx -y oathra@0.1.0 play restaurant-reservation-en --fast` で completed を確認
+- X（npm 公開の告知）: 日本語 https://x.com/i/status/2098671529647366272 ／ 英語 https://x.com/i/status/2098671635201220831
