@@ -124,3 +124,16 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 
 - `docs/media/oathra-battle-{ja,en}-vertical.mp4`（1080x1920、59 秒）。横動画を 9:16 に配置し、見出し（JA: 「AIがホテルに電話して、値切る。／「予約できた」は店が言った時だけ。」）とコマンド、URL を重ねた。見出しは HTML を headless Chrome で透過 PNG に描画（ffmpeg に drawtext が無いため）。冒頭のタイピング 3.2 秒をカット。
 - 投稿は未実施。TikTok / Facebook は API 投稿に審査が要るため Chrome 拡張経由で行う（ユーザーのログインと「投稿して」が必要）。
+
+## v0.1.1 の準備（2026-09-13 06:00 JST、publish はユーザー操作）
+
+修正内容（試用で見つかった 3 件）:
+- エージェントが曖昧な返答（たぶん・確認します）に確認を求めず諦めていた（#5）
+- Play モードで AI の挨拶後も通話が終わらなかった（#6）
+- 証拠パネルに同じ未確定値が重複表示されていた（#7）
+
+publish 手順（2FA コードは npm が求めたときに入力）:
+```
+cd packages/cli && npm publish --access public
+```
+publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0」を 0.1.1 に更新、GitHub Release v0.1.1 の作成、`npx -y oathra@0.1.1 demo` の起動確認。

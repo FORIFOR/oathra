@@ -1,6 +1,6 @@
 {
   "name": "oathra",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Playable, verifiable phone actions for AI agents. `npx oathra demo`",
   "license": "Apache-2.0",
   "type": "module",
