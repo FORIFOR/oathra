@@ -1,7 +1,7 @@
 <p align="center"><strong>Oathra</strong><br>AIに、電話をかけさせた。本当に予約できたかは、AIに言わせない。</p>
 
 ```bash
-npx oathra demo        # npm 公開までは: git clone https://github.com/FORIFOR/oathra && cd oathra && pnpm install && pnpm demo
+npx oathra demo        # APIキー不要。ブラウザで AI 同士の電話が始まる（npm: oathra 0.1.0）
 ```
 
 <p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>
