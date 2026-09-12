@@ -27,11 +27,14 @@ export class ScriptedAgent implements BrainProvider {
   private closing = false;
   private lastLine = "";
   private repeats = 0;
+  private lastTurn = -1;
 
   async respond(ctx: BrainContext): Promise<BrainResponse> {
     const r = this.decide(ctx);
     // Stall guard: asking the same thing a third time never helps; leave politely instead of looping.
-    if (r.action !== "hangup") {
+    // (a runtime retry of the same turn — signalled by hints — is not a new repeat)
+    if (r.action !== "hangup" && !ctx.hints?.length && ctx.turnIndex !== this.lastTurn) {
+      this.lastTurn = ctx.turnIndex;
       this.repeats = r.text === this.lastLine ? this.repeats + 1 : 0;
       this.lastLine = r.text;
       if (this.repeats >= 2) return { text: "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
@@ -86,12 +89,13 @@ export class ScriptedAgent implements BrainProvider {
       // Date offered that differs from the requested date is not acceptable.
       if (date && typeof pending.date === "string" && pending.date !== date) bad.add("date");
 
-      // A pending set with nothing violated is only acceptable when the callee is not refusing
-      // and the price (when the mission has a budget) is actually on the table; otherwise
-      // "はい、それでお願いします" would accept a room whose price was just declined.
-      const refusing = REFUSAL_RE.test(lastText) && !AGREEMENT_RE.test(lastText);
+      // A pending set with nothing violated is only acceptable when the price (if the mission
+      // has a budget) is actually on the table; otherwise "はい、それでお願いします" would accept
+      // a room whose price was just declined.
+      // (a refusal clause never produces a pending offer — the evidence engine drops negative
+      // clauses — so "19時は満席ですが、19時半は？" still lands here with time=19:30 pending)
       const priceUnknown = typeof budget === "number" && mission.verified.price === undefined && pending.price === undefined;
-      if (bad.size === 0 && !refusing && !priceUnknown) {
+      if (bad.size === 0 && !priceUnknown) {
         // Accept, restating the most important value so the acceptance is explicit.
         const restate =
           typeof pending.time === "string" ? jaTime(pending.time)
@@ -105,7 +109,7 @@ export class ScriptedAgent implements BrainProvider {
         const range = after && before ? `${jaTime(after)}から${jaTime(before)}の間` : after ? `${jaTime(after)}以降` : before ? `${jaTime(before)}まで` : "他の時間";
         return { text: `申し訳ありません、${range}で空いているお席はありますでしょうか？` };
       }
-      if (bad.has("price") && typeof budget === "number") return { text: this.counterPrice(domain, contract, budget) };
+      if (bad.has("price") && typeof budget === "number") return this.counterPrice(domain, contract, budget);
       if (bad.has("date") && date) return { text: `恐れ入ります、${jaDate(date)}でお願いしたいのですが、空いておりますでしょうか？` };
       if (bad.has("breakfast")) return { text: "朝食付きでお願いすることはできますでしょうか？" };
       if (bad.has("smoking")) return { text: "禁煙のお部屋でお願いできますでしょうか？" };
@@ -114,7 +118,7 @@ export class ScriptedAgent implements BrainProvider {
     // 5. Price above budget with no counter offer: negotiate or walk away.
     const knownPrice = (mission.verified.price ?? mission.pending.price) as number | undefined;
     if (typeof budget === "number" && typeof knownPrice === "number" && knownPrice > budget) {
-      return { text: this.counterPrice(domain, contract, budget) };
+      return this.counterPrice(domain, contract, budget);
     }
     if (REFUSAL_RE.test(lastText) && /値引|お値引き|安く|discount/.test(lastText)) {
       return { text: "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
@@ -141,7 +145,8 @@ export class ScriptedAgent implements BrainProvider {
 
     // 8. Everything required is verified except the confirmation: ask to finalise.
     if (mission.missing.length === 1 && mission.missing[0] === "confirmed" && mission.violations.length === 0) {
-      return { text: "では、その内容で予約をお願いします。" };
+      // a yes/no question, so a plain 「はい、承知しました」 is a real answer (see isConfirmRequest)
+      return { text: "では、その内容で予約をお願いします。ご予約を確定してもよろしいでしょうか？" };
     }
 
     // 9. Missing required fields: ask for them explicitly (price first when there is a budget;
@@ -155,18 +160,19 @@ export class ScriptedAgent implements BrainProvider {
     return { text: this.opener(domain, contract) };
   }
 
-  private counterPrice(domain: Domain, contract: CallContract, budget: number): string {
+  private counterPrice(domain: Domain, contract: CallContract, budget: number): BrainResponse {
     this.priceAttempts++;
     const qty = typeof contract.input.quantity === "number" ? contract.input.quantity : undefined;
     const wantsBreakfast = contract.constraints.breakfast?.eq === true;
-    if (this.priceAttempts > 3) return "承知しました。では今回は見送らせていただきます。ありがとうございました。";
-    if (this.priceAttempts === 1) return `予算が${jaPrice(budget)}なのですが、${jaPrice(budget)}以内になりませんでしょうか？`;
+    // walking away is a hang-up, not just a line — otherwise the call drifts on after the goodbye
+    if (this.priceAttempts > 3) return { text: "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
+    if (this.priceAttempts === 1) return { text: `予算が${jaPrice(budget)}なのですが、${jaPrice(budget)}以内になりませんでしょうか？` };
     if (this.priceAttempts === 2) {
-      if (domain === "hotel" && wantsBreakfast) return `朝食付きで${jaPrice(budget)}にしていただくことはできませんか？`;
-      if (domain === "shop" && qty && qty > 1) return `${qty}個まとめて購入しますので、1個${jaPrice(budget)}ではいかがでしょうか？`;
-      return `もう少しだけお安くなりませんか？${jaPrice(budget)}でしたら今日決めます。`;
+      if (domain === "hotel" && wantsBreakfast) return { text: `朝食付きで${jaPrice(budget)}にしていただくことはできませんか？` };
+      if (domain === "shop" && qty && qty > 1) return { text: `${qty}個まとめて購入しますので、1個${jaPrice(budget)}ではいかがでしょうか？` };
+      return { text: `もう少しだけお安くなりませんか？${jaPrice(budget)}でしたら今日決めます。` };
     }
-    return `${jaPrice(budget)}が上限でして、それ以上ですと難しいのですが、いかがでしょうか？`;
+    return { text: `${jaPrice(budget)}が上限でして、それ以上ですと難しいのですが、いかがでしょうか？` };
   }
 
   private opener(domain: Domain, contract: CallContract): string {

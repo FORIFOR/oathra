@@ -132,7 +132,9 @@ export class AdversarialCharacter implements CalleeCharacter {
   }
 
   truth(): Record<string, unknown> {
-    const base = this.base.truth?.() ?? {};
+    // mutations wrap the scripted characters, whose truth is synchronous
+    const raw = this.base.truth?.();
+    const base = raw && !(raw instanceof Promise) ? raw : {};
     switch (this.mutation) {
       case "never-confirm":
       case "silent-hangup":

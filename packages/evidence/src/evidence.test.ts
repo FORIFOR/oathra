@@ -304,3 +304,47 @@ describe("a refusal that quotes the number is not an offer", () => {
     expect(r3.created.filter((c) => c.field === "price").map((c) => c.value)).toEqual([6500]);
   });
 });
+
+describe("natural confirmations", () => {
+  const conf = (text: string) => new EvidenceEngine({ language: "ja", now: new Date("2026-09-11T10:00:00+09:00") }).ingest({ id: "c", source: "callee", text, t: 0 }).verified.some((e) => e.field === "confirmed" && e.value === true);
+  it("accepts past-tense bookings", () => {
+    expect(conf("田中様、9月12日の19時30分に2名でご予約いたしました。")).toBe(true);
+    expect(conf("2名様で19時半、手配いたしました。")).toBe(true);
+    expect(conf("19時半で2名様、お席を押さえました。")).toBe(true);
+  });
+  it("treats a present-tense commitment as an intention unless it answers the caller's confirmation question", () => {
+    expect(conf("佐藤様、10月3日に2名様で朝食付き・禁煙のお部屋を19,800円でご予約いたします。")).toBe(false);
+    const e = new EvidenceEngine({ language: "ja", now: new Date("2026-09-11T10:00:00+09:00") });
+    e.ingest({ id: "a0", source: "caller", text: "では、10月3日、2名、朝食付き禁煙で19,800円、ご予約を確定してもよろしいでしょうか？", t: 0 });
+    const r = e.ingest({ id: "c0", source: "callee", text: "はい、10月3日に2名様で朝食付き・禁煙のお部屋を19,800円でご予約いたします。", t: 1 });
+    expect(r.verified.some((x) => x.field === "confirmed")).toBe(true);
+    const e2 = new EvidenceEngine({ language: "ja" });
+    e2.ingest({ id: "a0", source: "caller", text: "ご予約を確定してもよろしいでしょうか？", t: 0 });
+    expect(e2.ingest({ id: "c0", source: "callee", text: "それでは、ご予約いたします。お名前を教えていただけますか？", t: 1 }).verified.some((x) => x.field === "confirmed")).toBe(false);
+  });
+  it("does not count questions, hedges or echo traps", () => {
+    expect(conf("ご予約内容を確認いたします。")).toBe(false);
+    expect(conf("19時半で2名様、ご予約いたしますか？")).toBe(false);
+    expect(conf("たぶん19時半で2名様、ご予約いたしました。")).toBe(false);
+    expect(conf("ご予約できましたね？よろしいでしょうか？")).toBe(false);
+  });
+});
+
+describe("agreements", () => {
+  it("verifies a serial when the callee says the read-back is right", () => {
+    const e = new EvidenceEngine({ language: "ja" });
+    e.ingest({ id: "c0", source: "callee", text: "シリアル番号はRZ7K3Q91XAです。", t: 0 });
+    e.ingest({ id: "a0", source: "caller", text: "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？", t: 1 });
+    const r = e.ingest({ id: "c1", source: "callee", text: "はい、それで正しいです。シリアル番号はRZ7K3Q91XAです。", t: 2 });
+    expect(r.verified.some((x) => x.field === "serial" && x.value === "RZ7K3Q91XA")).toBe(true);
+  });
+  it("does not settle a value from an acknowledgement that goes on with a contrast", () => {
+    const e = new EvidenceEngine({ language: "ja" });
+    e.ingest({ id: "a0", source: "caller", text: "予算が5,500円なのですが、5,500円以内になりませんでしょうか？", t: 0 });
+    const r = e.ingest({ id: "c0", source: "callee", text: "ご予算について承知いたしました。お値段は少し調整可能ですが、3個購入の場合はもう少しお高くなります。", t: 1 });
+    expect(r.verified.filter((x) => x.field === "price")).toHaveLength(0);
+    const e2 = new EvidenceEngine({ language: "ja" });
+    e2.ingest({ id: "a0", source: "caller", text: "では、19時半でお願いします。", t: 0 });
+    expect(e2.ingest({ id: "c0", source: "callee", text: "承知いたしました。", t: 1 }).verified.some((x) => x.field === "time" && x.value === "19:30")).toBe(true);
+  });
+});

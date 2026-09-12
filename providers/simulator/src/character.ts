@@ -22,7 +22,7 @@ export interface CalleeCharacter {
    * Ground truth from the callee's side, used by eval to detect false
    * completions: what the callee actually committed to.
    */
-  truth?(): Record<string, unknown>;
+  truth?(): Record<string, unknown> | Promise<Record<string, unknown>>;
 }
 
 export type CharacterFactory = (scenario: Scenario, rng: () => number) => CalleeCharacter;

@@ -125,7 +125,7 @@ export async function runScenario(scenario: Scenario, opts: RunScenarioOptions):
     ...(opts.onEvent ? { onEvent: opts.onEvent } : {}),
     ...(opts.callId ? { callId: opts.callId } : {}),
   });
-  const truth = transport.lastCharacter?.truth?.();
+  const truth = await transport.lastCharacter?.truth?.();
   return { scenario, brain: opts.brain.name, outcome, truth, score: scoreRun(scenario, outcome, truth) };
 }
 

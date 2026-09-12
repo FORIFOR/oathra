@@ -14,7 +14,7 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isConfirmRequest, type Claim } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 export type EngineOptions = {
@@ -70,6 +70,9 @@ export class EvidenceEngine {
       for (const [field, pending] of [...counterpart.entries()]) {
         const r = restated.get(field);
         if (r && !valuesEqual(r.value, pending.value)) continue; // counter-proposal, handled below
+        // "ご予算について承知いたしました。…ですが" acknowledges the request; it settles the value
+        // only when the callee restates it or answers without a contrast.
+        if (!r && u.source === "callee" && CONTRAST_RE.test(u.text)) continue;
         const mark = this.markVerified(pending, u, r);
         verifiedNow.push(mark);
         counterpart.delete(field);
@@ -78,7 +81,10 @@ export class EvidenceEngine {
 
     // 1b. A "yes" to the caller's explicit confirmation question is callee
     //     evidence of the commitment, even without the ritual phrase.
-    if (u.source === "callee" && this.pendingConfirmRequest && isAffirmativeAnswer(u.text) && !positive.some((c) => c.field === "confirmed")) {
+    //     So is a commitment that restates the terms ("10月3日に2名様で19,800円でご予約いたします")
+    //     when it answers that question; unprompted, the same sentence is only an intention.
+    const commitsWithTerms = COMMIT_RE.test(u.text) && positive.some((c) => ["date", "time", "price", "partySize"].includes(c.field)) && !/[?？]|ますか|でしょうか|ましょうか/.test(u.text);
+    if (u.source === "callee" && this.pendingConfirmRequest && (isAffirmativeAnswer(u.text) || commitsWithTerms) && !positive.some((c) => c.field === "confirmed")) {
       const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: u.text, semantic: 0.85, polarity: "positive" }, true);
       ev.explicit = false;
       ev.note = `agreed to confirmation request ${this.pendingConfirmRequest.id}`;

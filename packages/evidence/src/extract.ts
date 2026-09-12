@@ -29,11 +29,21 @@ export const REFUSAL_RE = new RegExp(`${NEGATIVE_JA.source}|${NEGATIVE_EN.source
 
 /** Explicit reservation confirmation by the callee. Only these phrases count. */
 export const CONFIRMATION_RE =
-  /ご予約(?:を)?(?:承り|お取り|お受け|確定|お受けいたし|承っ)|承りました|お取りしました|お取りいたしました|確保(?:いたし|し)ました|確定(?:いたし|し)ました|予約完了|お席をご用意|(?:reservation|booking|table|room)\s+(?:is|has been)\s+(?:confirmed|booked|reserved|set)|\b(?:confirmed|booked|reserved|all set)\b|(?:you're|you are) (?:all set|booked)|I've (?:booked|reserved|confirmed)/i;
+  /ご予約(?:を)?(?:承り|お取り|お受け|確定|お受けいたし|承っ)|承りました|お取りしました|お取りいたしました|確保(?:いたし|し)ました|確定(?:いたし|し)ました|予約完了|お席をご用意|(?:ご)?予約(?:を)?(?:いたし|し|させていただき|を入れ)ました|(?:お)?押さえ(?:いたし|し|ておき)?ました|手配(?:いたし|し)ました|(?:ご)?用意(?:いたし|し)ました|(?:reservation|booking|table|room)\s+(?:is|has been)\s+(?:confirmed|booked|reserved|set)|\b(?:confirmed|booked|reserved|all set)\b|(?:you're|you are) (?:all set|booked)|I've (?:booked|reserved|confirmed)/i;
+
+/**
+ * A commitment in the present/future tense ("…でご予約いたします"). On its own it is an intention,
+ * not evidence; the engine counts it only as the answer to the caller's explicit confirmation
+ * question, and only when the utterance restates the terms (date/time/price/party).
+ */
+export const COMMIT_RE = /(?:ご)?予約(?:を)?(?:いたします|させていただきます|お取りします|お取りいたします|お受けします|お受けいたします)|(?:お)?押さえ(?:ておき|いたし|し)ます|手配(?:いたし|し)ます|(?:I(?:'ll| will) (?:book|reserve) (?:that|it|you))/i;
 
 /** Callee agrees to a value the caller proposed. */
 export const AGREEMENT_RE =
-  /かしこまりました|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly/i;
+  /かしこまりました|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly/i;
+
+/** "承知しました、ですが…": an agreement followed by a contrast is not a clean yes. */
+export const CONTRAST_RE = /ですが|ますが|けど|けれど|しかし|ただし|ただ、|とはいえ|\bbut\b|however|although/i;
 
 /** Caller accepts a value the callee offered. */
 export const ACCEPTANCE_RE =
@@ -134,7 +144,8 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
       if (no) claims.push({ field: b.field, value: false, span: no[0], semantic: 0.92, polarity: clause.polarity });
       else if (yes) claims.push({ field: b.field, value: true, span: yes[0], semantic: 0.92, polarity: clause.polarity });
     }
-    if (clause.polarity === "positive" && !HEDGE_RE.test(text)) {
+    // a hedge anywhere in the utterance ("たぶん…、承りました") disqualifies the confirmation
+    if (clause.polarity === "positive" && !HEDGE_RE.test(text) && !HEDGE_RE.test(u.text)) {
       const c = text.match(CONFIRMATION_RE);
       if (c) claims.push({ field: "confirmed", value: true, span: c[0], semantic: 0.97, polarity: "positive" });
     }
