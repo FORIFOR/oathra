@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "oathra": "./dist/bundle/bin.js"
+    "oathra": "dist/bundle/bin.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -56,7 +56,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/FORIFOR/oathra"
+    "url": "git+https://github.com/FORIFOR/oathra.git"
   },
   "keywords": [
     "voice-agent",
