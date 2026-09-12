@@ -365,3 +365,17 @@ describe("English restaurant flow", () => {
     expect(r3.verified.some((x) => x.field === "partySize" && x.value === 2) || r3.created.some((x) => x.field === "partySize")).toBe(true);
   });
 });
+
+describe("breakfast polarity", () => {
+  const claim = (text: string) => new EvidenceEngine({ language: "ja" }).ingest({ id: "c", source: "callee", text, t: 0 }).created.filter((e) => e.field === "breakfast").map((e) => e.value);
+  it("does not read a negated phrase as breakfast included", () => {
+    expect(claim("最低価格の18,800円で朝食は含まれませんが、禁煙のお部屋をご用意できます。")).toEqual([false]);
+    expect(claim("朝食は付いておりません。")).toEqual([false]);
+    expect(claim("朝食なしの禁煙のお部屋を18,800円でお取りいたします。")).toEqual([false]);
+  });
+  it("still reads the positive forms", () => {
+    expect(claim("はい、朝食は含まれております。")).toEqual([true]);
+    expect(claim("朝食付きで19,900円でご案内できます。")).toEqual([true]);
+    expect(claim("朝食は付いております。")).toEqual([true]);
+  });
+});

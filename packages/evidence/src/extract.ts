@@ -92,8 +92,8 @@ export type ExtractOptions = {
 const BOOLEAN_FIELDS: Array<{ field: string; yes: RegExp; no: RegExp }> = [
   {
     field: "breakfast",
-    yes: /朝食(?:付き|付|込み|込|あり|をお付け|をおつけ|付きで|も含|込みで)|朝食は(?:含まれ|付い)|breakfast (?:is )?included|with breakfast|includes breakfast|comes with breakfast/i,
-    no: /朝食(?:なし|は付き?ません|は別|別|抜き)|no breakfast|without breakfast|breakfast (?:is )?not included/i,
+    yes: /朝食(?:付き|付|込み|込|あり|をお付け|をおつけ|付きで|も含|込みで)(?!ません|ておりません|ていません|ない)|朝食は(?:含まれ|付い)(?:て|ており)?(?!ません|おりません|いません|ない)|breakfast (?:is )?included|with breakfast|includes breakfast|comes with breakfast/i,
+    no: /朝食(?:なし|は付き?ません|は付い(?:て|ており)?(?:ません|おりません|いません|ない)|は含まれ(?:て|ており)?(?:ません|おりません|いません|ない)|は別|別|抜き|は(?:お)?付けできません)|no breakfast|without breakfast|breakfast (?:is )?not included|breakfast(?:'s| is)? not (?:included|available)/i,
   },
   {
     field: "smoking",
