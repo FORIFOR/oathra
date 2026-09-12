@@ -96,3 +96,12 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 - 記事が公開: https://zenn.dev/forifori/articles/oathra-launch
 - 反映しなかった原因は Zenn 側ではなく、公開履歴に残っていた `video/.work` の作業ファイル（813 MB）で clone が肥大化していたこと。`git filter-repo` で履歴から除去して force-push（071dd5b → 7a88aa0）した直後の push でデプロイが通った。書き換え前の完全バックアップは作業ディレクトリ外の bundle に保存。
 - X（Zenn 公開の告知、23:46 JST）: https://x.com/i/status/2098785294816583984
+
+## 2026-09-13 00:30 JST — 露出の追加手
+
+- GitHub Release v0.1.0（stable、npm 0.1.0 と同一 tarball）: https://github.com/FORIFOR/oathra/releases/tag/v0.1.0
+- good first issue #2 薬局シナリオ / #3 Telnyx / #4 ElevenLabs TTS
+- GitHub topics を 16 個に拡張、npm keywords を 15 個に拡張（次回 publish で反映）
+- awesome リスト PR 追加: caramaschiHG/awesome-ai-agents-2026#570（Open-Source Voice）、Jenqyang/Awesome-AI-Agents#486（Tools）。既存: yzfly/awesome-voice-agents#42（未反応）、e2b-dev/awesome-ai-sdks#364（CLA 署名待ち＝ユーザー操作）
+- X（v0.1.0 英語告知）: https://x.com/i/status/2098794398595297406
+- 未実施（アカウントが必要）: dev.to 投稿、Show HN（新規アカウント制限）、Reddit

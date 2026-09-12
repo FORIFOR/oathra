@@ -60,12 +60,20 @@
   },
   "keywords": [
     "voice-agent",
+    "voice-ai",
     "phone",
+    "telephony",
     "ai-agents",
+    "llm-agents",
     "twilio",
+    "sip",
+    "livekit",
+    "openai",
+    "gemini",
     "deepgram",
     "evidence",
-    "simulator"
+    "simulator",
+    "agent-evaluation"
   ],
   "engines": {
     "node": ">=22"
