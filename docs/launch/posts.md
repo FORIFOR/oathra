@@ -105,3 +105,4 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 - awesome リスト PR 追加: caramaschiHG/awesome-ai-agents-2026#570（Open-Source Voice）、Jenqyang/Awesome-AI-Agents#486（Tools）。既存: yzfly/awesome-voice-agents#42（未反応）、e2b-dev/awesome-ai-sdks#364（CLA 署名待ち＝ユーザー操作）
 - X（v0.1.0 英語告知）: https://x.com/i/status/2098794398595297406
 - 未実施（アカウントが必要）: dev.to 投稿、Show HN（新規アカウント制限）、Reddit
+- 2026-09-13 01:xx JST: e2b-dev/awesome-ai-sdks#364 の CLA をユーザーが署名、チェック pass、mergeState CLEAN（メンテナのレビュー待ち）
