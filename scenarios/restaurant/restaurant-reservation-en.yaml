@@ -1,0 +1,63 @@
+version: 1
+id: restaurant-reservation-en
+title: Restaurant Reservation (English)
+description: Book a table for two tomorrow at 7 pm or later. 7 pm is full; the restaurant will offer 7:30.
+difficulty: easy
+language: en
+domain: restaurant
+tags: [reservation, evidence, english]
+
+mission:
+  objective: restaurant.reservation
+  brief: Book a table for two tomorrow, 7 pm or later. 7 pm is full.
+  input:
+    date: "2026-09-12"
+    partySize: 2
+    name: Tanaka
+  require:
+    date: true
+    time: true
+    partySize: true
+    confirmed: true
+  constraints:
+    date: { eq: "2026-09-12" }
+    time: { gte: "19:00" }
+    partySize: { eq: 2 }
+  permissions:
+    ask: true
+    reserve: true
+    share_name: true
+    cancel: false
+    payment: false
+
+callee:
+  persona:
+    name: Trattoria Ringo
+    patience: 0.7
+    flexibility: 0.5
+    friendliness: 0.8
+    avatar: "^_^"
+  greeting: "Thank you for calling Trattoria Ringo, how can I help you?"
+  knowledge:
+    now: "2026-09-11T10:00:00+09:00"
+    availability:
+      "18:00": 2
+      "18:30": 1
+      "19:00": 0
+      "19:30": 1
+      "20:00": 3
+      "20:30": 2
+    max_party: 6
+    require_name: true
+  rules:
+    - never confirm a reservation without a name
+    - offer the nearest available slot when the requested one is full
+
+win:
+  confirmed: true
+  time: { gte: "19:00" }
+
+score:
+  success: 5000
+  latency: 0.1
+  turns: 0.1

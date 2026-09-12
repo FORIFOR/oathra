@@ -36,6 +36,7 @@ export const QUESTION_RE = /[?？]|でしょうか|ますか|ませんか|いか
 export function extractName(text: string): string | undefined {
   const m =
     /(?:名前は|名義は|予約者は)?\s*([^\s、。,\.]{1,12}?)\s*(?:と申します|といいます|と言います|で(?:お願いします|す)$)/.exec(text.trim()) ??
+    /(?:it's under|it is under|under the name of|under|my name is|it's|this is|name is)\s+([A-Z][A-Za-z\-']{1,20})/.exec(text) ??
     /(?:my name is|it's|this is|under)\s+([A-Za-z][A-Za-z\-']{1,20})/i.exec(text);
   const n = m?.[1];
   if (!n) return undefined;
@@ -57,6 +58,25 @@ export function jaTime(hhmm: string): string {
   if (min === 0) return `${h}時`;
   if (min === 30) return `${h}時半`;
   return `${h}時${min}分`;
+}
+
+/** "19:30" -> "7:30 pm", "19:00" -> "7 pm". */
+export function enTime(hhmm: string): string {
+  const m = /^(\d{2}):(\d{2})$/.exec(hhmm);
+  if (!m) return hhmm;
+  const h = Number(m[1]);
+  const min = m[2];
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const ampm = h < 12 ? "am" : "pm";
+  return min === "00" ? `${h12} ${ampm}` : `${h12}:${min} ${ampm}`;
+}
+
+/** "2026-09-12" -> "September 12". */
+export function enDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  return `${months[Number(m[2]) - 1]} ${Number(m[3])}`;
 }
 
 export function jaPrice(n: number): string {

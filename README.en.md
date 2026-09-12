@@ -77,6 +77,7 @@ pnpm install && pnpm build
 pnpm demo                                      # http://localhost:4242
 
 pnpm oathra play restaurant-reservation        # same call in the terminal
+pnpm oathra play restaurant-reservation-en     # the same call in English
 pnpm oathra play impossible-hotel --fast       # instant, virtual clock
 pnpm oathra eval                               # every scenario, False Completion count
 pnpm oathra eval --adversarial 10000           # mutated callees: never-confirm, wrong restate, hedges…
@@ -197,7 +198,7 @@ pnpm oathra scenario validate ./my-challenge.yaml
 pnpm oathra play ./my-challenge.yaml
 ```
 
-Official v0.1 challenges: `restaurant-reservation`, `impossible-hotel`, `bulk-buy`, `serial-number`, `false-completion-trap`.
+Official v0.1 challenges: `restaurant-reservation`, `restaurant-reservation-en`, `impossible-hotel`, `bulk-buy`, `serial-number`, `false-completion-trap`.
 
 ## Eval
 

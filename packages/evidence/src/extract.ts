@@ -116,7 +116,9 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
   // spelled out character by character; otherwise product names like "gpt-4o-mini" would become evidence.
   const serialCue = SERIAL_CUE_RE.test(u.text);
   for (const p of parseSerials(u.text)) {
-    const spelled = /[、,\s]/.test(p.span.trim());
+    // spelled out = at least four one- or two-character groups ("R、Z、7、K"), not an English sentence
+    const groups = p.span.trim().split(/[、,\s-]+/).filter(Boolean);
+    const spelled = groups.length >= 4 && groups.every((g) => g.length <= 2);
     if (!serialCue && !spelled) continue;
     claims.push({ field: "serial", value: p.value, span: p.span, semantic: 0.9, polarity: polarityAt(p.index) });
   }

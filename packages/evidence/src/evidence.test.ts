@@ -348,3 +348,20 @@ describe("agreements", () => {
     expect(e2.ingest({ id: "c0", source: "callee", text: "承知いたしました。", t: 1 }).verified.some((x) => x.field === "time" && x.value === "19:30")).toBe(true);
   });
 });
+
+describe("English restaurant flow", () => {
+  it("verifies the offered slot on acceptance and completes on the callee's confirmation", () => {
+    const e = new EvidenceEngine({ language: "en", now: new Date("2026-09-11T10:00:00+09:00") });
+    e.ingest({ id: "a0", source: "caller", text: "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?", t: 0 });
+    const r1 = e.ingest({ id: "c1", source: "callee", text: "7 pm is fully booked, but we do have 7:30 pm. Would that work?", t: 1 });
+    expect(r1.created.some((x) => x.field === "time" && x.value === "19:30")).toBe(true);
+    expect(r1.created.some((x) => x.field === "time" && x.value === "19:00")).toBe(false);
+    const r2 = e.ingest({ id: "a1", source: "caller", text: "That works. Let's go with 7:30 pm, please.", t: 2 });
+    expect(r2.verified.some((x) => x.field === "time" && x.value === "19:30")).toBe(true);
+    e.ingest({ id: "c2", source: "callee", text: "Certainly. May I have a name for the reservation?", t: 3 });
+    e.ingest({ id: "a2", source: "caller", text: "It's under Tanaka.", t: 4 });
+    const r3 = e.ingest({ id: "c3", source: "callee", text: "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.", t: 5 });
+    expect(r3.verified.some((x) => x.field === "confirmed" && x.value === true)).toBe(true);
+    expect(r3.verified.some((x) => x.field === "partySize" && x.value === 2) || r3.created.some((x) => x.field === "partySize")).toBe(true);
+  });
+});

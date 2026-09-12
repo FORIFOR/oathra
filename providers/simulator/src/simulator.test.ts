@@ -31,6 +31,15 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.endReason).toBe("agent_hangup");
   });
 
+  it("books the English restaurant at 7:30 pm with verified evidence", async () => {
+    const o = await play("restaurant/restaurant-reservation-en.yaml");
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.result.fields).toMatchObject({ date: "2026-09-12", time: "19:30", partySize: 2, confirmed: true });
+    expect(o.result.evidence.some((e) => e.field === "time" && e.value === "19:00" && e.verified)).toBe(false);
+    expect(dialogue).not.toMatch(/[ぁ-んァ-ン一-龥]/);
+  });
+
   it("negotiates the hotel under budget with breakfast", async () => {
     const o = await play("hotel/impossible-hotel.yaml");
     const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");

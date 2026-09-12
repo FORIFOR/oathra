@@ -15,7 +15,7 @@
 import { CONFIRMATION_RE, parsePartySize, parsePrices, parseSerials, parseTimes } from "@oathra/evidence";
 import type { BrainProvider } from "@oathra/core";
 import type { Scenario } from "@oathra/scenario";
-import { createCharacter, jaPrice, jaTime, mulberry32, spellSerial, type CalleeCharacter, type CalleeContext, type CalleeReply } from "@oathra/simulator";
+import { createCharacter, enTime, jaPrice, jaTime, mulberry32, spellSerial, type CalleeCharacter, type CalleeContext, type CalleeReply } from "@oathra/simulator";
 import { runScenario, type ScenarioRun } from "./index.js";
 
 export const MUTATIONS = ["never-confirm", "wrong-restate", "negate-then-offer", "silent-hangup", "caller-echo-trap"] as const;
@@ -97,7 +97,8 @@ export class AdversarialCharacter implements CalleeCharacter {
       const nh = mm === 30 ? hh + 1 : hh;
       const nm = mm === 30 ? 0 : 30;
       const nv = `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
-      for (const m of parseTimes(text)) if (m.value === t.value) text = text.split(m.span).join(jaTime(nv));
+      const fmt = /\b(?:am|pm)\b/i.test(text) ? enTime : jaTime; // English callee text keeps English times
+      for (const m of parseTimes(text)) if (m.value === t.value) text = text.split(m.span).join(fmt(nv));
       this.committed.time = nv;
       this.mutatedConfirm = true;
       return { ...reply, text };
