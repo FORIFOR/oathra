@@ -137,3 +137,7 @@ publish 手順（2FA コードは npm が求めたときに入力）:
 cd packages/cli && npm publish --access public
 ```
 publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0」を 0.1.1 に更新、GitHub Release v0.1.1 の作成、`npx -y oathra@0.1.1 demo` の起動確認。
+
+## Zenn 2 本目の下書き（2026-09-13 07:00 JST、未公開）
+
+`articles/oathra-evidence-rules.md`（`published: false`）。判定ルール 4 本（節分割・曖昧語・確定経路 2 つ・確定の失効）を実コードの引用で説明し、検証 5 ケースの表と Play モードのボタンを案内。公開するには `published: true` にして push するだけ。公開の可否は本人の判断。
