@@ -86,3 +86,7 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 
 - `oathra@0.1.0` を公開: https://www.npmjs.com/package/oathra — `npx oathra demo` が動くようになった。レジストリからの `npx -y oathra@0.1.0 play restaurant-reservation-en --fast` で completed を確認
 - X（npm 公開の告知）: 日本語 https://x.com/i/status/2098671529647366272 ／ 英語 https://x.com/i/status/2098671635201220831
+
+## BGM（2026-09-12 22:40 JST）
+
+- ユーザー提供の AI 生成 BGM 群（~/Downloads/bgm）から「I11 Quiet Momentum」を採用し、`scripts/add-bgm.sh ja|en` でナレーション付きミックスの下に敷いた（サイドチェインで会話中は −12〜18 dB 下げ、切電後のカードで持ち上げ）。曲は `video/bgm/quiet-momentum.m4a` に保存。比較用に「I02 Soft Circuit」版も作成（未採用）。フレームの再レンダリングは不要で、mp4 の映像ストリームをそのまま流用している。
