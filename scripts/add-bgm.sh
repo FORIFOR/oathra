@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Lay a music bed under an already-mixed battle video without re-rendering frames.
-#   scripts/add-bgm.sh ja [video/bgm/quiet-momentum.m4a]
+#   scripts/add-bgm.sh ja [video/bgm/soft-circuit.m4a]
 # Reads  video/.work/oathra-battle-<lang>-mix.wav (voice + sfx, -16 LUFS) and docs/media/oathra-battle-<lang>.mp4 (video stream),
 # writes docs/media/oathra-battle-<lang>.mp4 and -square.mp4 with the bed ducked under speech (sidechain), lifted on the end card.
 set -euo pipefail
