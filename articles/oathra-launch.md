@@ -1,6 +1,6 @@
 ---
 title: "AIに電話をかけさせて、本当に予約できたかはAIに言わせないOSSを作った"
-emoji: "☎️"
+emoji: "📞"
 type: "tech"
 topics: ["ai", "typescript", "twilio", "voiceagent", "oss"]
 published: true
