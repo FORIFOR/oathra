@@ -69,7 +69,8 @@ pre .ok{color:var(--green)}pre .amb{color:var(--amber)}pre .dim{color:var(--mute
 .card p{margin:0;color:var(--ink2);font-size:14.5px}
 .three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 ol.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:14px}
-ol.steps li{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start}
+ol.steps li{display:grid;grid-template-columns:44px 1fr;grid-template-areas:"n t" "n d";column-gap:14px;row-gap:2px;align-items:start}
+ol.steps li::before{grid-area:n}ol.steps li>b{grid-area:t}ol.steps li>span{grid-area:d;min-width:0}
 ol.steps li::before{counter-increment:s;content:counter(s);font-family:var(--mono);font-size:13px;color:var(--amber);border:1px solid var(--line);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-top:2px}
 ol.steps b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
 ol.steps span{color:var(--ink2);font-size:15px}
