@@ -242,6 +242,10 @@ Simulator numbers (latency, scores) are from the simulator. Real-call latency to
 
 `pnpm install && pnpm test`. Add a scenario under `scenarios/`, a character under `providers/simulator/src/characters/`, or a provider under `providers/`. Keep the dependency direction; CI checks it.
 
+## Using it for real work
+
+If you want to run Oathra against your own reservation, reception or confirmation calls, open a thread on [GitHub Discussions](https://github.com/FORIFOR/oathra/discussions) with what the calls look like and where it breaks. Scenarios and evidence rules get added from those threads.
+
 ## License
 
 Apache-2.0. Oathra Cloud (managed SIP, numbers, hosted inference, teams) will be a separate offering; the OSS runtime is complete on its own.

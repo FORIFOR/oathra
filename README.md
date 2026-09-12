@@ -172,6 +172,10 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 `pnpm install && pnpm test`。シナリオは `scenarios/`、店員キャラクターは `providers/simulator/src/characters/`、電話会社は `oathra provider create phone <id>` で雛形を生成できます。依存の向きだけ守ってください。
 
+## 導入相談
+
+自社の予約・受付・確認電話に使えるか、実通話での検証を含めて相談したい方は [GitHub Discussions](https://github.com/FORIFOR/oathra/discussions) にスレッドを立ててください。業務での利用例と、詰まった箇所を書いてもらえれば、シナリオや証拠ルールの追加で応えます。
+
 ## ライセンス
 
 Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や並列通話、チーム機能は別サービスとして検討中です。
