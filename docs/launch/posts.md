@@ -125,7 +125,7 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 - `docs/media/oathra-battle-{ja,en}-vertical.mp4`（1080x1920、59 秒）。横動画を 9:16 に配置し、見出し（JA: 「AIがホテルに電話して、値切る。／「予約できた」は店が言った時だけ。」）とコマンド、URL を重ねた。見出しは HTML を headless Chrome で透過 PNG に描画（ffmpeg に drawtext が無いため）。冒頭のタイピング 3.2 秒をカット。
 - 投稿は未実施。TikTok / Facebook は API 投稿に審査が要るため Chrome 拡張経由で行う（ユーザーのログインと「投稿して」が必要）。
 
-## v0.1.1 の準備（2026-09-13 06:00 JST、publish はユーザー操作）
+## v0.1.1 の準備（2026-09-13 05:40 JST、publish はユーザー操作）
 
 修正内容（試用で見つかった 3 件）:
 - エージェントが曖昧な返答（たぶん・確認します）に確認を求めず諦めていた（#5）
@@ -138,10 +138,10 @@ cd packages/cli && npm publish --access public
 ```
 publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0」を 0.1.1 に更新、GitHub Release v0.1.1 の作成、`npx -y oathra@0.1.1 demo` の起動確認。
 
-## Zenn 2 本目の下書き（2026-09-13 07:00 JST、未公開）
+## Zenn 2 本目の下書き（2026-09-13 05:50 JST、未公開）
 
 `articles/oathra-evidence-rules.md`（`published: false`）。判定ルール 4 本（節分割・曖昧語・確定経路 2 つ・確定の失効）を実コードの引用で説明し、検証 5 ケースの表と Play モードのボタンを案内。公開するには `published: true` にして push するだけ。公開の可否は本人の判断。
 
-## dev.to 2 本目の下書き（2026-09-13 07:20 JST、未投稿・ローカルのみ）
+## dev.to 2 本目の下書き（2026-09-13 05:53 JST、未投稿・ローカルのみ）
 
 `docs/launch/devto-evidence-rules.md`。Zenn 2 本目の英語版。dev.to には送っていない（下書き作成も含めて未操作）。投稿は本人の指示があってから API で行う。
