@@ -221,7 +221,7 @@ Bugs this harness caught before it went green: thousands separators splitting `2
 
 ## Status
 
-v0.1 (launch candidate):
+v0.1.0 (released 2026-09-12):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent

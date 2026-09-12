@@ -155,7 +155,7 @@ pnpm oathra play ./my-challenge.yaml
 
 PR で追加されたシナリオは CI が検証し、誤完了を出すものは通しません。
 
-## 正直な現状（v0.1 リリース候補）
+## 正直な現状（v0.1.0）
 
 - [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
 - [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
