@@ -111,3 +111,8 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 
 - 英語記事を API で投稿（下書き → 内容確認 → 公開）: https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484
 - README.en とサイト英語版フッターにリンク追加
+
+## Reddit（2026-09-13 01:2x JST）
+
+- r/LLMDevs に投稿（フレア Tools、アカウント Important-Rip-1205 はこの日に作成）: https://www.reddit.com/r/LLMDevs/comments/1wektiw/i_built_an_opensource_runtime_for_ai_agents_that/
+- 投稿直後に「Reddit のフィルターによって削除されました」表示。新規アカウントの自動フィルター。モデレーターへの承認依頼（modmail）が必要。
