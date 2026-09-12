@@ -8,7 +8,7 @@
  * to beat in Agent Battle.
  */
 import { checkConstraints, isPermitted, type CallContract } from "@oathra/contract";
-import { AGREEMENT_RE, REFUSAL_RE } from "@oathra/evidence";
+import { AGREEMENT_RE, HEDGE_RE, REFUSAL_RE } from "@oathra/evidence";
 import type { BrainContext, BrainProvider, BrainResponse } from "@oathra/core";
 import { enDate, enTime, jaDate, jaPrice, jaTime, NAME_ASK_RE, spellSerial } from "./character.js";
 
@@ -24,6 +24,7 @@ export class ScriptedAgent implements BrainProvider {
   readonly name = "scripted";
   private priceAttempts = 0;
   private altAsks = 0;
+  private hedgeAsks = 0;
   private closing = false;
   private lastLine = "";
   private repeats = 0;
@@ -130,6 +131,18 @@ export class ScriptedAgent implements BrainProvider {
     }
     if (REFUSAL_RE.test(lastText) && /値引|お値引き|安く|discount/.test(lastText)) {
       return { text: "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
+    }
+
+    // 5b. A hedge ("たぶん大丈夫", "確認します") is neither a yes nor a no: ask for a definite
+    // answer (twice at most) instead of restating the request until the stall guard gives up.
+    if (HEDGE_RE.test(lastText) && mission.missing.length > 0 && this.hedgeAsks < 2) {
+      this.hedgeAsks++;
+      const termsJa = [date ? jaDate(date) : "", after ? `${jaTime(after)}以降` : typeof input.time === "string" ? jaTime(input.time) : "", party ? `${party}名` : ""].filter(Boolean).join("、");
+      const termsEn = [date ? enDate(date) : "", after ? `${enTime(after)} or later` : typeof input.time === "string" ? enTime(input.time) : "", party ? `party of ${party}` : ""].filter(Boolean).join(", ");
+      if (this.hedgeAsks === 1) {
+        return { text: en ? `Just to be sure: can you confirm the reservation${termsEn ? ` for ${termsEn}` : ""}, or is it still tentative?` : `念のため確認させてください。${termsJa ? `${termsJa}で` : ""}ご予約は確定とさせていただけますでしょうか？` };
+      }
+      return { text: en ? "Understood. Once you have checked, could you confirm it on this call?" : "承知しました。ご確認いただけましたら、この内容で確定をお願いできますでしょうか？" };
     }
 
     // 6. Callee refused the whole request (満席 etc.).

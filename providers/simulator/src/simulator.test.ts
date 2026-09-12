@@ -99,3 +99,23 @@ describe("ScriptedAgent stall guard", () => {
     expect(c.action).toBe("hangup");
   });
 });
+
+describe("ScriptedAgent hedge handling", () => {
+  it("asks for a definite answer on a hedge instead of giving up", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const contract = contractFromScenario(scenario);
+    const agent = new ScriptedAgent();
+    const ctx = (last: string, i: number) => ({
+      contract, language: "ja" as const, turnIndex: i, elapsedMs: i * 5000, permitted: ["ask", "reserve", "negotiate", "share_name"] as const,
+      transcript: [{ id: `c${i}`, source: "callee" as const, text: last, t: i * 5000 }],
+      mission: { verified: {}, pending: {}, missing: ["date", "time", "partySize", "confirmed"], violations: [] },
+    });
+    const a = await agent.respond(ctx("たぶん大丈夫ですが、まだ確定ではありません。", 1));
+    expect(a.action).toBeUndefined();
+    expect(a.text).toContain("確定");
+    expect(a.text).toContain("2名");
+    const b = await agent.respond(ctx("おそらく大丈夫だと思います。", 2));
+    expect(b.action).toBeUndefined();
+    expect(b.text).not.toBe(a.text);
+  });
+});
