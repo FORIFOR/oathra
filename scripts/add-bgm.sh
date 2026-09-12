@@ -4,7 +4,7 @@
 # Reads  video/.work/oathra-battle-<lang>-mix.wav (voice + sfx, -16 LUFS) and docs/media/oathra-battle-<lang>.mp4 (video stream),
 # writes docs/media/oathra-battle-<lang>.mp4 and -square.mp4 with the bed ducked under speech (sidechain), lifted on the end card.
 set -euo pipefail
-lang=${1:?lang}; bgm=${2:-video/bgm/quiet-momentum.m4a}
+lang=${1:?lang}; bgm=${2:-video/bgm/soft-circuit.m4a}
 mix=video/.work/oathra-battle-$lang-mix.wav; src=docs/media/oathra-battle-$lang.mp4; work=video/.work
 dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$mix")
 LIFT_AT=55.7   # hang-up: the card that follows gets the music

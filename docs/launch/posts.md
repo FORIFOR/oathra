@@ -89,4 +89,4 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 
 ## BGM（2026-09-12 22:40 JST）
 
-- ユーザー提供の AI 生成 BGM 群（~/Downloads/bgm）から「I11 Quiet Momentum」を採用し、`scripts/add-bgm.sh ja|en` でナレーション付きミックスの下に敷いた（サイドチェインで会話中は −12〜18 dB 下げ、切電後のカードで持ち上げ）。曲は `video/bgm/quiet-momentum.m4a` に保存。比較用に「I02 Soft Circuit」版も作成（未採用）。フレームの再レンダリングは不要で、mp4 の映像ストリームをそのまま流用している。
+- ユーザー提供の AI 生成 BGM 群（~/Downloads/bgm）からまず「I11 Quiet Momentum」で作成し、`scripts/add-bgm.sh ja|en` でナレーション付きミックスの下に敷いた（サイドチェインで会話中は −12〜18 dB 下げ、切電後のカードで持ち上げ）。曲は `video/bgm/quiet-momentum.m4a` に保存。ユーザーが試聴して「I02 Soft Circuit」を選択（22:55 JST 差し替え、`video/bgm/soft-circuit.m4a`）。フレームの再レンダリングは不要で、mp4 の映像ストリームをそのまま流用している。
