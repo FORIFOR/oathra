@@ -238,6 +238,16 @@ v0.1.0 (released 2026-09-12):
 
 Simulator numbers (latency, scores) are from the simulator. Real-call latency today is roughly 2 s to first audio (LLM + TTS); the 650 ms target is the Phase 4 work.
 
+## Try to fool it
+
+Run `npx oathra demo`, pick "Play" (you answer the phone), and say these as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
+
+- Restaurant: "probably fine, but it's not confirmed yet" → not confirmed
+- Restaurant: "7 pm is full, but 7:30 works" → 7:00 is never taken as the time; 7:30 stays pending until the agent accepts it
+- Hotel: "you're booked" followed by "the rate is ¥23,500" → the confirmation goes stale and has to be re-obtained
+
+If you find a phrasing that slips through, open an issue. That is the most useful contribution.
+
 ## Contributing
 
 `pnpm install && pnpm test`. Add a scenario under `scenarios/`, a character under `providers/simulator/src/characters/`, or a provider under `providers/`. Keep the dependency direction; CI checks it.

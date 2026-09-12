@@ -133,6 +133,7 @@ footer a{color:var(--ink2)}
 @media (max-width:900px){.two,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line2)}nav a:not(.gh):not(.lang){display:none}.hero{padding-top:44px}section{padding-top:64px}main.wrap{padding-bottom:64px}.player .pb{grid-template-columns:1fr}.player .pts{border-right:0;border-bottom:1px solid var(--line2);max-height:280px}}
 @media (max-width:520px){.cmd{font-size:13.5px;padding:11px 12px;gap:10px;max-width:100%}.cmd .copy{display:none}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;border-top:1px solid var(--line)}ul.fool li span{display:block;color:var(--muted);font-size:.95em;margin-top:4px}
 </style>
 </head>
 <body>
@@ -208,6 +209,16 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
     </div>
   </section>
 
+  <section class="wrap">
+    <h3>Try to fool it</h3>
+    <p>Pick "Play" and say these as the clerk. None of them should tick <code>confirmed</code>.</p>
+    <ul class="fool">
+      <li>Restaurant: "probably fine, but it's not confirmed yet"<span>→ not confirmed</span></li>
+      <li>Restaurant: "7 pm is full, but 7:30 works"<span>→ 7:00 is never taken as the time; 7:30 stays pending until the agent accepts it</span></li>
+      <li>Hotel: "you're booked", then "the rate is ¥23,500"<span>→ the confirmation goes stale and has to be re-obtained</span></li>
+    </ul>
+    <p class="cap">Found a phrasing that slips through? <a href="https://github.com/FORIFOR/oathra/issues/new">Open an issue</a>. That is the most useful contribution.</p>
+  </section>
   <section id="call">
     <p class="kicker">Call</p>
     <h2>Same runtime, real phone. <em>Bring your own carrier. Bring your own model.</em></h2>
