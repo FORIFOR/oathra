@@ -117,3 +117,8 @@ Tagline: Playable simulator · real calls · verified outcomes · bring your own
 - r/LLMDevs に投稿（フレア Tools、アカウント Important-Rip-1205 はこの日に作成）: https://www.reddit.com/r/LLMDevs/comments/1wektiw/i_built_an_opensource_runtime_for_ai_agents_that/
 - 投稿直後に「Reddit のフィルターによって削除されました」表示。新規アカウントの自動フィルター。モデレーターへの承認依頼（modmail）が必要。
 - 01:5x JST: r/LLMDevs のモデレーターに承認依頼を送信（ユーザーの「送って」で実行、「メッセージが送信されました」を確認）。返答待ち。
+
+## 縦型動画（2026-09-13 02:2x JST、TikTok / Reels / Shorts 用）
+
+- `docs/media/oathra-battle-{ja,en}-vertical.mp4`（1080x1920、59 秒）。横動画を 9:16 に配置し、見出し（JA: 「AIがホテルに電話して、値切る。／「予約できた」は店が言った時だけ。」）とコマンド、URL を重ねた。見出しは HTML を headless Chrome で透過 PNG に描画（ffmpeg に drawtext が無いため）。冒頭のタイピング 3.2 秒をカット。
+- 投稿は未実施。TikTok / Facebook は API 投稿に審査が要るため Chrome 拡張経由で行う（ユーザーのログインと「投稿して」が必要）。
