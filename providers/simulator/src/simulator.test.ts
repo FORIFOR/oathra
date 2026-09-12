@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { contractFromScenario, loadScenarioFile } from "@oathra/scenario";
 import { runCall } from "@oathra/runtime";
 import { ScriptedAgent } from "./agent.js";
+import { HumanCharacter } from "./character.js";
 import { SimulatorTransport } from "./transport.js";
 
 const ROOT = resolve(import.meta.dirname, "../../../scenarios");
@@ -118,4 +119,26 @@ describe("ScriptedAgent hedge handling", () => {
     expect(b.action).toBeUndefined();
     expect(b.text).not.toBe(a.text);
   });
+});
+
+describe("agent hangup with a human callee", () => {
+  it("ends the call right after the agent's goodbye instead of waiting for the human", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const contract = contractFromScenario(scenario);
+    const human = new HumanCharacter("店員");
+    human.reply("お電話ありがとうございます。");
+    human.reply("申し訳ございません、明日は終日満席でございます。");
+    const started = Date.now();
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast", character: human }),
+      brain: new ScriptedAgent(),
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    expect(o.endReason).toBe("agent_hangup");
+    expect(o.result.status).not.toBe("completed");
+    expect(Date.now() - started).toBeLessThan(5000);
+  }, 10000);
 });

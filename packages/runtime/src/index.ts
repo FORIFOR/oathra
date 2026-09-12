@@ -169,6 +169,7 @@ export class CallRuntime {
               continue;
             }
             agentHungUp = await this.agentTurn(session, brain, gate, this.now());
+            if (agentHungUp) break;
             continue;
           }
         } else {
@@ -316,6 +317,9 @@ export class CallRuntime {
             continue;
           }
           agentHungUp = await this.agentTurn(session, brain, gate, ev.endMs);
+          // The agent said goodbye: end the call now instead of waiting for another callee turn
+          // (a human callee in Play mode would otherwise leave the call open until they type).
+          if (agentHungUp) break;
         }
       }
 
