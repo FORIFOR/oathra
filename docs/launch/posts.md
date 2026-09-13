@@ -156,3 +156,9 @@ publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0�
 ## サイト改版 v6（2026-09-13 13:31 JST）
 
 ファーストビューを「発言→証拠」のサンプル（店員役の返事 3 つ、証拠エンジンの実出力）に変更。見出し「AIが電話する。結果は、相手の言葉で確かめる。」、主 CTA「予約シミュレーションを試す」。実通話の再生機は 2 番目の節へ。導入相談（Discussions）を GitHub と分離。設計文書は docs/design/{PRODUCT,DESIGN,CONTENT,ACCEPTANCE}.md、比較は HERO_VARIANTS_V2.md。
+
+## 記事 2 本目を公開（2026-09-14 00:39 JST、ユーザーの「トライアル依頼と実電話検証以外を対応して」による）
+
+- Zenn: https://zenn.dev/forifori/articles/oathra-evidence-rules （判定ルール 4 本と失効ルール）
+- dev.to: https://dev.to/forifor/four-regexes-and-a-staleness-rule-how-my-phone-agent-refuses-to-call-probably-fine-a-booking-3ech （canonical は Zenn）
+- npm 0.1.1: `npm publish` は E401（ログインセッション切れ）で失敗。ユーザーの `npm login` と 2FA が必要。
