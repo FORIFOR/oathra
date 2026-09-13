@@ -1,4 +1,31 @@
-# Launch posts (ready to paste)
+# Launch posts and publication record
+
+## v0.1.2 standalone checks — 2026-09-14 JST
+
+- Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.2
+- Source: `1f056cbe3bacba469df10a3c6455782109599d33`
+- CI passed: https://github.com/FORIFOR/oathra/actions/runs/34775716591
+- Pages deployed: https://github.com/FORIFOR/oathra/actions/runs/34775716575
+- Public tarball checksum matched the release record; the public URL's `npx` command reproduced the existing saved negotiation result.
+- Both existing Zenn articles show the v0.1.2 integration section on public API readback.
+- Issue #8 closed with the conservative ambiguity behavior, not a claim of conversational meridiem inference.
+- Star count at verification: 0. Acquisition remains unachieved. The 12-hour task follow-up `oathra` is active; see [decision rules](growth-loop.md).
+
+### Next X experiment: existing voice-agent developers
+
+Draft only, **not posted**. The two previous video posts were published on 2026-09-13 around 15:38 UTC. Respect the 24-hour announcement spacing and check newer account activity before publishing. Recheck this release's availability and link before sending. Publish one version aimed at the selected audience; do not send simultaneous language duplicates automatically.
+
+> Add local evidence checks to the voice agent you already have. Oathra v0.1.2 includes a transcript CLI + typed TS SDK.
+>
+> No API key. LiveKit example is type-checked; live calls remain unverified.
+>
+> I maintain the project. Install/schema: https://github.com/FORIFOR/oathra/releases/tag/v0.1.2
+
+Measure fresh repository traffic, actual outside questions and trial reports after 48–72 hours. A star change alone cannot identify the cause. Do not mistake our public-package verification downloads for outside users.
+
+Research supporting the audience hypothesis: [LiveKit's test framework](https://docs.livekit.io/agents/start/testing/test-framework/) already offers conversation assertions and LLM judgment. Position this release as a small local evidence check for supported fields, not as a replacement for all voice evaluation. A [practitioner discussion](https://www.reddit.com/r/VoiceAutomationAI/comments/1um91gq/those_of_you_running_voice_agents_in_prod_what/) describes users confusing confirmation of details with a confirmed appointment; this is anecdotal evidence of a relevant problem, not validation of Oathra. Community posting eligibility is still unverified; this is not permission to post there.
+
+---
 
 All numbers below are from our own runs (see README). No superlatives, no claims we did not measure.
 
