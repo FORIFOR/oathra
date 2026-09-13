@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Private business inquiry / 非公開の導入相談
+    url: https://forifor.github.io/oathra/#business
+    about: Discuss your workflow privately. 自社業務での検証・実装の相談はこちら。公開Issueへ顧客情報を載せる必要はありません。
+  - name: Questions and ideas / 質問・用途のアイデア
+    url: https://github.com/FORIFOR/oathra/discussions
+    about: Public questions about use cases and implementation. 使い方・用途・実装の公開相談。

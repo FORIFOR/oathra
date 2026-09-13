@@ -273,3 +273,8 @@ If you want to run Oathra against your own reservation, reception or confirmatio
 ## License
 
 Apache-2.0. Oathra Cloud (managed SIP, numbers, hosted inference, teams) will be a separate offering; the OSS runtime is complete on its own.
+
+
+## Contribute
+
+[Report an evidence issue](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [Report a startup or UI issue](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [Contributing guide](CONTRIBUTING.md). English and Japanese welcome.

@@ -393,6 +393,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
     <p class="cap">判定が抜ける言い回しを見つけたら <a href="https://github.com/FORIFOR/oathra/issues/new">Issue</a> で教えてください。それが一番助かります。</p>
   </section>
 
+<p class="note"><a href="https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml">判定がおかしいときは、発言の順序と結果を報告する →</a></p>
 <section id="readiness"><h2>企業に紹介できること。これから検証すること。</h2><div class="two"><div><h3>現状：L1 · 技術紹介と検証の相談</h3><p>予約・確認電話を実装するOSSと、失敗を完了扱いしない証拠判定を紹介できます。実電話は3件の開発記録があり、100件での成功率・p95応答・通話単価はまだ測定していません。</p><p>有償PoC（L2）には録音同意・保持期間・発信制御・テナント分離など、本番導入（L3）には監視・障害対応などの追加検証が必要です。本番サービスとしてのSLAは提供していません。</p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">検証範囲と次の合格条件 →</a></div><div><h3>データはどこへ行く？</h3><p>このページの文字入力 → ブラウザ内の証拠エンジン。入力本文は外部送信しません。</p><p>実電話の音声 → 選択した電話会社 → Oathra → 選択した音声・AIプロバイダー。録音とイベントは実行端末の <code>.oathra/calls/</code> に保存します。構成に応じて外部プロバイダーへ音声・文字が渡ります。</p><a href="#business">自社業務での検証・実装を相談する →</a></div></div></section>
   <section id="start">
     <p class="cap" style="margin:0 0 40px">検証済みの範囲と残る課題は <a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">検証記録</a> にまとめています。シミュレーションの評価値と、3件の実電話の開発記録は別の指標です。</p>

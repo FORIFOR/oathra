@@ -1,0 +1,47 @@
+name: Unexpected result / 判定がおかしい
+description: Report incorrect completion, missing evidence, or misread conditions. 誤完了・取りこぼし・条件の誤読。
+title: "[Evidence] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English / 日本語どちらでもどうぞ。This issue is public. Remove names, phone numbers, credentials and private call content before posting.
+        個人情報を除いた発言の順序だけで構いません。録音の添付は不要です。
+        [Known issues / 既知の不具合](https://github.com/FORIFOR/oathra/issues) · [Private business inquiry / 非公開の導入相談](https://forifor.github.io/oathra/#business)
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did it happen? / 利用した場所
+      options:
+        - Browser evidence lab / ブラウザの証拠ラボ
+        - GitHub Release CLI / GitHub配布のCLI
+        - npm CLI / npm配布のCLI
+        - Source checkout / ソースから起動
+        - Real phone / 実電話
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit / バージョン・コミット
+      description: For the website, give the URL and date. サイトの場合はURLと利用日時。分かる範囲で構いません。
+  - type: textarea
+    id: sequence
+    attributes:
+      label: Steps and utterances / 操作と発言の順序
+      description: Include the speaker (caller/callee), language, and required conditions. 話者・言語・必要条件も記載してください。個人情報は除いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result / 期待した結果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result / 実際の結果
+      description: Include status and the affected fields if available. 分かれば完了状態と該当項目を記載してください。
+    validations:
+      required: true

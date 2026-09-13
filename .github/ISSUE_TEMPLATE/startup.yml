@@ -1,0 +1,31 @@
+name: Cannot start / 起動・操作の不具合
+description: Installation, Arena, CLI, or browser errors. インストール・画面・コマンドの不具合。
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English / 日本語どちらでもどうぞ。Reports are public: do not attach .env files, credentials, phone numbers or private recordings.
+        公開の報告です。秘密情報を除いたエラーの該当箇所だけで構いません。
+        [Latest release / 修正版の導入手順](https://github.com/FORIFOR/oathra/releases/latest)
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / 環境
+      description: OS, browser or Node.js version, and Oathra version/install method. OS・ブラウザまたはNode.js・Oathraの版と導入方法。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Command or steps / コマンド・操作手順
+      description: Remove secrets from commands before posting. コマンド内の認証情報は除いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened and what should happen? / 実際の状態と期待する状態
+      description: Include only relevant redacted errors. エラーは秘密情報を除いた該当箇所だけで構いません。
+    validations:
+      required: true

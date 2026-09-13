@@ -203,3 +203,8 @@ Arena の AI 側のアバター（液体ガラスのオーブ）は [LerSent001/
 ## ライセンス
 
 Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や並列通話、チーム機能は別サービスとして検討中です。
+
+
+## 改善に参加する
+
+[判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [参加ガイド](CONTRIBUTING.md)。日本語・英語どちらでもどうぞ。
