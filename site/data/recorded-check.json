@@ -1,0 +1,147 @@
+{
+  "contract": {
+    "goal": "hotel.reservation",
+    "target": {
+      "name": "ホテル・リンゴ",
+      "scenario": "impossible-hotel"
+    },
+    "input": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "name": "佐藤"
+    },
+    "require": {
+      "date": true,
+      "partySize": true,
+      "price": true,
+      "breakfast": true,
+      "smoking": true,
+      "confirmed": true
+    },
+    "constraints": {
+      "price": {
+        "lte": 20000
+      },
+      "breakfast": {
+        "eq": true
+      },
+      "smoking": {
+        "eq": false
+      }
+    },
+    "permissions": {
+      "ask": true,
+      "reserve": true,
+      "negotiate": true,
+      "share_name": true,
+      "payment": false,
+      "cancel": false
+    },
+    "language": "ja",
+    "budget": {
+      "maxDurationMs": 600000,
+      "maxTurns": 60,
+      "maxCostUsd": 1
+    }
+  },
+  "referenceDate": "2026-09-11",
+  "connection": "completed",
+  "utterances": [
+    {
+      "id": "recorded-3",
+      "source": "callee",
+      "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+      "t": 5716
+    },
+    {
+      "id": "recorded-7",
+      "source": "caller",
+      "text": "こんにちは、佐藤と申します。10月3日に2名で宿泊を希望しています。",
+      "t": 10795
+    },
+    {
+      "id": "recorded-11",
+      "source": "callee",
+      "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。1泊23,500円でございます。",
+      "t": 18121
+    },
+    {
+      "id": "recorded-17",
+      "source": "caller",
+      "text": "禁煙のお部屋はありがたいですが、予算が20,000円以下のため、別のプランをご提案いただけますか？",
+      "t": 25547
+    },
+    {
+      "id": "recorded-21",
+      "source": "callee",
+      "text": "21,100円でしたらご案内できます。いかがでしょうか？",
+      "t": 30632
+    },
+    {
+      "id": "recorded-25",
+      "source": "caller",
+      "text": "その価格は予算を超えていますので、もう少しお安いプランをお願いできますか？",
+      "t": 36491
+    },
+    {
+      "id": "recorded-29",
+      "source": "callee",
+      "text": "19,900円でしたらご案内できます。いかがでしょうか？",
+      "t": 41397
+    },
+    {
+      "id": "recorded-33",
+      "source": "caller",
+      "text": "19,900円ですね。朝食は含まれていますか？",
+      "t": 44967
+    },
+    {
+      "id": "recorded-37",
+      "source": "callee",
+      "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+      "t": 51011
+    },
+    {
+      "id": "recorded-44",
+      "source": "caller",
+      "text": "佐藤と申します。",
+      "t": 52438
+    },
+    {
+      "id": "recorded-48",
+      "source": "callee",
+      "text": "かしこまりました。10月3日、2名様、佐藤様、禁煙お部屋、1泊19,900円でご予約承りました。",
+      "t": 59574
+    },
+    {
+      "id": "recorded-53",
+      "source": "caller",
+      "text": "朝食は含まれていますか？",
+      "t": 61750
+    },
+    {
+      "id": "recorded-57",
+      "source": "callee",
+      "text": "はい、朝食は付いております。19,900円のままで結構です。",
+      "t": 66419
+    },
+    {
+      "id": "recorded-61",
+      "source": "caller",
+      "text": "では、10月3日、2名様、佐藤様、禁煙のお部屋、朝食付きで19,900円でご予約を確定してもよろしいでしょうか？",
+      "t": 74437
+    },
+    {
+      "id": "recorded-65",
+      "source": "callee",
+      "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+      "t": 82239
+    },
+    {
+      "id": "recorded-70",
+      "source": "caller",
+      "text": "ありがとうございます。それでは失礼いたします。",
+      "t": 85786
+    }
+  ]
+}

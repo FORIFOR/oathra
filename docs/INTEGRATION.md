@@ -1,5 +1,7 @@
 # Check an existing voice agent's transcripts
 
+[Check your own transcript in the browser](https://forifor.github.io/oathra/en/check.html). No installation or API key. Load the existing model/simulator negotiation or paste your own check JSON. Input stays in the tab; no upload or automatic storage.
+
 Oathra v0.1.2 can check reservation evidence without replacing your carrier, voice model or agent framework. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
 
 ## Install the released SDK and CLI

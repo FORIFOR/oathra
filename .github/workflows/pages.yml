@@ -3,7 +3,7 @@ name: Pages
 on:
   push:
     branches: [main]
-    paths: ["site/**", "docs/media/**", "packages/evidence/**", "packages/contract/**", "scripts/build-site.mjs", "pnpm-lock.yaml", ".github/workflows/pages.yml"]
+    paths: ["site/**", "docs/media/**", "packages/evidence/**", "packages/contract/**", "packages/cli/src/transcript.ts", "scripts/build-site.mjs", "pnpm-lock.yaml", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:

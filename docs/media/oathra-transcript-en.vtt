@@ -1,0 +1,19 @@
+WEBVTT
+
+00:00.000 --> 00:02.000
+Load a saved negotiation, or paste your own transcript JSON.
+
+00:02.000 --> 00:06.000
+This recording is GPT-4o-mini with a hotel simulator, not a phone call.
+
+00:06.000 --> 00:11.000
+Run the production checker locally. Inspect fields and missing requirements.
+
+00:11.000 --> 00:17.000
+Trace each value back to an utterance, speaker and timestamp.
+
+00:17.000 --> 00:22.000
+Use the result JSON in your own tools. No transcript is uploaded.
+
+00:22.000 --> 00:25.000
+Try it at forifor.github.io/oathra/en/check.html

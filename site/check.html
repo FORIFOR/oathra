@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer"><title>音声AIの文字起こしを、その場で検証。 — Oathra</title>
+<meta name="description" content="保存済みの文字起こしJSONから、条件と発言の根拠を確認。インストール・APIキー不要。ブラウザ内で処理します。">
+<link rel="stylesheet" href="check.css"></head><body>
+<header><a class="brand" href="./">Oathra</a><nav><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">入力形式 / SDK</a><a href="en/check.html">English</a><a href="https://github.com/FORIFOR/oathra">GitHub ↗</a></nav></header>
+<main><p class="eyebrow">TRANSCRIPT CHECK · NO API KEY</p><h1>音声AIの文字起こしを、その場で検証。</h1>
+<p class="lede">いま使っている音声AIのログに、日時・金額・確定の根拠を加えます。まずは公開済みの交渉記録を読み込み、実際の判定を試してください。</p>
+<p class="privacy">入力はこのタブの中で処理。送信・自動保存・アクセス解析はしません。 <a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">対応範囲を読む</a></p>
+<div class="workspace"><section class="panel"><h2>01 / 文字起こしを用意する</h2>
+<button id="load-recording" type="button" class="secondary">公開済みの交渉記録を読み込む</button>
+<form id="check-form"><label for="check-input">文字起こしJSON（contract / referenceDate / connection / utterances）</label>
+<textarea id="check-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="input-source check-error" required></textarea>
+<p class="source" id="input-source"></p><div class="toolbar"><button type="submit">このログを検証</button><button id="clear-input" class="secondary" type="button">消去</button></div>
+<p class="error" id="check-error" role="alert"></p></form>
+<p class="privacy">公開記録はGPT-4o-miniとホテルシミュレーターの保存済み交渉です。実店舗・実電話の記録ではありません。 <a href="https://github.com/FORIFOR/oathra/blob/main/site/data/call-gpt4o-mini.json">元の記録</a></p></section>
+<section class="panel"><h2>02 / 判定と根拠を見る</h2><div class="summary" id="check-summary" role="status" aria-live="polite">入力を検証すると、ここに結果が表示されます。</div><div id="field-results"></div>
+<details><summary>発言ごとの証拠履歴</summary><p class="privacy">未確認・更新前の値も含みます。現在の値は上の判定欄を参照してください。</p><div id="evidence-results"></div></details>
+<details><summary>判定結果のJSON</summary><pre id="raw-result"></pre></details><div class="toolbar"><button id="download-result" class="secondary" disabled type="button">結果JSONを保存</button></div>
+<p class="privacy">CLI / SDKと同じ判定コードを使用。対応する日本語・英語の発言規則を検査し、予約台帳・音声認識の正確性・通話品質は検証しません。</p></section></div>
+<div class="video-section" id="transcript-video"><h2>25秒で見る：交渉ログから検証結果へ</h2><video class="demo-video" controls playsinline preload="none" poster="media/oathra-transcript-poster.jpg"><source src="media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="ja" label="日本語" src="media/oathra-transcript-ja.vtt" default></video><p class="note">英語画面の実操作を収録。公開済みのGPT-4o-mini／ホテルシミュレーター記録を検証しています。実電話の録音ではありません。 <a href="check.html">自分でも試す →</a></p></div><section class="next"><h2>自分の音声AIに組み込む</h2><p>入力形式・CLIコマンド・TypeScript SDKを公開しています。意図と異なる判定があれば、入力を公開せずに症状だけでも報告できます。</p><div class="toolbar"><a class="button" href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">導入ガイド →</a><a href="https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml">判定の問題を報告</a></div><p><a href="https://github.com/FORIFOR/oathra">役に立ったら、GitHubのStarで更新を追えます。</a></p></section>
+<noscript>この検証機能にはJavaScriptが必要です。導入ガイドのCLIも利用できます。</noscript></main>
+<footer>Oathra · Apache-2.0 · ブラウザ内の文字起こし検証</footer><script type="module" src="check.js"></script></body></html>

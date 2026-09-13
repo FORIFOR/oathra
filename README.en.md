@@ -13,6 +13,8 @@ Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases
 
 **Already building a voice agent?** v0.1.2 adds `oathra verify` for your saved transcripts and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md).
 
+[Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
+
 <p align="center"><a href="docs/media/oathra-battle-en.mp4"><img src="docs/media/oathra-battle-en.gif" width="880" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>The built-in agent, GPT-4o mini and Gemini Flash calling a hotel that lists at ¥23,500. Click for the 63-second video with sound (Japanese audio, English captions)</sub></p>
 <p align="center"><a href="README.md">日本語</a> · <a href="https://forifor.github.io/oathra/en/">Website</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a> · <a href="https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484">Story (dev.to)</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Story (ja, Zenn)</a></p>
 

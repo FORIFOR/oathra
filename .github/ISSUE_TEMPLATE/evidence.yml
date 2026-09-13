@@ -13,6 +13,7 @@ body:
     attributes:
       label: Where did it happen? / 利用した場所
       options:
+        - Browser transcript checker / ブラウザのログ検証
         - Browser evidence lab / ブラウザの証拠ラボ
         - GitHub Release CLI / GitHub配布のCLI
         - npm CLI / npm配布のCLI
