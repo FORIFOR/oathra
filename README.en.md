@@ -256,7 +256,7 @@ If you find a phrasing that slips through, open an issue. That is the most usefu
 
 ## Using it for real work
 
-If you want to run Oathra against your own reservation, reception or confirmation calls, open a thread on [GitHub Discussions](https://github.com/FORIFOR/oathra/discussions) with what the calls look like and where it breaks. Scenarios and evidence rules get added from those threads.
+If you want to run Oathra against your own reservation, reception or confirmation calls, use the [private inquiry form](https://forifor.github.io/oathra/en/#business). Describe the workflow, completion conditions and approximate volume without confidential call data. Scope and fees are confirmed individually.
 
 ## License
 

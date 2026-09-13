@@ -175,7 +175,7 @@ footer a{color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;border-top:1px solid var(--line)}ul.fool li span{display:block;color:var(--muted);font-size:.95em;margin-top:4px}
 </style>
-</head>
+<link rel="stylesheet" href="../portfolio.css"><link rel="stylesheet" href="../evidence.css"></head>
 <body>
 <header><div class="wrap">
   <a class="brand" href="../"><i></i>Oathra</a>
@@ -201,7 +201,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
   </div>
 
   <section id="real">
-    <div class="replay-h"><h2>A real call</h2><p>GPT-4o mini negotiating with a hotel that lists at ¥23,500, redrawn at 3× from the saved events. Not a recording.</p></div>
+    <div class="replay-h"><h2>A real-model negotiation</h2><p>GPT-4o mini negotiating with a simulated hotel that lists at ¥23,500. No real hotel was called. The run is redrawn at 3× from the saved events. Not a recording.</p></div>
     <div class="player" id="player" data-src="../data/call-gpt4o-mini.json">
       <div class="ph"><span><b>Impossible Hotel</b> · openai:gpt-4o-mini</span><span class="pl" id="p-live"><i></i><span id="p-live-t">REPLAY</span></span></div>
       <div class="pb">
@@ -385,13 +385,13 @@ silent-hangup · caller-echo-trap
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
       </div>
     </div>
-    <p class="cap" style="margin-top:22px">Want to try it on your own reservation, front-desk or confirmation calls, including real-call verification? <a href="https://github.com/FORIFOR/oathra/discussions">Ask about a pilot →</a> (GitHub Discussions is the only channel for now.)</p>
+    <p class="cap" style="margin-top:22px">Want to try it on your own reservation, front-desk or confirmation calls, including real-call verification? <a href="#business">Ask about a pilot →</a> (Private inquiry form.)</p>
   </section>
 </main>
 
-<footer class="wrap">
+<section class="portfolio-contact" id="business" aria-labelledby="business-heading"><p>BUSINESS INQUIRIES · Oathra</p><h2 id="business-heading">Discuss a phone-workflow pilot</h2><p class="contact-intro">Describe the call workflow, completion conditions and expected volume. Do not include phone numbers or call transcripts.</p><p class="privacy">Availability, scope, timing and fees are confirmed individually. Sending an inquiry creates no contract or payment.</p><details><summary>Start a private inquiry</summary><form id="portfolio-form"><label>Name<input name="name" required maxlength="80" autocomplete="name"></label><label>Reply email<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label class="wide">Organization (optional)<input name="organization" maxlength="120" autocomplete="organization"></label><label class="wide">What would you like to discuss?<textarea name="message" required minlength="10" maxlength="2000"></textarea></label><label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label><p class="privacy wide">Your inquiry is stored privately in Google Cloud for the operator to follow up. It is not used as AI input or analytics, and becomes eligible for deletion after 90 days. It is not posted to a public issue.</p><label class="consent wide"><input type="checkbox" name="consent" required>I agree to this handling of my inquiry.</label><button type="submit">Send inquiry</button><p class="wide" id="portfolio-status" role="status" aria-live="polite"></p></form></details></section><footer class="wrap">
   <span>Oathra · Apache-2.0 · built in Tokyo</span>
-  <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">Architecture</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">Scenarios</a> · <a href="https://github.com/FORIFOR/oathra/discussions">Discussions</a> · <a href="https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484">Story</a> · <a href="https://x.com/forio1998">X</a></span>
+  <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">Architecture</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">Scenarios</a> · <a href="#business">Discussions</a> · <a href="https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484">Story</a> · <a href="https://x.com/forio1998">X</a></span>
 </footer>
 <script>
 // Sample: pick what the shop says, watch the evidence panel. States are the evidence engine's own output for
@@ -500,9 +500,9 @@ silent-hangup · caller-echo-trap
   $("p-seek").addEventListener("input", (e) => { t = Number(e.target.value); lastKey = ""; render(); });
   $("p-speed").addEventListener("click", (e) => { speed = speed === 3 ? 1 : speed === 1 ? 6 : 3; e.target.textContent = "×" + speed; });
   fetch(root.dataset.src).then((r) => r.json()).then((d) => { data = d; $("p-seek").max = d.durationMs; render();
-    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia("(prefers-reduced-motion: reduce)").matches) { started = true; play(); } }, { threshold: .5 });
+    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia("(prefers-reduced-motion: reduce)").matches) { started = true; } }, { threshold: .5 });
     auto.observe(root); });
 })();
 </script>
-</body>
+<script src="../portfolio.js" data-product="oathra"></script></body>
 </html>

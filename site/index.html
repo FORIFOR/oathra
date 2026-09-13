@@ -173,7 +173,7 @@ footer a{color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;border-top:1px solid var(--line, #e6e3dc)}ul.fool li span{display:block;color:var(--muted,#6b6a66);font-size:.95em;margin-top:4px}
 </style>
-</head>
+<link rel="stylesheet" href="portfolio.css"><link rel="stylesheet" href="evidence.css"></head>
 <body>
 <header><div class="wrap">
   <a class="brand" href="./"><i></i>Oathra</a>
@@ -199,7 +199,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
   </div>
 
   <section id="real">
-    <div class="replay-h"><h2>実際の通話</h2><p>GPT-4o mini が定価 23,500 円のホテルと交渉した記録。保存されたイベントを 3 倍速で描き直しています。録画ではありません。</p></div>
+    <div class="replay-h"><h2>実モデルによる交渉の記録</h2><p>GPT-4o mini がシミュレーター内の仮想ホテル（定価 23,500 円）と交渉した記録。実店舗への発信ではありません。保存されたイベントを 3 倍速で描き直しています。録画ではありません。</p></div>
     <div class="player" id="player" data-src="data/call-gpt4o-mini.json">
       <div class="ph"><span><b>無理難題ホテル</b> · openai:gpt-4o-mini</span><span class="pl" id="p-live"><i></i><span id="p-live-t">再生</span></span></div>
       <div class="pb">
@@ -396,13 +396,13 @@ silent-hangup · caller-echo-trap
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">Star</span></a>
       </div>
     </div>
-    <p class="cap" style="margin-top:22px">自社の予約・受付・確認電話で使えるか、実通話での検証を含めて相談したい方は <a href="https://github.com/FORIFOR/oathra/discussions">電話業務の試験導入を相談する →</a>（GitHub Discussions。現時点の窓口はここだけです）</p>
+    <p class="cap" style="margin-top:22px">自社の予約・受付・確認電話で使えるか、実通話での検証を含めて相談したい方は <a href="#business">電話業務の試験導入を相談する →</a>（内容を公開しない問い合わせフォーム）</p>
   </section>
 </main>
 
-<footer class="wrap">
+<section class="portfolio-contact" id="business" aria-labelledby="business-heading"><p>事業・導入の相談 · Oathra</p><h2 id="business-heading">電話業務の試験導入を相談する</h2><p class="contact-intro">電話業務の種類、条件の確認方法、想定件数を教えてください。電話番号や通話内容は不要です。</p><p class="privacy">提供可否・範囲・納期・料金は個別に確認します。送信による契約や課金はありません。</p><details><summary>非公開で相談する</summary><form id="portfolio-form"><label>お名前<input name="name" required maxlength="80" autocomplete="name"></label><label>返信先メール<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label class="wide">会社・団体名（任意）<input name="organization" maxlength="120" autocomplete="organization"></label><label class="wide">相談したい内容<textarea name="message" required minlength="10" maxlength="2000"></textarea></label><label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label><p class="privacy wide">入力内容は運営者への非公開の問い合わせとしてGoogle Cloudに保存し、返信のために利用します。AIの入力やアクセス解析には利用しません。90日後から順次削除します。公開Issueには投稿されません。</p><label class="consent wide"><input type="checkbox" name="consent" required>上記の取り扱いに同意して送信します。</label><button type="submit">相談を送信</button><p class="wide" id="portfolio-status" role="status" aria-live="polite"></p></form></details></section><footer class="wrap">
   <span>Oathra · Apache-2.0 · 東京で開発 · <a href="https://x.com/forio1998">@forio1998</a></span>
-  <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">設計</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">シナリオ</a> · <a href="https://github.com/FORIFOR/oathra/discussions">導入相談</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a> · <a href="en/">English</a></span>
+  <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">設計</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">シナリオ</a> · <a href="#business">導入相談</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a> · <a href="en/">English</a></span>
 </footer>
 
 <script>
@@ -512,9 +512,9 @@ silent-hangup · caller-echo-trap
   $("p-seek").addEventListener("input", (e) => { t = Number(e.target.value); lastKey = ""; render(); });
   $("p-speed").addEventListener("click", (e) => { speed = speed === 3 ? 1 : speed === 1 ? 6 : 3; e.target.textContent = "×" + speed; });
   fetch(root.dataset.src).then((r) => r.json()).then((d) => { data = d; $("p-seek").max = d.durationMs; render();
-    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia("(prefers-reduced-motion: reduce)").matches) { started = true; play(); } }, { threshold: .5 });
+    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia("(prefers-reduced-motion: reduce)").matches) { started = true; } }, { threshold: .5 });
     auto.observe(root); });
 })();
 </script>
-</body>
+<script src="portfolio.js" data-product="oathra"></script></body>
 </html>
