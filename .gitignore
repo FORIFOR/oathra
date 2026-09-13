@@ -17,3 +17,6 @@ video/.work/*
 video/.work/tts/*
 !video/.work/tts/*-ft.wav
 !video/.work/tts/lines.json
+
+# Generated from source by pnpm build:site
+site/playground.js

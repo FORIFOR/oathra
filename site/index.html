@@ -173,11 +173,13 @@ footer a{color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;border-top:1px solid var(--line, #e6e3dc)}ul.fool li span{display:block;color:var(--muted,#6b6a66);font-size:.95em;margin-top:4px}
 </style>
-<link rel="stylesheet" href="portfolio.css"><link rel="stylesheet" href="evidence.css"></head>
+<link rel="stylesheet" href="portfolio.css"><link rel="stylesheet" href="evidence.css"><link rel="stylesheet" href="playground.css">
+<link rel="canonical" href="https://forifor.github.io/oathra/">
+</head>
 <body>
 <header><div class="wrap">
   <a class="brand" href="./"><i></i>Oathra</a>
-  <nav><a href="#real">実際の通話</a><a href="#play">遊ぶ</a><a href="#call">電話する</a><a href="#prove">証明する</a><a href="#howto">使い方</a><a class="lang" href="en/">English</a><a class="gh" href="https://github.com/FORIFOR/oathra"><img alt="GitHub stars" src="https://img.shields.io/github/stars/FORIFOR/oathra?style=flat&label=%E2%98%85&labelColor=0e0d0c&color=2b2823">GitHub</a></nav>
+  <nav><a href="#real">交渉の記録</a><a href="#play">遊ぶ</a><a href="#call">電話する</a><a href="#prove">証明する</a><a href="#howto">使い方</a><a class="lang" href="en/">English</a><a class="gh" href="https://github.com/FORIFOR/oathra"><img alt="GitHub stars" src="https://img.shields.io/github/stars/FORIFOR/oathra?style=flat&label=%E2%98%85&labelColor=0e0d0c&color=2b2823">GitHub</a></nav>
 </div></header>
 
 <main class="wrap">
@@ -186,18 +188,19 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">オープンソース · Apache-2.0 · TypeScript</p>
       <h1>AIが電話する。<br>結果は、<em>相手の言葉</em>で確かめる。</h1>
       <p class="lede">予約・注文・確認のための音声エージェント基盤。日時、人数、条件、確定の根拠を、通話と一緒に残します。AI が「予約できました」と言っても、相手がそう言うまで確定にはなりません。</p>
-      <div class="ctas"><a class="btn" href="#sim">予約シミュレーションを試す</a><button class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.lastChild.textContent=' コピーしました'"><b>$</b> npx oathra demo</button></div>
-      <p class="note">右のサンプルはブラウザ内で完結し、実際の電話は発信されません。<code>npx oathra demo</code> は API キー不要です。</p>
+      <div class="ctas"><a class="btn" href="#sim">その場で判定を試す</a><button class="btn sec" data-copy-command="npx oathra demo"><b>$</b> npx oathra demo</button></div>
+      <p class="note">右の体験は本体の証拠エンジンで判定します。入力はブラウザ内に留まり、実際の電話は発信されません。<code>npx oathra demo</code> は API キー不要です。</p>
     </div>
     <div class="sim" id="sim" data-lang="ja"></div>
   </div>
   <div class="strip">
     <div><b>0 / 10,000</b><small>店員役の変異 1 万通り（シミュレーション）での誤完了</small></div>
-    <div><b>約0.4秒</b><small>実電話での最初の返答（GPT-Live、3 回の実通話）</small></div>
+    <div><b>約0.4秒</b><small>3件目の実電話で観測した最初の返答（平均・p95ではありません）</small></div>
     <div><b>1コマンド</b><small>npx oathra demo で AI 同士の通話まで</small></div>
     <div><b>Twilio 検証済み</b><small>Plivo · SIP は実装済み、PSTN 未検証</small></div>
   </div>
 
+<section id="demo-video"><h2>成功だけでなく、取り消しも見せる。</h2><div class="player player-video"><video controls playsinline preload="none" poster="media/oathra-evidence-ja-poster.jpg"><source src="media/oathra-evidence-ja.mp4" type="video/mp4"><track kind="captions" src="media/oathra-evidence-ja.vtt" srclang="ja" label="日本語" default></video></div><p class="cap">30秒 · 実エンジンの操作録画 · 字幕付き・音声なし。ブラウザ画面を4fpsで取得し30fpsの動画に編集。実電話の録音ではありません。</p><p><a href="#sim">自分の言葉で判定を試す →</a></p></section>
   <section id="real">
     <div class="replay-h"><h2>実モデルによる交渉の記録</h2><p>GPT-4o mini がシミュレーター内の仮想ホテル（定価 23,500 円）と交渉した記録。実店舗への発信ではありません。保存されたイベントを 3 倍速で描き直しています。録画ではありません。</p></div>
     <div class="player" id="player" data-src="data/call-gpt4o-mini.json">
@@ -389,12 +392,13 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
     <p class="cap">判定が抜ける言い回しを見つけたら <a href="https://github.com/FORIFOR/oathra/issues/new">Issue</a> で教えてください。それが一番助かります。</p>
   </section>
 
+<section id="readiness"><h2>企業に紹介できること。これから検証すること。</h2><div class="two"><div><h3>現状：L1 · 技術紹介と検証の相談</h3><p>予約・確認電話を実装するOSSと、失敗を完了扱いしない証拠判定を紹介できます。実電話は3件の開発記録があり、100件での成功率・p95応答・通話単価はまだ測定していません。</p><p>有償PoC（L2）には録音同意・保持期間・発信制御・テナント分離など、本番導入（L3）には監視・障害対応などの追加検証が必要です。本番サービスとしてのSLAは提供していません。</p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">検証範囲と次の合格条件 →</a></div><div><h3>データはどこへ行く？</h3><p>このページの文字入力 → ブラウザ内の証拠エンジン。入力本文は外部送信しません。</p><p>実電話の音声 → 選択した電話会社 → Oathra → 選択した音声・AIプロバイダー。録音とイベントは実行端末の <code>.oathra/calls/</code> に保存します。構成に応じて外部プロバイダーへ音声・文字が渡ります。</p><a href="#business">自社業務での検証・実装を相談する →</a></div></div></section>
   <section id="start">
     <p class="cap" style="margin:0 0 40px">何が検証済みで何が未検証か（v0.1.0 の現状）は <a href="https://github.com/FORIFOR/oathra#正直な現状v010">README</a> にまとめています。このページの数字はすべて自分で計測したもので、書いてあるコマンドで再現できます。</p>
     <div class="cta">
       <h2>まず、AI同士に電話させてみてください。</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.querySelector('.copy').textContent='コピーしました'"><b>$</b> npx oathra demo <span class="copy">コピー</span></button>
+        <button class="cmd" data-copy-command="npx oathra demo"><b>$</b> npx oathra demo <span class="copy">コピー</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">Star</span></a>
       </div>
     </div>
@@ -407,57 +411,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
   <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">設計</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">シナリオ</a> · <a href="#business">導入相談</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a> · <a href="en/">English</a></span>
 </footer>
 
-<script>
-// Sample: pick what the shop says, watch the evidence panel. States are the evidence engine's own output for
-// these exact lines (docs/design/HERO_VARIANTS_V2.md); nothing is computed in the browser.
-(() => {
-  const root = document.getElementById("sim"); if (!root) return;
-  const ja = root.dataset.lang !== "en";
-  const T = ja ? { title: "レストラン予約", you: "店員役はあなた", sample: "サンプル · 実際の電話は発信されません", pick: "店員として、どれかを言ってみてください", reset: "最初から", mission: "ミッション", evidence: "証拠", ok: "確認済み", pend: "未確定", ai: "AI", shop: "あなた（店）", callee: "相手", note: "判定結果は、同じ証拠エンジンにこの発話列を流した記録です。ブラウザ内で計算はしていません。", idle: "未完了 · 相手の発言が根拠になるまで、何も確定しない",
-      fields: { date: "日付", time: "時刻", partySize: "人数", confirmed: "確定" }, rules: { date: "", time: "≥ 19:00", partySize: "= 2" }, yes: "はい",
-      open: [["callee", "お電話ありがとうございます、トラットリア・リンゴでございます。"], ["agent", "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？"]],
-      s1: [["callee", "たぶん大丈夫ですが、まだ確定ではありません。"], ["agent", "念のため確認させてください。9月12日、19時以降、2名でご予約は確定とさせていただけますでしょうか？"]],
-      s2: [["callee", "19時は満席です。19時半なら空いています。"]],
-      s3: [["callee", "19時は満席です。19時半なら空いています。"], ["agent", "では19時半でお願いします。"], ["callee", "はい、19時半に2名様でご予約承りました。"]],
-      c1: "たぶん大丈夫ですが、まだ確定ではありません", c2: "19時は満席です。19時半なら空いています", c3: "はい、19時半に2名様でご予約承りました",
-      r1: "未完了 · 曖昧な返事は同意にも確定にもならない。証拠は増えない", r2: "未完了 · 19:00 は採用されない。19:30 は AI が受けるまで「提案」のまま", r3: "完了 · 日付 2026-09-12 · 時刻 19:30 · 人数 2 · 確定（相手の「ご予約承りました」）" }
-    : { title: "Restaurant reservation", you: "you play the shop", sample: "SAMPLE · NO REAL CALL IS PLACED", pick: "As the shop, say one of these", reset: "Start over", mission: "MISSION", evidence: "EVIDENCE", ok: "verified", pend: "pending", ai: "AI", shop: "YOU (SHOP)", callee: "callee", note: "Each outcome is the evidence engine's own output for this exact sequence. Nothing is computed in the browser.", idle: "incomplete · nothing settles until the callee's words back it",
-      fields: { date: "Date", time: "Time", partySize: "Party", confirmed: "Confirmed" }, rules: { date: "", time: "≥ 19:00", partySize: "= 2" }, yes: "yes",
-      open: [["callee", "Thank you for calling Trattoria Ringo."], ["agent", "Hi, I'd like to book a table for two on September 12th, at 7 pm or later. Is that available?"]],
-      s1: [["callee", "Probably fine, but it's not confirmed yet."], ["agent", "Just to be sure: can you confirm the reservation for September 12th, 7 pm or later, two people, or is it still tentative?"]],
-      s2: [["callee", "7 pm is full. 7:30 pm is open."]],
-      s3: [["callee", "7 pm is full. 7:30 pm is open."], ["agent", "7:30 pm works, please."], ["callee", "Yes, you're booked for two at 7:30 pm."]],
-      c1: "Probably fine, but it's not confirmed yet", c2: "7 pm is full. 7:30 pm is open", c3: "Yes, you're booked for two at 7:30 pm",
-      r1: "incomplete · a hedge is neither agreement nor confirmation; no evidence is added", r2: "incomplete · 7:00 pm is never taken; 7:30 pm stays an offer until the agent accepts it", r3: "completed · date 2026-09-12 · time 19:30 · party 2 · confirmed (callee: \"you're booked\")" };
-  const P = (f, v, src) => ({ f, v, src, ok: false }), V = (f, v, src) => ({ f, v, src, ok: true });
-  const base = [P("date", "2026-09-12", T.ai), P("time", "19:00", T.ai), P("partySize", "2", T.ai)];
-  const S = { 0: { lines: [], ev: base }, 1: { lines: T.s1, ev: base, res: T.r1 }, 2: { lines: T.s2, ev: [...base, P("time", "19:30", T.callee)], res: T.r2 },
-    3: { lines: T.s3, ev: [V("confirmed", T.yes, T.callee), V("time", "19:30", T.callee), V("partySize", "2", T.callee), V("date", "2026-09-12", T.callee)], res: T.r3, ok: true } };
-  const FIELDS = ["date", "time", "partySize", "confirmed"];
-  root.innerHTML = `<div class="ph"><span><b>${T.title}</b> · ${T.you}</span><span class="tag">${T.sample}</span></div>
-  <div class="body"><div><div class="tx" id="s-tx"></div><div class="chips"><p>${T.pick}</p><div class="row" id="s-chips"></div></div></div>
-  <aside><div><h4>${T.mission}</h4><ul id="s-m"></ul></div><div><h4>${T.evidence}<b id="s-n">0</b></h4><div class="ev" id="s-ev"></div></div></aside></div>
-  <p class="res" id="s-res"></p><p class="note">${T.note}</p>`;
-  const $ = (id) => document.getElementById(id), chips = $("s-chips");
-  for (const [k, text] of [[1, T.c1], [2, T.c2], [3, T.c3], [0, T.reset]]) { const b = document.createElement("button"); b.type = "button"; b.className = "chip" + (k ? "" : " reset"); b.dataset.k = k; b.textContent = text; chips.append(b); }
-  chips.addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) show(Number(c.dataset.k)); });
-  function show(k) {
-    const s = S[k];
-    for (const c of chips.children) c.classList.toggle("on", Number(c.dataset.k) === k && k !== 0);
-    const tx = $("s-tx"); tx.replaceChildren();
-    for (const [who, text] of [...T.open, ...s.lines]) { const d = document.createElement("div"); d.className = "ln " + who; d.innerHTML = "<b></b><span></span>"; d.firstChild.textContent = who === "callee" ? T.shop : T.ai; d.lastChild.textContent = text; tx.append(d); }
-    const ul = $("s-m"); ul.replaceChildren();
-    for (const f of FIELDS) { const hits = s.ev.filter((e) => e.f === f); const ok = hits.some((e) => e.ok), pend = !ok && hits.length > 0; const val = hits.find((e) => e.ok) || hits[hits.length - 1];
-      const li = document.createElement("li"); li.className = ok ? "ok" : pend ? "pend" : "";
-      li.innerHTML = "<i>" + (ok ? "✓" : pend ? "○" : "·") + "</i><span>" + T.fields[f] + (T.rules[f] ? "<em>" + T.rules[f] + "</em>" : "") + "</span><span class='v'>" + (val ? val.v : "") + "</span>"; ul.append(li); }
-    const ev = $("s-ev"); ev.replaceChildren();
-    for (const e of s.ev) { const d = document.createElement("div"); d.className = e.src === T.callee ? "callee" : "ai"; d.innerHTML = "<span>" + T.fields[e.f] + " = " + e.v + "<span class='t'>" + e.src + "</span></span><small>" + (e.ok ? T.ok : T.pend) + "</small>"; ev.append(d); }
-    $("s-n").textContent = s.ev.filter((e) => e.ok).length + " / " + FIELDS.length;
-    const res = $("s-res"); res.textContent = s.res || T.idle; res.className = "res" + (s.ok ? " ok" : "");
-  }
-  show(0);
-})();
-</script>
+<script type="module" src="playground.js"></script>
 <script>
 (() => {
   const root = document.getElementById("player"); if (!root) return;

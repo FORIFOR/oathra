@@ -175,11 +175,13 @@ footer a{color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;border-top:1px solid var(--line)}ul.fool li span{display:block;color:var(--muted);font-size:.95em;margin-top:4px}
 </style>
-<link rel="stylesheet" href="../portfolio.css"><link rel="stylesheet" href="../evidence.css"></head>
+<link rel="stylesheet" href="../portfolio.css"><link rel="stylesheet" href="../evidence.css"><link rel="stylesheet" href="../playground.css">
+<link rel="canonical" href="https://forifor.github.io/oathra/en/">
+</head>
 <body>
 <header><div class="wrap">
   <a class="brand" href="../"><i></i>Oathra</a>
-  <nav><a href="../" style="color:var(--amber)">日本語</a><a href="#real">Real call</a><a href="#play">Play</a><a href="#call">Call</a><a href="#prove">Prove</a><a href="#carriers">Carriers</a><a class="gh" href="https://github.com/FORIFOR/oathra"><img alt="GitHub stars" src="https://img.shields.io/github/stars/FORIFOR/oathra?style=flat&label=%E2%98%85&labelColor=0e0d0c&color=2b2823">GitHub ↗</a></nav>
+  <nav><a class="lang" href="../">日本語</a><a href="#real">Recorded negotiation</a><a href="#play">Play</a><a href="#call">Call</a><a href="#prove">Prove</a><a href="#carriers">Carriers</a><a class="gh" href="https://github.com/FORIFOR/oathra"><img alt="GitHub stars" src="https://img.shields.io/github/stars/FORIFOR/oathra?style=flat&label=%E2%98%85&labelColor=0e0d0c&color=2b2823">GitHub ↗</a></nav>
 </div></header>
 
 <main class="wrap">
@@ -188,18 +190,19 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p>
       <h1>An AI makes the call.<br>The result is checked against <em>what the other side said</em>.</h1>
       <p class="lede">A voice-agent runtime for reservations, orders and confirmations. Date, time, party size, terms and the proof of confirmation are stored with the call. When the agent says "booked", nothing settles until the callee says so.</p>
-      <div class="ctas"><a class="btn" href="#sim">Try the reservation sample</a><button class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.lastChild.textContent=' copied'"><b>$</b> npx oathra demo</button></div>
-      <p class="note">The sample runs entirely in the browser; no phone call is placed. <code>npx oathra demo</code> needs no API key.</p>
+      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx oathra demo"><b>$</b> npx oathra demo</button></div>
+      <p class="note">The production evidence engine runs in your browser. Your input stays here; no phone call is placed. <code>npx oathra demo</code> needs no API key.</p>
     </div>
     <div class="sim" id="sim" data-lang="en"></div>
   </div>
   <div class="strip">
     <div><b>0 / 10,000</b><small>false completions across 10,000 mutated clerks (simulation)</small></div>
-    <div><b>≈ 0.4 s</b><small>first reply on a real call · GPT-Live, 3 real calls</small></div>
+    <div><b>≈ 0.4 s</b><small>first reply observed on development call #3 · not an average or p95</small></div>
     <div><b>1 cmd</b><small>npx oathra demo to an AI-vs-AI call</small></div>
     <div><b>Twilio verified</b><small>Plivo · SIP implemented, not PSTN-verified</small></div>
   </div>
 
+<section id="demo-video"><h2>Watch success turn back into incomplete.</h2><div class="player player-video"><video controls playsinline preload="none" poster="../media/oathra-evidence-en-poster.jpg"><source src="../media/oathra-evidence-en.mp4" type="video/mp4"><track kind="captions" src="../media/oathra-evidence-en.vtt" srclang="en" label="English" default></video></div><p class="cap">30 seconds · recorded interaction with the real evidence engine · captions, no audio. Browser frames captured at 4 fps and encoded at 30 fps. Not a phone-call recording.</p><p><a href="#sim">Try your own wording →</a></p></section>
   <section id="real">
     <div class="replay-h"><h2>A real-model negotiation</h2><p>GPT-4o mini negotiating with a simulated hotel that lists at ¥23,500. No real hotel was called. The run is redrawn at 3× from the saved events. Not a recording.</p></div>
     <div class="player" id="player" data-src="../data/call-gpt4o-mini.json">
@@ -378,12 +381,13 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
          LiveKit Cloud / self-host  →  Plivo · Custom SIP · (Telnyx …)</pre>
   </section>
 
+<section id="readiness"><h2>Ready to demonstrate. Still measuring real-world reliability.</h2><div class="two"><div><h3>L1 · Technical demonstration and scoping</h3><p>Explore an implemented phone-agent runtime and evidence checks that expose incomplete outcomes. There are three documented development calls. A 100-call success rate, p95 response time and measured cost per call are not yet available.</p><p>Paid pilots (L2) still need consent, retention, outbound controls and tenant isolation. Production (L3) needs monitoring and incident response. No production SLA is offered.</p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">Read the validation scope and next gates →</a></div><div><h3>Where does the data go?</h3><p>Text entered on this page → the evidence engine in your browser. Input text is not transmitted.</p><p>Real call audio → your chosen carrier → Oathra → your chosen voice and AI providers. Recordings and events are stored in <code>.oathra/calls/</code> on the machine running Oathra. Audio and transcripts reach external providers depending on your configuration.</p><a href="#business">Discuss implementation for your workflow →</a></div></div></section>
   <section id="start">
     <p class="cap" style="margin:0 0 40px">What is verified and what is not (the v0.1 release-candidate status) lives in the <a href="https://github.com/FORIFOR/oathra/blob/main/README.en.md">README</a>. Every number on this page was measured by us and can be reproduced with the commands shown.</p>
     <div class="cta">
       <h2>Start with two agents on the phone.</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.querySelector('.copy').textContent='copied'"><b>$</b> npx oathra demo <span class="copy">copy</span></button>
+        <button class="cmd" data-copy-command="npx oathra demo"><b>$</b> npx oathra demo <span class="copy">copy</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
       </div>
     </div>
@@ -395,57 +399,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
   <span>Oathra · Apache-2.0 · built in Tokyo</span>
   <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">Architecture</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">Scenarios</a> · <a href="#business">Discussions</a> · <a href="https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484">Story</a> · <a href="https://x.com/forio1998">X</a></span>
 </footer>
-<script>
-// Sample: pick what the shop says, watch the evidence panel. States are the evidence engine's own output for
-// these exact lines (docs/design/HERO_VARIANTS_V2.md); nothing is computed in the browser.
-(() => {
-  const root = document.getElementById("sim"); if (!root) return;
-  const ja = root.dataset.lang !== "en";
-  const T = ja ? { title: "レストラン予約", you: "店員役はあなた", sample: "サンプル · 実際の電話は発信されません", pick: "店員として、どれかを言ってみてください", reset: "最初から", mission: "ミッション", evidence: "証拠", ok: "確認済み", pend: "未確定", ai: "AI", shop: "あなた（店）", callee: "相手", note: "判定結果は、同じ証拠エンジンにこの発話列を流した記録です。ブラウザ内で計算はしていません。", idle: "未完了 · 相手の発言が根拠になるまで、何も確定しない",
-      fields: { date: "日付", time: "時刻", partySize: "人数", confirmed: "確定" }, rules: { date: "", time: "≥ 19:00", partySize: "= 2" }, yes: "はい",
-      open: [["callee", "お電話ありがとうございます、トラットリア・リンゴでございます。"], ["agent", "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？"]],
-      s1: [["callee", "たぶん大丈夫ですが、まだ確定ではありません。"], ["agent", "念のため確認させてください。9月12日、19時以降、2名でご予約は確定とさせていただけますでしょうか？"]],
-      s2: [["callee", "19時は満席です。19時半なら空いています。"]],
-      s3: [["callee", "19時は満席です。19時半なら空いています。"], ["agent", "では19時半でお願いします。"], ["callee", "はい、19時半に2名様でご予約承りました。"]],
-      c1: "たぶん大丈夫ですが、まだ確定ではありません", c2: "19時は満席です。19時半なら空いています", c3: "はい、19時半に2名様でご予約承りました",
-      r1: "未完了 · 曖昧な返事は同意にも確定にもならない。証拠は増えない", r2: "未完了 · 19:00 は採用されない。19:30 は AI が受けるまで「提案」のまま", r3: "完了 · 日付 2026-09-12 · 時刻 19:30 · 人数 2 · 確定（相手の「ご予約承りました」）" }
-    : { title: "Restaurant reservation", you: "you play the shop", sample: "SAMPLE · NO REAL CALL IS PLACED", pick: "As the shop, say one of these", reset: "Start over", mission: "MISSION", evidence: "EVIDENCE", ok: "verified", pend: "pending", ai: "AI", shop: "YOU (SHOP)", callee: "callee", note: "Each outcome is the evidence engine's own output for this exact sequence. Nothing is computed in the browser.", idle: "incomplete · nothing settles until the callee's words back it",
-      fields: { date: "Date", time: "Time", partySize: "Party", confirmed: "Confirmed" }, rules: { date: "", time: "≥ 19:00", partySize: "= 2" }, yes: "yes",
-      open: [["callee", "Thank you for calling Trattoria Ringo."], ["agent", "Hi, I'd like to book a table for two on September 12th, at 7 pm or later. Is that available?"]],
-      s1: [["callee", "Probably fine, but it's not confirmed yet."], ["agent", "Just to be sure: can you confirm the reservation for September 12th, 7 pm or later, two people, or is it still tentative?"]],
-      s2: [["callee", "7 pm is full. 7:30 pm is open."]],
-      s3: [["callee", "7 pm is full. 7:30 pm is open."], ["agent", "7:30 pm works, please."], ["callee", "Yes, you're booked for two at 7:30 pm."]],
-      c1: "Probably fine, but it's not confirmed yet", c2: "7 pm is full. 7:30 pm is open", c3: "Yes, you're booked for two at 7:30 pm",
-      r1: "incomplete · a hedge is neither agreement nor confirmation; no evidence is added", r2: "incomplete · 7:00 pm is never taken; 7:30 pm stays an offer until the agent accepts it", r3: "completed · date 2026-09-12 · time 19:30 · party 2 · confirmed (callee: \"you're booked\")" };
-  const P = (f, v, src) => ({ f, v, src, ok: false }), V = (f, v, src) => ({ f, v, src, ok: true });
-  const base = [P("date", "2026-09-12", T.ai), P("time", "19:00", T.ai), P("partySize", "2", T.ai)];
-  const S = { 0: { lines: [], ev: base }, 1: { lines: T.s1, ev: base, res: T.r1 }, 2: { lines: T.s2, ev: [...base, P("time", "19:30", T.callee)], res: T.r2 },
-    3: { lines: T.s3, ev: [V("confirmed", T.yes, T.callee), V("time", "19:30", T.callee), V("partySize", "2", T.callee), V("date", "2026-09-12", T.callee)], res: T.r3, ok: true } };
-  const FIELDS = ["date", "time", "partySize", "confirmed"];
-  root.innerHTML = `<div class="ph"><span><b>${T.title}</b> · ${T.you}</span><span class="tag">${T.sample}</span></div>
-  <div class="body"><div><div class="tx" id="s-tx"></div><div class="chips"><p>${T.pick}</p><div class="row" id="s-chips"></div></div></div>
-  <aside><div><h4>${T.mission}</h4><ul id="s-m"></ul></div><div><h4>${T.evidence}<b id="s-n">0</b></h4><div class="ev" id="s-ev"></div></div></aside></div>
-  <p class="res" id="s-res"></p><p class="note">${T.note}</p>`;
-  const $ = (id) => document.getElementById(id), chips = $("s-chips");
-  for (const [k, text] of [[1, T.c1], [2, T.c2], [3, T.c3], [0, T.reset]]) { const b = document.createElement("button"); b.type = "button"; b.className = "chip" + (k ? "" : " reset"); b.dataset.k = k; b.textContent = text; chips.append(b); }
-  chips.addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) show(Number(c.dataset.k)); });
-  function show(k) {
-    const s = S[k];
-    for (const c of chips.children) c.classList.toggle("on", Number(c.dataset.k) === k && k !== 0);
-    const tx = $("s-tx"); tx.replaceChildren();
-    for (const [who, text] of [...T.open, ...s.lines]) { const d = document.createElement("div"); d.className = "ln " + who; d.innerHTML = "<b></b><span></span>"; d.firstChild.textContent = who === "callee" ? T.shop : T.ai; d.lastChild.textContent = text; tx.append(d); }
-    const ul = $("s-m"); ul.replaceChildren();
-    for (const f of FIELDS) { const hits = s.ev.filter((e) => e.f === f); const ok = hits.some((e) => e.ok), pend = !ok && hits.length > 0; const val = hits.find((e) => e.ok) || hits[hits.length - 1];
-      const li = document.createElement("li"); li.className = ok ? "ok" : pend ? "pend" : "";
-      li.innerHTML = "<i>" + (ok ? "✓" : pend ? "○" : "·") + "</i><span>" + T.fields[f] + (T.rules[f] ? "<em>" + T.rules[f] + "</em>" : "") + "</span><span class='v'>" + (val ? val.v : "") + "</span>"; ul.append(li); }
-    const ev = $("s-ev"); ev.replaceChildren();
-    for (const e of s.ev) { const d = document.createElement("div"); d.className = e.src === T.callee ? "callee" : "ai"; d.innerHTML = "<span>" + T.fields[e.f] + " = " + e.v + "<span class='t'>" + e.src + "</span></span><small>" + (e.ok ? T.ok : T.pend) + "</small>"; ev.append(d); }
-    $("s-n").textContent = s.ev.filter((e) => e.ok).length + " / " + FIELDS.length;
-    const res = $("s-res"); res.textContent = s.res || T.idle; res.className = "res" + (s.ok ? " ok" : "");
-  }
-  show(0);
-})();
-</script>
+<script type="module" src="../playground.js"></script>
 <script>
 (() => {
   const root = document.getElementById("player"); if (!root) return;
