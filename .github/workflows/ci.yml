@@ -17,6 +17,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:deps
+      - name: Website must build without precompiled workspace packages
+        run: pnpm build:site
       - run: pnpm build
       - run: pnpm test
       - name: Scenarios validate
