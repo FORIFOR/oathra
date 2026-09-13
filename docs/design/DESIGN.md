@@ -56,7 +56,7 @@
 
 - 主 CTA は 1 つ: 「予約シミュレーションを試す」（ページ内サンプルへ）。次に `npx oathra demo`
 - GitHub はヘッダーと体験後。トップの主ボタンを「Star」にしない
-- 導入相談は GitHub とは別の入口。現時点の実体は GitHub Discussions。非公開フォームは未設置（設置するまで「非公開で相談」とは書かない）
+- 導入相談は GitHub とは別の入口。ページ内の非公開の相談フォーム（`#business`、82c0dc8 で追加）。GitHub Discussions は公開の相談先
 
 ## 動画の共通ルール
 

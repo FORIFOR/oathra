@@ -41,7 +41,7 @@ AI に電話をかけさせて予約・注文・確認を取らせる。**結果
 - Telnyx、Wavix、Sinch、ElevenLabs TTS
 - 金額・番号の二重 ASR、パイプライン 650 ms 目標
 - MCP サーバ（call · inspect_call · intervene · cancel_call）
-- 有料の導入支援（対象電話業務のシナリオ設計、接続、試験運用）。**現時点で提供体制はなく、窓口は GitHub Discussions のみ**
+- 有料の導入支援（対象電話業務のシナリオ設計、接続、試験運用）。**現時点で提供体制はなく、窓口はページ内の非公開の相談フォーム（`#business`）と GitHub Discussions**
 
 ## サイトが果たす順番
 

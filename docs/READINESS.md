@@ -23,7 +23,7 @@
 | エラー時挙動（嘘の成功を出さない） | ○ | 完了判定は相手の発言の証拠のみ。曖昧・聞き返し・確定後の取り消しは未完了（敵対的 10 種で 0 / 10,000） |
 | ログ | ○ | 全イベント・証拠・音声区間を保存。`oathra replay <id> --at mm:ss` で時点に戻れる。`phone doctor` が層ごとの故障を示す |
 | README / Site が 3 分で分かる | ○ | 2026-09-13 改版。最初の画面で「発言→証拠」を試せる |
-| Business CTA | ○ | 「電話業務の試験導入を相談する」→ GitHub Discussions（非公開窓口は未設置） |
+| Business CTA | ○ | 「電話業務の試験導入を相談する」→ ページ内の非公開の相談フォーム（`#business`、2026-09-13 に別コミット 82c0dc8 で追加）。GitHub Discussions は公開の相談先として併存 |
 | License | ○ | Apache-2.0 |
 | Test evidence | ○ | tests 127、eval 全シナリオ、adversarial 0 / 10,000（10 種）、実通話 3 件（GPT-Live 最初の返答 約 0.4 秒、6 分 25 秒 112 ターン無エラー） |
 
