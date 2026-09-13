@@ -9,6 +9,7 @@
 - **証拠パネルの重複行をまとめる** (#7): 同じ項目・同じ値・同じ出所の未確定行を 1 行に畳み、最新時刻と検証済みフラグを保持する。
 - **敵対的スイートを 5 種 → 14 種に拡張**: 仮押さえ（一応・後で確認します）、聞き返し（…でよろしいでしょうか？）、確定直後の条件訂正、確定直後の取り消し、保留、留守電、転送、聞き直し、関西弁の確定（「取っといたで」）。拡張で見つかった 2 つの穴を塞いだ。店員の「合っておりますでしょうか？」が同意扱いだった点と、「承りました。……やはりお取りできませんでした」が確定扱いだった点。
 - **保留・聞き返し・転送に耐える**: 組み込みエージェントが「少々お待ちください」で待ち、「もう一度お願いします」には直前の一言をそのまま繰り返し、別の担当者に代わったら要件を最初から言い直す（#9 #10 #11）。
+- **AI のアバターがオーブに**: Arena の AI 側に液体ガラスのオーブ（WebGPU）を置き、相手の発話中は聞いている状態、推論中は考えている状態、発話中は話している状態に切り替わる。WebGPU が無ければ従来の記号のまま。
 - **「誤完了を誘ってみる」ボタン**: Play モードの入力欄の下に、確定にしてはいけない店側の言い回し 3 つをワンクリックで用意した。
 
 ## 変わらないこと
@@ -23,4 +24,5 @@
 - Evidence panel folds duplicate unverified rows for the same field/value/source (#7).
 - Adversarial suite grown from 5 to 14 mutations (tentative hold, asking back, confirm-then-change, confirm-then-retract, hold, voicemail, transfer, repeat requests, Kansai-dialect confirmations). Two gaps it exposed are closed: a callee asking "…is that right?" counted as agreement, and "booked … actually we can't" counted as confirmed.
 - The built-in agent now survives holds, repeat requests and transfers: it waits on "one moment", repeats its last line verbatim on "say that again", and restates the whole request when someone else picks up (#9 #10 #11).
+- The agent avatar in the Arena is now a liquid-glass orb (WebGPU) that shifts between listening, thinking and speaking; without WebGPU the glyph stays.
 - "Try to fool it" chips in Play mode: three clerk lines that must not settle the call, one click each.

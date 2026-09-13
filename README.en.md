@@ -250,6 +250,10 @@ Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines b
 
 If you find a phrasing that slips through, open an issue. That is the most useful contribution.
 
+## Credits
+
+The agent avatar in the Arena (a liquid-glass orb) vendors the shader from [LerSent001/orb](https://github.com/LerSent001/orb) (MIT) under `apps/arena/public/orb/`. Browsers without WebGPU fall back to the text glyph.
+
 ## Contributing
 
 `pnpm install && pnpm test`. Add a scenario under `scenarios/`, a character under `providers/simulator/src/characters/`, or a provider under `providers/`. Keep the dependency direction; CI checks it.

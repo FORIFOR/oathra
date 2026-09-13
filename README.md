@@ -180,6 +180,10 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 判定が抜けるケースを見つけたら Issue で教えてください。それが一番助かります。
 
+## クレジット
+
+Arena の AI 側のアバター（液体ガラスのオーブ）は [LerSent001/orb](https://github.com/LerSent001/orb)（MIT）のシェーダーを同梱しています（`apps/arena/public/orb/`）。WebGPU が使えないブラウザでは従来の記号表示に戻ります。
+
 ## 参加する
 
 `pnpm install && pnpm test`。シナリオは `scenarios/`、店員キャラクターは `providers/simulator/src/characters/`、電話会社は `oathra provider create phone <id>` で雛形を生成できます。依存の向きだけ守ってください。

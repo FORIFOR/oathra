@@ -399,8 +399,10 @@
         break;
       case "callee.speech.started": c.speaking = "callee"; break;
       case "callee.speech.ended": if (c.speaking === "callee") c.speaking = null; break;
+      case "brain.request": c.thinking = true; break;
       case "agent.speech.started":
         c.speaking = "agent";
+        c.thinking = false;
         pushLine(c, { turnId: ev.turnId, source: "caller", text: ev.text, t: ev.t });
         break;
       case "agent.speech.ended": if (c.speaking === "agent") c.speaking = null; break;
@@ -415,6 +417,7 @@
         c.mission = { verified: ev.verified || [], missing: ev.missing || [], pending: ev.pending || [] };
         break;
       case "brain.response":
+        c.thinking = false;
         if (typeof ev.costUsd === "number") c.cost += ev.costUsd;
         if (typeof ev.latencyMs === "number") c.brainLatency[ev.turnId] = ev.latencyMs;
         break;
@@ -430,6 +433,8 @@
       case "call.ended":
         c.endReason = ev.reason;
         c.speaking = null;
+        c.thinking = false;
+        c.ended = true;
         break;
       case "result":
         c.result = ev.result;
@@ -473,6 +478,7 @@
     $("#m-latency").textContent = "—"; $("#m-cost").textContent = "$0.000"; $("#m-elapsed").textContent = "00:00";
     setLive(!c.replay, c.replay ? t("replay") : t("live"));
     setUx("idle");
+    mountOrb();
     setSpeaking(null);
     const play = c.mode === "play" && !c.replay;
     $("#play-form").hidden = !play;
@@ -504,14 +510,15 @@
   function renderIncremental(ev) {
     const c = app.call;
     switch (ev.type) {
-      case "state.changed": setUx(c.ux); break;
+      case "state.changed": setUx(c.ux); syncOrb(); break;
+      case "brain.request": syncOrb(); break;
       case "callee.speech.started": case "callee.speech.ended": case "agent.speech.ended": case "call.ended":
         setSpeaking(c.speaking); break;
       case "agent.speech.started": setSpeaking("agent"); renderTranscript(); break;
       case "transcript.final": case "permission.requested": case "permission.decided": case "error": renderTranscript(); break;
       case "evidence.created": case "evidence.verified": renderEvidence(); renderMission(); break;
       case "mission.progress": renderMission(); break;
-      case "turn.trace": case "brain.response": renderMetrics(); break;
+      case "turn.trace": case "brain.response": renderMetrics(); syncOrb(); break;
       case "call.connected": $("#callee-name").textContent = c.mode === "play" ? t("you") : c.calleeName; break;
       case "result": renderResult(); break;
       default: break;
@@ -536,7 +543,33 @@
     const bar = $("#activity-bar");
     bar.classList.toggle("agent", side === "agent");
     bar.classList.toggle("callee", side === "callee");
+    syncOrb();
   }
+
+  // ------------------------------------------------------------------ agent orb
+  // The agent's avatar is a liquid glass orb (orb/orb.js, WebGPU). Its state follows the call:
+  // listening while the callee speaks (voice in), thinking while the brain works, speaking while
+  // the agent talks (voice out). Without WebGPU the text glyph stays.
+  let orb = null, orbMounting = false;
+  function mountOrb() {
+    const canvas = $("#agent-orb");
+    if (!canvas || orb || orbMounting || !window.OathraOrb || !window.OathraOrb.supported) return;
+    orbMounting = true;
+    canvas.hidden = false;
+    window.OathraOrb.mount(canvas, { state: "idle", onLost: () => { orb = null; canvas.hidden = true; $("#party-agent").classList.remove("has-orb"); } })
+      .then((o) => { orb = o; $("#party-agent").classList.add("has-orb"); syncOrb(); })
+      .catch((err) => { console.warn("orb unavailable:", err && err.message); canvas.hidden = true; })
+      .finally(() => { orbMounting = false; });
+  }
+  function orbStateOf(c) {
+    if (!c || c.ended) return "idle";
+    if (c.speaking === "agent") return "speaking";
+    if (c.speaking === "callee") return "listening";
+    if (c.thinking || c.ux === "understanding" || c.ux === "acting") return "thinking";
+    if (c.ux === "listening") return "listening";
+    return "idle";
+  }
+  function syncOrb() { if (orb) orb.setState(orbStateOf(app.call)); }
 
   function renderTranscript() {
     const c = app.call;

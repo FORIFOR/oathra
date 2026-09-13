@@ -223,10 +223,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .parties { display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; padding: 22px 16px 10px; gap: 8px; }
 .party { text-align: center; }
 .party-label { font-size: 10px; letter-spacing: 0.16em; color: var(--muted); margin-bottom: 8px; }
-.party-face { position: relative; width: 56px; height: 56px; margin: 0 auto; display: grid; place-items: center; }
+.party-face { position: relative; width: 64px; height: 64px; margin: 0 auto; display: grid; place-items: center; }
 .party-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--line-2); transition: border-color 200ms, box-shadow 200ms; }
 .party-glyph { font-size: 20px; color: var(--muted); transition: color 200ms; }
 .party-glyph.avatar { font-family: var(--mono); font-size: 14px; }
+/* liquid orb (WebGPU) in place of the agent's glyph; the dark disc keeps the glass readable on the light UI */
+.party-orb { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); border-radius: 50%; background: radial-gradient(circle at 50% 45%, #14162a 0%, #07080f 70%, #030409 100%); display: block; }
+.party-orb[hidden] { display: none; }
+.party.has-orb .party-glyph { display: none; }
+body.present .party-orb { inset: 4px; }
 .party.is-speaking .party-ring { border-color: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
 @media (prefers-reduced-motion: no-preference) {
   .party.is-speaking .party-ring { animation: pulse 1.8s ease-in-out infinite; }
@@ -448,7 +453,7 @@ body.present .call-title { font-size: 22px; }
 body.present .live { font-size: 14px; }
 body.present .parties { padding: 34px 28px 12px; }
 body.present .party-label { font-size: 13px; margin-bottom: 12px; }
-body.present .party-face { width: 92px; height: 92px; }
+body.present .party-face { width: 96px; height: 96px; }
 body.present .party-glyph { font-size: 34px; }
 body.present .party-glyph.avatar { font-size: 24px; }
 body.present .party-name { font-size: 18px; margin-top: 12px; }

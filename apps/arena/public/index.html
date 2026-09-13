@@ -108,7 +108,7 @@
         <div class="parties">
           <div class="party" id="party-agent" data-side="agent">
             <div class="party-label mono" data-i18n="partyAgent">AGENT</div>
-            <div class="party-face"><span class="party-ring" aria-hidden="true"></span><span class="party-glyph" id="agent-glyph">◉</span></div>
+            <div class="party-face"><span class="party-ring" aria-hidden="true"></span><canvas class="party-orb" id="agent-orb" hidden aria-hidden="true"></canvas><span class="party-glyph" id="agent-glyph">◉</span></div>
             <div class="party-name" id="agent-name">scripted</div>
           </div>
           <div class="activity" aria-hidden="true">
@@ -200,6 +200,7 @@
 
   <div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="app.js"></script>
+  <script src="orb/orb.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
