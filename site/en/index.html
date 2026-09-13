@@ -18,10 +18,10 @@
 :root{--bg:#fbfaf7;--panel:#fff;--code:#f4f2ec;--ink:#17181a;--ink2:#3b3e44;--muted:#6c7078;--line:#e3e0d8;--line2:#edebe5;--accent:#c4401c;--green:#1f7a3e;--amber:#a86300;
   --head:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;--sans:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
 *{box-sizing:border-box}html{scroll-behavior:smooth;color-scheme:light}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased;font-feature-settings:"palt"}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;font-feature-settings:"palt"}
 html,body{overflow-x:hidden}
 a{color:inherit}
-.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
 header{position:sticky;top:0;z-index:10;background:rgba(251,250,247,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line2)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
 .brand{display:flex;align-items:center;gap:9px;font-family:var(--head);font-weight:700;font-size:17px;letter-spacing:.02em;text-decoration:none}
@@ -32,7 +32,47 @@ nav a:hover{color:var(--accent)}
 nav .gh{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ink);padding:7px 13px;border-radius:999px;color:var(--ink)!important;font-size:13px}
 nav .gh img{display:none}
 /* hero */
-.hero{padding:72px 0 8px}
+.hero{padding:64px 0 8px}
+.hero-a{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:48px;align-items:start}
+.hero-a h1{font-size:clamp(30px,3.4vw,48px);line-height:1.18;max-width:none;letter-spacing:-.01em}
+.hero-a h1 em{display:inline;font-size:1em;margin:0}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 20px;border-radius:8px;font-family:var(--sans);font-size:15.5px;font-weight:600;text-decoration:none;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer}
+.btn:hover{background:#000}
+.btn.sec{background:transparent;color:var(--ink);font-family:var(--mono);font-weight:500;font-size:14.5px}.btn.sec b{color:var(--muted);font-weight:400}.btn.sec:hover{background:var(--code)}
+.replay-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.replay-h h2{margin:0}.replay-h p{margin:0;font-size:14.5px;color:var(--muted)}
+/* sample: callee reply -> evidence (states are the evidence engine's output for these lines) */
+.sim{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 40px -24px rgba(0,0,0,.25)}
+.sim .ph{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 18px;border-bottom:1px solid var(--line2);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.sim .ph b{color:var(--ink);font-weight:500}.sim .ph .tag{margin:0;border:1px solid var(--line);border-radius:4px;padding:1px 7px;font-size:11px;letter-spacing:.04em;vertical-align:0}
+.sim .body{display:grid;grid-template-columns:1.25fr .95fr}
+.sim .tx{padding:16px 18px 6px;display:flex;flex-direction:column;gap:11px;border-right:1px solid var(--line2);background:#fff;min-height:250px}
+.sim .ln{display:grid;grid-template-columns:88px 1fr;gap:12px;font-size:15px;line-height:1.7;color:var(--ink2)}
+.sim .ln b{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);padding-top:5px;letter-spacing:.03em}
+.sim .ln.callee b::before{content:"▸ ";color:var(--accent)}.sim .ln.agent{color:var(--ink)}
+.sim .chips{padding:10px 18px 16px;border-right:1px solid var(--line2);background:#fff}
+.sim .chips p{margin:0 0 8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted)}
+.sim .chips .row{display:flex;gap:6px;flex-wrap:wrap}
+.sim .chip{flex:1 1 100%;font:inherit;font-size:13px;line-height:1.5;padding:7px 14px;background:#fff;color:var(--ink2);border:1px dashed var(--line);border-radius:999px;cursor:pointer;text-align:left;min-height:36px}
+.sim .chip:hover,.sim .chip.on{border-style:solid;border-color:var(--ink);color:var(--ink)}
+.sim .chip.reset{flex:0 0 auto;border-style:solid;color:var(--muted)}
+.sim aside{padding:16px 18px;display:grid;gap:16px;align-content:start;background:var(--bg)}
+.sim h4{margin:0 0 8px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;font-weight:400;color:var(--muted)}.sim h4 b{color:var(--ink);font-weight:500;margin-left:6px}
+.sim ul{list-style:none;margin:0;padding:0}
+.sim li{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line2);font-size:14px;color:var(--muted)}
+.sim li em{font-style:normal;font-family:var(--mono);font-size:11px;margin-left:6px;color:var(--muted)}
+.sim li i{font-style:normal}.sim li.ok{color:var(--ink)}.sim li.ok i{color:var(--green)}.sim li.pend i{color:var(--amber)}
+.sim li .v{font-family:var(--mono);font-size:13px;color:var(--ink)}.sim li.pend .v{color:var(--amber)}
+.sim .ev{display:grid;gap:7px}
+.sim .ev div{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink2);display:flex;justify-content:space-between;gap:8px}
+.sim .ev div.callee{border-color:var(--accent)}.sim .ev small{color:var(--muted)}
+.sim .ev .t{font-size:10.5px;border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;color:var(--muted)}.sim .ev .callee .t{border-color:var(--accent);color:var(--accent)}
+.sim .res{margin:0;padding:10px 14px;border-top:1px solid var(--line2);font-family:var(--mono);font-size:12.5px;color:var(--muted);background:#fff}
+.sim .res.ok{color:var(--green)}
+.sim .note{font-size:12.5px;color:var(--muted);padding:8px 18px 12px;background:#fff;border-top:1px solid var(--line2);margin:0}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 18px}
+h1{word-break:auto-phrase;font-family:var(--head);font-weight:700;font-size:clamp(27px,3.6vw,42px);line-height:1.45;letter-spacing:.01em;margin:0 0 18px;max-width:22em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--accent);display:block;font-size:.8em;margin-top:6px}
 .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 18px}
 h1{word-break:auto-phrase;font-family:var(--head);font-weight:700;font-size:clamp(27px,3.6vw,42px);line-height:1.45;letter-spacing:.01em;margin:0 0 18px;max-width:22em;text-wrap:balance}
 h1 em{font-style:normal;color:var(--accent);display:block;font-size:.8em;margin-top:6px}
@@ -130,8 +170,8 @@ footer a{color:var(--ink2)}
 .player .pc input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
 .player .pc input[type=range]:focus-visible{outline-offset:6px}
 .player .res{margin:0 18px 14px;padding:12px 14px;border:1px solid var(--green);border-radius:8px;font-family:var(--mono);font-size:12.5px;color:var(--green)}
-@media (max-width:900px){.two,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line2)}nav a:not(.gh):not(.lang){display:none}.hero{padding-top:44px}section{padding-top:64px}main.wrap{padding-bottom:64px}.player .pb{grid-template-columns:1fr}.player .pts{border-right:0;border-bottom:1px solid var(--line2);max-height:280px}}
-@media (max-width:520px){.cmd{font-size:13.5px;padding:11px 12px;gap:10px;max-width:100%}.cmd .copy{display:none}}
+@media (max-width:900px){.hero-a{grid-template-columns:1fr;gap:28px}.hero-a h1{font-size:clamp(30px,8.5vw,36px)}.sim .body{grid-template-columns:1fr}.sim .tx,.sim .chips{border-right:0}.sim .tx{min-height:0}.sim .chips{border-bottom:1px solid var(--line2)}.two,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line2)}nav a:not(.gh):not(.lang){display:none}.hero{padding-top:44px}section{padding-top:64px}main.wrap{padding-bottom:64px}.player .pb{grid-template-columns:1fr}.player .pts{border-right:0;border-bottom:1px solid var(--line2);max-height:280px}}
+@media (max-width:520px){.btn{width:100%;justify-content:center}.cmd{font-size:13.5px;padding:11px 12px;gap:10px;max-width:100%}.cmd .copy{display:none}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;border-top:1px solid var(--line)}ul.fool li span{display:block;color:var(--muted);font-size:.95em;margin-top:4px}
 </style>
@@ -139,15 +179,29 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
 <body>
 <header><div class="wrap">
   <a class="brand" href="../"><i></i>Oathra</a>
-  <nav><a href="../" style="color:var(--amber)">日本語</a><a href="#play">Play</a><a href="#call">Call</a><a href="#prove">Prove</a><a href="#carriers">Carriers</a><a class="gh" href="https://github.com/FORIFOR/oathra"><img alt="GitHub stars" src="https://img.shields.io/github/stars/FORIFOR/oathra?style=flat&label=%E2%98%85&labelColor=0e0d0c&color=2b2823">GitHub ↗</a></nav>
+  <nav><a href="../" style="color:var(--amber)">日本語</a><a href="#real">Real call</a><a href="#play">Play</a><a href="#call">Call</a><a href="#prove">Prove</a><a href="#carriers">Carriers</a><a class="gh" href="https://github.com/FORIFOR/oathra"><img alt="GitHub stars" src="https://img.shields.io/github/stars/FORIFOR/oathra?style=flat&label=%E2%98%85&labelColor=0e0d0c&color=2b2823">GitHub ↗</a></nav>
 </div></header>
 
 <main class="wrap">
-  <div class="hero hero-c">
-    <div class="head">
-      <div><p class="kicker">OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p><h1>An AI haggles on the phone and books the room. <em>"Confirmed" only gets its check when the other party says so.</em></h1></div>
-      <p class="lede">Below is the real call in which GPT-4o mini negotiated with a hotel that lists at ¥23,500, redrawn at 3× from the saved events. It is not a recording.</p>
+  <div class="hero hero-a">
+    <div>
+      <p class="kicker">OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p>
+      <h1>An AI makes the call.<br>The result is checked against <em>what the other side said</em>.</h1>
+      <p class="lede">A voice-agent runtime for reservations, orders and confirmations. Date, time, party size, terms and the proof of confirmation are stored with the call. When the agent says "booked", nothing settles until the callee says so.</p>
+      <div class="ctas"><a class="btn" href="#sim">Try the reservation sample</a><button class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.lastChild.textContent=' copied'"><b>$</b> npx oathra demo</button></div>
+      <p class="note">The sample runs entirely in the browser; no phone call is placed. <code>npx oathra demo</code> needs no API key.</p>
     </div>
+    <div class="sim" id="sim" data-lang="en"></div>
+  </div>
+  <div class="strip">
+    <div><b>0 / 10,000</b><small>false completions across 10,000 mutated clerks (simulation)</small></div>
+    <div><b>≈ 0.4 s</b><small>first reply on a real call · GPT-Live, 3 real calls</small></div>
+    <div><b>1 cmd</b><small>npx oathra demo to an AI-vs-AI call</small></div>
+    <div><b>Twilio verified</b><small>Plivo · SIP implemented, not PSTN-verified</small></div>
+  </div>
+
+  <section id="real">
+    <div class="replay-h"><h2>A real call</h2><p>GPT-4o mini negotiating with a hotel that lists at ¥23,500, redrawn at 3× from the saved events. Not a recording.</p></div>
     <div class="player" id="player" data-src="../data/call-gpt4o-mini.json">
       <div class="ph"><span><b>Impossible Hotel</b> · openai:gpt-4o-mini</span><span class="pl" id="p-live"><i></i><span id="p-live-t">REPLAY</span></span></div>
       <div class="pb">
@@ -160,14 +214,8 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <div class="res" id="p-res" hidden></div>
       <div class="pc"><button id="p-play">Play</button><input type="range" id="p-seek" min="0" max="86381" value="0" aria-label="Time"><span id="p-time">00:00 / 01:26</span><button id="p-speed" title="Speed">×3</button></div>
     </div>
-    <div class="row"><button class="cmd" onclick="navigator.clipboard&&navigator.clipboard.writeText('npx oathra demo');this.querySelector('.copy').textContent='copied'"><b>$</b> npx oathra demo <span class="copy">copy</span></button><a href="#play">Watch the three-agent run with sound →</a></div>
-    <div class="strip">
-      <div><b>0 / 10,000</b><small>false completions · adversarial runs</small></div>
-      <div><b>≈ 0.4 s</b><small>first reply on a real call · GPT-Live</small></div>
-      <div><b>1 cmd</b><small>from clone to AI-vs-AI call</small></div>
-      <div><b>3 + N</b><small>carriers: Twilio · Plivo · SIP · yours</small></div>
-    </div>
-  </div>
+    <p class="cap"><a href="#play">Watch the three-agent run with sound →</a></p>
+  </section>
 
   <section id="screen">
     <div class="two" style="gap:20px;align-items:start">
@@ -337,6 +385,7 @@ silent-hangup · caller-echo-trap
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
       </div>
     </div>
+    <p class="cap" style="margin-top:22px">Want to try it on your own reservation, front-desk or confirmation calls, including real-call verification? <a href="https://github.com/FORIFOR/oathra/discussions">Ask about a pilot →</a> (GitHub Discussions is the only channel for now.)</p>
   </section>
 </main>
 
@@ -344,6 +393,57 @@ silent-hangup · caller-echo-trap
   <span>Oathra · Apache-2.0 · built in Tokyo</span>
   <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">Architecture</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">Scenarios</a> · <a href="https://github.com/FORIFOR/oathra/discussions">Discussions</a> · <a href="https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484">Story</a> · <a href="https://x.com/forio1998">X</a></span>
 </footer>
+<script>
+// Sample: pick what the shop says, watch the evidence panel. States are the evidence engine's own output for
+// these exact lines (docs/design/HERO_VARIANTS_V2.md); nothing is computed in the browser.
+(() => {
+  const root = document.getElementById("sim"); if (!root) return;
+  const ja = root.dataset.lang !== "en";
+  const T = ja ? { title: "レストラン予約", you: "店員役はあなた", sample: "サンプル · 実際の電話は発信されません", pick: "店員として、どれかを言ってみてください", reset: "最初から", mission: "ミッション", evidence: "証拠", ok: "確認済み", pend: "未確定", ai: "AI", shop: "あなた（店）", callee: "相手", note: "判定結果は、同じ証拠エンジンにこの発話列を流した記録です。ブラウザ内で計算はしていません。", idle: "未完了 · 相手の発言が根拠になるまで、何も確定しない",
+      fields: { date: "日付", time: "時刻", partySize: "人数", confirmed: "確定" }, rules: { date: "", time: "≥ 19:00", partySize: "= 2" }, yes: "はい",
+      open: [["callee", "お電話ありがとうございます、トラットリア・リンゴでございます。"], ["agent", "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？"]],
+      s1: [["callee", "たぶん大丈夫ですが、まだ確定ではありません。"], ["agent", "念のため確認させてください。9月12日、19時以降、2名でご予約は確定とさせていただけますでしょうか？"]],
+      s2: [["callee", "19時は満席です。19時半なら空いています。"]],
+      s3: [["callee", "19時は満席です。19時半なら空いています。"], ["agent", "では19時半でお願いします。"], ["callee", "はい、19時半に2名様でご予約承りました。"]],
+      c1: "たぶん大丈夫ですが、まだ確定ではありません", c2: "19時は満席です。19時半なら空いています", c3: "はい、19時半に2名様でご予約承りました",
+      r1: "未完了 · 曖昧な返事は同意にも確定にもならない。証拠は増えない", r2: "未完了 · 19:00 は採用されない。19:30 は AI が受けるまで「提案」のまま", r3: "完了 · 日付 2026-09-12 · 時刻 19:30 · 人数 2 · 確定（相手の「ご予約承りました」）" }
+    : { title: "Restaurant reservation", you: "you play the shop", sample: "SAMPLE · NO REAL CALL IS PLACED", pick: "As the shop, say one of these", reset: "Start over", mission: "MISSION", evidence: "EVIDENCE", ok: "verified", pend: "pending", ai: "AI", shop: "YOU (SHOP)", callee: "callee", note: "Each outcome is the evidence engine's own output for this exact sequence. Nothing is computed in the browser.", idle: "incomplete · nothing settles until the callee's words back it",
+      fields: { date: "Date", time: "Time", partySize: "Party", confirmed: "Confirmed" }, rules: { date: "", time: "≥ 19:00", partySize: "= 2" }, yes: "yes",
+      open: [["callee", "Thank you for calling Trattoria Ringo."], ["agent", "Hi, I'd like to book a table for two on September 12th, at 7 pm or later. Is that available?"]],
+      s1: [["callee", "Probably fine, but it's not confirmed yet."], ["agent", "Just to be sure: can you confirm the reservation for September 12th, 7 pm or later, two people, or is it still tentative?"]],
+      s2: [["callee", "7 pm is full. 7:30 pm is open."]],
+      s3: [["callee", "7 pm is full. 7:30 pm is open."], ["agent", "7:30 pm works, please."], ["callee", "Yes, you're booked for two at 7:30 pm."]],
+      c1: "Probably fine, but it's not confirmed yet", c2: "7 pm is full. 7:30 pm is open", c3: "Yes, you're booked for two at 7:30 pm",
+      r1: "incomplete · a hedge is neither agreement nor confirmation; no evidence is added", r2: "incomplete · 7:00 pm is never taken; 7:30 pm stays an offer until the agent accepts it", r3: "completed · date 2026-09-12 · time 19:30 · party 2 · confirmed (callee: \"you're booked\")" };
+  const P = (f, v, src) => ({ f, v, src, ok: false }), V = (f, v, src) => ({ f, v, src, ok: true });
+  const base = [P("date", "2026-09-12", T.ai), P("time", "19:00", T.ai), P("partySize", "2", T.ai)];
+  const S = { 0: { lines: [], ev: base }, 1: { lines: T.s1, ev: base, res: T.r1 }, 2: { lines: T.s2, ev: [...base, P("time", "19:30", T.callee)], res: T.r2 },
+    3: { lines: T.s3, ev: [V("confirmed", T.yes, T.callee), V("time", "19:30", T.callee), V("partySize", "2", T.callee), V("date", "2026-09-12", T.callee)], res: T.r3, ok: true } };
+  const FIELDS = ["date", "time", "partySize", "confirmed"];
+  root.innerHTML = `<div class="ph"><span><b>${T.title}</b> · ${T.you}</span><span class="tag">${T.sample}</span></div>
+  <div class="body"><div><div class="tx" id="s-tx"></div><div class="chips"><p>${T.pick}</p><div class="row" id="s-chips"></div></div></div>
+  <aside><div><h4>${T.mission}</h4><ul id="s-m"></ul></div><div><h4>${T.evidence}<b id="s-n">0</b></h4><div class="ev" id="s-ev"></div></div></aside></div>
+  <p class="res" id="s-res"></p><p class="note">${T.note}</p>`;
+  const $ = (id) => document.getElementById(id), chips = $("s-chips");
+  for (const [k, text] of [[1, T.c1], [2, T.c2], [3, T.c3], [0, T.reset]]) { const b = document.createElement("button"); b.type = "button"; b.className = "chip" + (k ? "" : " reset"); b.dataset.k = k; b.textContent = text; chips.append(b); }
+  chips.addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) show(Number(c.dataset.k)); });
+  function show(k) {
+    const s = S[k];
+    for (const c of chips.children) c.classList.toggle("on", Number(c.dataset.k) === k && k !== 0);
+    const tx = $("s-tx"); tx.replaceChildren();
+    for (const [who, text] of [...T.open, ...s.lines]) { const d = document.createElement("div"); d.className = "ln " + who; d.innerHTML = "<b></b><span></span>"; d.firstChild.textContent = who === "callee" ? T.shop : T.ai; d.lastChild.textContent = text; tx.append(d); }
+    const ul = $("s-m"); ul.replaceChildren();
+    for (const f of FIELDS) { const hits = s.ev.filter((e) => e.f === f); const ok = hits.some((e) => e.ok), pend = !ok && hits.length > 0; const val = hits.find((e) => e.ok) || hits[hits.length - 1];
+      const li = document.createElement("li"); li.className = ok ? "ok" : pend ? "pend" : "";
+      li.innerHTML = "<i>" + (ok ? "✓" : pend ? "○" : "·") + "</i><span>" + T.fields[f] + (T.rules[f] ? "<em>" + T.rules[f] + "</em>" : "") + "</span><span class='v'>" + (val ? val.v : "") + "</span>"; ul.append(li); }
+    const ev = $("s-ev"); ev.replaceChildren();
+    for (const e of s.ev) { const d = document.createElement("div"); d.className = e.src === T.callee ? "callee" : "ai"; d.innerHTML = "<span>" + T.fields[e.f] + " = " + e.v + "<span class='t'>" + e.src + "</span></span><small>" + (e.ok ? T.ok : T.pend) + "</small>"; ev.append(d); }
+    $("s-n").textContent = s.ev.filter((e) => e.ok).length + " / " + FIELDS.length;
+    const res = $("s-res"); res.textContent = s.res || T.idle; res.className = "res" + (s.ok ? " ok" : "");
+  }
+  show(0);
+})();
+</script>
 <script>
 (() => {
   const root = document.getElementById("player"); if (!root) return;
