@@ -1,0 +1,57 @@
+{
+  "capturedAt": "2026-09-13T19:26:55.337Z",
+  "repository": {
+    "available": true,
+    "value": {
+      "stars": 0,
+      "forks": 0,
+      "pushedAt": "2026-09-13T19:23:49Z"
+    }
+  },
+  "reportedViews14days": 6,
+  "reportedUniqueVisitors14days": 6,
+  "lastTrafficBucket": "2026-09-12T00:00:00Z",
+  "oathraXPosts": [
+    {
+      "created_at": "2026-09-13T15:38:16.000Z",
+      "edit_history_tweet_ids": [
+        "2099160745091166481"
+      ],
+      "id": "2099160745091166481",
+      "public_metrics": {
+        "bookmark_count": 0,
+        "impression_count": 1,
+        "like_count": 0,
+        "quote_count": 0,
+        "reply_count": 0,
+        "retweet_count": 0
+      },
+      "text": "An AI saying \"booked\" is not proof.\n\nOathra now runs its real completion checker in your browser. Try a vague reply, confirm the booking, then retract it. Watch the result change.\n\nNo API key. Your text stays local. Open source.\nhttps://t.co/V9qwQv04wy https://t.co/ilIilxRRlM"
+    },
+    {
+      "created_at": "2026-09-13T15:38:13.000Z",
+      "edit_history_tweet_ids": [
+        "2099160731409379808"
+      ],
+      "id": "2099160731409379808",
+      "public_metrics": {
+        "bookmark_count": 0,
+        "impression_count": 0,
+        "like_count": 0,
+        "quote_count": 0,
+        "reply_count": 0,
+        "retweet_count": 0
+      },
+      "text": "AIの「予約できました」を、そのまま信じない。\n\nOathraにブラウザで動く証拠ラボを追加しました。\n「たぶん」→未完了\n「承りました」→完了\n「やはり取れません」→未完了\n\n自分の言葉でも試せます。APIキー不要。\nhttps://t.co/7pgW9ksONK https://t.co/psA7TrIGtW"
+    }
+  ],
+  "latestAccountOriginalPost": {
+    "id": "2099196727706447915",
+    "createdAt": "2026-09-13T18:01:15.000Z"
+  },
+  "interpretation": [
+    "The two Oathra X posts have no replies or likes at this observation. Reported impressions are 0 (JA) and 1 (EN); this is not a count of external trial users.",
+    "GitHub traffic buckets end on September 12 and do not yet evaluate the newly published checker.",
+    "Current priority: eligible distribution and real feedback. Do not attribute a later star change to one post without evidence."
+  ]
+}

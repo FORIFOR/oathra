@@ -1,5 +1,15 @@
 # Acquisition and adoption loop
 
+## User-approved sequence — 2026-09-14 JST
+
+The user explicitly selected this sequence: (1) focus on developers already building voice/phone agents with LiveKit or similar tools who need to detect false reservation completion; (2) show saved transcripts producing verified fields, missing requirements and JSON, with a direct integration guide; (3) obtain real feedback in relevant public communities; (4) change distribution when visits are absent, explanation/onboarding when visits do not become trials, and functionality when users encounter failures.
+
+Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not spend another cycle rebuilding the demo or expanding features without an actual reported need. The existing 12-hour heartbeat `oathra` now explicitly follows these four steps. Its cadence and notification policy are unchanged; no duplicate automation was created.
+
+Current X publication text: [x-transcript-check.txt](x-transcript-check.txt). This is the single active draft; older drafts in the publication history are superseded. A fresh read of the existing account at 2026-09-13 19:28 UTC found the two Oathra demo posts still dated 15:38 UTC, plus other account activity up to 18:01:15 UTC. Account-wide activity can affect spacing: conservatively consider 2026-09-14 18:01:15 UTC (2026-09-15 03:01:15 JST) or later, and recheck the live timeline immediately before publication. Do not classify a repost as a new original announcement, or invent outside engagement from the author's own activity.
+
+Start the 48–72 hour audience/entry-point assessment from a successfully published relevant announcement. The filtered Reddit submission is an immediate distribution failure, not the beginning of an external trial observation window. Read early feedback sooner and fix real failures immediately. The checker has no analytics; infer trials from explicit outside reports, not page views or release downloads alone.
+
 ## Objective and current diagnosis
 
 The objective remains external GitHub stars and, ideally, real business inquiries. Publishing assets is not completion. First work toward 10 identifiable external trial users and 3 usable feedback reports; these are intermediate operating targets, not achieved results or a promised conversion rate. The previously suggested 1,000 stars in 30 days is not a user-approved success threshold.

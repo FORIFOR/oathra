@@ -1,0 +1,5 @@
+I built Oathra for voice-agent developers checking reservation outcomes.
+Transcript JSON → missing fields + utterance evidence.
+Local, no API key. LiveKit example: type-checked, not live-tested.
+Video: saved model/simulator run.
+https://forifor.github.io/oathra/en/check.html

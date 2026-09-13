@@ -25,6 +25,8 @@ Native video attachment failed because the Chrome extension lacks file URL acces
 
 ### Next eligible X announcement — draft only, not posted
 
+**Active draft:** [x-transcript-check.txt](x-transcript-check.txt), updated after the user confirmed the audience and four-step sequence. Use that file instead of the historical text below. The fresh account timeline includes other original activity through 2026-09-13 18:01:15 UTC; conservatively defer until at least the next day at that time and recheck before publishing.
+
 Use **one** version of this concrete demo after the previous announcement is at least 24 hours old (earliest from the currently recorded history: 2026-09-14 15:38:16 UTC / 2026-09-15 00:38:16 JST). Check actual recent account activity first. The existing 12-hour follow-up should do this; do not create a duplicate scheduler.
 
 > I built a local transcript checker for voice agents. Paste JSON → inspect fields and supporting utterances. No install or API key.
