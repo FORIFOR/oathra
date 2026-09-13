@@ -1,5 +1,44 @@
 # Launch posts and publication record
 
+## Transcript browser trial — 2026-09-14 JST
+
+- Source: `aed1fe9df4af2e1edc727b8b47df69e4abba7307`; caption fix: `6c72d07ae83420e6ab2614dcb26e86201ba8b860`.
+- Public trial: https://forifor.github.io/oathra/check.html · https://forifor.github.io/oathra/en/check.html
+- Public video: https://forifor.github.io/oathra/en/#transcript-video (25 seconds, real browser capture, saved model/simulator record, no PSTN).
+- CI: https://github.com/FORIFOR/oathra/actions/runs/34777360143 — success. Pages: https://github.com/FORIFOR/oathra/actions/runs/34777360095 — success.
+- Public checker loaded its recording and returned complete. Chrome played the public movie past 12 seconds with readyState 4 and no media error. Both Zenn source articles were updated; the technical article's public API includes the checker URL.
+- [Implementation, test evidence and channel research](transcript-check-experiment.md).
+
+### Reddit attempt — filtered, not distributed
+
+On 2026-09-13 around 19:19 UTC (2026-09-14 04:19 JST), submitted once as the existing account `Important-Rip-1205`:
+
+https://www.reddit.com/r/voiceagents/comments/1wfgy3u/i_separated_reservation_evidence_from_the_voice/
+
+Title: **I separated reservation evidence from the voice agent’s summary (TypeScript + browser demo)**
+
+The live rules permit project demos that include technical lessons. The post explains the am/pm bug, the local checker workflow and limitations, and links to the playable walkthrough. It identifies the maintainer. No private call data or star request.
+
+**Outcome:** the permalink explicitly shows “この投稿は Reddit のフィルターによって削除されました。” The initial appearance in the author's feed was not evidence of public distribution. Do not count this as reach, repeat it, use another account, or send promotional replies to evade the filter. No outside comments observed; the default self-vote is not outside support. Treat Reddit as unavailable for further launch distribution until a legitimate eligibility change occurs.
+
+Native video attachment failed because the Chrome extension lacks file URL access. No permission was expanded; the submitted text links to the page containing the video. LiveKit Slack also remains unused: the entry screen requires joining and accepting terms.
+
+### Next eligible X announcement — draft only, not posted
+
+Use **one** version of this concrete demo after the previous announcement is at least 24 hours old (earliest from the currently recorded history: 2026-09-14 15:38:16 UTC / 2026-09-15 00:38:16 JST). Check actual recent account activity first. The existing 12-hour follow-up should do this; do not create a duplicate scheduler.
+
+> I built a local transcript checker for voice agents. Paste JSON → inspect fields and supporting utterances. No install or API key.
+>
+> Demo uses a saved model/simulator run, not a phone call.
+>
+> I'm the maintainer. Try: https://forifor.github.io/oathra/en/check.html
+
+Attach `docs/media/oathra-transcript.mp4` using the existing authenticated X API flow when eligible. Do not reuse the old helper's `x-en.json` publication state or its hardcoded evidence-lab movie. Use a separate persistent state record for this campaign, verify media processing, publish once and record the returned post ID. Upload near publication so media does not expire first.
+
+At 2026-09-13 19:20:43 UTC, GitHub still reports **0 stars / 0 forks**. Goal unachieved. The immediate bottleneck remains distribution; this new trial has no measured external adoption yet. Inspect actual responses and fresh traffic at 48–72 hours, without counting our verifications.
+
+---
+
 ## v0.1.2 standalone checks — 2026-09-14 JST
 
 - Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.2

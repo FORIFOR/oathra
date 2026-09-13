@@ -8,6 +8,11 @@ On 2026-09-14 JST: 0 stars, 0 forks, 6 views / 6 unique visitors in GitHub's rep
 
 Inference: the available reach sample cannot establish whether developers want this. A concrete adoption barrier was identifiable: the existing npm package exposed missing SDK entrypoints and required trying the whole phone runtime. The new v0.1.2 offers a local transcript checker, typed SDK and documented LiveKit adapter, with scope limitations. A clean LiveKit installation also exposed a conflicting optional RTC peer range; the range was expanded and the actual RTC wrapper is type-checked against the installed 0.13.x API. Live gateway behavior remains unverified.
 
+
+## Latest experiment checkpoint — 2026-09-14 04:20 JST
+
+The no-install [transcript checker](https://forifor.github.io/oathra/en/check.html) and 25-second walkthrough are public. [Details and evidence](transcript-check-experiment.md). The r/voiceagents post was submitted once but **removed by Reddit's automatic filter**. See the exact URL and readback in [posts.md](posts.md). Do not continue Reddit promotion or count the author-visible post as distribution. Native Chrome attachment is unavailable with current file access; LiveKit Slack requires a new join/terms step. The eligible next action is one X demo announcement after the existing 24-hour spacing, with the new movie and the published checker link. No additional feature expansion is justified before outside feedback or a real bug. Stars remain 0; no external trials established.
+
 ## Every 12 hours
 
 1. Read this file, recent publication records and git status. Preserve concurrent changes. Do not repeat completed work or republish an unchanged announcement.

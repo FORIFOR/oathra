@@ -1,0 +1,16 @@
+I maintain Oathra, an Apache-2.0 TypeScript project for checking evidence in voice-agent transcripts. I separated the completion check from the agent's own summary: required fields must have evidence accepted or confirmed by the other party, and the verified values must satisfy the configured constraints.
+
+A concrete mistake I fixed: a bare English "7:30" could become 07:30. The checker now leaves that time unverified until am/pm is explicit. It doesn't guess the intended meridiem from the earlier conversation. That is conservative, and it means some perfectly understandable conversations need clarification.
+
+I added a browser checker so you can try this without installing the phone runtime:
+https://forifor.github.io/oathra/en/check.html
+
+Load the recorded negotiation, press "Check this transcript", then open "Evidence history by utterance" or "Result JSON". You can also paste your own check JSON. Input stays in the tab; there is no transcript upload or analytics on this page. A 25-second screen recording is included below the checker.
+
+The included record is an actual saved GPT-4o-mini negotiation with a hotel simulator, not a real phone call. The browser and CLI produced identical JSON for it.
+
+The important limit: this checks supported Japanese/English transcript rules. It does not prove the booking exists in a venue's calendar, measure interruptions or validate ASR. For a real booking workflow, backend confirmation is still a separate requirement.
+
+Code and input schema: https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md
+
+If you build voice agents, which failure would make this unusable for your workflow? A description is enough; please don't post private call data.
