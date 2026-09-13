@@ -240,7 +240,7 @@ Simulator numbers (latency, scores) are from the simulator. Real-call latency to
 
 ## Try to fool it
 
-No install: the [sample on the site](https://forifor.github.io/oathra/en/#sim) lets you send the same three replies in the browser (outcomes are the evidence engine's own output; no call is placed).
+No install: the [browser evidence lab](https://forifor.github.io/oathra/en/#sim) runs the production `EvidenceEngine` and `evaluate` locally. Enter your own wording, switch speakers, or retract a reservation. Your input text stays in the browser; no call is placed. The [30-second interaction recording](https://forifor.github.io/oathra/en/#demo-video) shows a hedge, a confirmation, and a retraction.
 
 Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
 
@@ -257,6 +257,10 @@ The agent avatar in the Arena (a liquid-glass orb) vendors the shader from [LerS
 ## Contributing
 
 `pnpm install && pnpm test`. Add a scenario under `scenarios/`, a character under `providers/simulator/src/characters/`, or a provider under `providers/`. Keep the dependency direction; CI checks it.
+
+## Enterprise readiness
+
+Current scope: technical demonstration and validation scoping (L1). Paid pilots (L2) and production deployment (L3) have additional unmet requirements. A 100-call success rate and p95 response time have not been measured. See the [readiness gates](docs/READINESS.md).
 
 ## Using it for real work
 

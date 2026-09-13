@@ -3,7 +3,7 @@ name: Pages
 on:
   push:
     branches: [main]
-    paths: ["site/**", "docs/media/**", ".github/workflows/pages.yml"]
+    paths: ["site/**", "docs/media/**", "packages/evidence/**", "packages/contract/**", "scripts/build-site.mjs", "pnpm-lock.yaml", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -23,11 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:site
       - name: Assemble site
         run: |
           mkdir -p _site/media
           cp -r site/* _site/
           cp docs/media/* _site/media/ 2>/dev/null || true
+          rm -rf _site/src
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

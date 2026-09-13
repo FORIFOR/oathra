@@ -1,0 +1,24 @@
+#sim .tx{min-height:120px;max-height:180px;overflow:auto;scrollbar-width:thin}
+#sim{--ink:#17181a;--bg:#f8f7f3;--ink2:#3b3e44;--muted:#62656b;--line:#d4d1c9;--line2:#e5e2db;--green:#1f7a3e;--amber:#a86300;--accent:#c4401c;color:var(--ink)}
+#sim .ph{background:#f0ede5;color:var(--ink)}#sim .ph b{color:var(--ink)}#sim .ph .tag{color:var(--muted);border-color:var(--line)}
+.hero-a .btn{background:#17181a}.hero-a .btn.sec{background:transparent;color:#17181a}
+.custom-evidence{border-top:1px solid var(--line);margin-top:12px;padding-top:8px}.custom-evidence summary{cursor:pointer;font-size:14px;min-height:44px;display:flex;align-items:center}.custom-evidence summary::before{content:'＋';margin-right:8px}.custom-evidence[open] summary::before{content:'−'}
+#sim .chips>.reset{margin-top:8px}
+#sim .ev div{display:block;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+#sim .chip{min-height:44px;border-radius:8px}
+#evidence-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+#evidence-form label{grid-column:1/-1;font-size:13px;color:var(--ink2)}
+#evidence-form select,#evidence-form textarea{grid-column:1/-1;min-width:0;width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+#evidence-form textarea{resize:vertical}
+#evidence-form .btn{justify-content:center}
+#sim .ph{flex-wrap:wrap;gap:8px}
+#sim .tag{white-space:normal}
+#sim .body{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+.hero-a{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:36px}
+.hero-a h1{font-size:clamp(34px,3.8vw,52px);line-height:1.4}
+.hero-a .lede{font-size:17px;line-height:1.9}
+.hero-a .note{max-width:36em}
+.hero-a .sim{box-shadow:0 16px 48px #17181a08}
+@media(max-width:1000px){.hero-a{grid-template-columns:1fr}.hero-a h1{max-width:20em}#sim .body{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){#sim .body{grid-template-columns:1fr}.hero-a h1{font-size:34px}#sim .chip{font-size:14px}#sim aside{border-top:1px solid var(--line)}#sim .note{font-size:13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

@@ -170,7 +170,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 ## 誤完了を誘ってみる
 
-インストールせずに試すなら、[サイトのサンプル](https://forifor.github.io/oathra/#sim)で同じ 3 つの返事を押せます（判定は証拠エンジンの実出力、実際の電話は発信されません）。
+インストールせずに試すなら、[ブラウザの証拠ラボ](https://forifor.github.io/oathra/#sim)へ。本体の `EvidenceEngine` と `evaluate` がブラウザで動き、自由入力・話者切替・予約取り消しをその場で判定します。入力本文は送信せず、実際の電話も発信しません。[30秒の操作録画](https://forifor.github.io/oathra/#demo-video)では、曖昧な返事 → 確定 → 取り消しを確認できます。
 
 `npx oathra demo` で「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
 
@@ -187,6 +187,10 @@ Arena の AI 側のアバター（液体ガラスのオーブ）は [LerSent001/
 ## 参加する
 
 `pnpm install && pnpm test`。シナリオは `scenarios/`、店員キャラクターは `providers/simulator/src/characters/`、電話会社は `oathra provider create phone <id>` で雛形を生成できます。依存の向きだけ守ってください。
+
+## 企業向けの現状
+
+現在は技術紹介・検証範囲の相談（L1）が中心です。有償PoC（L2）・本番導入（L3）の完成を意味しません。実電話100件の成功率・p95応答は未測定です。[段階別の条件とデータの扱い](docs/READINESS.md)を確認してください。
 
 ## 導入相談
 

@@ -18,7 +18,8 @@
     "demo": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js demo",
     "clean": "rm -rf packages/*/dist providers/*/dist apps/*/dist",
     "bundle": "node scripts/bundle-cli.mjs",
-    "qa:arena": "node scripts/qa-arena.mjs"
+    "qa:arena": "node scripts/qa-arena.mjs",
+    "build:site": "node scripts/build-site.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
