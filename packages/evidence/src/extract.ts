@@ -54,7 +54,7 @@ export const ACCEPTANCE_RE =
  * "予約を取れると思います" / "たぶん大丈夫です" must never settle a field.
  */
 export const HEDGE_RE =
-  /と思います|と思う|たぶん|多分|おそらく|恐らく|かもしれません|かもしれない|確認してみ|確認いたします|確認します|調べてみ|probably|maybe|perhaps|I think|let me check|not sure|I'll check|might be/i;
+  /と思います|と思う|たぶん|多分|おそらく|恐らく|かもしれません|かもしれない|確認してみ|確認いたします|確認します|調べてみ|仮(?:の)?(?:押さえ|予約|受付|確保)|未確定|正式な確定ではありません|本予約では(?:ありません|ない)|承認待ち|確認待ち|確認が必要|確約(?:は)?(?:できません|できない)|保留扱い|調整中|確認中|確認してから|キャンセル待ち|確定前|見込み|probably|maybe|perhaps|I think|let me check|not sure|I'll check|might be/i;
 
 /** Split text into clauses with a polarity. */
 export function splitClauses(text: string): Clause[] {

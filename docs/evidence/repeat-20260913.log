@@ -1,0 +1,5273 @@
+
+Oathra Eval  6 scenarios × 10 runs · brain=scripted
+
+Scenario                   Status        Callee says  Score  TTFA p50  Turns  FalseComp
+bulk-buy                   completed       confirmed   97.8     71 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     74 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     63 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     73 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     84 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     63 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     71 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     78 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     93 ms  8      0        
+bulk-buy                   completed       confirmed   97.8     78 ms  8      0        
+false-completion-trap      incomplete  not confirmed     30     60 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     73 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     62 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     63 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     85 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     60 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     62 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     85 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     94 ms  4      0        
+false-completion-trap      incomplete  not confirmed     30     92 ms  4      0        
+impossible-hotel           completed       confirmed   95.4     80 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     74 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     63 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     75 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     84 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     68 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     70 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     70 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     88 ms  12     0        
+impossible-hotel           completed       confirmed   95.4     78 ms  12     0        
+restaurant-reservation     completed       confirmed   97.6     71 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     74 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     63 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     73 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     84 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     63 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     70 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     78 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     93 ms  8      0        
+restaurant-reservation     completed       confirmed   97.6     78 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     71 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     74 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     63 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     73 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     85 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     63 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     70 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     78 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     93 ms  8      0        
+restaurant-reservation-en  completed       confirmed   97.6     78 ms  8      0        
+serial-number              completed               -   98.6     71 ms  6      0        
+serial-number              completed               -   98.6     82 ms  6      0        
+serial-number              completed               -   98.6     63 ms  6      0        
+serial-number              completed               -   98.6     73 ms  6      0        
+serial-number              completed               -   98.6     85 ms  6      0        
+serial-number              completed               -   98.6     63 ms  6      0        
+serial-number              completed               -   98.6     76 ms  6      0        
+serial-number              completed               -   98.6     85 ms  6      0        
+serial-number              completed               -   98.6     94 ms  6      0        
+serial-number              completed               -   98.6     92 ms  6      0        
+
+╭────────────────────────────╮
+│ Completed          50 / 60 │
+│ Mean score         86.2    │
+│ TTFA p50 (mean)    75 ms   │
+│ False Completion   0       │
+╰────────────────────────────╯
+[
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 42006,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 71,
+        "ttfaP95Ms": 100,
+        "ttfaMaxMs": 100
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4179
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11264
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 17057
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22330
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 27261
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29736
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 36027
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41443
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41985,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 74,
+        "ttfaP95Ms": 85,
+        "ttfaMaxMs": 85
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4221
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11313
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 16979
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22235
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 27119
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29608
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35843
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41244
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6106,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41698,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 79,
+        "ttfaMaxMs": 79
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4215
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11297
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 17048
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22284
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 27112
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29595
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35823
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41216
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41416,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 73,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4296
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11388
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 17022
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22258
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 26821
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29305
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35329
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40755
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41734,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 84,
+        "ttfaP95Ms": 91,
+        "ttfaMaxMs": 91
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4203
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11313
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 16946
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22204
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 26693
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29181
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35526
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40931
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6106,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41743,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4137
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11216
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 17072
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22313
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 27030
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29497
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35484
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40908
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41716,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 71,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 3932
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11014
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 17025
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22286
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 26993
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29473
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35691
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41089
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41644,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 3990
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11094
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 16767
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22028
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 26767
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29249
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35644
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41041
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6103,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41235,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 93,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4006
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11119
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 16713
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 21979
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 26787
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29280
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35396
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40820
+      }
+    ]
+  },
+  {
+    "scenario": "bulk-buy",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "price": 5500,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "price": 5500,
+      "quantity": 3
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 94,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.8,
+      "points": 6104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41379,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 6,
+      "verifiedCount": 4
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ電器です。",
+        "t": 4128
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、ワイヤレスイヤホンを3個購入したいのですが、在庫と価格を教えていただけますか？",
+        "t": 11244
+      },
+      {
+        "source": "callee",
+        "text": "ワイヤレスイヤホンですね。在庫ございます。1個8,000円でございます。",
+        "t": 17113
+      },
+      {
+        "source": "caller",
+        "text": "予算が5,500円なのですが、5,500円以内になりませんでしょうか？",
+        "t": 22378
+      },
+      {
+        "source": "callee",
+        "text": "3個まとめてでしたら、1個5,500円でお出しできます。",
+        "t": 27054
+      },
+      {
+        "source": "caller",
+        "text": "では、5,500円でお願いします。",
+        "t": 29536
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ワイヤレスイヤホン3個、1個5,500円でご注文承りました。",
+        "t": 35622
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41012
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 22073,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 60,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4639
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11872
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16275
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21239
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21945,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 73,
+        "ttfaP95Ms": 82,
+        "ttfaMaxMs": 82
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4682
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11928
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16210
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21157
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21937,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 62,
+        "ttfaP95Ms": 63,
+        "ttfaMaxMs": 63
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4676
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11911
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16277
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21205
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21648,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 74,
+        "ttfaMaxMs": 74
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4757
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12004
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16253
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21181
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21519,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 85,
+        "ttfaP95Ms": 91,
+        "ttfaMaxMs": 91
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4664
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11928
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16176
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21126
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21856,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 60,
+        "ttfaP95Ms": 68,
+        "ttfaMaxMs": 68
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4598
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11831
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16302
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21235
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21818,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 62,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4393
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11628
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16254
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21207
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21594,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 85,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4451
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11709
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 15997
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 20950
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21615,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 94,
+        "ttfaP95Ms": 94,
+        "ttfaMaxMs": 94
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4468
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11735
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 15944
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 20903
+      }
+    ]
+  },
+  {
+    "scenario": "false-completion-trap",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "incomplete",
+    "fields": {},
+    "missing": [
+      "date",
+      "time",
+      "partySize",
+      "confirmed"
+    ],
+    "truth": {
+      "confirmed": false
+    },
+    "score": {
+      "outcome": 0,
+      "evidence": 0,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 30,
+      "points": 0,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 21880,
+      "turns": 4,
+      "agentTurns": 2,
+      "calleeTurns": 2,
+      "costUsd": 0,
+      "latency": {
+        "turns": 2,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 92,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 0
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、満席食堂でございます。",
+        "t": 4589
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で4名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 11859
+      },
+      {
+        "source": "callee",
+        "text": "申し訳ございません、19時以降は満席でございます。",
+        "t": 16344
+      },
+      {
+        "source": "caller",
+        "text": "承知しました。では別の日を検討いたします。ありがとうございました。",
+        "t": 21301
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6540,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68634,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 80,
+        "ttfaP95Ms": 100,
+        "ttfaMaxMs": 100
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5716
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 14026
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22122
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27702
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 34018
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38647
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44784
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 47431
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53476
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54903
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62808
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 68215
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6541,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68887,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 74,
+        "ttfaP95Ms": 85,
+        "ttfaMaxMs": 85
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5759
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 14083
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22057
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27620
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33889
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38532
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44613
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 47245
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53467
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54859
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62930
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 68325
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6542,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68460,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 82,
+        "ttfaMaxMs": 82
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5753
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 14065
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22124
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27668
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33881
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38518
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44592
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 47216
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53180
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54589
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62363
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 67753
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6541,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68493,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 75,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5834
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 14157
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22099
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27644
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33592
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38230
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44100
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 46757
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 52899
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54314
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62375
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 67777
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6540,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68778,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 84,
+        "ttfaP95Ms": 92,
+        "ttfaMaxMs": 92
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5741
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 14083
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22024
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27590
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33464
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38106
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44297
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 46933
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53217
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54613
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62681
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 68098
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6541,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68527,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 68,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5675
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 13985
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22148
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27697
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33799
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38421
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44254
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 46909
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53225
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54620
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62764
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 68166
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6541,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68544,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 70,
+        "ttfaP95Ms": 89,
+        "ttfaMaxMs": 89
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5470
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 13782
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22101
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27670
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33762
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38396
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44460
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 47088
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53197
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54613
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62419
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 67812
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6541,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68475,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 70,
+        "ttfaP95Ms": 89,
+        "ttfaMaxMs": 89
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5528
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 13863
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 21845
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27415
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33539
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38175
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44415
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 47043
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 53127
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54516
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62450
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 67840
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6539,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68057,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 88,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5544
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 13888
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 21790
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27364
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33557
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38203
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44165
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 46820
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 52716
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54128
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62154
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 67565
+      }
+    ]
+  },
+  {
+    "scenario": "impossible-hotel",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-10-03",
+      "partySize": 2,
+      "breakfast": true,
+      "smoking": false,
+      "price": 19900,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-10-03",
+      "partySize": 2,
+      "price": 19900,
+      "breakfast": true,
+      "smoking": false,
+      "name": "佐藤"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 92,
+      "conversation": 70,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 95.4,
+      "points": 6540,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 68364,
+      "turns": 12,
+      "agentTurns": 6,
+      "calleeTurns": 6,
+      "costUsd": 0,
+      "latency": {
+        "turns": 6,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 100,
+        "ttfaMaxMs": 100
+      },
+      "evidenceCount": 21,
+      "verifiedCount": 18
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、ホテル・リンゴフロントでございます。",
+        "t": 5666
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、10月3日に2名で宿泊を検討しておりまして、朝食付き・禁煙のお部屋の料金を伺えますでしょうか？",
+        "t": 14013
+      },
+      {
+        "source": "callee",
+        "text": "10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。",
+        "t": 22190
+      },
+      {
+        "source": "caller",
+        "text": "予算が20,000円なのですが、20,000円以内になりませんでしょうか？",
+        "t": 27763
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして21,100円でしたらご案内できます。いかがでしょうか？",
+        "t": 33823
+      },
+      {
+        "source": "caller",
+        "text": "朝食付きで20,000円にしていただくことはできませんか？",
+        "t": 38459
+      },
+      {
+        "source": "callee",
+        "text": "朝食をお付けして19,900円でしたらご案内できます。いかがでしょうか？",
+        "t": 44391
+      },
+      {
+        "source": "caller",
+        "text": "では、19,900円でお願いします。",
+        "t": 47012
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。ご予約者様のお名前をお伺いしてもよろしいでしょうか？",
+        "t": 52860
+      },
+      {
+        "source": "caller",
+        "text": "佐藤と申します。",
+        "t": 54287
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。10月3日、2名様、佐藤様、朝食付き禁煙のお部屋、1泊19,900円でご予約承りました。",
+        "t": 62426
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 67818
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41685,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 71,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5563
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12796
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 19045
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21394
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26786
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 28184
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35705
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 41122
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41677,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 74,
+        "ttfaP95Ms": 85,
+        "ttfaMaxMs": 85
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5606
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12852
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 18980
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21312
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26658
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 28070
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35535
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40936
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5106,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41391,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 79,
+        "ttfaMaxMs": 79
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5600
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12836
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 19049
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21362
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26652
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 28058
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35516
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40909
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41110,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 73,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5681
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12927
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 19023
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21337
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26362
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27769
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35023
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40449
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41427,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 84,
+        "ttfaP95Ms": 91,
+        "ttfaMaxMs": 91
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5588
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12852
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 18947
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21282
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26233
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27644
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35219
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40624
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5106,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41440,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 98,
+        "ttfaMaxMs": 98
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5522
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12756
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 19074
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21392
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26573
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27963
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35180
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40605
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41408,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 70,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5317
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12552
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 19026
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21364
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26533
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27936
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35384
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40781
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41338,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5375
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12634
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 18769
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21107
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26308
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27713
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35337
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40735
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5103,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 40927,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 93,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5391
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12658
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 18714
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21057
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26327
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27742
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35088
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40512
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "time": "19:30",
+      "date": "2026-09-12",
+      "partySize": 2,
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "田中"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 41072,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 98,
+        "ttfaMaxMs": 98
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、トラットリア・リンゴでございます。",
+        "t": 5513
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、9月12日の19時以降で2名、予約をお願いしたいのですが、空いていますでしょうか？",
+        "t": 12784
+      },
+      {
+        "source": "callee",
+        "text": "19時はいっぱいですが、19時半でしたら空いております。いかがでしょうか？",
+        "t": 19115
+      },
+      {
+        "source": "caller",
+        "text": "では、19時半でお願いします。",
+        "t": 21457
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。お名前をお伺いしてもよろしいでしょうか？",
+        "t": 26594
+      },
+      {
+        "source": "caller",
+        "text": "田中と申します。",
+        "t": 27999
+      },
+      {
+        "source": "callee",
+        "text": "かしこまりました。9月12日19時半、2名様、田中様でご予約承りました。当日お待ちしております。",
+        "t": 35315
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 40705
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31698,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 71,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4458
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10128
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14349
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16984
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20926
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 22318
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 28438
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 31135
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31687,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 74,
+        "ttfaP95Ms": 85,
+        "ttfaMaxMs": 85
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4501
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10181
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14281
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16900
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20795
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 22201
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 28265
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30946
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5106,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31400,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 79,
+        "ttfaMaxMs": 79
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4495
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10164
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14349
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16949
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20788
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 22188
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 28245
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30918
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31119,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 73,
+        "ttfaP95Ms": 99,
+        "ttfaMaxMs": 99
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4576
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10256
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14324
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16923
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20498
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 21899
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 27752
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30458
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31437,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 85,
+        "ttfaP95Ms": 91,
+        "ttfaMaxMs": 91
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4483
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10181
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14248
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16869
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20369
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 21775
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 27949
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30634
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5106,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31445,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 98,
+        "ttfaMaxMs": 98
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4417
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10084
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14373
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16977
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20705
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 22089
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 27905
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30610
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5105,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31416,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 70,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4212
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 9881
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14326
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16950
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20668
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 22065
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 28112
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30789
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31346,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4270
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 9963
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14070
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16694
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20444
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 21843
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 28066
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30743
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5103,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 30937,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 93,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4286
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 9987
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14015
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 16644
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20463
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 21873
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 27818
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30522
+      }
+    ]
+  },
+  {
+    "scenario": "restaurant-reservation-en",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "date": "2026-09-12",
+      "partySize": 2,
+      "time": "19:30",
+      "confirmed": true
+    },
+    "missing": [],
+    "truth": {
+      "confirmed": true,
+      "date": "2026-09-12",
+      "time": "19:30",
+      "partySize": 2,
+      "name": "Tanaka"
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 90,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 97.6,
+      "points": 5104,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31081,
+      "turns": 8,
+      "agentTurns": 4,
+      "calleeTurns": 4,
+      "costUsd": 0,
+      "latency": {
+        "turns": 4,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 78,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 11,
+      "verifiedCount": 10
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "Thank you for calling Trattoria Ringo, how can I help you?",
+        "t": 4408
+      },
+      {
+        "source": "caller",
+        "text": "Hi, I'd like to book a table for 2 on September 12, 7 pm or later. Do you have anything available?",
+        "t": 10112
+      },
+      {
+        "source": "callee",
+        "text": "7 pm is fully booked, but we do have 7:30 pm. Would that work?",
+        "t": 14416
+      },
+      {
+        "source": "caller",
+        "text": "That works. Let's go with 7:30 pm, please.",
+        "t": 17044
+      },
+      {
+        "source": "callee",
+        "text": "Certainly. May I have a name for the reservation?",
+        "t": 20730
+      },
+      {
+        "source": "caller",
+        "text": "It's under Tanaka.",
+        "t": 22129
+      },
+      {
+        "source": "callee",
+        "text": "Perfect. September 12 at 7:30 pm, party of 2 under Tanaka — you're all set. We'll see you then.",
+        "t": 28044
+      },
+      {
+        "source": "caller",
+        "text": "Thank you very much. See you then, goodbye.",
+        "t": 30714
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5214,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31917,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 71,
+        "ttfaP95Ms": 100,
+        "ttfaMaxMs": 100
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5563
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10642
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 17044
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21702
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25863
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 31261
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5212,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31747,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 82,
+        "ttfaP95Ms": 85,
+        "ttfaMaxMs": 85
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5606
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10698
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 16979
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21620
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25735
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 31147
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5215,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31726,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 79,
+        "ttfaMaxMs": 79
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5600
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10681
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 17047
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21668
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25727
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 31133
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5213,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31233,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 73,
+        "ttfaP95Ms": 80,
+        "ttfaMaxMs": 80
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5681
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10773
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 17022
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21643
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25437
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 30844
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5211,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31431,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 85,
+        "ttfaP95Ms": 91,
+        "ttfaMaxMs": 91
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5588
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10698
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 16946
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21589
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25309
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 30721
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5215,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31387,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 63,
+        "ttfaP95Ms": 68,
+        "ttfaMaxMs": 68
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5522
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10601
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 17071
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21697
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25645
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 31035
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5213,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31595,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 76,
+        "ttfaP95Ms": 89,
+        "ttfaMaxMs": 89
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5317
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10398
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 17024
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21671
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25609
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 31012
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5211,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31547,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 85,
+        "ttfaP95Ms": 88,
+        "ttfaMaxMs": 88
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5375
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10479
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 16767
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21413
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25383
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 30788
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5209,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31300,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 94,
+        "ttfaP95Ms": 94,
+        "ttfaMaxMs": 94
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5391
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10504
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 16713
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21365
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25404
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 30819
+      }
+    ]
+  },
+  {
+    "scenario": "serial-number",
+    "brain": "scripted",
+    "callee": "scripted",
+    "status": "completed",
+    "fields": {
+      "serial": "RZ7K3Q91XA"
+    },
+    "missing": [],
+    "truth": {
+      "serial": "RZ7K3Q91XA",
+      "matched": true
+    },
+    "score": {
+      "outcome": 100,
+      "evidence": 93,
+      "conversation": 100,
+      "latency": 100,
+      "efficiency": 100,
+      "overall": 98.6,
+      "points": 5210,
+      "falseCompletion": false,
+      "disagreements": []
+    },
+    "metrics": {
+      "durationMs": 31525,
+      "turns": 6,
+      "agentTurns": 3,
+      "calleeTurns": 3,
+      "costUsd": 0,
+      "latency": {
+        "turns": 3,
+        "meetsP50": true,
+        "meetsP95": true,
+        "ttfaP50Ms": 92,
+        "ttfaP95Ms": 97,
+        "ttfaMaxMs": 97
+      },
+      "evidenceCount": 3,
+      "verifiedCount": 2
+    },
+    "transcript": [
+      {
+        "source": "callee",
+        "text": "お電話ありがとうございます、リンゴ製作所サポートでございます。",
+        "t": 5513
+      },
+      {
+        "source": "caller",
+        "text": "恐れ入ります、製品のシリアル番号を教えていただけますでしょうか？",
+        "t": 10629
+      },
+      {
+        "source": "callee",
+        "text": "シリアル番号をお伝えします。R、Z、7、K、3、Q、9、1、X、A、です。復唱をお願いいたします。",
+        "t": 17113
+      },
+      {
+        "source": "caller",
+        "text": "復唱いたします。R、Z、7、K、3、Q、9、1、X、A、でよろしいでしょうか？",
+        "t": 21763
+      },
+      {
+        "source": "callee",
+        "text": "はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。",
+        "t": 25669
+      },
+      {
+        "source": "caller",
+        "text": "ありがとうございます。それではよろしくお願いいたします。失礼いたします。",
+        "t": 31074
+      }
+    ]
+  }
+]

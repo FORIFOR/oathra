@@ -1,0 +1,36 @@
+{
+  "total": 10000,
+  "falseCompletions": 0,
+  "byMutation": {
+    "never-confirm": {
+      "runs": 2004,
+      "completed": 0,
+      "falseCompletions": 0
+    },
+    "wrong-restate": {
+      "runs": 2002,
+      "completed": 0,
+      "falseCompletions": 0
+    },
+    "negate-then-offer": {
+      "runs": 1998,
+      "completed": 1665,
+      "falseCompletions": 0
+    },
+    "silent-hangup": {
+      "runs": 1998,
+      "completed": 0,
+      "falseCompletions": 0
+    },
+    "caller-echo-trap": {
+      "runs": 1998,
+      "completed": 0,
+      "falseCompletions": 0
+    }
+  },
+  "leaks": [],
+  "scope": "scripted simulator; no live telephone calls, no provider cost",
+  "seed": 20260913,
+  "sourceCommit": "82c0dc8eb92e54b0fd1a7dd88b41d456330cf310",
+  "workingTreeChanges": "Japanese provisional confirmation guard"
+}
