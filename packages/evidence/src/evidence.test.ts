@@ -267,6 +267,19 @@ describe("asking back is not agreement", () => {
   });
 });
 
+describe("dialect confirmations", () => {
+  it("「19時半に2名さんで取っといたで」 is a confirmation; 「取っとくわ」 (future) is only a commitment", () => {
+    const e = new EvidenceEngine({ now: NOW });
+    e.ingest(u("u1", "caller", "9月12日の19時半に2名でお願いします。", 1000));
+    e.ingest(u("u2", "callee", "ほな、9月12日の19時半に2名さんで取っといたで。", 2000));
+    expect(e.values()).toMatchObject({ time: "19:30", partySize: 2, confirmed: true });
+    const f = new EvidenceEngine({ now: NOW });
+    f.ingest(u("u1", "caller", "9月12日の19時半に2名でお願いします。", 1000));
+    f.ingest(u("u2", "callee", "ほな、19時半に2名さんで取っとくわ。", 2000));
+    expect(f.values().confirmed).toBeUndefined();
+  });
+});
+
 describe("walking away is not acceptance", () => {
   it("does not verify an offer when the caller declines with わかりました", () => {
     const e = new EvidenceEngine({ now: NOW });

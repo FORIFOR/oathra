@@ -16,6 +16,10 @@
  *   confirm-then-change  a real confirmation, then in the same breath a correction that changes one term
  *   cancel-after-confirm a real confirmation, then in the same breath "やはりお取りできませんでした"
  *   hold-then-reply    "少々お待ちください" is inserted before real replies (never a value)
+ *   voicemail          an answering machine picks up; nothing said afterwards is a person
+ *   transfer           "担当に代わります" — a second voice takes over and asks for the request again
+ *   ask-back           the callee asks to repeat twice before answering
+ *   dialect-confirm    the confirmation is spoken in Kansai dialect, past tense ("…で取っといたで")
  */
 import { CONFIRMATION_RE, parseDates, parsePartySize, parsePrices, parseSerials, parseTimes } from "@oathra/evidence";
 import type { BrainProvider } from "@oathra/core";
@@ -26,9 +30,10 @@ import { runScenario, type ScenarioRun } from "./index.js";
 export const MUTATIONS = [
   "never-confirm", "wrong-restate", "negate-then-offer", "silent-hangup", "caller-echo-trap",
   "tentative-hold", "echo-question", "confirm-then-change", "cancel-after-confirm", "hold-then-reply",
+  "voicemail", "transfer", "ask-back", "dialect-confirm",
 ] as const;
 /** Mutations under which the call can legitimately complete (the callee does commit in the end). */
-export const COMPLETABLE: readonly Mutation[] = ["negate-then-offer", "hold-then-reply"];
+export const COMPLETABLE: readonly Mutation[] = ["negate-then-offer", "hold-then-reply", "transfer", "ask-back", "dialect-confirm"];
 export type Mutation = (typeof MUTATIONS)[number];
 
 const HEDGES = ["確認してみますね。おそらく大丈夫だと思います。", "たぶんお取りできると思います。", "少々確認いたします。恐らく問題ないかと。"];
@@ -40,6 +45,11 @@ const TENTATIVE = [
   "一応承っておきますが、当日の状況次第でございます。",
 ];
 const HOLD = ["少々お待ちくださいませ。", "確認いたしますので、そのままお待ちください。"];
+const VOICEMAIL_GREETING = "ただいま電話に出ることができません。ご用件は発信音の後にお話しください。ピーッ。";
+const TRANSFER = "担当の者に代わりますので、少々お待ちください。……お電話代わりました、山田でございます。恐れ入りますが、ご用件をもう一度お願いできますでしょうか。";
+const TRANSFER_EN = "Let me transfer you to the person in charge, one moment. … Hello, this is Yamada. Sorry, could you tell me again what you need?";
+const ASK_BACK = ["申し訳ございません、お電話が遠いようで、もう一度お願いできますでしょうか。", "失礼いたしました、何名様でしたでしょうか。もう一度お願いいたします。"];
+const ASK_BACK_EN = ["Sorry, the line is bad. Could you say that again?", "Sorry, how many people was that? Could you repeat it?"];
 const CANCEL = "申し訳ございません、確認しましたところ、やはりそのお時間はお取りできませんでした。ご予約はお受けできません。";
 const CANCEL_EN = "Sorry, I've just checked and we can't take that reservation after all.";
 const isEnglish = (text: string) => !/[぀-ヿ一-鿿]/.test(text);
@@ -63,7 +73,7 @@ export class AdversarialCharacter implements CalleeCharacter {
   }
 
   greeting(): string | undefined {
-    return this.base.greeting();
+    return this.mutation === "voicemail" ? VOICEMAIL_GREETING : this.base.greeting();
   }
 
   async respond(ctx: CalleeContext): Promise<CalleeReply> {
@@ -105,10 +115,33 @@ export class AdversarialCharacter implements CalleeCharacter {
         this.mutatedConfirm = true;
         return { ...reply, text: `${reply.text} ……${isEnglish(reply.text) ? CANCEL_EN : CANCEL}` };
 
+      case "voicemail":
+        // an answering machine: a beep, then the recording time runs out
+        this.mutatedConfirm = true;
+        return this.turns >= 2 ? { text: "ピーッ。", hangup: true } : { text: "ピーッ。" };
+
+      case "transfer":
+        if (this.turns === 2 && !isConfirm && !reply.hangup) return { text: ctx.language === "en" ? TRANSFER_EN : TRANSFER };
+        return reply;
+
+      case "ask-back":
+        if (!isConfirm && !reply.hangup && this.holds < 2) {
+          return { text: (ctx.language === "en" ? ASK_BACK_EN : ASK_BACK)[this.holds++]! };
+        }
+        return reply;
+
+      case "dialect-confirm":
+        if (isConfirm && !/\b(?:am|pm)\b/i.test(reply.text)) {
+          // 「…でご予約承りました。」 -> 「…で取っといたで。」 (past tense: the booking is made)
+          const t = reply.text.replace(CONFIRMATION_RE, "取っといたで").replace(/合っております/g, "合うてるで");
+          return { ...reply, text: t };
+        }
+        return reply;
+
       case "hold-then-reply":
         if (!isConfirm && !reply.hangup && this.holds < 2 && this.rng() < 0.5) {
           this.holds++;
-          return { text: HOLD[Math.floor(this.rng() * HOLD.length)]! };
+          return { text: ctx.language === "en" ? "One moment please, let me check." : HOLD[Math.floor(this.rng() * HOLD.length)]! };
         }
         return reply;
 
@@ -218,8 +251,13 @@ export class AdversarialCharacter implements CalleeCharacter {
         return { ...base, ...this.committed };
       case "cancel-after-confirm":
         return this.mutatedConfirm ? { ...base, confirmed: false, matched: false } : base;
+      case "voicemail":
+        return { confirmed: false, matched: false };
       case "negate-then-offer":
       case "hold-then-reply":
+      case "transfer":
+      case "ask-back":
+      case "dialect-confirm":
         return base;
     }
   }
