@@ -162,3 +162,8 @@ publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0�
 - Zenn: https://zenn.dev/forifori/articles/oathra-evidence-rules （判定ルール 4 本と失効ルール）
 - dev.to: https://dev.to/forifor/four-regexes-and-a-staleness-rule-how-my-phone-agent-refuses-to-call-probably-fine-a-booking-3ech （canonical は Zenn）
 - npm 0.1.1: `npm publish` は E401（ログインセッション切れ）で失敗。ユーザーの `npm login` と 2FA が必要。
+
+## TikTok / Facebook（2026-09-14 00:45 JST）
+
+- TikTok: Oathra の縦動画は既に 9/13 20:10 に公開されていた（別セッション、キャプション「AIに電話をかけさせたら、取れてない予約を「取れた」と言い切った…」）。私が 9/14 00:40 に投稿した同じ動画は重複になるため削除した（30 日以内なら復元可）。公開中の 1 本を残す。
+- Facebook: ページ foriforapps でリール投稿を 2 回試行（動画アップロード → 次へ → 説明入力 → 投稿）。投稿後にページのタイムラインとリール一覧に表示されず、処理中か失敗かは未確認。
