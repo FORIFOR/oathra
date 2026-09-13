@@ -3,7 +3,7 @@ title: "「たぶん大丈夫です」を予約成立にしないために、電
 emoji: "🧾"
 type: "tech"
 topics: ["ai", "typescript", "regex", "voiceagent", "oss"]
-published: false
+published: true
 ---
 
 前回の記事（[AIが電話で予約を取るOSSを作った](https://zenn.dev/forifori/articles/oathra-launch)）で「予約できたかどうかは店側の発言で判定する」と書きました。今回はその判定部分だけを切り出して書きます。コードは [packages/evidence](https://github.com/FORIFOR/oathra/tree/main/packages/evidence) にあります。LLM は一切使っていません。
