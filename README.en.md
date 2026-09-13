@@ -240,6 +240,8 @@ Simulator numbers (latency, scores) are from the simulator. Real-call latency to
 
 ## Try to fool it
 
+No install: the [sample on the site](https://forifor.github.io/oathra/en/#sim) lets you send the same three replies in the browser (outcomes are the evidence engine's own output; no call is placed).
+
 Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
 
 - Restaurant: "probably fine, but it's not confirmed yet" → not confirmed
