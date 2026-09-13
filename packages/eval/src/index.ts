@@ -201,7 +201,7 @@ export function renderBattleMarkdown(scenario: Scenario, entries: BattleEntry[])
   return lines.join("\n");
 }
 
-export { runAdversarial, AdversarialCharacter, MUTATIONS, type Mutation, type AdversarialSummary, type AdversarialOptions, type MutationStats } from "./adversarial.js";
+export { runAdversarial, AdversarialCharacter, MUTATIONS, COMPLETABLE, type Mutation, type AdversarialSummary, type AdversarialOptions, type MutationStats } from "./adversarial.js";
 
 /**
  * Shareable leaderboard card as SVG (1200×630, the social-card size).

@@ -39,7 +39,7 @@ pnpm demo                                      # http://localhost:4242 で AI �
 pnpm oathra play restaurant-reservation        # 同じ通話をターミナルで
 pnpm oathra play impossible-hotel --fast       # 仮想時計で一瞬
 pnpm oathra eval                               # 全シナリオと誤完了の数
-pnpm oathra eval --adversarial 10000           # 意地悪な店員1万通り（never-confirm, wrong-restate, …）
+pnpm oathra eval --adversarial 10000           # 意地悪な店員1万通り（10 種の変異: 仮押さえ、聞き返し、確定後の訂正・取り消し …）
 pnpm oathra eval --callee openai               # 店員役を GPT-4o mini に任せ、台本にない言い回しで証拠エンジンを試す（数円）
 pnpm oathra replay <callId> --at 00:18.420     # その時点の状態に巻き戻す
 pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemini --png card.png --json run.json

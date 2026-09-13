@@ -3,7 +3,7 @@ import { defineCall } from "@oathra/contract";
 import { EvidenceEngine } from "./engine.js";
 import { evaluate } from "./evaluate.js";
 import { kanjiToNumber, parseDates, parsePartySize, parsePrices, parseTimes } from "./normalize.js";
-import { splitClauses } from "./extract.js";
+import { isAgreement, RETRACTION_RE, splitClauses } from "./extract.js";
 import type { Utterance } from "./types.js";
 
 const NOW = new Date(2026, 8, 11, 10, 0, 0); // 2026-09-11
@@ -225,6 +225,45 @@ describe("confirmation is bound to the deal it confirmed", () => {
     expect(e.values().time).toBeUndefined();
     e.ingest(u("u4", "caller", "はい、19時でお願いします。", 4000));
     expect(e.values()).toMatchObject({ time: "19:00", confirmed: true });
+  });
+});
+
+describe("a retraction takes the confirmation back", () => {
+  it("in the same breath: 「承りました。……やはりお取りできませんでした」 never produces `confirmed`", () => {
+    const e = new EvidenceEngine({ now: NOW });
+    e.ingest(u("u1", "caller", "9月12日の19時半に2名でお願いします。", 1000));
+    e.ingest(u("u2", "callee", "かしこまりました。9月12日19時半、2名様でご予約承りました。 ……申し訳ございません、確認しましたところ、やはりそのお時間はお取りできませんでした。ご予約はお受けできません。", 2000));
+    expect(e.values().confirmed).toBeUndefined();
+    expect(e.all().some((n) => n.field === "confirmed" && n.verified)).toBe(false);
+  });
+
+  it("on the next turn: the earlier confirmation is revoked, a later one counts again", () => {
+    const e = new EvidenceEngine({ now: NOW });
+    e.ingest(u("u1", "caller", "9月12日の19時半に2名でお願いします。", 1000));
+    e.ingest(u("u2", "callee", "かしこまりました。9月12日19時半、2名様でご予約承りました。", 2000));
+    expect(e.values().confirmed).toBe(true);
+    e.ingest(u("u3", "callee", "申し訳ございません、やはりそのお時間はお取りできませんでした。", 3000));
+    expect(e.values().confirmed).toBeUndefined();
+    e.ingest(u("u4", "callee", "20時でしたらご用意できます。", 4000));
+    e.ingest(u("u5", "caller", "では、20時でお願いします。", 5000));
+    e.ingest(u("u6", "callee", "かしこまりました。20時に2名様でご予約承りました。", 6000));
+    expect(e.values()).toMatchObject({ time: "20:00", confirmed: true });
+  });
+
+  it("english: \"you're all set … we can't take that reservation after all\" is not confirmed", () => {
+    const e = new EvidenceEngine({ now: NOW, language: "en" });
+    e.ingest(u("u1", "caller", "A table for two on September 12th at 7:30 pm, please.", 1000));
+    e.ingest(u("u2", "callee", "Perfect. September 12 at 7:30 pm, party of 2 — you're all set. Sorry, I've just checked and we can't take that reservation after all.", 2000));
+    expect(e.values().confirmed).toBeUndefined();
+  });
+});
+
+describe("asking back is not agreement", () => {
+  it("「…で合っておりますでしょうか？」 does not verify the caller's serial", () => {
+    expect(isAgreement("はい、R、Z、7、K、3、Q、9、1、X、A、で合っておりますでしょうか？", "callee")).toBe(false);
+    expect(isAgreement("はい、R、Z、7、K、3、Q、9、1、X、A、で合っております。", "callee")).toBe(true);
+    expect(RETRACTION_RE.test("ご予約はお受けできません")).toBe(true);
+    expect(RETRACTION_RE.test("19時はいっぱいですが19時半なら空いております")).toBe(false);
   });
 });
 

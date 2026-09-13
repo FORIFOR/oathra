@@ -2,7 +2,7 @@ import { execSync, spawn } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { startArena } from "@oathra/arena";
-import { battle, evalScenarios, renderBattleMarkdown, renderBattleSvg, runAdversarial, runScenario } from "@oathra/eval";
+import { battle, COMPLETABLE, evalScenarios, MUTATIONS, renderBattleMarkdown, renderBattleSvg, runAdversarial, runScenario } from "@oathra/eval";
 import { listCalls, loadCall, renderTimeline, saveCall, snapshotAt } from "@oathra/replay";
 import { loadScenarioDir, loadScenarioFile, parseScenario, type Scenario } from "@oathra/scenario";
 import { brains, listBrains, resolveBrain } from "./brains.js";
@@ -246,7 +246,7 @@ export async function cmdEval(positional: string[], flags: Flags): Promise<void>
 async function cmdEvalAdversarial(scenarios: Scenario[], brain: () => import("@oathra/core").BrainProvider, brainName: string, flags: Flags): Promise<void> {
   const runs = num(flags.adversarial, 1000);
   const seed = num(flags.seed, 1);
-  console.log(`\n${bold("Oathra Adversarial Eval")}  ${dim(`${runs} runs · ${scenarios.length} scenarios × 5 mutations · brain=${brainName} · seed=${seed}`)}\n`);
+  console.log(`\n${bold("Oathra Adversarial Eval")}  ${dim(`${runs} runs · ${scenarios.length} scenarios × ${MUTATIONS.length} mutations · brain=${brainName} · seed=${seed}`)}\n`);
   const started = Date.now();
   let done = 0;
   const tick = Math.max(1, Math.floor(runs / 20));
@@ -271,7 +271,7 @@ async function cmdEvalAdversarial(scenarios: Scenario[], brain: () => import("@o
   }
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   const line = `False Completion: ${summary.falseCompletions} / ${summary.total} adversarial runs`;
-  console.log(box([summary.falseCompletions === 0 ? green(line) : bad(line), dim(`${secs}s · completed ${summary.completed} (expected: only negate-then-offer completes)`)]));
+  console.log(box([summary.falseCompletions === 0 ? green(line) : bad(line), dim(`${secs}s · completed ${summary.completed} (expected to complete: ${COMPLETABLE.join(", ")})`)]));
   if (flags.json) console.log(JSON.stringify({ total: summary.total, falseCompletions: summary.falseCompletions, byMutation: summary.byMutation, leaks: summary.leaks }, null, 2));
   if (summary.falseCompletions > 0) process.exitCode = 1;
 }

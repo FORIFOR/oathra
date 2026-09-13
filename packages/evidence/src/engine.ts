@@ -14,7 +14,7 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE , RETRACTION_RE } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 export type EngineOptions = {
@@ -52,7 +52,11 @@ export class EvidenceEngine {
     this.idFactory = opts.idFactory ?? (() => `ev_${++this.seq}`);
   }
 
+  /** Time of the latest callee retraction (「やはりお取りできませんでした」); a confirmation before it no longer counts. */
+  private retractedAt: number | undefined;
+
   ingest(u: Utterance): IngestResult {
+    if (u.source === "callee" && RETRACTION_RE.test(u.text)) this.retractedAt = u.t;
     const created: Evidence[] = [];
     const verifiedNow: Evidence[] = [];
     const claims = extractClaims(u, { now: this.now, language: this.language });
@@ -233,7 +237,8 @@ export class EvidenceEngine {
     let confirmNode: Evidence | undefined;
     for (const n of this.nodes) {
       if (n.field === "confirmed") {
-        if (n.source === "callee" && n.verified) confirmNode = n;
+        // a callee retraction spoken after the confirmation revokes it (same-utterance retractions never produce the node)
+        if (n.source === "callee" && n.verified && !(this.retractedAt !== undefined && this.retractedAt > n.t)) confirmNode = n;
         continue;
       }
       latest.set(n.field, n);

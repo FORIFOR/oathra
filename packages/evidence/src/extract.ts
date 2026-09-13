@@ -146,8 +146,10 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
       if (no) claims.push({ field: b.field, value: false, span: no[0], semantic: 0.92, polarity: clause.polarity });
       else if (yes) claims.push({ field: b.field, value: true, span: yes[0], semantic: 0.92, polarity: clause.polarity });
     }
-    // a hedge anywhere in the utterance ("たぶん…、承りました") disqualifies the confirmation
-    if (clause.polarity === "positive" && !HEDGE_RE.test(text) && !HEDGE_RE.test(u.text)) {
+    // a hedge anywhere in the utterance ("たぶん…、承りました") disqualifies the confirmation,
+    // and so does a retraction later in the same utterance ("承りました。……やはりお取りできませんでした")
+    const later = u.text.slice(clause.offset + clause.text.length);
+    if (clause.polarity === "positive" && !HEDGE_RE.test(text) && !HEDGE_RE.test(u.text) && !RETRACTION_RE.test(later)) {
       const c = text.match(CONFIRMATION_RE);
       if (c) claims.push({ field: "confirmed", value: true, span: c[0], semantic: 0.97, polarity: "positive" });
     }
@@ -191,6 +193,16 @@ export function isConfirmRequest(text: string, source: Speaker): boolean {
   return source === "caller" && CONFIRM_REQUEST_RE.test(text) && /[?？]|でしょうか|ですか/.test(text);
 }
 
+/**
+ * The callee takes the booking back: 「ご予約承りました。……やはりお取りできませんでした」.
+ * A confirmation followed by this (same utterance or later) is not a confirmation.
+ */
+export const RETRACTION_RE =
+  /やはり[^。]*?(?:できません|できかね|無理)|(?:予約|ご予約|注文|ご注文)(?:は|を)?(?:お受けでき(?:ません|かねます)|お取りでき(?:ません|かねます)|承れません|お受けいたしかねます|お取りいたしかねます|キャンセル|取り消し)|取り消させていただき|(?:can't|cannot|unable to|won't be able to) (?:take|honou?r|hold|keep|confirm) (?:the|that|your|this) (?:reservation|booking|order)|(?:reservation|booking|order) (?:is|has been|was) (?:cancelled|canceled|off|withdrawn)|after all,? (?:we|I) can't/i;
+
+/** "…で合っておりますでしょうか？" is the callee asking back, not agreeing. */
+export const QUESTION_RE = /[?？]\s*$|でしょうか|ですか[?？]?\s*$|ますか[?？]?\s*$/;
+
 export function isAgreement(text: string, source: Speaker): boolean {
-  return source === "callee" && AGREEMENT_RE.test(text) && !REFUSAL_RE.test(text) && !HEDGE_RE.test(text);
+  return source === "callee" && AGREEMENT_RE.test(text) && !REFUSAL_RE.test(text) && !HEDGE_RE.test(text) && !QUESTION_RE.test(text.trim());
 }

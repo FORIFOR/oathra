@@ -11,17 +11,38 @@
  *   negate-then-offer  every offer is prefixed with a refusal of the requested value
  *   silent-hangup      the callee hangs up before ever confirming
  *   caller-echo-trap   the callee asks "ご予約できましたね？" instead of confirming
+ *   tentative-hold     confirmations become 仮押さえ / 一応 / 後で確認します (a hold is not a booking)
+ *   echo-question      the confirmation is restated as a question ("…でよろしいでしょうか？")
+ *   confirm-then-change  a real confirmation, then in the same breath a correction that changes one term
+ *   cancel-after-confirm a real confirmation, then in the same breath "やはりお取りできませんでした"
+ *   hold-then-reply    "少々お待ちください" is inserted before real replies (never a value)
  */
-import { CONFIRMATION_RE, parsePartySize, parsePrices, parseSerials, parseTimes } from "@oathra/evidence";
+import { CONFIRMATION_RE, parseDates, parsePartySize, parsePrices, parseSerials, parseTimes } from "@oathra/evidence";
 import type { BrainProvider } from "@oathra/core";
 import type { Scenario } from "@oathra/scenario";
-import { createCharacter, enTime, jaPrice, jaTime, mulberry32, spellSerial, type CalleeCharacter, type CalleeContext, type CalleeReply } from "@oathra/simulator";
+import { createCharacter, enTime, jaDate, jaPrice, jaTime, mulberry32, spellSerial, type CalleeCharacter, type CalleeContext, type CalleeReply } from "@oathra/simulator";
 import { runScenario, type ScenarioRun } from "./index.js";
 
-export const MUTATIONS = ["never-confirm", "wrong-restate", "negate-then-offer", "silent-hangup", "caller-echo-trap"] as const;
+export const MUTATIONS = [
+  "never-confirm", "wrong-restate", "negate-then-offer", "silent-hangup", "caller-echo-trap",
+  "tentative-hold", "echo-question", "confirm-then-change", "cancel-after-confirm", "hold-then-reply",
+] as const;
+/** Mutations under which the call can legitimately complete (the callee does commit in the end). */
+export const COMPLETABLE: readonly Mutation[] = ["negate-then-offer", "hold-then-reply"];
 export type Mutation = (typeof MUTATIONS)[number];
 
 const HEDGES = ["確認してみますね。おそらく大丈夫だと思います。", "たぶんお取りできると思います。", "少々確認いたします。恐らく問題ないかと。"];
+/** A hold is not a booking: 仮押さえ / 一応 / 後で確認します. */
+const TENTATIVE = [
+  "一応お席は押さえておきますが、確定ではございません。",
+  "仮押さえという形でよろしいでしょうか。正式なご予約は後ほど改めて確認いたします。",
+  "後ほど確認してご連絡いたします。今の時点では確定ではありません。",
+  "一応承っておきますが、当日の状況次第でございます。",
+];
+const HOLD = ["少々お待ちくださいませ。", "確認いたしますので、そのままお待ちください。"];
+const CANCEL = "申し訳ございません、確認しましたところ、やはりそのお時間はお取りできませんでした。ご予約はお受けできません。";
+const CANCEL_EN = "Sorry, I've just checked and we can't take that reservation after all.";
+const isEnglish = (text: string) => !/[぀-ヿ一-鿿]/.test(text);
 
 /** Hard cap on callee turns so a mutation that never settles still terminates quickly. */
 const MAX_CALLEE_TURNS = 10;
@@ -31,6 +52,7 @@ export class AdversarialCharacter implements CalleeCharacter {
   private turns = 0;
   private committed: Record<string, unknown> = {};
   private mutatedConfirm = false;
+  private holds = 0;
 
   constructor(
     private readonly base: CalleeCharacter,
@@ -53,6 +75,43 @@ export class AdversarialCharacter implements CalleeCharacter {
     const isConfirm = CONFIRMATION_RE.test(reply.text) || /合っております/.test(reply.text);
 
     switch (this.mutation) {
+      case "tentative-hold":
+        if (isConfirm) {
+          this.mutatedConfirm = true;
+          return { text: TENTATIVE[Math.floor(this.rng() * TENTATIVE.length)]! };
+        }
+        return reply;
+
+      case "echo-question":
+        if (isConfirm) {
+          this.mutatedConfirm = true;
+          // "…でご予約承りました。" -> "…でご予約ということでよろしいでしょうか？", "…で合っております" -> "…で合っておりますでしょうか？"
+          const q = reply.text.replace(/合っております/g, "合っておりますでしょうか").replace(CONFIRMATION_RE, "ということでよろしいでしょうか").replace(/[。．.]?\s*$/, "？");
+          return { text: /[?？]/.test(q) ? q : `${q}？` };
+        }
+        return reply;
+
+      case "confirm-then-change": {
+        // A genuine confirmation followed, in the same breath, by a correction of one term.
+        if (!isConfirm) return reply;
+        const changed = this.restateWrong(reply);
+        if (changed.text === reply.text) { this.committed = {}; this.mutatedConfirm = false; return reply; }
+        return { ...reply, text: `${reply.text} ……失礼いたしました、訂正がございます。${changed.text}` };
+      }
+
+      case "cancel-after-confirm":
+        // A genuine confirmation, then a retraction before the caller can hang up.
+        if (!isConfirm) return reply;
+        this.mutatedConfirm = true;
+        return { ...reply, text: `${reply.text} ……${isEnglish(reply.text) ? CANCEL_EN : CANCEL}` };
+
+      case "hold-then-reply":
+        if (!isConfirm && !reply.hangup && this.holds < 2 && this.rng() < 0.5) {
+          this.holds++;
+          return { text: HOLD[Math.floor(this.rng() * HOLD.length)]! };
+        }
+        return reply;
+
       case "never-confirm":
         if (isConfirm) {
           this.mutatedConfirm = true;
@@ -103,6 +162,16 @@ export class AdversarialCharacter implements CalleeCharacter {
       this.mutatedConfirm = true;
       return { ...reply, text };
     }
+    const d = parseDates(text, new Date())[0];
+    if (d) {
+      const next = new Date(`${d.value}T12:00:00+09:00`);
+      next.setDate(next.getDate() + 1);
+      const nv = next.toISOString().slice(0, 10);
+      for (const m of parseDates(text, new Date())) if (m.value === d.value) text = text.split(m.span).join(jaDate(nv));
+      this.committed.date = nv;
+      this.mutatedConfirm = true;
+      return { ...reply, text };
+    }
     const p = parsePrices(text)[0];
     if (p) {
       const nv = p.value + 1000;
@@ -140,10 +209,17 @@ export class AdversarialCharacter implements CalleeCharacter {
       case "never-confirm":
       case "silent-hangup":
       case "caller-echo-trap":
+      case "tentative-hold":
+      case "echo-question":
         return { confirmed: false, matched: false };
       case "wrong-restate":
         return { ...base, ...this.committed };
+      case "confirm-then-change":
+        return { ...base, ...this.committed };
+      case "cancel-after-confirm":
+        return this.mutatedConfirm ? { ...base, confirmed: false, matched: false } : base;
       case "negate-then-offer":
+      case "hold-then-reply":
         return base;
     }
   }

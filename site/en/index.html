@@ -330,7 +330,9 @@ Success = Connected
 
 $ npx oathra eval --adversarial 10000
 never-confirm · wrong-restate · negate-then-offer
-silent-hangup · caller-echo-trap
+silent-hangup · caller-echo-trap · tentative-hold
+echo-question · confirm-then-change
+cancel-after-confirm · hold-then-reply
 <span class="ok">False Completion: 0 / 10000 adversarial runs</span>  6.2s</pre>
       <ul class="rules">
         <li><b>Refusals never become offers.</b> 「19時はいっぱいですが」 produces no claim for 19:00.</li>

@@ -80,7 +80,7 @@ pnpm oathra play restaurant-reservation        # same call in the terminal
 pnpm oathra play restaurant-reservation-en     # the same call in English
 pnpm oathra play impossible-hotel --fast       # instant, virtual clock
 pnpm oathra eval                               # every scenario, False Completion count
-pnpm oathra eval --adversarial 10000           # mutated callees: never-confirm, wrong restate, hedges…
+pnpm oathra eval --adversarial 10000           # mutated callees, 10 kinds: hedges, tentative holds, asking back, confirm-then-retract…
 npx oathra eval --callee openai               # let GPT-4o mini play the shop: phrasing nobody scripted (a few cents)
 pnpm oathra replay <callId> --at 00:18.420     # time travel
 pnpm oathra doctor
