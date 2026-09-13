@@ -30,5 +30,6 @@ rmSync(assets, { recursive: true, force: true });
 cpSync(resolve(root, "apps/arena/public"), resolve(assets, "arena"), { recursive: true });
 cpSync(resolve(root, "scenarios"), resolve(assets, "scenarios"), { recursive: true });
 cpSync(resolve(root, "README.md"), resolve(cli, "README.md"));
+cpSync(resolve(root, "LICENSE"), resolve(cli, "LICENSE"));
 writeFileSync(resolve(out, ".gitkeep"), "");
 console.log(`bundled -> ${out}/bin.js · assets -> ${assets}`);

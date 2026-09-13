@@ -35,3 +35,12 @@
 
 出せた変更: Arena の Play モードに「誤完了を誘ってみる」ボタン 3 つ（18e7883）。0.1.1 は公開待ち（本人の npm 2FA）。
 備考: 受信箱に r/opensource の AutoModerator からの削除通知（アカウント 1 年未満は投稿不可、例外なし）があった。当該投稿はこのセッションのものではない。r/opensource は 1 年経つまで投稿先から外す。
+
+## 2026-09-14 — Zenn改稿後・GitHub配布準備
+
+- GitHub stars / forks: 0 / 0。
+- Traffic API views（14日）: 6回 / 6 uniques。前回0から増加。ただし作者の確認を除外できず、マーケティング施策の効果とは断定できない。
+- Traffic API clones（14日）: 298回 / 121 uniques。CI・配布・作者の確認を含み、利用者数には置き換えない。
+- 他者の新規Issue: なし（一覧の4件はすべてFORIFOR作成）。
+- npm配布版: 0.1.0。修正済み0.1.1とのずれを確認したため、GitHub Releaseで導入可能なCLIパッケージを準備。
+- Zenn改稿コミット `01d0f07` のCIはsuccess。2記事の新タイトル・全見出し・動画リンクは公開HTMLで確認済み。

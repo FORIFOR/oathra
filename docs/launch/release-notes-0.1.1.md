@@ -1,6 +1,16 @@
 # oathra 0.1.1
 
-試用中に見つかった 3 件を直しました。評価ゲートはすべて通過（tests 127、`oathra eval` False Completion 0、`--adversarial 10000` 0/10000）。
+試用中に見つかった 3 件を直しました。評価ゲートはすべて通過（tests 135、`oathra eval` False Completion 0、`--adversarial 10000` 0/10000）。
+
+## 導入
+
+Node.js 22以上で、GitHub Releaseの配布パッケージから起動できます。
+
+```bash
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo
+```
+
+npm版は0.1.0のままです。このリリースはCLIとArenaの配布であり、npm公開の完了を意味しません。添付のSHA-256ファイルでダウンロード内容を照合できます。
 
 ## 直したこと
 

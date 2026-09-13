@@ -188,7 +188,8 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">オープンソース · Apache-2.0 · TypeScript</p>
       <h1>AIが電話する。<br>結果は、<em>相手の言葉</em>で確かめる。</h1>
       <p class="lede">予約・注文・確認のための音声エージェント基盤。日時、人数、条件、確定の根拠を、通話と一緒に残します。AI が「予約できました」と言っても、相手がそう言うまで確定にはなりません。</p>
-      <div class="ctas"><a class="btn" href="#sim">その場で判定を試す</a><button class="btn sec" data-copy-command="npx oathra demo"><b>$</b> npx oathra demo</button></div>
+      <div class="ctas"><a class="btn" href="#sim">その場で判定を試す</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> v0.1.1を起動</button></div>
+      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.1">修正版v0.1.1の導入手順</a> · コピーボタンはGitHub Release版を起動します。npm版は0.1.0です。</p>
       <p class="note">右の体験は本体の証拠エンジンで判定します。入力はブラウザ内に留まり、実際の電話は発信されません。<code>npx oathra demo</code> は API キー不要です。</p>
     </div>
     <div class="sim" id="sim" data-lang="ja"></div>
@@ -398,7 +399,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
     <div class="cta">
       <h2>まず、AI同士に電話させてみてください。</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" data-copy-command="npx oathra demo"><b>$</b> npx oathra demo <span class="copy">コピー</span></button>
+        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> v0.1.1を起動 <span class="copy">コピー</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">Star</span></a>
       </div>
     </div>
