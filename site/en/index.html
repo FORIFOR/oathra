@@ -190,7 +190,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p>
       <h1>An AI makes the call.<br>The result is checked against <em>what the other side said</em>.</h1>
       <p class="lede">A voice-agent runtime for reservations, orders and confirmations. Date, time, party size, terms and the proof of confirmation are stored with the call. When the agent says "booked", nothing settles until the callee says so.</p>
-      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> Run v0.1.1</button></div>
+      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> Copy v0.1.1 command</button></div>
       <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.1">Install v0.1.1 with the latest fixes</a> · Copy buttons use the GitHub Release package. npm remains at 0.1.0.</p>
       <p class="note">The production evidence engine runs in your browser. Your input stays here; no phone call is placed. <code>npx oathra demo</code> needs no API key.</p>
     </div>
@@ -384,11 +384,11 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
 
 <section id="readiness"><h2>Ready to demonstrate. Still measuring real-world reliability.</h2><div class="two"><div><h3>L1 · Technical demonstration and scoping</h3><p>Explore an implemented phone-agent runtime and evidence checks that expose incomplete outcomes. There are three documented development calls. A 100-call success rate, p95 response time and measured cost per call are not yet available.</p><p>Paid pilots (L2) still need consent, retention, outbound controls and tenant isolation. Production (L3) needs monitoring and incident response. No production SLA is offered.</p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">Read the validation scope and next gates →</a></div><div><h3>Where does the data go?</h3><p>Text entered on this page → the evidence engine in your browser. Input text is not transmitted.</p><p>Real call audio → your chosen carrier → Oathra → your chosen voice and AI providers. Recordings and events are stored in <code>.oathra/calls/</code> on the machine running Oathra. Audio and transcripts reach external providers depending on your configuration.</p><a href="#business">Discuss implementation for your workflow →</a></div></div></section>
   <section id="start">
-    <p class="cap" style="margin:0 0 40px">What is verified and what is not (the current implementation status) lives in the <a href="https://github.com/FORIFOR/oathra/blob/main/README.en.md">README</a>. Every number on this page was measured by us and can be reproduced with the commands shown.</p>
+    <p class="cap" style="margin:0 0 40px">What is verified and what is not (the current implementation status) lives in the <a href="https://github.com/FORIFOR/oathra/blob/main/README.en.md">README</a>. Simulation evaluation results and the three development phone calls measure different things; neither establishes production reliability.</p>
     <div class="cta">
       <h2>Start with two agents on the phone.</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> Run v0.1.1 <span class="copy">copy</span></button>
+        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> Copy v0.1.1 command <span class="copy">copy</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
       </div>
     </div>
