@@ -29,8 +29,11 @@ jobs:
         run: pnpm oathra eval --adversarial 10000
       - name: Pack smoke (npx oathra from a tarball)
         run: |
+          node scripts/export-recorded-check.mjs > /tmp/oathra-recorded-check.json
           cd packages/cli && npm pack --pack-destination /tmp && cd /tmp
           mkdir npx-smoke && cd npx-smoke && npm init -y >/dev/null && npm i --silent /tmp/oathra-*.tgz
+          npx oathra verify /tmp/oathra-recorded-check.json > /tmp/oathra-recorded-result.json
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; import { deepStrictEqual } from "node:assert"; import { verifyTranscript } from "oathra/evidence"; import { EvidenceEngine } from "oathra"; deepStrictEqual(verifyTranscript(JSON.parse(readFileSync("/tmp/oathra-recorded-check.json"))), JSON.parse(readFileSync("/tmp/oathra-recorded-result.json"))); new EvidenceEngine();'
           npx oathra play restaurant-reservation --fast --no-save --quiet
 
   scenario-pr:

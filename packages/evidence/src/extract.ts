@@ -18,6 +18,7 @@ export type Claim = {
   span: string;
   semantic: number;
   polarity: Polarity;
+  ambiguous?: boolean;
 };
 
 const NEGATIVE_JA =
@@ -126,7 +127,7 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
   for (const clause of clauses) {
     const text = clause.text;
     for (const t of parseTimes(text, lang)) {
-      claims.push({ field: "time", value: t.value, span: t.span, semantic: 0.95, polarity: clause.polarity });
+      claims.push({ field: "time", value: t.ambiguous ? null : t.value, span: t.span, semantic: t.ambiguous ? 0.5 : 0.95, polarity: clause.polarity, ...(t.ambiguous ? { ambiguous: true } : {}) });
     }
     for (const d of parseDates(text, opts.now, lang)) {
       claims.push({ field: "date", value: d.value, span: d.span, semantic: /\d/.test(d.span) ? 0.95 : 0.9, polarity: clause.polarity });

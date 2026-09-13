@@ -188,8 +188,8 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">オープンソース · Apache-2.0 · TypeScript</p>
       <h1>AIが電話する。<br>結果は、<em>相手の言葉</em>で確かめる。</h1>
       <p class="lede">予約・注文・確認のための音声エージェント基盤。日時、人数、条件、確定の根拠を、通話と一緒に残します。AI が「予約できました」と言っても、相手がそう言うまで確定にはなりません。</p>
-      <div class="ctas"><a class="btn" href="#sim">その場で判定を試す</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> v0.1.1のコマンドをコピー</button></div>
-      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.1">修正版v0.1.1の導入手順</a> · コピーボタンはGitHub Release版を起動します。npm版は0.1.0です。</p>
+      <div class="ctas"><a class="btn" href="#sim">その場で判定を試す</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo"><b>$</b> v0.1.2のコマンドをコピー</button></div>
+      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.2">修正版v0.1.2の導入手順</a> · コピーボタンはGitHub Release版を起動します。npm版は0.1.0です。</p>
       <p class="note">右の体験は本体の証拠エンジンで判定します。入力はブラウザ内に留まり、実際の電話は発信されません。<code>npx oathra demo</code> は API キー不要です。</p>
     </div>
     <div class="sim" id="sim" data-lang="ja"></div>
@@ -201,6 +201,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <div><b>Twilio 検証済み</b><small>Plivo · SIP は実装済み、PSTN 未検証</small></div>
   </div>
 
+<section id="integrate"><h2>いまの音声AIに、判定だけを加える。</h2><div class="prose"><p>電話会社やモデルはそのまま。v0.1.2の <code>oathra verify</code> で保存済みの文字起こしをローカル検査し、日時・人数・金額・確定の根拠をJSONで取り出せます。APIキーは不要です。</p><p><code>oathra/evidence</code> のTypeScript SDKとLiveKit接続例も公開しています。</p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">自分の文字起こしで使う →</a> · <a href="https://github.com/FORIFOR/oathra">更新を追うためにGitHubでStar</a></p><p class="note">対応済みの発言規則に基づく判定です。店舗の予約台帳は確認しません。LiveKit接続例は型検査済み、実通話では未検証です。</p></div></section>
 <section id="demo-video"><h2>成功だけでなく、取り消しも見せる。</h2><div class="player player-video"><video controls playsinline preload="none" poster="media/oathra-evidence-ja-poster.jpg"><source src="media/oathra-evidence-ja.mp4" type="video/mp4"><track kind="captions" src="media/oathra-evidence-ja.vtt" srclang="ja" label="日本語" default></video></div><p class="cap">30秒 · 実エンジンの操作録画 · 字幕付き・音声なし。ブラウザ画面を4fpsで取得し30fpsの動画に編集。実電話の録音ではありません。</p><p><a href="#sim">自分の言葉で判定を試す →</a></p></section>
   <section id="real">
     <div class="replay-h"><h2>実モデルによる交渉の記録</h2><p>GPT-4o mini がシミュレーター内の仮想ホテル（定価 23,500 円）と交渉した記録。実店舗への発信ではありません。保存されたイベントを 3 倍速で描き直しています。録画ではありません。</p></div>
@@ -378,7 +379,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
   <section id="howto">
     <h2>使い方</h2>
     <ol class="steps">
-      <li><b>ブラウザで見る</b><span>上のv0.1.1起動コマンドをターミナルへ貼り付けて実行。シナリオを選ぶと AI 同士が電話を始めます。「自分が電話に出る」を選べば、あなたが店員として AI の交渉を受けられます。</span></li>
+      <li><b>ブラウザで見る</b><span>上のv0.1.2起動コマンドをターミナルへ貼り付けて実行。シナリオを選ぶと AI 同士が電話を始めます。「自分が電話に出る」を選べば、あなたが店員として AI の交渉を受けられます。</span></li>
       <li><b>ターミナルで回す</b><span><code>oathra play impossible-hotel --fast</code> で一瞬、<code>oathra eval</code> で全シナリオと誤完了の数、<code>oathra eval --callee openai</code> で店員役を GPT-4o mini に任せた評価（数円）、<code>oathra replay &lt;id&gt; --at 00:18</code> でその時点の状態に戻れます。</span></li>
       <li><b>電話会社を繋ぐ</b><span><code>oathra setup phone</code> で質問に2〜3個答えるだけ。<code>oathra phone doctor</code> で各層を確認し、<code>oathra phone test --level local</code> は通話料ゼロです。</span></li>
       <li><b>本物の番号に電話する</b><span><code>oathra call --to +81… --scenario restaurant-reservation</code>。録音と全イベントが <code>.oathra/calls/</code> に残り、結果は相手が実際に確定したときだけ <code>completed</code> になります。</span></li>
@@ -400,7 +401,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
     <div class="cta">
       <h2>まず、AI同士に電話させてみてください。</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> v0.1.1のコマンドをコピー <span class="copy">コピー</span></button>
+        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo"><b>$</b> v0.1.2のコマンドをコピー <span class="copy">コピー</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">Star</span></a>
       </div>
     </div>

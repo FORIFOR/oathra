@@ -51,7 +51,7 @@ importers:
   packages/cli:
     dependencies:
       '@livekit/rtc-node':
-        specifier: ^1.0.0
+        specifier: ^0.13.34 || ^1.0.0
         version: 1.0.0
       livekit-server-sdk:
         specifier: ^2.19.0

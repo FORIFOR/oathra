@@ -190,8 +190,8 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p>
       <h1>An AI makes the call.<br>The result is checked against <em>what the other side said</em>.</h1>
       <p class="lede">A voice-agent runtime for reservations, orders and confirmations. Date, time, party size, terms and the proof of confirmation are stored with the call. When the agent says "booked", nothing settles until the callee says so.</p>
-      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> Copy v0.1.1 command</button></div>
-      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.1">Install v0.1.1 with the latest fixes</a> · Copy buttons use the GitHub Release package. npm remains at 0.1.0.</p>
+      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo"><b>$</b> Copy v0.1.2 command</button></div>
+      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.2">Install v0.1.2 with the latest fixes</a> · Copy buttons use the GitHub Release package. npm remains at 0.1.0.</p>
       <p class="note">The production evidence engine runs in your browser. Your input stays here; no phone call is placed. <code>npx oathra demo</code> needs no API key.</p>
     </div>
     <div class="sim" id="sim" data-lang="en"></div>
@@ -203,6 +203,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <div><b>Twilio verified</b><small>Plivo · SIP implemented, not PSTN-verified</small></div>
   </div>
 
+<section id="integrate"><h2>Add evidence checks to the voice agent you already have.</h2><div class="prose"><p>Keep your carrier and model. Use <code>oathra verify</code> in v0.1.2 to check saved transcripts locally and get JSON fields, missing requirements and supporting utterances. No API key needed.</p><p>A typed SDK at <code>oathra/evidence</code> and a LiveKit integration example are included.</p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">Use your own transcripts →</a> · <a href="https://github.com/FORIFOR/oathra">Star on GitHub to follow updates</a></p><p class="note">Checks supported language rules; does not verify a venue's booking system. The LiveKit example is type-checked, not tested on a live call.</p></div></section>
 <section id="demo-video"><h2>Watch success turn back into incomplete.</h2><div class="player player-video"><video controls playsinline preload="none" poster="../media/oathra-evidence-en-poster.jpg"><source src="../media/oathra-evidence-en.mp4" type="video/mp4"><track kind="captions" src="../media/oathra-evidence-en.vtt" srclang="en" label="English" default></video></div><p class="cap">30 seconds · recorded interaction with the real evidence engine · captions, no audio. Browser frames captured at 4 fps and encoded at 30 fps. Not a phone-call recording.</p><p><a href="#sim">Try your own wording →</a></p></section>
   <section id="real">
     <div class="replay-h"><h2>A real-model negotiation</h2><p>GPT-4o mini negotiating with a simulated hotel that lists at ¥23,500. No real hotel was called. The run is redrawn at 3× from the saved events. Not a recording.</p></div>
@@ -266,7 +267,7 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
     <p>Pick "Play" and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick <code>confirmed</code>.</p>
     <ul class="fool">
       <li>Restaurant: "probably fine, but it's not confirmed yet"<span>→ not confirmed</span></li>
-      <li>Restaurant: "7 pm is full, but 7:30 works"<span>→ 7:00 is never taken as the time; 7:30 stays pending until the agent accepts it</span></li>
+      <li>Restaurant: "7 pm is full, but 7:30 works"<span>→ the refused 7 pm is not an offer; bare 7:30 remains unresolved until am/pm is clarified and the time is accepted</span></li>
       <li>Hotel: "you're booked", then "the rate is ¥23,500"<span>→ the confirmation goes stale and has to be re-obtained</span></li>
     </ul>
     <p class="cap">Found a phrasing that slips through? <a href="https://github.com/FORIFOR/oathra/issues/new">Open an issue</a>. That is the most useful contribution.</p>
@@ -389,7 +390,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
     <div class="cta">
       <h2>Start with two agents on the phone.</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo"><b>$</b> Copy v0.1.1 command <span class="copy">copy</span></button>
+        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo"><b>$</b> Copy v0.1.2 command <span class="copy">copy</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
       </div>
     </div>

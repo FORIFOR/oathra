@@ -97,7 +97,7 @@ const constraints = checkConstraints(contract.constraints, values);
 
 | 検証 | 確認できた範囲 |
 | --- | --- |
-| 自動テスト | 135件合格。ライブ接続テスト1件はスキップ |
+| 自動テスト | 138件合格。ライブ接続テスト1件はスキップ |
 | 敵対的シミュレーション | 用意した発言変異1万runで誤完了0。実電話の成功率ではない |
 | ブラウザの操作 | 英語の確定・取り消しなどを10回反復し、30項目の確認を通過 |
 | 実電話 | 上記3回の開発記録。実電話100件の業務評価は未実施 |
@@ -106,6 +106,14 @@ const constraints = checkConstraints(contract.constraints, values);
 
 現段階は、動きを見せて技術的な相談ができる段階です。有償PoCを受けられることや、本番運用に対応済みであることは宣言していません。そこには、実電話での評価、障害時の扱い、データの保持・削除などの確認が残っています。
 
+v0.1.2の追加確認は[リリース検証記録](https://github.com/FORIFOR/oathra/blob/main/docs/launch/release-notes-0.1.2.md)に記載しています。
+
+## 自分の音声AIでも使う
+
+v0.1.2では、電話基盤を移行せずに判定だけを使えるようにしました。`oathra verify`に手元の文字起こしを渡す方法と、`oathra/evidence`からTypeScriptで読み込む方法があります。APIキーは不要です。[入力形式・導入手順・LiveKit接続例](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)を公開しています。LiveKit接続例は型を検査した段階で、実セッションは未検証です。
+
+英語で「7:30」を午前と解釈していた既知の不具合も、午前・午後が不明なままでは値を確定しないように修正しました。これは会話から時刻を賢く推測する機能ではなく、曖昧な時刻を再確認するための扱いです。
+
 ## 試す・実装を読む
 
 まずは[証拠ラボ](https://forifor.github.io/oathra/?utm_source=zenn&utm_medium=article&utm_campaign=launch_revision#sim)で、普段の電話で使う言い回しを入れてみてください。うまく扱えない場合は、個人情報を除いた発言の順序、期待した判定、実際の判定があると原因を追いやすくなります。
@@ -113,9 +121,9 @@ const constraints = checkConstraints(contract.constraints, values);
 ローカルの対話デモは、Node.js 22以上で起動できます。
 
 ```bash
-npx oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo
 ```
 
-これはAPIキー不要のローカルデモです。実電話には別途、電話・音声サービスの設定が必要です。また、npm配布版とリポジトリ最新版では機能が異なる場合があります。
+これはAPIキー不要のローカルデモです。実電話には別途、電話・音声サービスの設定が必要です。上のコマンドはGitHubのv0.1.2配布版を使います。npmレジストリの版は0.1.0です。
 
 https://github.com/FORIFOR/oathra

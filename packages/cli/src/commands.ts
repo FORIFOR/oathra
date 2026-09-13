@@ -447,6 +447,7 @@ ${bold("Real phone")}
   oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id>  --engine gpt-live|realtime|pipeline  --provider <id>")}
 
 ${bold("Trust")}
+  oathra verify <json | ->           check your final transcripts locally; JSON output, no API key
   oathra eval [dir]                  run every scenario; false completions must be 0   ${dim("--runs <n>  --json  --callee openai|gemini")}
   oathra eval --adversarial <n>      mutated callees try to fool the evidence engine   ${dim("--seed <n>  --json")}
   oathra replay [callId]             re-render a saved call; --at mm:ss.mmm for time travel

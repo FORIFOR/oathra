@@ -48,6 +48,7 @@ if (root) {
       if (!node) continue;
       const d = document.createElement('div'); d.className = node.source === 'callee' ? 'callee' : 'ai';
       d.textContent = `${label(f)}: ${value(node.value)} · ${node.source}\n“${node.transcript}”`;
+      if (node.value === null && f === 'time') d.textContent += '\n' + say('午前・午後を明示して、時刻を再確認してください。', 'Specify am/pm and confirm the time again.');
       el('s-ev').append(d);
     }
     el('s-res').className = 'res' + (result.complete ? ' ok' : '');

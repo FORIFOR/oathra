@@ -65,6 +65,30 @@ function u(id: string, source: "caller" | "callee", text: string, t: number): Ut
 }
 
 describe("EvidenceEngine", () => {
+  it("keeps the reported issue #8 ambiguous time unresolved", () => {
+    // Exact transcript from the observed browser bug, not a fabricated call:
+    // https://github.com/FORIFOR/oathra/issues/8
+    const e = new EvidenceEngine({ now: NOW, language: "en" });
+    const reported = [
+      ["caller", "Hi, I'd like to book a table for two on September 12th, at 7 pm or later. Is that available?"],
+      ["callee", "7 pm is full. 7:30 is open."],
+      ["caller", "7:30 works, please."],
+      ["callee", "Yes, you're booked for two at 7:30."],
+    ] as const;
+    for (const [i, [source, text]] of reported.entries()) e.ingest(u(`issue8-${i}`, source, text, i));
+    const result = evaluate(defineCall({
+      goal: "restaurant.reservation", language: "en",
+      require: { date: true, time: true, partySize: true, confirmed: true },
+      constraints: { time: { gte: "19:00" } },
+    }), e, "completed");
+    expect(result.status).toBe("incomplete");
+    expect(result.fields.time).toBeUndefined();
+    expect(result.missing).toContain("time");
+    expect(result.constraints.violations).toEqual([]);
+    expect(e.pending("time")?.note).toContain("ambiguous time");
+    expect(e.all().filter((ev) => ev.field === "time" && ev.verified)).toEqual([]);
+  });
+
   it("verifies a callee offer accepted by the caller, and refuses false completion", () => {
     const e = new EvidenceEngine({ now: NOW });
     e.ingest(u("u1", "caller", "明日の19時以降で2名なのですが空いていますか？", 1000));

@@ -73,6 +73,8 @@ export class EvidenceEngine {
     if (resolves) {
       for (const [field, pending] of [...counterpart.entries()]) {
         const r = restated.get(field);
+        // Acknowledging an unresolved clock time cannot turn it into a value.
+        if (pending.value === null || r?.ambiguous) continue;
         if (r && !valuesEqual(r.value, pending.value)) continue; // counter-proposal, handled below
         // "ご予算について承知いたしました。…ですが" acknowledges the request; it settles the value
         // only when the callee restates it or answers without a contrast.
@@ -122,6 +124,10 @@ export class EvidenceEngine {
       if (justVerified) continue;
 
       const ev = this.makeEvidence(u, c, false);
+      if (c.ambiguous) {
+        ev.explicit = false;
+        ev.note = "ambiguous time: am/pm or an unambiguous 24-hour time is required";
+      }
       const own = u.source === "callee" ? this.pendingOffers : this.pendingProposals;
       // If the same side restates an already-verified value, attach it to the history without changing state.
       const alreadyVerified = this.latestVerified(c.field);
@@ -132,7 +138,7 @@ export class EvidenceEngine {
         if (alreadyVerified) {
           // Conflicts with a settled value: the field becomes unsettled (see values()).
           this.edges.push({ from: ev.id, to: alreadyVerified.id, relation: "supersedes" });
-          ev.note = `conflicts with verified ${alreadyVerified.id}`;
+          ev.note = c.ambiguous ? `${ev.note}; supersedes ${alreadyVerified.id}` : `conflicts with verified ${alreadyVerified.id}`;
         }
         // The latest statement on a field supersedes any pending claim on it, from either side.
         for (const map of [own, counterpart]) {

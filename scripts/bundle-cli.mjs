@@ -1,7 +1,7 @@
 // Bundle the CLI (and every @oathra/* workspace package) into one file so
 // `npx oathra demo` needs a single npm package. Copies Arena assets + scenarios.
 import { build } from "esbuild";
-import { cpSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,6 +24,36 @@ await build({
   define: { "process.env.OATHRA_VERSION": JSON.stringify(pkg.version) },
   logLevel: "warning",
 });
+
+// Public SDK: one ESM entry without the CLI, carrier or model runtime.
+await build({
+  entryPoints: [resolve(cli, "src/evidence.ts")],
+  outfile: resolve(out, "evidence.js"),
+  bundle: true,
+  platform: "neutral",
+  format: "esm",
+  target: "es2022",
+  external: ["zod"],
+  logLevel: "warning",
+});
+for (const name of ["contract", "evidence"]) {
+  const target = resolve(out, "types", name);
+  mkdirSync(target, { recursive: true });
+  for (const file of readdirSync(resolve(root, "packages", name, "dist"))) {
+    if (!file.endsWith(".d.ts")) continue;
+    const declaration = readFileSync(resolve(root, "packages", name, "dist", file), "utf8")
+      .replaceAll('"@oathra/contract"', '"../contract/index.js"')
+      .replace(/\/\/# sourceMappingURL=.*$/gm, "");
+    writeFileSync(resolve(target, file), declaration);
+  }
+}
+for (const file of ["evidence", "transcript"]) {
+  const declaration = readFileSync(resolve(cli, "dist", `${file}.d.ts`), "utf8")
+    .replaceAll('"@oathra/evidence"', '"./types/evidence/index.js"')
+    .replaceAll('"@oathra/contract"', '"./types/contract/index.js"')
+    .replace(/\/\/# sourceMappingURL=.*$/gm, "");
+  writeFileSync(resolve(out, `${file}.d.ts`), declaration);
+}
 
 const assets = resolve(cli, "assets");
 rmSync(assets, { recursive: true, force: true });

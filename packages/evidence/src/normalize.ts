@@ -53,7 +53,7 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 // Time
 // ---------------------------------------------------------------------------
 
-export type TimeMatch = { value: string; span: string; index: number };
+export type TimeMatch = { value: string; span: string; index: number; ambiguous?: boolean };
 
 const NUM_JA = "(\\d{1,2}|[一二三四五六七八九十]{1,3})";
 
@@ -67,16 +67,19 @@ export function parseTimes(text: string, lang: Language = "ja"): TimeMatch[] {
   for (const m of s.matchAll(re1)) {
     let h = Number(m[2]);
     const min = Number(m[3]);
-    if (h > 24 || min > 59) continue;
+    if (h > 23 || min > 59 || (m[4] && (h < 1 || h > 12))) continue;
+    // In English, a bare 7:30 does not identify morning or evening. Keep the
+    // literal candidate for display, but consumers must not verify it.
+    const ambiguous = lang === "en" && h >= 1 && h <= 12 && !m[1] && !m[4];
     h = applyMeridiem(h, m[1], m[4]);
-    out.push({ value: `${pad2(h)}:${pad2(min)}`, span: m[0].trim(), index: m.index ?? 0 });
+    out.push({ value: `${pad2(h)}:${pad2(min)}`, span: m[0].trim(), index: m.index ?? 0, ...(ambiguous ? { ambiguous: true } : {}) });
   }
 
   // Japanese: 19時半 / 19時30分 / 7時 / 午後7時半
   const re2 = new RegExp(`(午前|午後|夜|朝|昼|夕方)?\\s*${NUM_JA}時(半|${NUM_JA}分)?`, "g");
   for (const m of s.matchAll(re2)) {
     const hRaw = kanjiToNumber(m[2]!);
-    if (hRaw === undefined || hRaw > 24) continue;
+    if (hRaw === undefined || hRaw > 23) continue;
     let min = 0;
     if (m[3] === "半") min = 30;
     else if (m[4]) min = kanjiToNumber(m[4]) ?? 0;
@@ -91,7 +94,7 @@ export function parseTimes(text: string, lang: Language = "ja"): TimeMatch[] {
     for (const m of s.matchAll(re3)) {
       const raw = m[1]!.toLowerCase();
       const hRaw = EN_WORD_NUMBERS[raw] ?? Number(raw);
-      if (Number.isNaN(hRaw) || hRaw > 12) continue;
+      if (Number.isNaN(hRaw) || hRaw < 1 || hRaw > 12) continue;
       const minWord = m[2]?.toLowerCase();
       const min = minWord === "thirty" ? 30 : minWord === "fifteen" ? 15 : minWord === "forty-five" ? 45 : 0;
       const h = applyMeridiem(hRaw, undefined, m[3]);

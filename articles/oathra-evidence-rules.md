@@ -147,3 +147,10 @@ CIでは、用意した発言変異を使う1万runの敵対的シミュレー�
 - [Oathra全体の設計と実電話の開発記録](https://zenn.dev/forifori/articles/oathra-launch)
 - [抽出の実装：extract.ts](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/extract.ts)
 - [状態管理の実装：engine.ts](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/engine.ts)
+
+
+## 自分の文字起こしを渡す
+
+v0.1.2から、判定機能を`oathra/evidence`として読み込めるSDKと、ローカルの`oathra verify`コマンドを配布しています。既存の電話会社やモデルを切り替えず、手元の発言を入力できます。[導入手順](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)に入力形式と、保存済みの実モデル交渉記録を再評価する手順をまとめました。
+
+この版では、英語の`7:30`を`07:30`として確定する不具合も修正しています。午前・午後が明示されなければ時刻を未確認にし、相手が予約確定を述べても完了条件を満たさないようにしています。以前の`7 pm`から午前・午後を推測する実装ではありません。

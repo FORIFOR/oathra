@@ -1,0 +1,72 @@
+# Check an existing voice agent's transcripts
+
+Oathra v0.1.2 can check reservation evidence without replacing your carrier, voice model or agent framework. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
+
+## Install the released SDK and CLI
+
+Node.js 22+:
+
+```bash
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz
+```
+
+Use the GitHub asset: the npm registry still serves 0.1.0, which does not include this SDK or command. Both `oathra` and `oathra/evidence` export `EvidenceEngine`, `defineCall`, `evaluate` and `verifyTranscript`, with TypeScript declarations. The SDK entry does not load CLI, carrier or model clients.
+
+## Check your saved final transcripts
+
+Prepare a JSON document with these fields, using your own recorded utterances:
+
+| Field | Content |
+| --- | --- |
+| `contract` | Your CallContract, with `language` (`ja` or `en`), `goal`, at least one true `require` field, and any `constraints` |
+| `referenceDate` | Actual call-local calendar date, `YYYY-MM-DD`; anchors “tomorrow” and month/day expressions |
+| `connection` | Actual `idle`, `dialing`, `active`, `completed` or `failed` state; do not infer it from an LLM summary |
+| `utterances` | Chronological array of `{ id, source, text, t }`; `source` is `caller` (outbound agent) or `callee` (other party), `t` is call-relative milliseconds |
+
+Optional utterance fields are `language`, `audio: { startMs, endMs }` and `asr: { primary, secondary? }` (0–1). Use unique IDs and final transcripts only. Do not include interim ASR updates or text the agent planned but never spoke. The checker rejects duplicate IDs, reversed timestamps, invalid dates and empty requirements.
+
+```bash
+npx oathra verify ./transcript-check.json > result.json
+# stdin is also supported:
+cat ./transcript-check.json | npx oathra verify -
+```
+
+Exit codes: **0** = completion conditions met; **2** = valid input but incomplete, failed or constraints violated; **1** = invalid input or an execution error. JSON includes `fields`, `missing`, `constraints`, and utterance-linked `evidence`. It contains transcript text: keep output where you intend to store your call records.
+
+The same input works in your application:
+
+```js
+import { readFileSync } from 'node:fs';
+import { verifyTranscript } from 'oathra/evidence';
+
+const input = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+const result = verifyTranscript(input);
+console.log(JSON.stringify(result, null, 2));
+```
+
+## Replay the existing public recording
+
+From a source checkout after `pnpm install && pnpm build`:
+
+```bash
+node scripts/export-recorded-check.mjs > /tmp/oathra-check.json
+node packages/cli/dist/bin.js verify /tmp/oathra-check.json
+```
+
+This reads the existing [GPT-4o mini negotiation record](../site/data/call-gpt4o-mini.json), preserving its utterances and timing. The hotel was a simulator, not a real hotel or PSTN call. The replay reproduces the recorded ¥19,900 booking; its actual prefix before the hotel's confirmation remains incomplete. This verifies replay behavior, not real-call reliability.
+
+## LiveKit Agents
+
+[The integration function](../examples/livekit-evidence.ts) attaches to an existing outbound `AgentSession`, observes committed conversation items, and exposes a local result. Import it into your own agent after installing `oathra` and your LiveKit dependencies. One binding represents one call; detach it on cleanup. Assistant maps to caller; user maps to callee. This mapping is for outbound agents, not arbitrary inbound sessions or conference rooms.
+
+The example uses the official [conversation item event](https://docs.livekit.io/reference/agents/events/#conversation_item_added). LiveKit distinguishes final chat history from live transcription updates and [may truncate synchronized speech on interruption](https://docs.livekit.io/agents/multimodality/text/). The adapter conservatively requires review after an interrupted item and will not return completed for that call. Pass the actual carrier state to `result(connection)`; closing a session alone does not prove a successful call.
+
+This adapter is type-checked against `@livekit/agents@1.8.1`. A live session, transcript delivery, interruptions and PSTN behavior have **not** been validated in this release. Framework-independent checking is validated against the existing recording above.
+
+## Limits and feedback
+
+This is a rule-based Japanese/English evidence checker for supported fields, not a general semantic judge. It does not verify whether a reservation exists in the venue's backend. ASR mistakes and unsupported phrasing can change its result; missing ASR confidence is not a measured accuracy score.
+
+English bare times such as “7:30” now remain unresolved, even after “7 pm” earlier in the conversation. Ask for an explicit am/pm or unambiguous 24-hour time and confirm it again. This conservative fix avoids silently verifying 07:30; it does not implement conversational meridiem inference. Timezone conversion is not performed.
+
+[Report an actual mismatch](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) with the version, expected result and redacted transcript sequence. Please remove names, phone numbers and private business data before sharing publicly. If this is useful, [star the repository](https://github.com/FORIFOR/oathra) to find it again as it develops. [Private implementation inquiries](https://forifor.github.io/oathra/en/#business) are separate from public bug reports.

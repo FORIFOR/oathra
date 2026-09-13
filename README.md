@@ -1,12 +1,14 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
-修正版 **v0.1.1** を起動（Node.js 22以上、APIキー不要）：
+修正版 **v0.1.2** を起動（Node.js 22以上、APIキー不要）：
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo
 ```
 
-[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.1)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
+[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.2)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
+
+**すでに音声AIを作っている方へ：** v0.1.2では完了判定だけを組み込めます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。
 
 <p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>
 <p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a></p>
@@ -176,7 +178,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 インストールせずに試すなら、[ブラウザの証拠ラボ](https://forifor.github.io/oathra/#sim)へ。本体の `EvidenceEngine` と `evaluate` がブラウザで動き、自由入力・話者切替・予約取り消しをその場で判定します。入力本文は送信せず、実際の電話も発信しません。[30秒の操作録画](https://forifor.github.io/oathra/#demo-video)では、曖昧な返事 → 確定 → 取り消しを確認できます。
 
-冒頭のv0.1.1起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
+冒頭のv0.1.2起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
 
 - レストランで「たぶん大丈夫ですが、まだ確定ではありません」→ 確定にならない
 - レストランで「19時は満席です。19時半なら空いています」→ 19時は予約時刻として採用されず、19時半は AI が受諾するまで未確定

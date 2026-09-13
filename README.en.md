@@ -3,13 +3,15 @@
   Give AI agents a phone — and proof of what happened.
 </p>
 
-Run **v0.1.1** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.2** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.1/oathra-0.1.1.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.1). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.2). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+
+**Already building a voice agent?** v0.1.2 adds `oathra verify` for your saved transcripts and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md).
 
 <p align="center"><a href="docs/media/oathra-battle-en.mp4"><img src="docs/media/oathra-battle-en.gif" width="880" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>The built-in agent, GPT-4o mini and Gemini Flash calling a hotel that lists at ¥23,500. Click for the 63-second video with sound (Japanese audio, English captions)</sub></p>
 <p align="center"><a href="README.md">日本語</a> · <a href="https://forifor.github.io/oathra/en/">Website</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a> · <a href="https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484">Story (dev.to)</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Story (ja, Zenn)</a></p>
@@ -249,7 +251,7 @@ No install: the [browser evidence lab](https://forifor.github.io/oathra/en/#sim)
 Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
 
 - Restaurant: "probably fine, but it's not confirmed yet" → not confirmed
-- Restaurant: "7 pm is full, but 7:30 works" → 7:00 is never taken as the time; 7:30 stays pending until the agent accepts it
+- Restaurant: "7 pm is full, but 7:30 works" → the refused 7 pm is not an offer; bare 7:30 remains unresolved until am/pm is clarified and the time is accepted
 - Hotel: "you're booked" followed by "the rate is ¥23,500" → the confirmation goes stale and has to be re-obtained
 
 If you find a phrasing that slips through, open an issue. That is the most useful contribution.

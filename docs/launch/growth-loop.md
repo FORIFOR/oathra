@@ -1,0 +1,40 @@
+# Acquisition and adoption loop
+
+## Objective and current diagnosis
+
+The objective remains external GitHub stars and, ideally, real business inquiries. Publishing assets is not completion. First work toward 10 identifiable external trial users and 3 usable feedback reports; these are intermediate operating targets, not achieved results or a promised conversion rate. The previously suggested 1,000 stars in 30 days is not a user-approved success threshold.
+
+On 2026-09-14 JST: 0 stars, 0 forks, 6 views / 6 unique visitors in GitHub's reported 14-day window, and no external issue authors in the retrieved issue list. Zenn launch: 1 like / 0 comments; technical article: 0 / 0. [Raw snapshot](metrics/2026-09-14-before-v012.json). GitHub also reports 298 clones / 121 unique cloners. CI, Zenn deploys and automation contribute; this is not 121 confirmed users. Release downloads likewise include our package checks. Website funnel and X impression accuracy are not established.
+
+Inference: the available reach sample cannot establish whether developers want this. A concrete adoption barrier was identifiable: the existing npm package exposed missing SDK entrypoints and required trying the whole phone runtime. The new v0.1.2 offers a local transcript checker, typed SDK and documented LiveKit adapter, with scope limitations. A clean LiveKit installation also exposed a conflicting optional RTC peer range; the range was expanded and the actual RTC wrapper is type-checked against the installed 0.13.x API. Live gateway behavior remains unverified.
+
+## Every 12 hours
+
+1. Read this file, recent publication records and git status. Preserve concurrent changes. Do not repeat completed work or republish an unchanged announcement.
+2. Run `node scripts/growth-snapshot.mjs` and write a new timestamped snapshot under `docs/launch/metrics/` only when retaining it helps comparison. A failed source is unknown, never zero. Compare daily buckets; do not add overlapping 14-day totals. Note maintainer activity and data freshness.
+3. Inspect actual external issues, comments and accessible responses to the recorded launch posts. Check deployment/install failures first. A new install or correctness report takes priority over redesign or more promotion.
+4. Choose one justified next experiment, implement it, verify it and record the result and next checkpoint. At most one campaign-level experiment per 24 hours unless a real defect requires action sooner.
+
+## Decide from the bottleneck
+
+| Evidence | Action | What would change the decision |
+| --- | --- | --- |
+| Fewer than roughly 50 unique repository visitors, or stale/unavailable traffic | Investigate a relevant voice-agent community and its current showcase rules; show one narrow workflow with a working entry point | Fresh visits, outside questions or confirmed trials. 50 is a triage heuristic, not statistical confidence |
+| Meaningful visits but no confirmed trial signals | Inspect download/start friction; improve one concrete entry point, error or transcript integration | Outside report of a first successful run; downloads alone are insufficient |
+| Trials reveal wrong/missing outcomes | Reproduce from the user's redacted actual trace, fix, verify and explain the supported scope | Reporter confirms the fix or provides the remaining failure |
+| Actual usage but little reason to revisit | Investigate repeat use cases: post-call checking, integration in CI, evaluation reports. Build only what a trace or outside request supports | Evidence of repeated use or integration |
+| Business inquiry | Prepare workflow discovery, implementation scope and acceptance criteria tied to L1/L2/L3 readiness | A concrete scoping conversation; no invented lead, contract or revenue |
+
+If a tactic shows no fresh signal after 48–72 hours, research why and change audience, channel or use case. Do not infer product failure from a handful of views. Do not just wait indefinitely, redesign without evidence, or multiply identical posts.
+
+## Distribution
+
+Lead with “add evidence checks to the voice agent you already have,” then the local command or SDK, a real trace and known limitations. Public posts are authorized by the user's launch request. Use existing authenticated accounts, identify project affiliation, obey each community's current rules and keep each post substantive. Record URL, time, audience, what changed and next measurement. Maximum one new announcement per channel per 24 hours; replies may answer actual questions. Avoid mass mentions and unsolicited direct messages. Do not buy stars, coordinate reciprocal stars or present automated interactions as users.
+
+HN prohibits AI-generated/edited submissions and previously restricted this account; do not post there or bypass the restriction. DEV's AI rules prohibit generated content for promotion/clout. Reddit restrictions/removals are recorded in prior launch notes; recheck eligibility before any new community use and never circumvent an account restriction. The LiveKit [events documentation](https://docs.livekit.io/reference/agents/events/) and [transcription documentation](https://docs.livekit.io/agents/multimodality/text/) guide the adapter; neither is evidence of endorsement or live compatibility testing.
+
+## Execution boundaries
+
+Work autonomously within the authorized repository, site, existing articles and public launch accounts. No new mocks, dummy testimonials, fabricated call records or fake feedback. Use existing real recordings and observed bug reports for verification. Do not make paid calls without actual consented recipients and a defined budget. Do not treat simulator success as 100-call PSTN validation. Do not claim L2/L3 readiness or conclude the goal merely because a release shipped.
+
+Use the current task's scheduled follow-up; do not create duplicate recurring tasks. Stay quiet on unchanged, non-actionable checks. Notify for an actual improvement released, meaningful outside feedback, a material failure, or an unavoidable user action. Repeated missing authentication for one channel does not prevent work on another. Stop the follow-up on explicit user cancellation or an agreed, actually achieved goal. If no useful authorized path remains, report the specific blocker instead of pretending the goal is met.
