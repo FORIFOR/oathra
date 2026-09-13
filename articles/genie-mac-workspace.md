@@ -3,7 +3,7 @@ title: '依頼から成果物の保存までつなぐMacアプリ「Genie」を�
 emoji: '🧞'
 type: 'tech'
 topics: ['個人開発', 'ai', 'swiftui', 'llm', 'macos']
-published: false
+published: true
 ---
 
 メモから行動計画を作る。Webサイトの見出しを考え直す。小さなHTMLを試作する。
