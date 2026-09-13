@@ -121,6 +121,44 @@ describe("ScriptedAgent hedge handling", () => {
   });
 });
 
+describe("ScriptedAgent hold / repeat / transfer", () => {
+  const scenario = loadScenarioFile(resolve(ROOT, "hotel/impossible-hotel.yaml"));
+  const contract = contractFromScenario(scenario);
+  const ctx = (last: string, i: number) => ({
+    contract, language: "ja" as const, turnIndex: i, elapsedMs: i * 5000, permitted: ["ask", "reserve", "negotiate", "share_name"] as const,
+    transcript: [{ id: `c${i}`, source: "callee" as const, text: last, t: i * 5000 }],
+    mission: { verified: {}, pending: {}, missing: ["date", "partySize", "price", "breakfast", "smoking", "confirmed"], violations: [] },
+  });
+  it("waits on 「少々お待ちください」 and never hangs up for it", async () => {
+    const agent = new ScriptedAgent();
+    await agent.respond(ctx("", 0));
+    for (let i = 1; i <= 3; i++) {
+      const r = await agent.respond(ctx("少々お待ちくださいませ。", i));
+      expect(r.action).toBeUndefined();
+      expect(r.text).toContain("お待ち");
+    }
+  });
+  it("repeats the last line with content on 「もう一度お願いできますでしょうか」, not the hold acknowledgement", async () => {
+    const agent = new ScriptedAgent();
+    const opener = (await agent.respond(ctx("", 0))).text;
+    const q = (await agent.respond(ctx("10月3日、2名様ですね。禁煙のお部屋でしたらご用意できます。朝食付きで1泊23,500円でございます。", 1))).text;
+    expect(q).not.toBe(opener);
+    await agent.respond(ctx("確認いたしますので、そのままお待ちください。", 2));
+    const r = await agent.respond(ctx("恐れ入ります、もう一度お願いできますでしょうか？", 3));
+    expect(r.action).toBeUndefined();
+    expect(r.text).toBe(q);
+    expect(r.verbatim).toBe(true);
+  });
+  it("restates the whole request when someone else picks up", async () => {
+    const agent = new ScriptedAgent();
+    const opener = (await agent.respond(ctx("", 0))).text;
+    await agent.respond(ctx("朝食付きで1泊23,500円でございます。", 1));
+    const r = await agent.respond(ctx("担当の者に代わりますので、少々お待ちください。……お電話代わりました、山田でございます。ご用件をもう一度お願いできますでしょうか。", 2));
+    expect(r.action).toBeUndefined();
+    expect(r.text).toBe(opener);
+  });
+});
+
 describe("agent hangup with a human callee", () => {
   it("ends the call right after the agent's goodbye instead of waiting for the human", async () => {
     const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));

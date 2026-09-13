@@ -420,9 +420,10 @@ export class CallRuntime {
       },
     };
     let response = await brain.respond(ctx, hooks);
-    // Never say the exact same line twice in a row: the callee did not get it.
+    // Never say the exact same line twice in a row: the callee did not get it — unless the brain repeats
+    // on purpose because the callee asked to hear it again (response.verbatim).
     const lastAgent = [...this.transcript].reverse().find((t) => t.source === "caller");
-    if (lastAgent && normalizeLine(lastAgent.text) === normalizeLine(response.text)) {
+    if (!response.verbatim && lastAgent && normalizeLine(lastAgent.text) === normalizeLine(response.text)) {
       response = await brain.respond(
         { ...ctx, hints: ["The callee did not respond to your previous line. Do NOT repeat it. Say something different, much shorter, or ask one simple question."] },
         hooks,

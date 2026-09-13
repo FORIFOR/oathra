@@ -8,9 +8,16 @@
  * to beat in Agent Battle.
  */
 import { checkConstraints, isPermitted, type CallContract } from "@oathra/contract";
-import { AGREEMENT_RE, HEDGE_RE, REFUSAL_RE } from "@oathra/evidence";
+import { AGREEMENT_RE, HEDGE_RE, parsePrices, parseTimes, REFUSAL_RE } from "@oathra/evidence";
 import type { BrainContext, BrainProvider, BrainResponse } from "@oathra/core";
 import { enDate, enTime, jaDate, jaPrice, jaTime, NAME_ASK_RE, spellSerial } from "./character.js";
+
+/** The callee asks to hear it again (not the callee repeating itself: 「もう一度お伝えします」). */
+const REPEAT_RE = /もう一度(?:お願い|おっしゃって|お聞かせ|言って)|再度お願い|お電話が遠い|聞き取れ(?:ません|なかった)|say that again|repeat that|could you repeat|line is bad|didn't catch/i;
+/** Someone else picked up: the request has to be made from the start. */
+const TRANSFER_RE = /お電話代わり|代わりました|担当の者に代わ|transfer you|this is \w+ speaking|you're through to/i;
+/** "Please hold": wait, do not restate. */
+const HOLD_RE = /少々お待ち|そのままお待ち|お待ちください|one moment|hold on|please hold|hold the line|bear with me/i;
 
 type Domain = "restaurant" | "hotel" | "shop" | "serial" | "generic";
 
@@ -29,15 +36,25 @@ export class ScriptedAgent implements BrainProvider {
   private lastLine = "";
   private repeats = 0;
   private lastTurn = -1;
+  /** Last line with content (not a "please hold" acknowledgement, not a repeat): what to say again when asked. */
+  private lastSubstantive = "";
+  /** Set by decide() when the reply is a wait or a deliberate repeat; those never count as a stall. */
+  private kind: "normal" | "wait" | "repeat" = "normal";
+  private waits = 0;
+  private repeatsAsked = 0;
 
   async respond(ctx: BrainContext): Promise<BrainResponse> {
+    this.kind = "normal";
     const r = this.decide(ctx);
+    const kind = this.kind;
     // Stall guard: asking the same thing a third time never helps; leave politely instead of looping.
-    // (a runtime retry of the same turn — signalled by hints — is not a new repeat)
-    if (r.action !== "hangup" && !ctx.hints?.length && ctx.turnIndex !== this.lastTurn) {
+    // (a runtime retry of the same turn — signalled by hints — is not a new repeat; neither is a hold
+    // acknowledgement or repeating a line the callee asked to hear again)
+    if (r.action !== "hangup" && !ctx.hints?.length && ctx.turnIndex !== this.lastTurn && kind === "normal") {
       this.lastTurn = ctx.turnIndex;
       this.repeats = r.text === this.lastLine ? this.repeats + 1 : 0;
       this.lastLine = r.text;
+      this.lastSubstantive = r.text;
       if (this.repeats >= 2) return { text: ctx.language === "en" ? "Understood. We'll try another day. Thank you, goodbye." : "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
     }
     return r;
@@ -67,6 +84,25 @@ export class ScriptedAgent implements BrainProvider {
 
     // 1. Opening line.
     if (ctx.turnIndex === 0) return { text: this.opener(domain, contract) };
+
+    // 1b. A new person on the line needs the whole request (checked before the hold: 「代わりますので少々お待ちください」).
+    if (TRANSFER_RE.test(lastText) && this.repeatsAsked < 3) {
+      this.repeatsAsked++;
+      this.kind = "repeat";
+      return { text: this.opener(domain, contract), verbatim: true };
+    }
+    // 1c. A hold is not a stall: acknowledge and wait (a few times at most).
+    if (HOLD_RE.test(lastText) && !/\d|時|円|名|\b[ap]m\b/i.test(lastText) && this.waits < 3) {
+      this.waits++;
+      this.kind = "wait";
+      return { text: en ? "Sure, I'll hold." : "はい、お待ちいたします。" };
+    }
+    // 1d. "say that again" needs the last line with content.
+    if (REPEAT_RE.test(lastText) && this.repeatsAsked < 3) {
+      this.repeatsAsked++;
+      this.kind = "repeat";
+      return { text: this.lastSubstantive || this.opener(domain, contract), verbatim: true };
+    }
 
     // 2. Callee asked for a name.
     if (NAME_ASK_RE.test(lastText)) {
@@ -145,8 +181,12 @@ export class ScriptedAgent implements BrainProvider {
       return { text: en ? "Understood. Once you have checked, could you confirm it on this call?" : "承知しました。ご確認いただけましたら、この内容で確定をお願いできますでしょうか？" };
     }
 
-    // 6. Callee refused the whole request (満席 etc.).
-    if (REFUSAL_RE.test(lastText) && !AGREEMENT_RE.test(lastText) && pendingKeys.length === 0) {
+    // 6. Callee refused the whole request (満席 etc.). Not when the same line re-offers a value we already
+    //    hold ("7 pm is full, but we do have 7:30" said again after 7:30 was accepted): that is a repeat, not a refusal.
+    const restatesVerified =
+      (typeof mission.verified.time === "string" && parseTimes(lastText, en ? "en" : "ja").some((t) => t.value === mission.verified.time)) ||
+      (typeof mission.verified.price === "number" && parsePrices(lastText).some((p) => p.value === mission.verified.price));
+    if (REFUSAL_RE.test(lastText) && !AGREEMENT_RE.test(lastText) && pendingKeys.length === 0 && !restatesVerified) {
       if (/満席|満室|定休|以降は満席|在庫|fully booked|sold out|closed on/i.test(lastText)) {
         return { text: en ? "Understood, we'll try another day. Thank you, goodbye." : "承知しました。では別の日を検討いたします。ありがとうございました。", action: "hangup" };
       }

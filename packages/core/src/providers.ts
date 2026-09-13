@@ -155,6 +155,8 @@ export type BrainResponse = {
   /** An action the brain wants to take that needs a permission check. */
   requestedAction?: { action: Action; detail: string };
   usage?: { inputTokens?: number; outputTokens?: number; costUsd?: number };
+  /** The line is repeated on purpose (the callee asked to hear it again); the runtime must not rewrite it. */
+  verbatim?: boolean;
 };
 
 export interface BrainProvider {
