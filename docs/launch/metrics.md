@@ -70,3 +70,12 @@
 - `oathra-evidence-rules` の公開APIで本文更新を確認（`body_updated_at`: 2026-09-14 12:44 JST）。`llm`・`evaluation`トピックを追加し、対象読者と読後に確認できる3項目を冒頭へ追加（commit `78cabbc`）。
 - 反映直後のいいね: 0。閲覧数は公開APIから取得できないため未取得。
 - GitHub stars / forks: 0 / 0、Discussion #14コメント: 0。変更効果はまだ判定しない。
+
+## 2026-09-14 12:55 JST（公開導線の再監査）
+
+- GitHub stars / forks: **0 / 0**。外部Issue・PRはまだ0件。
+- Traffic API: views **6 / 6 uniques**、clones **298 / 121 uniques**。CI・作者・配布確認を含むため、利用者数やスター獲得とはみなさない。
+- v0.1.4 assets: `oathra-0.1.4.tgz` **2**、checksum **1**。いずれも外部利用とは判定しない。
+- 公開サイトの日本語・英語トップ、検証ページ、5本の動画URLをHTTP 200で確認。非公開相談フォームの許可Origin preflightもHTTP 204で確認。
+- 配布PR 4件はすべて open / clean。e2b-dev/awesome-ai-sdks#364 に追加した1件の状況共有コメントへの返信はまだない。
+- Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。Xの新規投稿とnpm公開は、認証・投稿間隔の条件が解消するまで実行しない。
