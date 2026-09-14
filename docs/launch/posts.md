@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Beginner setup copy action — 2026-09-14 19:17 JST
+
+- Added a one-click copy action for `pnpm oathra setup phone` beside the API setup transcript on both Japanese and English Pages routes. It reuses the existing clipboard fallback and does not change credential handling.
+- `pnpm build:site`, dependency lint and `git diff --check` passed. CI [34832338798](https://github.com/FORIFOR/oathra/actions/runs/34832338798) and Pages [34832338753](https://github.com/FORIFOR/oathra/actions/runs/34832338753) passed; public readback confirmed both labels and command attributes.
+- This is an onboarding experiment, not evidence of adoption. Measure future setup starts and external trial reports separately from maintainer checks.
+
 ## External signal checkpoint — 2026-09-14 19:13 JST
 
 - GitHub reports **0 stars / 0 forks**, 9 views / 9 unique visitors and 530 clones / 199 unique cloners in the current 14-day window. These counts include maintainer and automation activity and are not confirmed external users.
