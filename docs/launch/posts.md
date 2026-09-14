@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## GitHub metadata clarity update — 2026-09-14 JST
+
+- Repository description now leads with the discoverable problem and entry point: "Prevent false completion in voice agents: evidence-anchored phone outcomes, consented follow-up intake, TypeScript SDK + CLI, no API key for local checks."
+- Homepage URL and existing topic tags were preserved. This is a metadata conversion experiment; measure fresh repository visitors, stars and external trial reports rather than treating the edit itself as reach.
+
 ## v0.1.10 public intake demo package — 2026-09-14 JST
 
 - Source: `4798017` (`release: prepare v0.1.10 intake demo package`), including the Arena intake panel, built-in scenario and bilingual recordings.
