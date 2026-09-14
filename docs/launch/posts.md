@@ -5,6 +5,11 @@
 - Updated the existing [GitHub Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) body in place. It now links v0.1.15 and describes the time-pressure stop guard, live profile context and utterance-linked decision memo.
 - Preserved the three technical feedback questions and the request for redacted or synthetic traces. No new comment, mention, DM or test inquiry was created.
 
+## Homepage pacing copy published — 2026-09-14 21:47 JST
+
+- Added a visible Japanese/English note to the public Pages routes explaining that a busy or time-pressed callee ends follow-up intake instead of receiving another prompt.
+- Pages [34845320256](https://github.com/FORIFOR/oathra/actions/runs/34845320256) and CI [34845320262](https://github.com/FORIFOR/oathra/actions/runs/34845320262) passed; the live routes returned HTTP 200 and the new copy was read back.
+
 ## v0.1.15 intake pacing and live-context release — 2026-09-14 21:36 JST
 
 - Added a time-pressure stop guard for optional intake. Japanese and English phrases indicating that the callee is busy, in a hurry or cannot talk now end the follow-up flow without saving a guessed profile value or repeating the question.
