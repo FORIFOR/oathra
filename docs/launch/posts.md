@@ -26,7 +26,7 @@
 - Assets: [oathra-0.1.7.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz.sha256). The tarball SHA-256 is `1aa87068614034d9dd9c80628374726f606c6a2c0529a756097df314c03dfeb4`.
 - Source: `679da95` (`fix(intake): stop on ambiguous consent`). CI `34808573894` and Pages `34808573878` passed. Initial v0.1.7 asset downloads were 0 at 2026-09-14 14:10 JST.
 - The homepage intake callout and CSS polish were added in `64625d7`; CI `34809435895` and Pages redeploy `34809435892` passed. The public Japanese and English routes now expose the consent flow before the video section.
-- Feedback prompt updated once in GitHub Discussion #14 at 2026-09-14 14:16 JST and edited to v0.1.8 after release: https://github.com/FORIFOR/oathra/discussions/14#discussioncomment-18428933. It asks voice-agent teams for one or two useful contract-declared follow-up fields and requests only redacted or synthetic transcripts. This is a maintainer post, not external feedback.
+- Feedback prompt updated once in GitHub Discussion #14 at 2026-09-14 14:16 JST and edited again to v0.1.9 after release at 2026-09-14 15:00 JST: https://github.com/FORIFOR/oathra/discussions/14#discussioncomment-18428933. It asks voice-agent teams for one or two useful contract-declared follow-up fields and requests only redacted or synthetic transcripts. This is a maintainer post, not external feedback.
 
 ## v0.1.6 consent-based intake release — 2026-09-14 JST
 
