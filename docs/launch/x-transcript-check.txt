@@ -4,8 +4,8 @@ Use this once the account-wide 24-hour spacing has elapsed and the current timel
 
 Collect follow-up info without a pushy phone agent.
 
-Oathra v0.1.7 asks consent once after booking, asks one declared field per turn, and stops on decline or ambiguity. Explicit answers → intake.json + summary.md. No inferred profile.
+Oathra v0.1.8 asks consent once after booking, asks one declared field per turn, and stops on decline, hold or ambiguity. Explicit answers → intake.json + summary.md. No inferred profile.
 Try: https://forifor.github.io/oathra/en/check.html
-https://github.com/FORIFOR/oathra/releases/tag/v0.1.7
+https://github.com/FORIFOR/oathra/releases/tag/v0.1.8
 
-Before publishing, verify the active account timeline, use the current v0.1.7 site and release links, upload the video close to publication, confirm media processing, and record the returned post ID, URL and timestamp in `docs/launch/posts.md`. Do not reuse an older campaign state or send a language duplicate.
+Before publishing, verify the active account timeline, use the current v0.1.8 site and release links, upload the video close to publication, confirm media processing, and record the returned post ID, URL and timestamp in `docs/launch/posts.md`. Do not reuse an older campaign state or send a language duplicate.
