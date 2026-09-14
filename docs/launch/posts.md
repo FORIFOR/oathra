@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Old release path redirected — 2026-09-14 18:00 JST
+
+- GitHub's popular-path API showed a visit to the older `v0.1.2` release page. Its existing body was preserved and a superseded-release notice was added at the top, linking to the current [v0.1.10 release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.10).
+- The old asset remains available for reproducibility; new visitors are directed to the current setup and intake demo. This is a navigation fix based on an observed path, not an adoption claim.
+
 ## External signal checkpoint — 2026-09-14 17:55 JST
 
 - The authenticated X readback shows `@forifori_dev` at **1 follower** (previously 0) and the newest original post at **7 impressions** (previously 5), with 0 likes, replies, reposts and quotes. No identity or source is inferred from these aggregate values.
