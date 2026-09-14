@@ -6,7 +6,7 @@
 <title>Oathra — AIが電話で予約を取る。予約できたかは相手の発言で判定する</title>
 <meta name="description" content="AIが電話をかけて予約を取るオープンソース。予約できたかどうかは、AIではなく店側の発言で判定する。v0.1.10をAPIキーなしで試せます。">
 <meta property="og:title" content="Oathra — AIが電話で予約を取る。予約できたかは相手の発言で判定する">
-<meta property="og:description" content="「予約できました」とAIが言っても完了にならない。店側が言った時だけ✓が付く。意地悪な店員1万通りで誤完了ゼロ。npx oathra demo で試せる。">
+<meta property="og:description" content="「予約できました」とAIが言っても完了にならない。店側が言った時だけ✓が付く。意地悪な店員1万通りで誤完了ゼロ。v0.1.10をGitHub Releaseの1コマンドで試せる。">
 <meta property="og:image" content="https://forifor.github.io/oathra/media/oathra-intake-ja-poster.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -202,14 +202,14 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="lede">予約・注文・確認のための音声エージェント基盤。日時、人数、条件、確定の根拠を、通話と一緒に残します。AI が「予約できました」と言っても、相手がそう言うまで確定にはなりません。</p>
       <div class="ctas"><a class="btn" href="#sim">その場で判定を試す</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.10/oathra-0.1.10.tgz oathra demo"><b>$</b> v0.1.10のコマンドをコピー</button></div>
       <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.10">v0.1.10の導入手順</a> · コピーボタンはGitHub Release版を起動します。npm版は0.1.0です。</p>
-      <p class="note">右の体験は本体の証拠エンジンで判定します。入力はブラウザ内に留まり、実際の電話は発信されません。<code>npx oathra demo</code> は API キー不要です。</p>
+      <p class="note">右の体験は本体の証拠エンジンで判定します。入力はブラウザ内に留まり、実際の電話は発信されません。上のGitHub Releaseコマンドは API キー不要です。</p>
     </div>
     <div class="sim" id="sim" data-lang="ja"></div>
   </div>
   <div class="strip">
     <div><b>0 / 10,000</b><small>店員役の変異 1 万通り（シミュレーション）での誤完了</small></div>
     <div><b>約0.4秒</b><small>3件目の実電話で観測した最初の返答（平均・p95ではありません）</small></div>
-    <div><b>1コマンド</b><small>npx oathra demo で AI 同士の通話まで</small></div>
+    <div><b>1コマンド</b><small>GitHub Releaseのコマンドで AI 同士の通話まで</small></div>
     <div><b>Twilio 検証済み</b><small>Plivo · SIP は実装済み、PSTN 未検証</small></div>
   </div>
 
