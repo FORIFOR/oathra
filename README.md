@@ -222,7 +222,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 Oathra は電話相手の属性を推測したり、目的外の情報を密かに集めたりしません。通常の対話は `CallContract` に書いた目的・必須項目だけを質問し、同じ質問の反復を抑えます。決定事項は `result.json`、人が読める `summary.md`、発話に紐づいた `evidence`、`transcript.json` に記録します。
 
-追加情報が本当に必要な業務では、契約に同意文・目的・項目・質問上限を明示した `intake` を使えます。必要な予約情報が確定した後に同意を一度尋ね、同意後は宣言済みの質問を1回に1つだけ尋ねます。拒否・保留・曖昧な返答ならその場で停止し、回答と同意記録は `.oathra/calls/<callId>/intake.json` と `summary.md` に発話ID・時刻付きで残ります。これは相手が明示した回答から作る業務上のプロファイルであり、電話相手の属性やセンシティブ情報を推測するものではありません。
+追加情報が本当に必要な業務では、契約に同意文・目的・項目・質問上限を明示した `intake` を使えます。必要な予約情報が確定した後に同意を一度尋ね、同意後は宣言済みの質問を1回に1つだけ尋ねます。`startAfter` でシーンの追加前提、`dependsOn` で明示回答に応じた分岐、`choices` で定型回答を宣言できます。拒否・保留・曖昧な返答・選択肢に一致しない返答ならその場で停止し、回答と同意記録は `.oathra/calls/<callId>/intake.json` と `summary.md` に発話ID・時刻付きで残ります。これは相手が明示した回答から作る業務上のプロファイルであり、電話相手の属性やセンシティブ情報を推測するものではありません。
 
 ```ts
 const contract = defineCall({
@@ -231,8 +231,12 @@ const contract = defineCall({
   intake: {
     purpose: "予約後の案内を適切にする",
     consentPrompt: "予約とは別に1点だけ伺ってもよろしいでしょうか？",
-    fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
-    maxQuestions: 1,
+    startAfter: ["confirmed"],
+    fields: [
+      { key: "topic", label: "案内の種類", question: "どちらの案内をご希望でしょうか？", choices: ["導入", "請求"] },
+      { key: "detail", label: "詳細", question: "詳細を教えていただけますか？", dependsOn: ["topic"] },
+    ],
+    maxQuestions: 2,
     stopOnDecline: true,
   },
 });

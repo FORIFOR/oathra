@@ -80,7 +80,8 @@ export class ScriptedAgent implements BrainProvider {
     // consent-gated, bounded and driven entirely by the contract's declared fields.
     const missionSettled = mission.violations.length === 0 && mission.missing.length === 0;
     const intake = ctx.intake;
-    if (ctx.turnIndex > 0 && missionSettled && intake && intake.status !== "disabled" && intake.status !== "declined" && intake.status !== "complete") {
+    const intakeStartReady = intake?.status !== "disabled" && (!contract.intake?.startAfter?.length || contract.intake.startAfter.every((field) => mission.verified[field] !== undefined));
+    if (ctx.turnIndex > 0 && missionSettled && intakeStartReady && intake && intake.status !== "disabled" && intake.status !== "declined" && intake.status !== "complete") {
       const intakeConfig = contract.intake;
       if (intakeConfig && (intake.status === "not_started" || intake.status === "awaiting_consent")) {
         return { text: intakeConfig.consentPrompt, intakeQuestion: { kind: "consent" } };

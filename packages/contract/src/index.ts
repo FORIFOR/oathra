@@ -93,6 +93,18 @@ export const IntakeFieldSchema = z
     label: z.string().min(1).max(120),
     /** The one-sentence question to ask, in the contract language. */
     question: z.string().min(1).max(240),
+    /**
+     * Ask this field only after these earlier intake fields have an explicit
+     * answer. This lets a scenario branch without letting the model invent a
+     * question order.
+     */
+    dependsOn: z.array(z.string().regex(/^[a-z][a-z0-9_.-]{0,63}$/)).max(8).optional(),
+    /**
+     * Optional canonical answers. When present, the runtime records exactly
+     * one matching choice and treats an unmatched or ambiguous reply as a
+     * non-answer, so free text cannot silently become a profile value.
+     */
+    choices: z.array(z.string().min(1).max(120)).min(1).max(16).optional(),
   })
   .strict();
 export type IntakeField = z.infer<typeof IntakeFieldSchema>;
@@ -109,8 +121,17 @@ export const IntakeSchema = z
     fields: z.array(IntakeFieldSchema).min(1).max(8),
     /** Maximum number of field questions (the consent prompt is separate). */
     maxQuestions: z.number().int().positive().max(8).default(3),
-    /** Stop all optional intake when the callee declines a field. */
+    /**
+     * Kept for configuration compatibility. A refusal always stops optional
+     * intake so a caller cannot accidentally make the agent press for more.
+     */
     stopOnDecline: z.boolean().default(true),
+    /**
+     * Additional mission fields that must be verified before asking for
+     * optional information. Required mission fields and constraints always
+     * remain prerequisites as well.
+     */
+    startAfter: z.array(z.string().min(1)).max(8).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -120,7 +141,41 @@ export const IntakeSchema = z
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fields", index, "key"], message: `duplicate intake field key: ${field.key}` });
       }
       keys.add(field.key);
+      if (field.choices) {
+        const choices = new Set<string>();
+        for (const choice of field.choices) {
+          if (choices.has(choice)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fields", index, "choices"], message: `duplicate intake choice: ${choice}` });
+          }
+          choices.add(choice);
+        }
+      }
     }
+    for (const [index, field] of value.fields.entries()) {
+      for (const dependency of field.dependsOn ?? []) {
+        if (dependency === field.key) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fields", index, "dependsOn"], message: `intake field cannot depend on itself: ${dependency}` });
+        } else if (!keys.has(dependency)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fields", index, "dependsOn"], message: `unknown intake field dependency: ${dependency}` });
+        }
+      }
+    }
+    const dependencies = new Map(value.fields.map((field) => [field.key, field.dependsOn ?? []]));
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+    const visit = (key: string, path: string[]): void => {
+      if (visited.has(key)) return;
+      if (visiting.has(key)) {
+        const index = value.fields.findIndex((field) => field.key === key);
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fields", index < 0 ? 0 : index, "dependsOn"], message: `cyclic intake field dependency: ${[...path, key].join(" -> ")}` });
+        return;
+      }
+      visiting.add(key);
+      for (const dependency of dependencies.get(key) ?? []) visit(dependency, [...path, key]);
+      visiting.delete(key);
+      visited.add(key);
+    };
+    for (const field of value.fields) visit(field.key, []);
   });
 export type Intake = z.infer<typeof IntakeSchema>;
 
@@ -144,7 +199,14 @@ export const CallContractSchema = z
     /** Optional consent-gated, contract-declared caller information intake. */
     intake: IntakeSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    for (const field of value.intake?.startAfter ?? []) {
+      if (!value.require[field] && !value.constraints[field]) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["intake", "startAfter"], message: `startAfter field must be in require or constraints: ${field}` });
+      }
+    }
+  });
 
 export type CallContractInput = z.input<typeof CallContractSchema>;
 export type CallContract = z.infer<typeof CallContractSchema>;

@@ -62,6 +62,8 @@ export function resultBox(outcome: CallOutcome, score?: OathraScore): string {
   lines.push(`Evidence: ${r.evidence.filter((e) => e.verified).length}`);
   if (outcome.intake.status !== "disabled") {
     lines.push(`Optional intake: ${outcome.intake.status} · ${outcome.intake.answers.length} answer(s)`);
+    if (outcome.intake.answers.length) lines.push(`Profile: ${outcome.intake.answers.map((a) => `${a.key}=${a.value}`).join(", ")}`);
+    if (outcome.intake.skipped?.length) lines.push(`Skipped: ${outcome.intake.skipped.join(", ")}`);
   }
   lines.push(`Confidence: ${r.confidence.toFixed(3)}`);
   const p50 = outcome.metrics.latency.ttfaP50Ms;

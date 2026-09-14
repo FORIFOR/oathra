@@ -414,6 +414,21 @@ export class CallRuntime {
   private intakeView(): IntakeView {
     const config = this.opts.contract.intake;
     if (!config) return { status: "disabled", askedQuestions: 0, answers: [], declined: [] };
+    const answered = new Set(this.intakeAnswers.map((answer) => answer.key));
+    const declined = new Set(this.intakeDeclined);
+    const skippedSet = new Set<string>();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const field of config.fields) {
+        if (answered.has(field.key) || declined.has(field.key) || skippedSet.has(field.key)) continue;
+        if ((field.dependsOn ?? []).some((dependency) => declined.has(dependency) || skippedSet.has(dependency))) {
+          skippedSet.add(field.key);
+          changed = true;
+        }
+      }
+    }
+    const skipped = config.fields.filter((field) => skippedSet.has(field.key)).map((field) => field.key);
     return {
       status: this.intakeStatus,
       purpose: config.purpose,
@@ -423,6 +438,7 @@ export class CallRuntime {
       ...(this.intakeConsent ? { consent: { ...this.intakeConsent } } : {}),
       answers: [...this.intakeAnswers],
       declined: [...this.intakeDeclined],
+      ...(skipped.length ? { skipped } : {}),
     };
   }
 
@@ -434,15 +450,22 @@ export class CallRuntime {
   private canStartIntake(): boolean {
     const contract = this.opts.contract;
     const verified = this.engine.values();
-    if (requiredFields(contract).some((field) => verified[field] === undefined)) return false;
+    const prerequisites = new Set([...requiredFields(contract), ...(contract.intake?.startAfter ?? [])]);
+    if ([...prerequisites].some((field) => verified[field] === undefined)) return false;
     return checkConstraints(contract.constraints, verified).violations.length === 0;
+  }
+
+  private canAskIntakeField(field: NonNullable<CallContract["intake"]>["fields"][number]): boolean {
+    const answered = new Set(this.intakeAnswers.map((answer) => answer.key));
+    const declined = new Set(this.intakeDeclined);
+    return (field.dependsOn ?? []).every((dependency) => answered.has(dependency) && !declined.has(dependency));
   }
 
   private nextIntakeField(): NonNullable<CallContract["intake"]>["fields"][number] | undefined {
     const config = this.opts.contract.intake;
     if (!config || this.intakeAskedQuestions >= config.maxQuestions) return undefined;
     const answered = new Set(this.intakeAnswers.map((answer) => answer.key));
-    return config.fields.find((field) => !answered.has(field.key) && !this.intakeDeclined.has(field.key));
+    return config.fields.find((field) => !answered.has(field.key) && !this.intakeDeclined.has(field.key) && this.canAskIntakeField(field));
   }
 
   /**
@@ -498,7 +521,7 @@ export class CallRuntime {
       return;
     }
     const field = config.fields.find((candidate) => candidate.key === question.field);
-    if (!field || this.intakeStatus !== "active") return;
+    if (!field || this.intakeStatus !== "active" || !this.canAskIntakeField(field)) return;
     // Do not replace a question that is already waiting for an answer. This
     // keeps one field per turn even if a provider repeats its own speech.
     if (this.intakePending) return;
@@ -518,7 +541,7 @@ export class CallRuntime {
       return;
     }
     if (this.intakeStatus !== "active") return;
-    const field = config.fields.find((candidate) => normalized.includes(normalizeLine(candidate.question).toLocaleLowerCase()));
+    const field = config.fields.find((candidate) => normalized.includes(normalizeLine(candidate.question).toLocaleLowerCase()) && this.canAskIntakeField(candidate));
     if (field) this.registerIntakeQuestion({ kind: "field", field: field.key });
   }
 
@@ -543,6 +566,7 @@ export class CallRuntime {
       this.intakeStatus = granted ? "active" : "declined";
       this.intakeConsent = { granted, utteranceId: turn.id, t: turn.t };
       this.emit({ type: "intake.consent", granted, utteranceId: turn.id });
+      if (granted && !this.nextIntakeField()) this.intakeStatus = "complete";
       return;
     }
 
@@ -550,21 +574,26 @@ export class CallRuntime {
     if (!field) return;
     const text = turn.text.trim();
     const declined = INTAKE_NO_RE.test(text) || /答えたく|お答えでき|控えさせ|遠慮させて/i.test(text);
-    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text);
+    const matchedChoice = field.choices
+      ? field.choices.filter((choice) => normalizeLine(text).toLocaleLowerCase().includes(normalizeLine(choice).toLocaleLowerCase()))
+      : undefined;
+    const invalidChoice = Boolean(field.choices && (matchedChoice?.length !== 1));
+    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text) || invalidChoice || (INTAKE_YES_RE.test(text) && !field.choices);
     if (declined || nonAnswer) {
       this.intakeDeclined.add(field.key);
       this.emit({ type: "intake.answer", field: field.key, declined: true, utteranceId: turn.id });
-      // A refusal obeys the contract's stopOnDecline setting. A hold,
-      // question or hedge is always a stop: continuing would pressure the
-      // callee or save a value that was never explicitly provided.
-      if (config.stopOnDecline || nonAnswer) this.intakeStatus = "declined";
+      // A refusal, hold, question or hedge is always a stop: continuing would
+      // pressure the callee or save a value that was never explicitly provided.
+      // `stopOnDecline` remains accepted for older contracts but cannot weaken
+      // this boundary.
+      this.intakeStatus = "declined";
     } else if (text) {
-      const value = text.replace(/[\r\n]+/g, " ").slice(0, 500);
+      const value = (matchedChoice?.[0] ?? text).replace(/[\r\n]+/g, " ").slice(0, 500);
       this.intakeAnswers.push({ key: field.key, label: field.label, value, utteranceId: turn.id, transcript: text, t: turn.t });
       this.emit({ type: "intake.answer", field: field.key, value, declined: false, utteranceId: turn.id });
     }
     if (this.intakeStatus === "active") {
-      const done = this.intakeAnswers.length + this.intakeDeclined.size >= config.fields.length;
+      const done = !this.nextIntakeField();
       if (done || this.intakeAskedQuestions >= config.maxQuestions) this.intakeStatus = "complete";
     }
   }

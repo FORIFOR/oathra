@@ -165,6 +165,8 @@ export type IntakeView = {
   consent?: IntakeConsent;
   answers: IntakeAnswer[];
   declined: string[];
+  /** Fields skipped because a declared dependency was declined. */
+  skipped?: string[];
 };
 
 export type BrainContext = {

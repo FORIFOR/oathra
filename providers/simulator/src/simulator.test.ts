@@ -134,6 +134,86 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(2);
   });
 
+  it("follows declared intake dependencies and canonicalises a single matching choice", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const contract = defineCall({
+      ...base,
+      intake: {
+        purpose: "案内先を適切にする",
+        consentPrompt: "予約とは別に2点だけ伺ってもよろしいでしょうか？",
+        fields: [
+          { key: "topic", label: "案内の種類", question: "どちらの案内をご希望でしょうか？", choices: ["導入", "請求"] },
+          { key: "detail", label: "詳細", question: "詳細を教えていただけますか？", dependsOn: ["topic"] },
+        ],
+        maxQuestions: 2,
+      },
+    });
+    const callee = {
+      name: "分岐検証店",
+      greeting: () => "お電話ありがとうございます。",
+      respond: ({ lastAgentText }: CalleeContext): CalleeReply => {
+        if (/追加で2点/.test(lastAgentText)) return { text: "はい、お願いします。" };
+        if (/どちらの案内/.test(lastAgentText)) return { text: "導入についてです。" };
+        if (/詳細を/.test(lastAgentText)) return { text: "来週の説明会について知りたいです。" };
+        if (/確定しても/.test(lastAgentText)) return { text: "ご予約承りました。" };
+        if (/19時半でお願いします/.test(lastAgentText)) return { text: "ご予約を確定してもよろしいでしょうか？" };
+        if (/予約をお願い/.test(lastAgentText) || /予約をお願いします/.test(lastAgentText)) return { text: "9月12日の19時半、2名様で空いております。" };
+        return { text: "承知しました。" };
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast", character: callee }),
+      brain: new ScriptedAgent(),
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    expect(o.intake.status).toBe("complete");
+    expect(o.intake.answers.map((answer) => [answer.key, answer.value])).toEqual([
+      ["topic", "導入"],
+      ["detail", "来週の説明会について知りたいです。"],
+    ]);
+  });
+
+  it("stops on an unmatched choice without saving a guessed profile value", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const contract = defineCall({
+      ...base,
+      intake: {
+        purpose: "案内先を適切にする",
+        consentPrompt: "追加で1点だけ伺ってもよろしいでしょうか？",
+        fields: [{ key: "topic", label: "案内の種類", question: "どちらの案内をご希望でしょうか？", choices: ["導入", "請求"] }],
+        maxQuestions: 1,
+      },
+    });
+    const callee = {
+      name: "選択肢検証店",
+      greeting: () => "お電話ありがとうございます。",
+      respond: ({ lastAgentText }: CalleeContext): CalleeReply => {
+        if (/追加で1点/.test(lastAgentText)) return { text: "はい、お願いします。" };
+        if (/どちらの案内/.test(lastAgentText)) return { text: "まだ決めていません。" };
+        if (/確定しても/.test(lastAgentText)) return { text: "ご予約承りました。" };
+        if (/19時半でお願いします/.test(lastAgentText)) return { text: "ご予約を確定してもよろしいでしょうか？" };
+        if (/予約をお願い/.test(lastAgentText) || /予約をお願いします/.test(lastAgentText)) return { text: "9月12日の19時半、2名様で空いております。" };
+        return { text: "承知しました。" };
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast", character: callee }),
+      brain: new ScriptedAgent(),
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    expect(o.intake.status).toBe("declined");
+    expect(o.intake.answers).toHaveLength(0);
+    expect(o.intake.declined).toEqual(["topic"]);
+  });
+
   it("keeps an early model intake prompt out of the call until required fields settle", async () => {
     const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
     const base = contractFromScenario(scenario);
@@ -258,7 +338,7 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.events.filter((event) => event.type === "intake.consent")).toHaveLength(1);
   });
 
-  it.each(["少々お待ちください。", "少し考えます。"])("stops field intake on a hold or hedge (%s) without saving it as an answer", async (nonAnswer) => {
+  it.each(["少々お待ちください。", "少し考えます。", "結構です。"])("stops field intake on a hold, hedge or refusal (%s) without saving it as an answer", async (nonAnswer) => {
     const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
     const base = contractFromScenario(scenario);
     const contract = defineCall({
@@ -268,6 +348,7 @@ describe("scripted agent vs scripted characters", () => {
         consentPrompt: "追加で1点だけ伺ってもよろしいでしょうか？",
         fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
         maxQuestions: 1,
+        stopOnDecline: false,
       },
     });
     const callee = {

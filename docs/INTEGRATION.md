@@ -16,7 +16,7 @@ Use the GitHub asset: the npm registry still serves 0.1.0, which does not includ
 
 ## Consent-based optional intake
 
-If a workflow needs an explicit answer for a post-booking follow-up, add `CallContract.intake`. Declare the `purpose`, a `consentPrompt`, the field keys and exact questions, and `maxQuestions` (up to eight). Oathra asks for consent once after the required call details are settled, then asks one declared field per turn. A decline, hold or ambiguous reply stops intake immediately; it never infers a profile or sensitive traits.
+If a workflow needs an explicit answer for a post-booking follow-up, add `CallContract.intake`. Declare the `purpose`, a `consentPrompt`, the field keys and exact questions, and `maxQuestions` (up to eight). Oathra asks for consent once after the required call details are settled, then asks one declared field per turn. Use `startAfter` for additional mission prerequisites, `dependsOn` to branch on an earlier explicit answer, and `choices` when a canonical answer is safer than free text. A decline, hold, ambiguous reply or unmatched choice stops intake immediately; it never infers a profile or sensitive traits.
 
 ```ts
 const contract = defineCall({
@@ -25,7 +25,11 @@ const contract = defineCall({
   intake: {
     purpose: "Tailor a post-booking follow-up",
     consentPrompt: "May I ask one separate question about your booking?",
-    fields: [{ key: "role", label: "Role", question: "What is your role?" }],
+    startAfter: ["confirmed"],
+    fields: [
+      { key: "topic", label: "Topic", question: "Which follow-up would be useful?", choices: ["onboarding", "billing"] },
+      { key: "detail", label: "Detail", question: "What detail should we prepare?", dependsOn: ["topic"] },
+    ],
     maxQuestions: 1,
     stopOnDecline: true,
   },
@@ -33,6 +37,8 @@ const contract = defineCall({
 ```
 
 After consent, answers are stored in `.oathra/calls/<callId>/intake.json` and `summary.md` with the field, answer, utterance ID and timestamp. The consent decision itself is also recorded with provenance, so an operational profile and decision memo can be audited later. Without `intake`, no optional questions are generated.
+
+`stopOnDecline` is still accepted for older contracts, but a refusal, hold or ambiguous reply always ends optional intake. A contract cannot turn repeated questions back on.
 
 For YAML-managed scenarios, place the same block under `mission.intake`. `oathra play ./my-scenario.yaml` and `oathra call --scenario ./my-scenario.yaml --to +1...` then share the same contract and stop rules, so a local check can be carried into a real call without rewriting the intake settings.
 

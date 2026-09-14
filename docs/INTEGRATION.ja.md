@@ -50,7 +50,7 @@ console.log(JSON.stringify(result, null, 2));
 
 ## 同意付きの追加聞き取り
 
-予約後の案内などで相手の明示回答が必要な場合だけ、`CallContract.intake` を追加します。`purpose`、同意を得る `consentPrompt`、質問文とキーの配列、`maxQuestions`（最大8問）を必ず宣言してください。必要な予約情報が確定した後に同意を一度尋ね、同意後は1回に1項目だけ質問します。拒否、保留、曖昧な返答の場合はその場で停止し、推測やセンシティブ属性の収集は行いません。
+予約後の案内などで相手の明示回答が必要な場合だけ、`CallContract.intake` を追加します。`purpose`、同意を得る `consentPrompt`、質問文とキーの配列、`maxQuestions`（最大8問）を必ず宣言してください。必要な予約情報が確定した後に同意を一度尋ね、同意後は1回に1項目だけ質問します。業務シーンの前提を追加する場合は `startAfter`、前の回答に応じて次の質問を出す場合は `dependsOn`、定型化できる回答は `choices` を使えます。拒否、保留、曖昧な返答、選択肢に一致しない返答の場合はその場で停止し、推測やセンシティブ属性の収集は行いません。
 
 ```ts
 const contract = defineCall({
@@ -59,7 +59,11 @@ const contract = defineCall({
   intake: {
     purpose: "予約後の案内を適切にする",
     consentPrompt: "予約とは別に1点だけ伺ってもよろしいでしょうか？",
-    fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+    startAfter: ["confirmed"],
+    fields: [
+      { key: "topic", label: "案内の種類", question: "どちらの案内をご希望でしょうか？", choices: ["導入", "請求"] },
+      { key: "detail", label: "詳細", question: "詳細を教えていただけますか？", dependsOn: ["topic"] },
+    ],
     maxQuestions: 1,
     stopOnDecline: true,
   },
@@ -67,6 +71,8 @@ const contract = defineCall({
 ```
 
 同意後の回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に、質問項目・回答・発話ID・時刻を含めて保存します。同意の可否も発話ID・時刻付きで記録するため、業務上の明示回答プロファイルと決定事項を後から監査できます。契約に `intake` がなければ、この追加質問は発生しません。
+
+`stopOnDecline` は旧設定との互換性のため受け付けますが、拒否・保留・曖昧な返答があった場合は常に追加聞き取りを終了します。設定で相手への再質問を有効にすることはできません。
 
 シナリオをYAMLで管理する場合は、同じブロックを `mission.intake` に置きます。`oathra play ./my-scenario.yaml` でローカル確認した設定を、そのまま `oathra call --scenario ./my-scenario.yaml --to +81...` の実電話へ渡せます。
 

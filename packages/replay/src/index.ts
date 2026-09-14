@@ -78,12 +78,12 @@ export function renderCallSummary(outcome: CallOutcome): string {
     lines.push(ja ? "（確認済みの発話証拠はありません）" : "(No verified utterance evidence.)");
   } else {
     for (const evidence of verifiedEvidence) {
-      lines.push(`- **${evidence.field}** = ${formatSummaryValue(evidence.value)} — ${evidence.source}: 「${evidence.span}」`);
+      lines.push(`- **${evidence.field}** = ${formatSummaryValue(evidence.value)} — ${evidence.source}: 「${evidence.span}」 — ${ja ? "発話" : "utterance"} \`${evidence.utteranceId}\` (${evidence.t}ms)`);
     }
   }
 
   if (outcome.intake && outcome.intake.status !== "disabled") {
-    lines.push("", `## ${ja ? "同意済みの聞き取り" : "Consented intake"}`);
+    lines.push("", `## ${ja ? "同意済みの業務プロファイル" : "Consented operational profile"}`);
     lines.push(`- ${ja ? "目的" : "Purpose"}: ${outcome.intake.purpose ?? ""}`);
     lines.push(`- ${ja ? "状態" : "Status"}: ${outcome.intake.status}`);
     if (outcome.intake.consent) {
@@ -99,6 +99,7 @@ export function renderCallSummary(outcome: CallOutcome): string {
       }
     }
     if (outcome.intake.declined.length) lines.push(`- ${ja ? "回答を拒否した項目" : "Declined fields"}: ${outcome.intake.declined.join(", ")}`);
+    if (outcome.intake.skipped?.length) lines.push(`- ${ja ? "前提条件が満たされず省略した項目" : "Skipped fields whose dependencies were not met"}: ${outcome.intake.skipped.join(", ")}`);
     lines.push(ja ? "収集目的・質問・同意を契約に明示した項目だけを記録し、相手の属性は推測しません。" : "Only contract-declared fields after consent are recorded; no callee attributes are inferred.");
   }
 

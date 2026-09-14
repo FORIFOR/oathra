@@ -332,10 +332,11 @@ export class OpenAIRealtimeAgent {
         `${ja ? "目的" : "Purpose"}: ${c.intake.purpose}`,
         `${ja ? "状態" : "Status"}: ${v?.intake?.status ?? "not_started"}`,
         `${ja ? "質問数" : "Questions asked"}: ${v?.intake?.askedQuestions ?? 0} / ${c.intake.maxQuestions}`,
-        `${ja ? "項目" : "Declared fields"}: ${c.intake.fields.map((field) => `${field.key}: ${field.question}`).join("; ")}`,
+        `${ja ? "開始前提" : "Start-after fields"}: ${c.intake.startAfter?.join(", ") || "(required details only)"}`,
+        `${ja ? "項目" : "Declared fields"}: ${c.intake.fields.map((field) => `${field.key}: ${field.question}${field.dependsOn?.length ? ` (depends on ${field.dependsOn.join(",")})` : ""}${field.choices?.length ? ` [choices: ${field.choices.join(", ")}]` : ""}`).join("; ")}`,
         ja
-          ? "必要な予約情報が揃ってから同意文を一度尋ね、同意後は宣言済みの質問を一度に1つだけ尋ねる。推測せず、拒否されたら停止する。"
-          : "After the required call details are settled, ask the consent prompt once. After consent, ask only one declared question at a time; never infer attributes and stop on decline.",
+          ? "必要な予約情報と開始条件が揃ってから同意文を一度尋ね、同意後は依存条件を満たす宣言済みの質問を一度に1つだけ尋ねる。選択肢がある項目は1つだけ一致した回答を記録し、推測せず、拒否・曖昧な返答なら停止する。"
+          : "After the required call details and start-after fields are settled, ask the consent prompt once. After consent, ask only one declared question whose dependencies are met; for choices, accept one matching choice only. Never infer attributes and stop on decline or ambiguity.",
         `${ja ? "同意文" : "Consent prompt"}: ${c.intake.consentPrompt}`,
       ] : []),
       "",
@@ -347,7 +348,7 @@ export class OpenAIRealtimeAgent {
             "3. 自分から「予約できました」「確定しました」と言わない。相手が明示的に確定するまで完了ではない。",
             "4. 相手の提示は制約を満たす場合だけ受け入れる。満たさない場合は丁寧に断り、代案を尋ねる。",
             "5. missing の項目は相手に確認するか、Input の値を提案する。",
-            "5b. 追加聞き取りは、契約にある同意文と質問だけを使い、質問上限を守る。相手が拒否したら直ちに停止する。",
+            "5b. 追加聞き取りは、契約にある同意文と依存条件付きの質問だけを使い、質問上限を守る。選択肢は1つだけ一致した場合に記録し、拒否・曖昧な返答なら直ちに停止する。",
             "6. すべて揃ったら、内容を読み上げて「…でご予約を確定してもよろしいでしょうか？」と一度だけ yes/no で確認し、相手の答えを待つ。",
             "7. 相手が確定したら、短くお礼を言って end_call を呼ぶ。留守番電話・自動音声・相手が対応できない場合も、短く一言添えて end_call を呼ぶ。",
             "8. 許可されていない行為（支払い、キャンセル、住所や電話番号の共有など）は request_action で許可を得るまで行わない。",
@@ -359,7 +360,7 @@ export class OpenAIRealtimeAgent {
             "3. Never claim the task is complete or booked yourself. Only the callee's explicit confirmation counts.",
             "4. Accept an offer only if it satisfies every constraint; otherwise decline politely and ask for an alternative.",
             "5. Ask for missing fields or propose values from Input.",
-            "5b. For optional intake, use only the declared consent prompt and questions, respect the question cap, and stop immediately on decline.",
+            "5b. For optional intake, use only the declared consent prompt and questions whose dependencies are met, respect the question cap, accept one matching choice only, and stop immediately on decline or ambiguity.",
             "6. When everything is settled, read the details back and ask ONE yes/no question to confirm, then wait.",
             "7. After the callee confirms, thank them briefly and call end_call. On voicemail or an automated system, say one short line and call end_call.",
             "8. Never take an action outside the permitted list without request_action.",

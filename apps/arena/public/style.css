@@ -323,7 +323,7 @@ body.present .party-orb { inset: 4px; }
 .intake-row .intake-value { font-family: var(--mono); color: var(--muted); text-align: right; }
 .intake-row.answered .intake-value { color: var(--ok); }
 .intake-row.pending .intake-value { color: var(--accent-ink); }
-.intake-row.declined .intake-value { color: var(--muted); }
+.intake-row.declined .intake-value, .intake-row.skipped .intake-value { color: var(--muted); }
 .intake-empty, .intake-note { margin: 0; color: var(--muted); font-size: 12px; }
 .intake-note { margin-top: 7px; }
 .panel-title { font-size: 11px; letter-spacing: 0.16em; color: var(--muted); margin: 0 0 10px; font-weight: 500; }

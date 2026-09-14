@@ -79,7 +79,7 @@
       yourMission: "YOUR MISSION", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up",
       foolTitle: "TRY TO FOOL IT", foolHint: "Say one of these as the shop. None of them should count as booked.",
       mission: "MISSION", evidence: "EVIDENCE", intake: "OPTIONAL INTAKE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool",
-      intakeNoAnswers: "No explicit answers recorded.", intakePurpose: "Purpose: {purpose}", intakeQuestions: "Questions: {asked} / {max}", intakeConsent: "Consent: {status}", intakeStopped: "Stopped without inferring a profile.", intakeAnswer: "explicit answer", intakeDeclined: "declined",
+      intakeNoAnswers: "No explicit answers recorded.", intakePurpose: "Purpose: {purpose}", intakeQuestions: "Questions: {asked} / {max}", intakeConsent: "Consent: {status}", intakeStopped: "Stopped without inferring a profile.", intakeAnswer: "explicit answer", intakeDeclined: "declined", intakeSkipped: "skipped (dependency not met)",
       latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
       yes: "yes", no: "no",
       stCompleted: "MISSION COMPLETE", stIncomplete: "INCOMPLETE", stViolation: "CONSTRAINT VIOLATION", stFailed: "FAILED", stFalse: "FALSE COMPLETION", stUnknown: "UNKNOWN",
@@ -109,7 +109,7 @@
       yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る",
       foolTitle: "誤完了を誘ってみる", foolHint: "店側としてこの中のどれかを言ってみてください。どれも「予約できた」にはならないはずです。",
       mission: "ミッション", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール",
-      intakeNoAnswers: "明示回答はまだありません。", intakePurpose: "目的: {purpose}", intakeQuestions: "質問数: {asked} / {max}", intakeConsent: "同意: {status}", intakeStopped: "推測によるプロファイル化はせず終了しました。", intakeAnswer: "明示回答", intakeDeclined: "回答なし",
+      intakeNoAnswers: "明示回答はまだありません。", intakePurpose: "目的: {purpose}", intakeQuestions: "質問数: {asked} / {max}", intakeConsent: "同意: {status}", intakeStopped: "推測によるプロファイル化はせず終了しました。", intakeAnswer: "明示回答", intakeDeclined: "回答なし", intakeSkipped: "省略（前提未成立）",
       latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
       yes: "はい", no: "いいえ",
       stCompleted: "ミッション完了", stIncomplete: "未完了", stViolation: "制約違反", stFailed: "失敗", stFalse: "誤った完了", stUnknown: "不明",
@@ -198,6 +198,7 @@
         pendingField: null,
         answers: [],
         declined: [],
+        skipped: [],
         fields: scenario && scenario.intake ? (scenario.intake.fields || []) : [],
       },
       ux: "idle",
@@ -724,10 +725,11 @@
     $("#intake-questions").textContent = t("intakeQuestions", { asked: c.intake.askedQuestions || 0, max: c.intake.maxQuestions || "—" });
     const answerMap = new Map((c.intake.answers || []).map((a) => [a.key, a]));
     const declined = new Set(c.intake.declined || []);
+    const skipped = new Set(c.intake.skipped || []);
     const rows = (c.intake.fields || []).map((field) => {
       const answer = answerMap.get(field.key);
-      const answered = answer ? `✓ ${fmtVal(answer.value)}` : declined.has(field.key) ? `· ${t("intakeDeclined")}` : c.intake.pendingField === field.key ? "…" : "—";
-      return el("li", { class: `intake-row ${answer ? "answered" : declined.has(field.key) ? "declined" : c.intake.pendingField === field.key ? "pending" : ""}` }, [
+      const answered = answer ? `✓ ${fmtVal(answer.value)}` : declined.has(field.key) ? `· ${t("intakeDeclined")}` : skipped.has(field.key) ? `· ${t("intakeSkipped")}` : c.intake.pendingField === field.key ? "…" : "—";
+      return el("li", { class: `intake-row ${answer ? "answered" : declined.has(field.key) ? "declined" : skipped.has(field.key) ? "skipped" : c.intake.pendingField === field.key ? "pending" : ""}` }, [
         el("span", { class: "intake-key", text: field.label || field.key }),
         el("span", { class: "intake-value", text: answered }),
       ]);
@@ -816,6 +818,7 @@
       lines.push("", `**${t("intake")}**`, `- ${t("intakePurpose", { purpose: c.intake.purpose || "—" })}`, `- ${t("intakeQuestions", { asked: c.intake.askedQuestions || 0, max: c.intake.maxQuestions || "—" })}`);
       for (const a of c.intake.answers || []) lines.push(`- ${a.key}: ${fmtVal(a.value)} (${t("intakeAnswer")})`);
       for (const key of c.intake.declined || []) lines.push(`- ${key}: ${t("intakeDeclined")}`);
+      for (const key of c.intake.skipped || []) lines.push(`- ${key}: ${t("intakeSkipped")}`);
       lines.push(`- ${t("intakeStopped")}`);
     }
     lines.push("", `call_id: ${c.id}`, "— Oathra");

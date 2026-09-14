@@ -43,6 +43,11 @@ function semanticChecks(s: Scenario): ValidationIssue[] {
       issues.push({ path: "callee.knowledge.minimum_price", message: "minimum_price exceeds standard_price" });
     }
   }
+  for (const field of s.mission.intake?.startAfter ?? []) {
+    if (!s.mission.require[field] && !s.mission.constraints[field]) {
+      issues.push({ path: "mission.intake.startAfter", message: `startAfter field must be in mission.require or mission.constraints: ${field}` });
+    }
+  }
   return issues;
 }
 

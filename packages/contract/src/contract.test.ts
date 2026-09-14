@@ -53,6 +53,43 @@ describe("defineCall", () => {
       },
     })).toThrow(/duplicate intake field key/);
   });
+
+  it("validates scene dependencies and canonical choices", () => {
+    const c = defineCall({
+      goal: "support.follow_up",
+      require: { confirmed: true },
+      intake: {
+        purpose: "案内を適切にする",
+        consentPrompt: "追加で伺ってもよろしいでしょうか？",
+        startAfter: ["confirmed"],
+        fields: [
+          { key: "need", label: "必要な案内", question: "必要な案内はどちらでしょうか？", choices: ["導入", "請求"] },
+          { key: "detail", label: "詳細", question: "詳細を教えていただけますか？", dependsOn: ["need"] },
+        ],
+      },
+    });
+    expect(c.intake?.startAfter).toEqual(["confirmed"]);
+    expect(c.intake?.fields[0]?.choices).toEqual(["導入", "請求"]);
+    expect(() => defineCall({
+      goal: "x",
+      intake: {
+        purpose: "p",
+        consentPrompt: "c",
+        fields: [{ key: "detail", label: "d", question: "q", dependsOn: ["missing"] }],
+      },
+    })).toThrow(/unknown intake field dependency/);
+    expect(() => defineCall({
+      goal: "x",
+      intake: {
+        purpose: "p",
+        consentPrompt: "c",
+        fields: [
+          { key: "a", label: "a", question: "a", dependsOn: ["b"] },
+          { key: "b", label: "b", question: "b", dependsOn: ["a"] },
+        ],
+      },
+    })).toThrow(/cyclic intake field dependency/);
+  });
 });
 
 describe("checkConstraints", () => {

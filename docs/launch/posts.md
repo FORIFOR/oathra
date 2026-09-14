@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## Scene-aware intake guard — 2026-09-14 19:49 JST
+
+- Added declarative `startAfter`, `dependsOn` and `choices` controls to consented intake. The runtime now waits for scene prerequisites, follows only dependency-ready questions and records a single canonical choice; unmatched, ambiguous or non-answers are never saved.
+- Decision memos now label the explicit-answer section as an operational profile, include utterance IDs and timestamps for verified decisions, and list fields skipped because a dependency was declined. Arena and LLM prompts expose the same boundary.
+- Verification: `pnpm typecheck`, `pnpm test` (**652 passed, 1 skipped credential-gated LiveKit**), scenario validation, `pnpm build`, `pnpm lint:deps`, local package smoke and `git diff --check` passed. `qa:arena` could not start its headless Chrome debugging endpoint (`ECONNREFUSED 127.0.0.1:9333`); no product code failed that check.
+- This is a contract and auditability improvement, not evidence of adoption. GitHub stars, external replies and business inquiries remain separate measurements.
+
 ## Direct feedback link — 2026-09-14 19:32 JST
 
 - Linked the existing [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) directly from both READMEs and the Japanese/English Pages near the intake and evidence demos.

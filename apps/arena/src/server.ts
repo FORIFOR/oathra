@@ -97,6 +97,7 @@ function publicScenario(s: Scenario) {
             consentPrompt: s.mission.intake.consentPrompt,
             maxQuestions: s.mission.intake.maxQuestions,
             stopOnDecline: s.mission.intake.stopOnDecline,
+            ...(s.mission.intake.startAfter?.length ? { startAfter: s.mission.intake.startAfter } : {}),
             fields: s.mission.intake.fields,
           },
         }
