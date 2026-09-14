@@ -8,7 +8,11 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
-### Current product checkpoint — v0.1.11
+### Current product checkpoint — v0.1.12
+
+The scene-aware intake guard is now packaged in the public GitHub release. `startAfter`, `dependsOn` and `choices` keep follow-up questions tied to settled prerequisites and explicit answers; refusal, hold, ambiguity or an unmatched choice stops without saving a guessed profile. The release package and Pages command are aligned at v0.1.12. GitHub stars, external replies and business inquiries remain separate measurements.
+
+### Superseded product checkpoint — v0.1.11
 
 The user-requested follow-up workflow is now implemented as consent-based, contract-declared intake. After the required call details settle, Oathra asks once for permission, asks at most one declared field per turn (default cap three, hard cap eight), stops on decline, hold or an ambiguous reply, and saves only the next explicit callee answer with its utterance ID and timestamp. `intake.json` and `summary.md` make the collected answers, consent provenance and decisions reviewable, so they can form an operational profile from explicit answers. Scenario YAML now carries the same contract into `oathra call`, so local and phone runs share the rule set. The feature does not infer a callee's attributes, collect undeclared or sensitive information, or continue after refusal. The runtime also enforces this boundary when a model emits an early or undeclared optional question. The v0.1.11 asset carries the provisional-confirmation guard alongside the built-in Arena intake mission and recordings: https://github.com/FORIFOR/oathra/releases/tag/v0.1.11; cloned `main` contains the latest intake hardening.
 

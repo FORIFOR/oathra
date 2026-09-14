@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## v0.1.12 public package — 2026-09-14 20:05 JST
+
+- Published the scene-aware consented intake guard from `main` as GitHub Release [v0.1.12](https://github.com/FORIFOR/oathra/releases/tag/v0.1.12). The package includes `startAfter`, `dependsOn`, `choices`, canonical answer matching, and the no-save stop behavior for refusal, hold, ambiguity or unmatched replies.
+- Updated the Japanese and English README, setup/integration guides, existing article sources, launch drafts and Pages command to use the v0.1.12 asset. The 48-second Arena recording remains the same verified simulator demonstration.
+- Validation before publication: typecheck, full test suite, scenario validation, build, site build, dependency lint, package smoke and `git diff --check` passed. CI and Pages completed successfully for the source commit.
+- This makes the latest implementation runnable from a tagged public asset; it is not evidence of adoption. Stars, external replies and business inquiries are still measured separately.
+
 ## Scene-aware intake guard — 2026-09-14 19:49 JST
 
 - Added declarative `startAfter`, `dependsOn` and `choices` controls to consented intake. The runtime now waits for scene prerequisites, follows only dependency-ready questions and records a single canonical choice; unmatched, ambiguous or non-answers are never saved.

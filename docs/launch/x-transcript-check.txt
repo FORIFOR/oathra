@@ -4,8 +4,8 @@ Use this once the account-wide 24-hour spacing has elapsed and the current timel
 
 A phone agent can say "booked" when nobody agreed.
 
-Oathra v0.1.11: consent once; one declared field per turn; stop on decline/hold/ambiguity. Explicit answers → intake.json + summary.md. No inferred profile.
+Oathra v0.1.12: consent once; one declared field per turn; scene-aware branching; stop on decline/hold/ambiguity. Explicit answers → intake.json + summary.md. No inferred profile.
 
 Demo + Star: https://github.com/FORIFOR/oathra
 
-Before publishing, verify the active account timeline, use the current v0.1.11 site and release links, upload the video close to publication, confirm media processing, and record the returned post ID, URL and timestamp in `docs/launch/posts.md`. Do not reuse an older campaign state or send a language duplicate.
+Before publishing, verify the active account timeline, use the current v0.1.12 site and release links, upload the video close to publication, confirm media processing, and record the returned post ID, URL and timestamp in `docs/launch/posts.md`. Do not reuse an older campaign state or send a language duplicate.
