@@ -8,6 +8,7 @@
 - Validation: typecheck, Twilio provider tests (including no-number recovery), full test suite, build, and clean public package smoke test.
 - This fixes first-run friction; it is not evidence of external adoption. Stars and business inquiries remain unmeasured beyond the existing snapshots.
 - Both Zenn source articles now point to v0.1.4 and the current setup guide; the connected Zenn repository will deploy these revisions on push.
+- Current readback at 2026-09-14 03:10 UTC: GitHub 0 stars / 0 forks; X profile shows the latest account post about 9 hours old, so the next Oathra announcement remains deferred until the account-wide 24-hour spacing has elapsed (recheck before publishing).
 
 ## v0.1.3 beginner setup — 2026-09-14 JST
 
