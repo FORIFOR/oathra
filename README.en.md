@@ -9,17 +9,17 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-Run **v0.1.15** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.16** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.15/oathra-0.1.15.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.15). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.16). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
 After trying it, [star the repository](https://github.com/FORIFOR/oathra) to follow updates. Share a real use case or an unexpected judgement in [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) or an [issue](https://github.com/FORIFOR/oathra/issues); remove personal data and private call content first.
 
-**Already building a voice agent?** v0.1.15 adds scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a conservative guard against provisional reservation confirmations. It stops immediately when consent is unclear or the callee signals time pressure. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
+**Already building a voice agent?** v0.1.16 adds scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a unified `ActionProof` model for conversation, confirmation, system and outcome evidence. It keeps provisional reservation confirmations from being treated as completed and stops immediately when consent is unclear or the callee signals time pressure. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
 
 For closed-loop booking or ordering, `oathra/evidence` also exposes `ActionProof`. It compares one expected action across V0 (claimed), V1 (conversation), V2 (authenticated email/SMS/webhook), V3 (authenticated business system) and V4 (reported outcome). Your `VerificationProvider` / `VerificationAdapter` owns provider authentication and connectivity; Oathra deterministically checks freshness, reference IDs and exact fields. No OpenTable, TableCheck or Google Reserve adapter or credential is bundled. [ActionProof integration guide](docs/INTEGRATION.md#verify-an-action-through-external-records-actionproof).
 
@@ -64,8 +64,8 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 
 ```bash
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
-# from the public v0.1.15 asset:
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.15/oathra-0.1.15.tgz oathra setup phone
+# from the public v0.1.16 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz oathra setup phone
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation
@@ -270,7 +270,7 @@ Bugs this harness caught before it went green: thousands separators splitting `2
 
 ## Status
 
-v0.1.15 (released 2026-09-14):
+v0.1.16 (released 2026-09-15):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent

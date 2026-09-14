@@ -2,14 +2,14 @@
 
 [Check your own transcript in the browser](https://forifor.github.io/oathra/en/check.html). No installation or API key. Load the existing model/simulator negotiation or paste your own check JSON. Input stays in the tab; no upload or automatic storage.
 
-Oathra v0.1.15 can check reservation evidence without replacing your carrier, voice model or agent framework. It also guards against provisional, pending-approval and confirmation-needed phrases being treated as completed reservations. Consent-based follow-up intake stops when the callee signals time pressure. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
+Oathra v0.1.16 can check reservation evidence without replacing your carrier, voice model or agent framework. It also exposes `ActionProof`, a single typed model for conversation, authenticated confirmation, system records and outcomes, while guarding against provisional, pending-approval and confirmation-needed phrases being treated as completed reservations. Consent-based follow-up intake stops when the callee signals time pressure. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
 
 ## Install the released SDK and CLI
 
 Node.js 22+:
 
 ```bash
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.15/oathra-0.1.15.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz
 ```
 
 Use the GitHub asset: the npm registry still serves 0.1.0, which does not include this SDK or command. Both `oathra` and `oathra/evidence` export `EvidenceEngine`, `defineCall`, `evaluate` and `verifyTranscript`, with TypeScript declarations. The SDK entry does not load CLI, carrier or model clients.

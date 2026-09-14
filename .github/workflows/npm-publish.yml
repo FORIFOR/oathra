@@ -6,7 +6,7 @@ on:
       tag:
         description: "Git tag to publish (must match packages/cli/package.json)"
         required: true
-        default: "v0.1.15"
+        default: "v0.1.16"
         type: string
 
 permissions:

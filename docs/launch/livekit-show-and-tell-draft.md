@@ -10,11 +10,11 @@ Oathra: verify phone-agent outcomes from the callee's evidence
 
 When a voice agent calls a business, its own “booked” message is not proof that the other party agreed. Oathra is an Apache-2.0 TypeScript runtime and SDK that keeps each decision tied to an utterance from the callee. Completion is decided by deterministic checks, so an offer, hedge or self-assertion does not become a completed booking.
 
-The v0.1.15 release includes a 48-second Arena recording and a runnable scenario:
+The v0.1.16 release includes ActionProof, a 48-second Arena recording and a runnable scenario:
 
 - Demo: https://forifor.github.io/oathra/#intake-video
-- Release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.15
-- Local run (no provider key): `npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.15/oathra-0.1.15.tgz oathra demo`
+- Release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.16
+- Local run (no provider key): `npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz oathra demo`
 
 The same contract can optionally ask for a small amount of follow-up information after the required booking details settle. Oathra asks consent once, asks one contract-declared field per turn, stops on decline, hold or ambiguity, and saves only explicit answers to `intake.json` and `summary.md`. It does not infer a callee profile or collect undeclared or sensitive attributes.
 
