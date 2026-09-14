@@ -403,12 +403,29 @@ async function runStep(step: ProvisionStep): Promise<void> {
 
 export async function setupPhone(flags: Record<string, unknown>): Promise<void> {
   console.log(`\n${bold("Oathra Phone Setup")}`);
-  const engine = await choose("Choose voice engine", engineChoices(), 0);
+  const requestedEngine = typeof flags.engine === "string" ? flags.engine.trim().toLowerCase() : "";
+  const selectedEngine = requestedEngine
+    ? engineChoices().find((choice) => choice.id === requestedEngine || (requestedEngine === "live" && choice.id === "gpt-live"))
+    : undefined;
+  if (requestedEngine && !selectedEngine) {
+    throw new Error(`Unknown voice engine "${requestedEngine}". Use: ${engineChoices().map((choice) => choice.id).join(" | ")}`);
+  }
+  const requestedProvider = typeof flags.provider === "string" ? flags.provider.trim().toLowerCase() : undefined;
+  if (requestedProvider) {
+    const providerIds = buildRegistry().listProviders().map((provider) => provider.id);
+    if (!providerIds.includes(requestedProvider)) throw new Error(`Unknown phone provider "${requestedProvider}". Use: ${providerIds.join(" | ")}`);
+  }
+  const engine = selectedEngine?.id ?? (await choose("Choose voice engine", engineChoices(), 0));
+  if (selectedEngine) console.log(`  ${green("✓")} ${selectedEngine.label} ${dim("(from --engine)")}`);
   await ensureEnvKeys(ENGINE_CREDENTIALS[engine as EngineSpec["id"]] ?? ["OPENAI_API_KEY"]);
   const config = loadPhoneConfig();
   config.voice.engine = engine;
   savePhoneConfig(config);
-  await phoneAdd(undefined, flags);
+  await phoneAdd(requestedProvider || undefined, flags);
+  if (flags["skip-test"] || flags["no-test"]) {
+    console.log(dim("\nSkipped the local test. Run `oathra phone test --level local` when ready."));
+    return;
+  }
   const test = await ask("Run a local test now? (y/N)", { default: "N" });
   if (/^y/i.test(test)) await phoneTest({ level: "local" });
 }

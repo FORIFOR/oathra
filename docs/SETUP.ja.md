@@ -70,6 +70,12 @@ cp .env.example .env
 pnpm oathra setup phone
 ```
 
+選択画面を省略したい場合は、音声エンジンと電話会社を指定できます（APIキーは安全のためマスク入力または `.env` から読み込みます）。
+
+```bash
+pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
+```
+
 公開パッケージを使う場合は、v0.1.11 の GitHub 配布版を明示します。
 
 ```bash

@@ -68,6 +68,12 @@ From a clone:
 pnpm oathra setup phone
 ```
 
+To skip the two choice menus, pin the voice engine and carrier. API keys are still entered through masked prompts or read from `.env`.
+
+```bash
+pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
+```
+
 For the public release package, use the v0.1.11 GitHub asset explicitly:
 
 ```bash

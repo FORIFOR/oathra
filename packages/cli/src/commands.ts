@@ -450,6 +450,7 @@ ${bold("Try it")}
 
 ${bold("Real phone")}
   oathra setup phone                 guided API-key, voice-engine and carrier setup (.env is updated)
+                                     ${dim("--engine gpt-live|realtime|pipeline  --provider twilio|plivo|sip  --skip-test")}
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
