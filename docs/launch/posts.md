@@ -1,5 +1,13 @@
 # Launch posts and publication record
 
+## v0.1.16 ActionProof release — 2026-09-15 03:47 JST
+
+- Published GitHub Release [v0.1.16](https://github.com/FORIFOR/oathra/releases/tag/v0.1.16) from commit [`b0ca6d9`](https://github.com/FORIFOR/oathra/commit/b0ca6d9e0c599b78d6877bb8bb11b1ff7bd79160). The release adds the typed `ActionProof` levels `claimed`, `conversation`, `confirmation`, `system` and `outcome`, with timestamp, reference and conflict checks.
+- Assets are [`oathra-0.1.16.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz) and [`oathra-0.1.16.tgz.sha256`](https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz.sha256). The verified SHA-256 is `601d5013ce5e2e2c81a2a14050961ce267a39f59a336c6d595d935dbba7ac2c2`.
+- `pnpm test` passed with 664 tests and one credential-gated LiveKit test skipped; typecheck, dependency lint, build, site build, X draft validation and CI [34882746433](https://github.com/FORIFOR/oathra/actions/runs/34882746433) passed. A downloaded asset checksum and embedded `oathra@0.1.16` were verified.
+- This is a source and GitHub distribution release. npm remains unpublished because the local session is unauthenticated and the repository has no `NPM_TOKEN` secret; the manual workflow is ready and was not triggered without credentials.
+
+
 ## Discussion #14 synchronized to v0.1.15 — 2026-09-14 21:43 JST
 
 - Updated the existing [GitHub Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) body in place. It now links v0.1.15 and describes the time-pressure stop guard, live profile context and utterance-linked decision memo.
