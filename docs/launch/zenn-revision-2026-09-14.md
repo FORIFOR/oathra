@@ -22,7 +22,7 @@ Zenn公開API `/api/articles?topicname=ai&order=alltime`、`topicname=個人開�
 - 未確認のLLM比較結果、全数値が再現できるという断定、再確認していない現在価格、1行追加で容易に直るという断定を削除。
 - 3回の開発通話、単体入力、ブラウザ反復、1万runのシミュレーションを区別。
 - npmとリポジトリの版の差、ブラウザが接続条件を固定していることを明記。
-- 参照コード・検証記録を f205900 に固定。既存の実操作X動画を使用し、新しい実測・体験談は創作していない。
+- 参照コード・検証記録は現在の `main` に合わせ、既存の実操作X動画を使用し、新しい実測・体験談は創作していない。
 
 ## 改稿前の反響
 
@@ -33,3 +33,7 @@ Zenn公開API `/api/articles?topicname=ai&order=alltime`、`topicname=個人開�
 - ソース：`extract.ts`、`engine.ts`、`evaluate.ts`、`site/src/playground.ts` と照合。
 - [Zenn公式Markdown記法](https://zenn.dev/zenn/articles/markdown-guide)でX埋め込み、表、見出しを確認。
 - アプリコードの変更なし。新しいモック・テストデータ・電話発信なし。
+
+## 公開本文の再確認（2026-09-14 19:10 JST）
+
+GitHub上の原稿は最新の `main` に更新済みだが、公開Zennページはログイン要求を表示し、旧本文・旧コミットリンクを返した。認証情報の入力や外部編集は行っていない。公開反映済みとは扱わず、将来の認証済み読み戻しで確認する。
