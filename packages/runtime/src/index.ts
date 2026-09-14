@@ -78,6 +78,10 @@ const normalizeLine = (t: string) => t.replace(/[\s、。,.!?！？「」]/g, ""
 const INTAKE_YES_RE = /^(?:はい|ええ|そうです|大丈夫(?:です)?|問題(?:ありません|ございません)|もちろん|承知(?:しました|いたしました)?|お願いします|yes|sure|okay|ok|go ahead|sounds good|of course|absolutely)(?:$|[\s、,。.!?！？])/i;
 const INTAKE_NO_RE = /^(?:いいえ|結構です|不要(?:です)?|答えたくありません|お答えできません|控えさせて|遠慮します|やめて|no|not now|rather not|prefer not|i(?:'d| would) rather not|don't want to|do not want to)(?:$|[\s、,。.!?！？])/i;
 const INTAKE_QUESTION_RE = /[?？]|でしょうか|ですか\s*$|\b(?:what|which|who|where|when|why|how|can|could)\b/i;
+// Optional intake must never turn a hold, hedge or non-answer into a profile
+// value. Stop the optional flow rather than repeating the question.
+const INTAKE_HOLD_RE = /少々お待ち|そのままお待ち|お待ちください|確認して(?:まいります|みます)|一旦(?:お待ち|確認)|one moment|hold on|please hold|hold the line|bear with me/i;
+const INTAKE_HEDGE_RE = /少し考え|考え(?:ておき|ます)|たぶん|多分|おそらく|恐らく|かもしれ|わかりません|分かりません|まだ決めて|確認してから|後で(?:お伝え|回答)|not sure|maybe|perhaps|i need to think|let me check/i;
 
 let counter = 0;
 const newId = (prefix: string) => `${prefix}_${Date.now().toString(36)}${(counter++).toString(36)}`;
@@ -478,15 +482,15 @@ export class CallRuntime {
     const field = config.fields.find((candidate) => candidate.key === pending.field);
     if (!field) return;
     const text = turn.text.trim();
-    if (INTAKE_QUESTION_RE.test(text)) {
-      if (this.intakeAskedQuestions >= config.maxQuestions) this.intakeStatus = "complete";
-      return;
-    }
     const declined = INTAKE_NO_RE.test(text) || /答えたく|お答えでき|控えさせ|遠慮させて/i.test(text);
-    if (declined) {
+    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text);
+    if (declined || nonAnswer) {
       this.intakeDeclined.add(field.key);
       this.emit({ type: "intake.answer", field: field.key, declined: true, utteranceId: turn.id });
-      if (config.stopOnDecline) this.intakeStatus = "declined";
+      // A refusal obeys the contract's stopOnDecline setting. A hold,
+      // question or hedge is always a stop: continuing would pressure the
+      // callee or save a value that was never explicitly provided.
+      if (config.stopOnDecline || nonAnswer) this.intakeStatus = "declined";
     } else if (text) {
       const value = text.replace(/[\r\n]+/g, " ").slice(0, 500);
       this.intakeAnswers.push({ key: field.key, label: field.label, value, utteranceId: turn.id, transcript: text, t: turn.t });
