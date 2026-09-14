@@ -17,6 +17,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:deps
+      - name: X announcement draft stays within the platform limit
+        run: node scripts/publish-x-intake.mjs --validate
       - name: Website must build without precompiled workspace packages
         run: pnpm build:site
       - run: pnpm build

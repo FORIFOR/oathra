@@ -17,6 +17,7 @@ const MIN_GAP_MS = 24 * 60 * 60 * 1000;
 
 const args = new Set(process.argv.slice(2));
 const publish = args.has("--publish");
+const validate = args.has("--validate");
 
 function readEnv(path = resolve(ROOT, ".env")) {
   const result = {};
@@ -28,10 +29,7 @@ function readEnv(path = resolve(ROOT, ".env")) {
   return result;
 }
 
-const env = readEnv();
-for (const key of ["X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET"]) {
-  if (!env[key]) throw new Error(`Missing ${key} in .env`);
-}
+let env;
 
 function encode(value) {
   return encodeURIComponent(String(value)).replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
@@ -135,6 +133,16 @@ async function uploadVideo() {
 }
 
 const text = draftText();
+if (validate) {
+  console.log(JSON.stringify({ draft: "docs/launch/x-transcript-check.txt", characters: [...text].length, maxCharacters: 280, valid: [...text].length <= 280 }, null, 2));
+  process.exit(0);
+}
+
+env = readEnv();
+for (const key of ["X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_SECRET"]) {
+  if (!env[key]) throw new Error(`Missing ${key} in .env`);
+}
+
 const { me, tweets } = await accountAndTweets();
 const check = publicationCheck(tweets, text);
 console.log(JSON.stringify({ mode: publish ? "publish" : "check", account: { id: me.id, username: me.username, metrics: me.public_metrics }, ...check }, null, 2));
