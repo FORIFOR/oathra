@@ -417,4 +417,6 @@ publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0�
 
 - Integrated PR #12 (`27b7383`) into `main`, adding conservative detection for provisional, pending-approval and confirmation-needed reservation language plus 500 regression cases.
 - Updated the active README, integration/setup guides, Japanese and English Pages copy, Zenn source articles and outreach drafts to use the v0.1.11 GitHub asset.
-- The GitHub Release and asset upload are the next publication step; no download, star or business-inquiry result is counted until the public asset and checksum are read back.
+- Published GitHub Release: [v0.1.11](https://github.com/FORIFOR/oathra/releases/tag/v0.1.11), targeting `8fede42a8df7568fc6ce67801064b62509fc0bbe`.
+- Assets: [`oathra-0.1.11.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz.sha256). SHA-256: `7b55e925c10df67087da910946a57ec4378fc6039bb614f1c542a48414711d05`; public download and checksum verification passed.
+- Public package smoke passed: the tarball validates and runs `restaurant-reservation-intake` with the two explicit intake answers. CI [34827095040](https://github.com/FORIFOR/oathra/actions/runs/34827095040) and Pages [34827002643](https://github.com/FORIFOR/oathra/actions/runs/34827002643) passed. The X announcement remains scheduled only after the account-wide spacing checkpoint; no duplicate post was sent.
