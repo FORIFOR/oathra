@@ -5,11 +5,13 @@
 - Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.4
 - `oathra setup phone` now waits on a guided Twilio number purchase / verification step and Japan outbound permission instead of aborting after the automatic check reports a missing prerequisite.
 - Piped setup input now fails explicitly when stdin closes before a value, avoiding a successful exit with an incomplete setup.
+- Added `docs/SETUP.en.md` and linked it from the English README and website so the public release has a copy-paste credential guide for international users (`ea7ecd0` → `256d589`).
 - Validation: typecheck, Twilio provider tests (including no-number recovery), full test suite, build, and clean public package smoke test.
 - This fixes first-run friction; it is not evidence of external adoption. Stars and business inquiries remain unmeasured beyond the existing snapshots.
 - Both Zenn source articles now point to v0.1.4 and the current setup guide; the connected Zenn repository will deploy these revisions on push.
 - Current readback at 2026-09-14 03:10 UTC: GitHub 0 stars / 0 forks; X profile shows the latest account post about 9 hours old, so the next Oathra announcement remains deferred until the account-wide 24-hour spacing has elapsed (recheck before publishing).
 - GitHub Discussion #14 (Show and tell), published 2026-09-14 03:14:58 UTC and updated 03:21:34 UTC: https://github.com/FORIFOR/oathra/discussions/14. It asks voice-agent developers which utterances and events they use as booking evidence, links the no-install checker and 25-second walkthrough, and requests only redacted or synthetic transcripts. Public API readback shows 0 comments; treat later replies as feedback, not as adoption by themselves.
+- Latest readback at 2026-09-14 03:24–03:27 UTC: v0.1.4 assets show 2 tarball downloads and 1 checksum download (including our verification); GitHub still shows 0 stars / 0 forks. CI `34802645340` and Pages `34802645353` passed for the English setup rollout; CI `34802739948` passed for the metrics record.
 
 ## v0.1.3 beginner setup — 2026-09-14 JST
 
