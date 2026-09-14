@@ -2,6 +2,16 @@
 
 数値は取得時点の値。取得できない指標は 0 ではなく「未取得」と書く。
 
+## 2026-09-14 14:42 JST（v0.1.8公開後）
+
+- GitHub stars / forks: **0 / 0**。
+- Traffic API: views **6 / 6 uniques**、clones **298 / 121 uniques**。CI・作者・配布確認を含むため、利用者数やスター獲得とはみなさない。
+- v0.1.8 assets: tarball **0**、checksum **0**（公開直後）。tarball SHA-256: `b776ae20583b99bde2e9c5b395e8f28aee57a20aa4220c7a94aae2c8bbbacc6a`。
+- GitHub Discussion #14: maintainer follow-up 2件、外部返信・導入報告はまだない。
+- Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。外部事業相談は未観測。
+- 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま。
+- Raw snapshot: [`2026-09-14-1445-jst.json`](metrics/2026-09-14-1445-jst.json)。
+
 ## 2026-09-13 03:10 JST（基準値）
 
 | 段階 | 指標 | 値 | 取得元 / 備考 |
