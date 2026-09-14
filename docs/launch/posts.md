@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Explicit profile provenance hardening — 2026-09-14 19:02 JST
+
+- The runtime now enforces the intake boundary even when a model emits an optional question too early or names a field outside the contract: it waits for settled required fields, substitutes the next declared question, or removes the optional request. Duplicate consent and field markers are ignored so the callee is not pressured.
+- `intake.json` and `summary.md` now include the consent decision with its utterance ID and timestamp alongside explicit answers. This supports an auditable operational profile from declared answers without inferring attributes or sensitive traits.
+- Commit `79da57c` and the Pages wording update `70aeb41` are public. CI [34830687004](https://github.com/FORIFOR/oathra/actions/runs/34830687004) and Pages [34830817542](https://github.com/FORIFOR/oathra/actions/runs/34830817542) passed. The tagged v0.1.11 asset remains unchanged; cloned `main` contains this hardening.
+
 ## X draft CTA refinement — 2026-09-14 18:44 JST
 
 - The single active X draft now uses the attached intake recording for the demo and links directly to the GitHub repository with `Demo + Star`. The body is 256 characters and passes the publication script's limit check.
