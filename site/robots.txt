@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://forifor.github.io/oathra/sitemap.xml
