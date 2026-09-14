@@ -78,7 +78,8 @@
       dialing: "Dialing…", replaying: "Replaying…", noTranscript: "No transcript.",
       yourMission: "YOUR MISSION", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up",
       foolTitle: "TRY TO FOOL IT", foolHint: "Say one of these as the shop. None of them should count as booked.",
-      mission: "MISSION", evidence: "EVIDENCE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool",
+      mission: "MISSION", evidence: "EVIDENCE", intake: "OPTIONAL INTAKE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool",
+      intakeNoAnswers: "No explicit answers recorded.", intakePurpose: "Purpose: {purpose}", intakeQuestions: "Questions: {asked} / {max}", intakeConsent: "Consent: {status}", intakeStopped: "Stopped without inferring a profile.", intakeAnswer: "explicit answer", intakeDeclined: "declined",
       latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
       yes: "yes", no: "no",
       stCompleted: "MISSION COMPLETE", stIncomplete: "INCOMPLETE", stViolation: "CONSTRAINT VIOLATION", stFailed: "FAILED", stFalse: "FALSE COMPLETION", stUnknown: "UNKNOWN",
@@ -107,7 +108,8 @@
       dialing: "発信中…", replaying: "再生中…", noTranscript: "会話はありません。",
       yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る",
       foolTitle: "誤完了を誘ってみる", foolHint: "店側としてこの中のどれかを言ってみてください。どれも「予約できた」にはならないはずです。",
-      mission: "ミッション", evidence: "証拠", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール",
+      mission: "ミッション", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール",
+      intakeNoAnswers: "明示回答はまだありません。", intakePurpose: "目的: {purpose}", intakeQuestions: "質問数: {asked} / {max}", intakeConsent: "同意: {status}", intakeStopped: "推測によるプロファイル化はせず終了しました。", intakeAnswer: "明示回答", intakeDeclined: "回答なし",
       latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
       yes: "はい", no: "いいえ",
       stCompleted: "ミッション完了", stIncomplete: "未完了", stViolation: "制約違反", stFailed: "失敗", stFalse: "誤った完了", stUnknown: "不明",
@@ -131,6 +133,7 @@
   const TITLE_JA = {
     "restaurant-reservation": "レストラン予約", "impossible-hotel": "無理難題ホテル", "bulk-buy": "まとめ買い交渉",
     "serial-number": "シリアル番号の復唱", "false-completion-trap": "満席の罠", "friend-chat": "友達と雑談",
+    "restaurant-reservation-intake": "レストラン予約・追加の聞き取り",
   };
   const scenarioTitle = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? TITLE_JA[s.id] : (s && s.title) || (s && s.id) || "";
   const scenarioTitleSub = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? s.title : "";
@@ -187,6 +190,16 @@
       transcript: [],       // {turnId, source, text, t}
       evidence: [],         // Evidence objects (by id, updated on verify)
       mission: { verified: [], missing: [], pending: [] },
+      intake: {
+        status: scenario && scenario.intake ? "not_started" : "disabled",
+        purpose: scenario && scenario.intake ? scenario.intake.purpose : "",
+        maxQuestions: scenario && scenario.intake ? scenario.intake.maxQuestions : 0,
+        askedQuestions: 0,
+        pendingField: null,
+        answers: [],
+        declined: [],
+        fields: scenario && scenario.intake ? (scenario.intake.fields || []) : [],
+      },
       ux: "idle",
       speaking: null,
       lastTtfa: null,
@@ -359,6 +372,7 @@
       if (full) {
         c.status = full.status || "done";
         if (full.result) c.result = full.result;
+        if (full.intake) c.intake = full.intake;
         if (full.score) c.score = full.score;
         if (full.metrics) c.metrics = full.metrics;
         if (full.endReason) c.endReason = full.endReason;
@@ -416,6 +430,25 @@
       case "mission.progress":
         c.mission = { verified: ev.verified || [], missing: ev.missing || [], pending: ev.pending || [] };
         break;
+      case "intake.question":
+        c.intake.status = ev.kind === "consent" ? "awaiting_consent" : "active";
+        c.intake.pendingField = ev.field || null;
+        if (ev.kind === "field") c.intake.askedQuestions += 1;
+        break;
+      case "intake.consent":
+        c.intake.status = ev.granted ? "active" : "declined";
+        c.intake.pendingField = null;
+        break;
+      case "intake.answer":
+        c.intake.pendingField = null;
+        if (ev.declined) {
+          if (ev.field && !c.intake.declined.includes(ev.field)) c.intake.declined.push(ev.field);
+          c.intake.status = "declined";
+        } else if (ev.field) {
+          c.intake.answers.push({ key: ev.field, value: ev.value, utteranceId: ev.utteranceId });
+          if (c.intake.answers.length + c.intake.declined.length >= c.intake.fields.length || c.intake.askedQuestions >= c.intake.maxQuestions) c.intake.status = "complete";
+        }
+        break;
       case "brain.response":
         c.thinking = false;
         if (typeof ev.costUsd === "number") c.cost += ev.costUsd;
@@ -469,6 +502,7 @@
     $("#transcript").replaceChildren(el("p", { class: "transcript-empty", text: c.replay ? t("replaying") : t("dialing") }));
     $("#mission-list").replaceChildren();
     $("#evidence-list").replaceChildren();
+    $("#intake-list").replaceChildren();
     missionState.clear();
     $("#evidence-count").textContent = "0";
     $("#result-wrap").hidden = true; $("#result-wrap").replaceChildren();
@@ -493,12 +527,15 @@
     } else {
       $("#fool").hidden = true;
     }
+    $("#intake-panel").hidden = c.intake.status === "disabled";
     renderMission();
+    renderIntake();
   }
 
   function renderAll() {
     renderTranscript();
     renderMission();
+    renderIntake();
     renderEvidence(true);
     renderMetrics();
     renderDrawer();
@@ -517,6 +554,7 @@
       case "agent.speech.started": setSpeaking("agent"); renderTranscript(); break;
       case "transcript.final": case "permission.requested": case "permission.decided": case "error": renderTranscript(); break;
       case "evidence.created": case "evidence.verified": renderEvidence(); renderMission(); break;
+      case "intake.question": case "intake.consent": case "intake.answer": renderIntake(); break;
       case "mission.progress": renderMission(); break;
       case "turn.trace": case "brain.response": renderMetrics(); syncOrb(); break;
       case "call.connected": $("#callee-name").textContent = c.mode === "play" ? t("you") : c.calleeName; break;
@@ -666,6 +704,39 @@
     ul.replaceChildren(...(rows.length ? rows : [el("li", { class: "mrow missing" }, [el("span", { class: "mk", text: "·" }), el("span", { text: t("noRequired") }), el("span")])]));
   }
 
+  function renderIntake() {
+    const c = app.call;
+    const panel = $("#intake-panel");
+    if (!panel || !c || !c.intake || c.intake.status === "disabled") {
+      if (panel) panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const statusLabels = {
+      not_started: LANG === "ja" ? "未開始" : "not started",
+      awaiting_consent: LANG === "ja" ? "同意待ち" : "awaiting consent",
+      active: LANG === "ja" ? "聞き取り中" : "active",
+      declined: LANG === "ja" ? "停止" : "stopped",
+      complete: LANG === "ja" ? "完了" : "complete",
+    };
+    $("#intake-status").textContent = t("intakeConsent", { status: statusLabels[c.intake.status] || c.intake.status });
+    $("#intake-purpose").textContent = t("intakePurpose", { purpose: c.intake.purpose || "—" });
+    $("#intake-questions").textContent = t("intakeQuestions", { asked: c.intake.askedQuestions || 0, max: c.intake.maxQuestions || "—" });
+    const answerMap = new Map((c.intake.answers || []).map((a) => [a.key, a]));
+    const declined = new Set(c.intake.declined || []);
+    const rows = (c.intake.fields || []).map((field) => {
+      const answer = answerMap.get(field.key);
+      const answered = answer ? `✓ ${fmtVal(answer.value)}` : declined.has(field.key) ? `· ${t("intakeDeclined")}` : c.intake.pendingField === field.key ? "…" : "—";
+      return el("li", { class: `intake-row ${answer ? "answered" : declined.has(field.key) ? "declined" : c.intake.pendingField === field.key ? "pending" : ""}` }, [
+        el("span", { class: "intake-key", text: field.label || field.key }),
+        el("span", { class: "intake-value", text: answered }),
+      ]);
+    });
+    const list = $("#intake-list");
+    list.replaceChildren(...(rows.length ? rows : [el("li", { class: "intake-empty", text: t("intakeNoAnswers") })]));
+    $("#intake-note").textContent = c.intake.status === "declined" || c.intake.status === "complete" ? t("intakeStopped") : "";
+  }
+
   function evidenceNode(e, extraClass) {
     return el("li", { class: `erow ${e.verified ? "verified" : ""}${extraClass || ""}`, "data-eid": e.id, "data-verified": String(!!e.verified) }, [
       el("div", { class: "e-top" }, [
@@ -740,6 +811,12 @@
     if (c.metrics && c.metrics.latency) lines.push(`${t("latencyP50", { v: `${c.metrics.latency.ttfaP50Ms ?? "—"} ms` })} · ${t("turns", { n: c.metrics.turns ?? c.transcript.length })}`);
     if (c.score) {
       lines.push("", t("mdScore"), `- ${t("scOutcome")} ${c.score.outcome} · ${t("scEvidence")} ${c.score.evidence} · ${t("scConversation")} ${c.score.conversation} · ${t("scLatency")} ${c.score.latency} · ${t("scEfficiency")} ${c.score.efficiency}`, `- ${t("scOverall")} **${c.score.overall}**`, `- ${c.score.falseCompletion ? t("fc1", { f: (c.score.disagreements || []).join(", ") }) : t("fc0")}`);
+    }
+    if (c.intake && c.intake.status !== "disabled") {
+      lines.push("", `**${t("intake")}**`, `- ${t("intakePurpose", { purpose: c.intake.purpose || "—" })}`, `- ${t("intakeQuestions", { asked: c.intake.askedQuestions || 0, max: c.intake.maxQuestions || "—" })}`);
+      for (const a of c.intake.answers || []) lines.push(`- ${a.key}: ${fmtVal(a.value)} (${t("intakeAnswer")})`);
+      for (const key of c.intake.declined || []) lines.push(`- ${key}: ${t("intakeDeclined")}`);
+      lines.push(`- ${t("intakeStopped")}`);
     }
     lines.push("", `call_id: ${c.id}`, "— Oathra");
     return lines.join("\n");
@@ -848,6 +925,9 @@
       case "brain.response": return `${ev.latencyMs} ms${ev.action ? ` · ${ev.action}` : ""}`;
       case "turn.trace": return `ttfa ${ev.trace && ev.trace.ttfaMs !== undefined ? ev.trace.ttfaMs : "?"} ms`;
       case "mission.progress": return `✓${(ev.verified || []).length} ○${(ev.pending || []).length} ·${(ev.missing || []).length}`;
+      case "intake.question": return ev.kind === "consent" ? t("intakeConsent", { status: LANG === "ja" ? "同意待ち" : "awaiting consent" }) : `${t("intake")} · ${ev.field || "field"}`;
+      case "intake.consent": return `${t("intakeConsent", { status: ev.granted ? (LANG === "ja" ? "同意" : "granted") : (LANG === "ja" ? "拒否" : "declined") })}`;
+      case "intake.answer": return `${ev.field || "field"} · ${ev.declined ? t("intakeDeclined") : t("intakeAnswer")}`;
       case "permission.requested": return `${ev.action}: ${ev.detail}`;
       case "permission.decided": return `${ev.action} ${ev.approved ? "approved" : "denied"} by ${ev.by}`;
       case "call.ended": return ev.reason;
@@ -929,7 +1009,7 @@
     let scenario = app.scenarios.find((s) => s.id === sid);
     if (!scenario) {
       const ct = rec.contract || {};
-      scenario = { id: sid || id, title: ct.goal || id, require: ct.require || {}, constraints: ct.constraints || {}, callee: { name: (ct.target && ct.target.name) || t("partyCallee"), avatar: null }, brief: "" };
+      scenario = { id: sid || id, title: ct.goal || id, require: ct.require || {}, constraints: ct.constraints || {}, ...(ct.intake ? { intake: ct.intake } : {}), callee: { name: (ct.target && ct.target.name) || t("partyCallee"), avatar: null }, brief: "" };
     }
     app.call = newCallModel(scenario, "watch", rec.callId || id);
     app.call.replay = true;
@@ -938,6 +1018,7 @@
     show("call");
     for (const ev of rec.events || []) ingest(ev, true);
     if (rec.result) app.call.result = rec.result;
+    if (rec.intake) app.call.intake = rec.intake;
     if (rec.metrics) app.call.metrics = rec.metrics;
     app.call.status = "done";
     app.call.speaking = null;

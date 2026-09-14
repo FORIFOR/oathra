@@ -1,0 +1,78 @@
+version: 1
+id: restaurant-reservation-intake
+title: Restaurant Reservation · Follow-up intake
+description: Book a table for two, then ask consent for two useful follow-up fields without repeating a question.
+difficulty: normal
+language: ja
+domain: restaurant
+tags: [reservation, intake, consent]
+
+mission:
+  objective: restaurant.reservation
+  brief: 明日19時以降で2名の予約を取った後、同意を得て案内に必要な情報を2点だけ伺ってください。
+  input:
+    date: "2026-09-12"
+    partySize: 2
+    name: 田中
+  require:
+    date: true
+    time: true
+    partySize: true
+    confirmed: true
+  constraints:
+    date: { eq: "2026-09-12" }
+    time: { gte: "19:00" }
+    partySize: { eq: 2 }
+  permissions:
+    ask: true
+    reserve: true
+    share_name: true
+    cancel: false
+    payment: false
+  intake:
+    purpose: 予約後の案内を適切にする
+    consentPrompt: 予約とは別に2点だけ伺ってもよろしいでしょうか？
+    fields:
+      - key: role
+        label: ご担当
+        question: ご担当を教えていただけますか？
+      - key: seating_preference
+        label: 席の希望
+        question: お席の希望はありますか？
+    maxQuestions: 2
+    stopOnDecline: true
+
+callee:
+  persona:
+    name: トラットリア・リンゴ
+    patience: 0.7
+    flexibility: 0.5
+    friendliness: 0.8
+    avatar: ^_^
+  knowledge:
+    now: "2026-09-11T10:00:00+09:00"
+    availability:
+      "18:00": 2
+      "18:30": 1
+      "19:00": 0
+      "19:30": 1
+      "20:00": 3
+    max_party: 6
+    require_name: true
+    intake_consent: true
+    intake_answers:
+      role: 幹事です。
+      seating_preference: 静かな席を希望します。
+  rules:
+    - never confirm a reservation without a name
+    - offer the nearest available slot when the requested one is full
+    - answer optional intake only after giving consent
+
+win:
+  confirmed: true
+  time: { gte: "19:00" }
+
+score:
+  success: 5000
+  latency: 0.1
+  turns: 0.1

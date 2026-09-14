@@ -90,6 +90,17 @@ function publicScenario(s: Scenario) {
     constraints: s.mission.constraints,
     permissions: s.mission.permissions,
     input: s.mission.input,
+    ...(s.mission.intake
+      ? {
+          intake: {
+            purpose: s.mission.intake.purpose,
+            consentPrompt: s.mission.intake.consentPrompt,
+            maxQuestions: s.mission.intake.maxQuestions,
+            stopOnDecline: s.mission.intake.stopOnDecline,
+            fields: s.mission.intake.fields,
+          },
+        }
+      : {}),
     callee: { name: s.callee.persona.name, avatar: s.callee.persona.avatar ?? null },
   };
 }
@@ -190,6 +201,7 @@ export function createArenaServer(opts: ArenaOptions): Server {
             scenario: publicScenario(call.scenario),
             events: call.events,
             ...(call.outcome ? { result: call.outcome.result, metrics: call.outcome.metrics, transcript: call.outcome.transcript, endReason: call.outcome.endReason } : {}),
+            ...(call.outcome ? { intake: call.outcome.intake } : {}),
             ...(call.score ? { score: call.score } : {}),
           });
         }

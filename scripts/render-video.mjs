@@ -15,6 +15,9 @@ const BASE = flag("--base", "http://127.0.0.1:4242");
 const SCENARIO = flag("--scenario", "restaurant-reservation");
 const SKIP_CAPTURE = args.includes("--skip-capture");
 const LANG = flag("--lang", "en");
+const PREFIX = flag("--prefix", "oathra-launch");
+const CAPTURE_PORT = Number(flag("--capture-port", "9341"));
+const RENDER_PORT = Number(flag("--render-port", "9342"));
 const FPS = 30, W = 1920, H = 1080;
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const WORK = resolve("video/.work");
@@ -27,8 +30,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function chrome(port, extra = []) {
   const proc = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--no-default-browser-check", `--user-data-dir=/tmp/oathra-render-${port}`, `--window-size=${W},${H}`, "--hide-scrollbars", "--force-device-scale-factor=1", ...extra, "about:blank"], { stdio: "ignore" });
-  await sleep(1300);
-  const page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === "page");
+  let page;
+  const deadline = Date.now() + 12000;
+  while (!page && Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+      if (response.ok) page = (await response.json()).find((t) => t.type === "page");
+    } catch { /* Chrome is still starting. */ }
+    if (!page) await sleep(250);
+  }
+  if (!page) {
+    proc.kill();
+    throw new Error(`Chrome DevTools did not become ready on port ${port}`);
+  }
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((r) => (ws.onopen = r));
   let id = 0; const pending = new Map();
@@ -46,9 +60,9 @@ async function chrome(port, extra = []) {
 // ---------------------------------------------------------------------------
 async function capture() {
   rmSync(FOOT, { recursive: true, force: true }); mkdirSync(FOOT, { recursive: true });
-  const c = await chrome(9341);
+  const c = await chrome(CAPTURE_PORT);
   await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
-  await c.send("Page.navigate", { url: `${BASE}/?present=1&theme=dark&autostart=${SCENARIO}&mode=watch` });
+  await c.send("Page.navigate", { url: `${BASE}/?present=1&theme=dark&lang=${LANG}&autostart=${SCENARIO}&mode=watch` });
   await sleep(1200);
   const t0 = Date.now();
   const times = [];
@@ -87,10 +101,29 @@ function buildCaptions(footage, arenaStart, arenaLen, speed = 1) {
   const tVerified = find((e) => e.type === "evidence.verified")?.t;
   const tConfirmed = find((e) => e.type === "evidence.verified" && e.evidence?.field === "confirmed")?.t;
   const tResult = find((e) => e.type === "result")?.t;
+  const tConsent = find((e) => e.type === "intake.question" && e.kind === "consent")?.t;
+  const tConsentGranted = find((e) => e.type === "intake.consent" && e.granted === true)?.t;
+  const intakeAnswers = ev.filter((e) => e.type === "intake.answer" && !e.declined);
   const callToWall = 1000; // ms between navigation and call.started, approximate
   // call clock -> scene clock (footage may be played faster than real time)
   const at = (callMs, fallback) => arenaStart + Math.min(arenaLen - 2500, ((callMs ?? fallback) + callToWall) / speed);
-  const caps = (LANG === "ja"
+  const caps = SCENARIO === "restaurant-reservation-intake"
+    ? (LANG === "ja"
+      ? [
+          { at: arenaStart + 600, text: '予約の必須項目が確定した後、<b>同意を一度だけ</b>確認する。' },
+          { at: at(tConsent, 31000) + 200, text: '追加の聞き取りは契約に宣言した項目だけ。' },
+          { at: at(tConsentGranted, 33500) + 250, text: '同意後も<b>1回に1項目</b>。質問を重ねない。' },
+          { at: at(intakeAnswers[0]?.t, 39000) + 300, text: '回答は <b>intake.json</b> に発話ID・時刻付きで残る。' },
+          { at: at(intakeAnswers.at(-1)?.t, 47000) + 500, text: '<b>summary.md</b> に決定事項と追加回答をまとめる。推測はしない。' },
+        ]
+      : [
+          { at: arenaStart + 600, text: 'After the required booking details settle, ask for <b>consent once</b>.' },
+          { at: at(tConsent, 31000) + 200, text: 'Only fields declared in the contract can be asked.' },
+          { at: at(tConsentGranted, 33500) + 250, text: 'With consent: <b>one field per turn</b>, no repeated questions.' },
+          { at: at(intakeAnswers[0]?.t, 39000) + 300, text: 'Explicit answers go to <b>intake.json</b> with utterance IDs.' },
+          { at: at(intakeAnswers.at(-1)?.t, 47000) + 500, text: '<b>summary.md</b> keeps decisions and answers. No inferred profile.' },
+        ])
+    : (LANG === "ja"
     ? [
         { at: arenaStart + 600, text: 'シミュレータでAI同士が電話中。APIキー不要。ミッションは「明日19時以降に<b>2名</b>で予約」。' },
         { at: at(tOffer, 9000) + 300, text: '19時は満席。店側が<b>19時半</b>を提示してきた。' },
@@ -117,7 +150,7 @@ async function renderFrames() {
   rmSync(FRAMES, { recursive: true, force: true }); mkdirSync(FRAMES, { recursive: true });
   const footage = existsSync(join(WORK, "footage.json")) ? JSON.parse(readFileSync(join(WORK, "footage.json"), "utf8")) : { frames: 0, times: [], events: [] };
   const frameFiles = existsSync(FOOT) ? readdirSync(FOOT).filter((f) => f.endsWith(".png")).sort().map((f) => pathToFileURL(join(FOOT, f)).href) : [];
-  const c = await chrome(9342, ["--allow-file-access-from-files"]);
+  const c = await chrome(RENDER_PORT, ["--allow-file-access-from-files"]);
   await c.send("Page.navigate", { url: pathToFileURL(resolve("video/template.html")).href + `?lang=${LANG}` });
   await sleep(2500); // fonts
   const T = await c.evaluate("window.__TIMELINE__");
@@ -154,7 +187,7 @@ async function renderFrames() {
 // ---------------------------------------------------------------------------
 function encode() {
   const sfx = LANG === "en" ? "" : `-${LANG}`;
-  const mp4 = join(OUT, `oathra-launch${sfx}.mp4`), gif = join(OUT, `oathra-launch${sfx}.gif`), poster = join(OUT, `oathra-launch${sfx}-poster.png`), sq = join(OUT, `oathra-launch${sfx}-square.mp4`);
+  const mp4 = join(OUT, `${PREFIX}${sfx}.mp4`), gif = join(OUT, `${PREFIX}${sfx}.gif`), poster = join(OUT, `${PREFIX}${sfx}-poster.png`), sq = join(OUT, `${PREFIX}${sfx}-square.mp4`);
   execSync(`ffmpeg -y -loglevel error -framerate ${FPS} -i ${FRAMES}/f%05d.png -vf "format=yuv420p" -c:v libx264 -preset slow -crf 20 -movflags +faststart ${mp4}`);
   execSync(`ffmpeg -y -loglevel error -ss 7.6 -t 26 -i ${mp4} -vf "fps=10,scale=880:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" ${gif}`);
   execSync(`ffmpeg -y -loglevel error -ss 1.9 -i ${mp4} -frames:v 1 ${poster}`);

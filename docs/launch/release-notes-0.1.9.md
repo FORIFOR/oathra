@@ -8,6 +8,7 @@ v0.1.9 carries consent-based optional intake from a YAML scenario into the same 
 - `contractFromScenario()` now preserves the declared purpose, consent prompt, fields, question cap and stop-on-decline rule.
 - `oathra play ./scenario.yaml` and `oathra call --scenario ./scenario.yaml --to +81...` therefore exercise the same bounded intake contract.
 - Added a scenario conversion test and updated the beginner setup and integration guides.
+- Added the built-in `restaurant-reservation-intake` Arena mission with an intake panel, plus Japanese and English recordings of the real simulator path.
 
 ## Safety and scope
 

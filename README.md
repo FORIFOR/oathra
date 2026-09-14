@@ -19,6 +19,8 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.9/o
 [インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
 
 <p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>
+追加の聞き取りを実際に見るなら、[48秒の Arena 録画](https://forifor.github.io/oathra/#intake-video)と [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml)を確認できます。
+
 <p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a></p>
 
 ## これは何か
@@ -51,6 +53,7 @@ pnpm install && pnpm build
 pnpm demo                                      # http://localhost:4242 で AI 同士の電話が始まる
 
 pnpm oathra play restaurant-reservation        # 同じ通話をターミナルで
+pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # 同意付き追加聞き取り
 pnpm oathra play impossible-hotel --fast       # 仮想時計で一瞬
 pnpm oathra eval                               # 全シナリオと誤完了の数
 pnpm oathra eval --adversarial 10000           # 意地悪な店員1万通り（14 種の変異: 仮押さえ、聞き返し、確定後の取り消し、留守電、転送、方言 …）

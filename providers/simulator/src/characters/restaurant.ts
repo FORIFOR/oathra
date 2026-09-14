@@ -8,6 +8,9 @@ type Knowledge = {
   max_party?: number;
   require_name?: boolean;
   now?: string;
+  /** Explicit answers used only by scenarios that demonstrate consented intake. */
+  intake_consent?: boolean | string;
+  intake_answers?: Record<string, string>;
 };
 
 /**
@@ -31,6 +34,8 @@ export class RestaurantCharacter implements CalleeCharacter {
   private askedName = false;
   private confirmed = false;
   private fullAsks = 0;
+  private intakeConsent: boolean | undefined;
+  private readonly intakeAnswered = new Set<string>();
 
   constructor(private readonly scenario: Scenario) {
     this.name = scenario.callee.persona.name;
@@ -40,6 +45,8 @@ export class RestaurantCharacter implements CalleeCharacter {
       ...(k.closed_dates ? { closed_dates: k.closed_dates } : {}),
       max_party: k.max_party ?? 8,
       require_name: k.require_name ?? true,
+      ...(k.intake_consent !== undefined ? { intake_consent: k.intake_consent } : {}),
+      ...(k.intake_answers ? { intake_answers: k.intake_answers } : {}),
     };
     this.now = k.now ? new Date(k.now) : new Date();
     this.patience = scenario.callee.persona.patience;
@@ -84,6 +91,26 @@ export class RestaurantCharacter implements CalleeCharacter {
 
     if (dates[0]) this.date = dates[0];
     if (parties[0]) this.party = parties[0];
+
+    // Intake is opt-in and scenario-declared. The scripted character supplies
+    // only the explicit values configured by the scenario so the Arena can
+    // demonstrate the same runtime path used by a real callee.
+    const intake = this.scenario.mission.intake;
+    if (intake) {
+      if (this.intakeConsent === undefined && text.includes(intake.consentPrompt)) {
+        const configured = this.k.intake_consent;
+        this.intakeConsent = configured === true || typeof configured === "string";
+        return { text: typeof configured === "string" ? configured : this.intakeConsent ? "はい、お願いします。" : "結構です。" };
+      }
+      if (this.intakeConsent) {
+        const field = intake.fields.find((candidate) => text.includes(candidate.question));
+        if (field && !this.intakeAnswered.has(field.key)) {
+          this.intakeAnswered.add(field.key);
+          const answer = this.k.intake_answers?.[field.key];
+          return { text: answer ?? "結構です。" };
+        }
+      }
+    }
 
     // Goodbye
     if (GOODBYE_RE.test(text) && !/[?？]/.test(text)) {

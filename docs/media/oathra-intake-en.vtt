@@ -1,0 +1,16 @@
+WEBVTT
+
+00:08.200 --> 00:13.000
+After the required booking details settle, ask consent once.
+
+00:22.000 --> 00:22.700
+Only fields declared in the contract can be asked.
+
+00:22.700 --> 00:24.200
+With consent: one field per turn, no repeated questions.
+
+00:24.200 --> 00:25.900
+Explicit answers go to intake.json with utterance IDs.
+
+00:25.900 --> 00:31.000
+summary.md keeps decisions and answers. No inferred profile.

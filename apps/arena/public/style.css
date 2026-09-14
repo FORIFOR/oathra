@@ -314,6 +314,18 @@ body.present .party-orb { inset: 4px; }
 .panels { display: grid; grid-template-columns: 1fr 1fr; }
 .panel { padding: 14px 16px; min-width: 0; }
 .panel + .panel { border-left: 1px solid var(--line); }
+.intake-panel { grid-column: 1 / -1; border-top: 1px solid var(--line); border-left: 0; }
+.intake-meta { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 11px; }
+.intake-purpose { margin: 5px 0 8px; color: var(--ink-2); font-size: 12px; }
+.intake-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px; }
+.intake-row { display: flex; justify-content: space-between; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 8px; font-size: 12px; }
+.intake-row .intake-key { color: var(--ink-2); }
+.intake-row .intake-value { font-family: var(--mono); color: var(--muted); text-align: right; }
+.intake-row.answered .intake-value { color: var(--ok); }
+.intake-row.pending .intake-value { color: var(--accent-ink); }
+.intake-row.declined .intake-value { color: var(--muted); }
+.intake-empty, .intake-note { margin: 0; color: var(--muted); font-size: 12px; }
+.intake-note { margin-top: 7px; }
 .panel-title { font-size: 11px; letter-spacing: 0.16em; color: var(--muted); margin: 0 0 10px; font-weight: 500; }
 .panel-title .count { color: var(--ink); margin-left: 6px; }
 .mission-list, .evidence-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -489,6 +501,7 @@ body.present .transcript { max-height: 300px; min-height: 300px; }
 body.present .panels { height: 330px; }
 body.present .panel { overflow: hidden; }
 body.present .evidence-list { max-height: 262px; overflow: hidden; }
+body.present .intake-list { max-height: 106px; overflow: hidden; }
 body.present .result-wrap {
   position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
   padding: 0; border: 0; background: rgba(12, 11, 9, 0.62); backdrop-filter: blur(6px);
