@@ -6,6 +6,7 @@
 - Updated the Japanese and English README, setup/integration guides, existing article sources, launch drafts and Pages command to use the v0.1.12 asset. The 48-second Arena recording remains the same verified simulator demonstration.
 - Validation before publication: typecheck, full test suite (**653 passed, 1 skipped credential-gated LiveKit**), scenario validation, build, site build, dependency lint, package smoke and `git diff --check` passed. CI [34836228259](https://github.com/FORIFOR/oathra/actions/runs/34836228259) and Pages [34836228257](https://github.com/FORIFOR/oathra/actions/runs/34836228257) completed successfully for the source commit. The public tarball was downloaded and its hash matched the release checksum.
 - This makes the latest implementation runnable from a tagged public asset; it is not evidence of adoption. Stars, external replies and business inquiries are still measured separately.
+- External-signal readback at 20:05 JST remains **0 stars / 0 forks**, with 9 repository views / 9 unique visitors and no external issue or business inquiry. The new v0.1.12 assets were at 0 downloads immediately after publication; the public tarball was fetched and checksum-verified by the maintainer. Raw snapshot: [metrics/2026-09-14-2008-jst.json](metrics/2026-09-14-2008-jst.json).
 
 ## Scene-aware intake guard — 2026-09-14 19:49 JST
 
