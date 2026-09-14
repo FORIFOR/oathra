@@ -6,7 +6,8 @@
 - `mission.intake` is now accepted in scenario YAML and carried into the `CallContract` used by both `oathra play` and `oathra call --scenario ./my-scenario.yaml`.
 - Local validation passed: build, typecheck, 148 tests with one credential-gated live test skipped, and `git diff --check`.
 - Main CI `34811155009` passed: dependency check, build, tests, scenario validation, false-completion eval, 10,000-run adversarial eval and package smoke.
-- A new GitHub Release asset is required before external users receive this path; release notes: [v0.1.9](release-notes-0.1.9.md).
+- Published GitHub Release: [v0.1.9](https://github.com/FORIFOR/oathra/releases/tag/v0.1.9), targeting `ecc43eec`. Assets: [oathra-0.1.9.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz.sha256). SHA-256: `f9085ce1aa7be04eee6c4ed03ea222f9e882a90e871f3dc6935386a45408eaf5`; downloaded asset and checksum verification passed.
+- Release notes: [v0.1.9](release-notes-0.1.9.md). npm remains at 0.1.0 until the real `NPM_TOKEN` is configured.
 
 ## v0.1.8 intake non-answer hardening — 2026-09-14 JST
 
