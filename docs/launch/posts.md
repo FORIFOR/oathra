@@ -1,5 +1,15 @@
 # Launch posts and publication record
 
+## v0.1.3 beginner setup — 2026-09-14 JST
+
+- Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.3
+- Source: `b3b5819` (`feat(cli): guide API credentials during phone setup`)
+- `oathra setup phone` now asks for the selected engine's keys, adds LiveKit credentials for Plivo / Custom SIP, masks secrets in a TTY, and prints provider key URLs.
+- Twilio's auto-selected voice number is persisted as the configured `from`, so leaving the number prompt blank no longer makes the route unusable.
+- `.env.example`, `oathra doctor`, `phone list`, and the Japanese setup guide now describe the complete first-run path and staged costs.
+- Validation: 138 tests passed (1 live test skipped), typecheck, dependency check, site build, source CLI smoke test, and a clean install from the v0.1.3 tarball.
+- This is an onboarding improvement, not evidence of external adoption. Stars and business inquiries remain unmeasured beyond the existing snapshots.
+
 ## Transcript browser trial — 2026-09-14 JST
 
 - Source: `aed1fe9df4af2e1edc727b8b47df69e4abba7307`; caption fix: `6c72d07ae83420e6ab2614dcb26e86201ba8b860`.
