@@ -5,6 +5,11 @@
 - The read-only X API check succeeded on retry for `@forifori_dev`; the active v0.1.12 draft is valid, duplicate-free and still ineligible until **2026-09-15 15:13:19 JST** because the latest original status is `2099380959384899784`.
 - No media upload or post was attempted before the 24-hour window. The first read-only request returned a transient HTTP 503 and was retried successfully; it did not change the publication state.
 
+## External signal checkpoint — 2026-09-14 20:13 JST
+
+- GitHub remains at **0 stars / 0 forks**, with 9 views / 9 unique visitors in the available 14-day window. No external issue or business inquiry is observed; Zenn remains 1 like / 0 comments for the launch article and 0 / 0 for the evidence article.
+- The v0.1.12 assets report 0 downloads immediately after release publication. The count is not treated as usage because the public package was just verified by the maintainer. Raw snapshot: [metrics/2026-09-14-continue.json](metrics/2026-09-14-continue.json).
+
 ## v0.1.12 public package — 2026-09-14 20:05 JST
 
 - Published the scene-aware consented intake guard from `main` as GitHub Release [v0.1.12](https://github.com/FORIFOR/oathra/releases/tag/v0.1.12). Assets are [`oathra-0.1.12.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz) and its [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz.sha256); the tarball hash is `cf00fb58ca6e2b7d77aeee52fde3eb1141b283b4524976f926097a571c58f2c0`. The package includes `startAfter`, `dependsOn`, `choices`, canonical answer matching, and the no-save stop behavior for refusal, hold, ambiguity or unmatched replies.
