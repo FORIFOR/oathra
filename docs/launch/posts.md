@@ -7,6 +7,7 @@
 - Piped setup input now fails explicitly when stdin closes before a value, avoiding a successful exit with an incomplete setup.
 - Validation: typecheck, Twilio provider tests (including no-number recovery), full test suite, build, and clean public package smoke test.
 - This fixes first-run friction; it is not evidence of external adoption. Stars and business inquiries remain unmeasured beyond the existing snapshots.
+- Both Zenn source articles now point to v0.1.4 and the current setup guide; the connected Zenn repository will deploy these revisions on push.
 
 ## v0.1.3 beginner setup — 2026-09-14 JST
 

@@ -97,7 +97,7 @@ const constraints = checkConstraints(contract.constraints, values);
 
 | 検証 | 確認できた範囲 |
 | --- | --- |
-| 自動テスト | 138件合格。ライブ接続テスト1件はスキップ |
+| 自動テスト | 139件合格。ライブ接続テスト1件はスキップ |
 | 敵対的シミュレーション | 用意した発言変異1万runで誤完了0。実電話の成功率ではない |
 | ブラウザの操作 | 英語の確定・取り消しなどを10回反復し、30項目の確認を通過 |
 | 実電話 | 上記3回の開発記録。実電話100件の業務評価は未実施 |
@@ -106,11 +106,11 @@ const constraints = checkConstraints(contract.constraints, values);
 
 現段階は、動きを見せて技術的な相談ができる段階です。有償PoCを受けられることや、本番運用に対応済みであることは宣言していません。そこには、実電話での評価、障害時の扱い、データの保持・削除などの確認が残っています。
 
-v0.1.2の追加確認は[リリース検証記録](https://github.com/FORIFOR/oathra/blob/main/docs/launch/release-notes-0.1.2.md)に記載しています。
+v0.1.4のセットアップ修正は[リリースノート](https://github.com/FORIFOR/oathra/releases/tag/v0.1.4)に、導入手順は[初心者向けセットアップ](https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.ja.md)に記載しています。
 
 ## 自分の音声AIでも使う
 
-v0.1.2では、電話基盤を移行せずに判定だけを使えるようにしました。`oathra verify`に手元の文字起こしを渡す方法と、`oathra/evidence`からTypeScriptで読み込む方法があります。APIキーは不要です。[入力形式・導入手順・LiveKit接続例](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)を公開しています。LiveKit接続例は型を検査した段階で、実セッションは未検証です。
+v0.1.4では、電話基盤を移行せずに判定だけを使えるようにしました。`oathra verify`に手元の文字起こしを渡す方法と、`oathra/evidence`からTypeScriptで読み込む方法があります。APIキーは不要です。[入力形式・導入手順・LiveKit接続例](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)を公開しています。LiveKit接続例は型を検査した段階で、実セッションは未検証です。
 
 [ブラウザで自分のログを検証するページ](https://forifor.github.io/oathra/check.html)も追加しました。インストールせずに、次の3操作で試せます。
 
@@ -129,9 +129,9 @@ v0.1.2では、電話基盤を移行せずに判定だけを使えるように�
 ローカルの対話デモは、Node.js 22以上で起動できます。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.4/oathra-0.1.4.tgz oathra demo
 ```
 
-これはAPIキー不要のローカルデモです。実電話には別途、電話・音声サービスの設定が必要です。上のコマンドはGitHubのv0.1.2配布版を使います。npmレジストリの版は0.1.0です。
+これはAPIキー不要のローカルデモです。実電話には別途、電話・音声サービスの設定が必要です。上のコマンドはGitHubのv0.1.4配布版を使います。npmレジストリの版は0.1.0です。
 
 https://github.com/FORIFOR/oathra
