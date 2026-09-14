@@ -6,6 +6,8 @@ The user explicitly selected this sequence: (1) focus on developers already buil
 
 Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not spend another cycle rebuilding the demo or expanding features without an actual reported need. The existing hourly heartbeat `oathra` now explicitly follows these four steps. It stays quiet when the state is unchanged and no duplicate automation was created.
 
+The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
+
 ### Current product checkpoint — v0.1.11
 
 The user-requested follow-up workflow is now implemented as consent-based, contract-declared intake. After the required call details settle, Oathra asks once for permission, asks at most one declared field per turn (default cap three, hard cap eight), stops on decline, hold or an ambiguous reply, and saves only the next explicit callee answer with its utterance ID and timestamp. `intake.json` and `summary.md` make the collected answers and decisions reviewable. Scenario YAML now carries the same contract into `oathra call`, so local and phone runs share the rule set. The feature does not infer a profile, collect undeclared or sensitive attributes, or continue after refusal. The v0.1.11 asset also carries the provisional-confirmation guard alongside the built-in Arena intake mission and recordings: https://github.com/FORIFOR/oathra/releases/tag/v0.1.11.

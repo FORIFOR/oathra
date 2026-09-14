@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## Local demo parity fix — 2026-09-14 18:34 JST
+
+- `pnpm build:site` now synchronizes newly recorded files from `docs/media/` into the ignored `site/media/` directory used by a local preview. Before this fix, the Pages assembly copied the intake videos but a fresh local build returned 404 for them.
+- The build now makes the Japanese and English intake recordings available locally without changing the Pages deployment path. CI also asserts both files exist after the site build.
+- Verification: local `site/media/oathra-intake.mp4` and `oathra-intake-ja.mp4` are present and served by the local preview; public Pages returns HTTP 200 for both assets. CI [34828581643](https://github.com/FORIFOR/oathra/actions/runs/34828581643) and Pages [34828581694](https://github.com/FORIFOR/oathra/actions/runs/34828581694) passed.
+- This improves first-run/demo reliability; it does not count as external adoption. GitHub stars remain measured separately.
+
 ## Old release path redirected — 2026-09-14 18:00 JST
 
 - GitHub's popular-path API showed a visit to the older `v0.1.2` release page. Its existing body was preserved and a superseded-release notice was added at the top, linking to the current [v0.1.10 release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.10).
