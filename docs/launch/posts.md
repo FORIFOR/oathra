@@ -6,6 +6,7 @@
 - `saveCall()` now writes `summary.md` next to the machine-readable result, evidence and transcript files. The memo lists verified decisions, missing fields, utterance evidence, confidence, turn count and end reason.
 - Public README now states that Oathra does not infer callee attributes or collect information outside the declared call purpose.
 - Both published Zenn source articles now explain the same privacy boundary; the launch article also documents the new `summary.md` decision memo.
+- Japanese and English Pages now expose the same `summary.md` and no-profile boundary in a dedicated scope section; Pages deployment `34805586104` passed and both public routes were read back successfully.
 - GitHub Discussion #14 follow-up posted once at 2026-09-14 04:13:31 UTC: https://github.com/FORIFOR/oathra/discussions/14#discussioncomment-18428510. It requests feedback on a consent-based, contract-declared intake extension and asks for redacted or synthetic transcripts only.
 - CI: https://github.com/FORIFOR/oathra/actions/runs/34805074437 — success. This update has not yet been packaged as a new tagged release.
 
