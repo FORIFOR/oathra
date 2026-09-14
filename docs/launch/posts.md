@@ -1,14 +1,21 @@
 # Launch posts and publication record
 
+## v0.1.14 purpose disclosure release — 2026-09-14 21:16 JST
+
+- Published the consent-transparency improvement as GitHub Release [v0.1.14](https://github.com/FORIFOR/oathra/releases/tag/v0.1.14), targeting commit [`c2f37f5`](https://github.com/FORIFOR/oathra/commit/c2f37f576961013f0afd6d1568eef19f32990bd3). The runtime now states the declared intake purpose before asking consent; an explicitly purpose-bearing `consentPrompt` is not duplicated. Brain-kit, GPT-Live and OpenAI Realtime use the same rendered line.
+- Assets are [`oathra-0.1.14.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.14/oathra-0.1.14.tgz) and its [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.14/oathra-0.1.14.tgz.sha256); the tarball hash is `28d65639350bfd0068e07daef65d97ceffc4b7b8397adf31450e5301326f89df`.
+- Downloaded the public asset, verified its checksum and embedded `oathra@0.1.14`, then ran the public tarball against `restaurant-reservation-intake`; it returned `completed`, `intake: complete`, both declared answers and 14 turns. The local run speaks the purpose before the consent line and writes the same `intake.json` / `summary.md` records.
+- CI [34842369121](https://github.com/FORIFOR/oathra/actions/runs/34842369121) and Pages [34842369178](https://github.com/FORIFOR/oathra/actions/runs/34842369178) passed. Fresh metrics remain **0 stars / 0 forks**, 9 views / 9 unique visitors, no external issue or business inquiry; v0.1.14 assets were at 0 downloads immediately after publication. Raw snapshot: [metrics/2026-09-14-2118-jst.json](metrics/2026-09-14-2118-jst.json).
+
 ## Public funnel smoke check — 2026-09-14 21:03 JST
 
-- Japanese and English Pages routes, `portfolio.js`, the v0.1.13 release links and the intake/evidence video assets returned HTTP 200.
+- Japanese and English Pages routes, `portfolio.js`, the v0.1.14 release links and the intake/evidence video assets returned HTTP 200.
 - The private business-inquiry endpoint accepted a Pages-origin CORS preflight with HTTP 204 and `Access-Control-Allow-Origin: https://forifor.github.io`. No inquiry was submitted and no test lead was created.
 
 ## X gate reliability — 2026-09-14 21:00 JST
 
 - The publication helper now retries transient 429/5xx failures for idempotent account, timeline and media-status reads with bounded backoff. Upload and tweet POSTs remain non-retried to avoid duplicate publication (`scripts/publish-x-intake.mjs`).
-- `--validate` still reports a 279-character draft. A live readback succeeded after the earlier transient 503: the draft is duplicate-free and remains eligible after **2026-09-15 20:20:30 JST**.
+- `--validate` still reports a 279-character v0.1.14 draft. A live readback succeeded after the earlier transient 503: the draft is duplicate-free and remains eligible after **2026-09-15 20:20:30 JST**.
 
 ## v0.1.13 public package — 2026-09-14 20:57 JST
 
