@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Phone readiness readback — 2026-09-15 03:50 JST
+
+- `pnpm oathra phone doctor` confirmed the configured Twilio account is authenticated and active, the caller ID is owned and voice-capable, and GPT-Live is ready. The media endpoint still requires a live call or a public WebSocket URL.
+- No call was placed: a real PSTN run needs a consented recipient and an agreed budget. This readback is setup readiness, not a phone success result or external-user signal.
+
 ## v0.1.16 ActionProof release — 2026-09-15 03:47 JST
 
 - Published GitHub Release [v0.1.16](https://github.com/FORIFOR/oathra/releases/tag/v0.1.16) from commit [`b0ca6d9`](https://github.com/FORIFOR/oathra/commit/b0ca6d9e0c599b78d6877bb8bb11b1ff7bd79160). The release adds the typed `ActionProof` levels `claimed`, `conversation`, `confirmation`, `system` and `outcome`, with timestamp, reference and conflict checks.
