@@ -1,5 +1,11 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
+<p align="center">
+  <a href="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/FORIFOR/oathra/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FORIFOR/oathra?display_name=tag&sort=semver"></a>
+  <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+</p>
+
 修正版 **v0.1.4** を起動（Node.js 22以上、APIキー不要）：
 
 ```bash

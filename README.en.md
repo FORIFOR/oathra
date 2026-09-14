@@ -3,6 +3,12 @@
   Give AI agents a phone — and proof of what happened.
 </p>
 
+<p align="center">
+  <a href="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/FORIFOR/oathra/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FORIFOR/oathra?display_name=tag&sort=semver"></a>
+  <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+</p>
+
 Run **v0.1.4** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
