@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Direct feedback link — 2026-09-14 19:32 JST
+
+- Linked the existing [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) directly from both READMEs and the Japanese/English Pages near the intake and evidence demos.
+- Public Pages readback confirmed both language links after deployment. No new discussion or duplicate promotion was created.
+- This measures feedback-entry friction, not adoption; stars and external replies remain separate signals.
+
 ## Release page onboarding clarification — 2026-09-14 19:26 JST
 
 - Updated the public [v0.1.11 release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.11) to distinguish the immutable tagged asset's 648-test validation from the current `main` branch's 649-test intake provenance hardening.
