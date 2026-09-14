@@ -1,5 +1,13 @@
 # Launch posts and publication record
 
+## Decision memo update — 2026-09-14 JST
+
+- Source: `51c1e37` (`feat(replay): add human-readable decision memo`), pushed to `main`.
+- `saveCall()` now writes `summary.md` next to the machine-readable result, evidence and transcript files. The memo lists verified decisions, missing fields, utterance evidence, confidence, turn count and end reason.
+- Public README now states that Oathra does not infer callee attributes or collect information outside the declared call purpose.
+- GitHub Discussion #14 follow-up posted once at 2026-09-14 04:13:31 UTC: https://github.com/FORIFOR/oathra/discussions/14#discussioncomment-18428510. It requests feedback on a consent-based, contract-declared intake extension and asks for redacted or synthetic transcripts only.
+- CI: https://github.com/FORIFOR/oathra/actions/runs/34805074437 — success. This update has not yet been packaged as a new tagged release.
+
 ## v0.1.4 setup recovery — 2026-09-14 JST
 
 - Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.4
