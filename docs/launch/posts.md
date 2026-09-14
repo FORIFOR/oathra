@@ -15,6 +15,11 @@
 - Ran `oathra setup phone --help` and `oathra phone doctor --help` from the public v0.1.15 GitHub Release tarball with no credentials. Both commands started and listed the guided API-key, carrier, gateway, engine and staged-test paths.
 - This confirms the documented setup entry points are present in the public asset; it does not claim that a provider account, phone number or paid PSTN test was configured.
 
+## Existing distribution PRs synchronized — 2026-09-14 22:00 JST
+
+- Updated the open listings in [awesome-ai-agents-2026#570](https://github.com/caramaschiHG/awesome-ai-agents-2026/pull/570), [Awesome-AI-Agents#486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) and [awesome-voice-agents#42](https://github.com/yzfly/awesome-voice-agents/pull/42) in place.
+- Each now points to the current v0.1.15 GitHub Release and direct no-API-key command, and describes the consented, scene-aware follow-up guard and 48-second recording. No new listing or unsolicited message was created; all three PRs remain open pending maintainer review.
+
 ## v0.1.15 intake pacing and live-context release — 2026-09-14 21:36 JST
 
 - Added a time-pressure stop guard for optional intake. Japanese and English phrases indicating that the callee is busy, in a hurry or cannot talk now end the follow-up flow without saving a guessed profile value or repeating the question.
