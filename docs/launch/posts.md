@@ -65,7 +65,7 @@
 
 ## X draft CTA refinement — 2026-09-14 18:44 JST
 
-- The single active X draft now uses the attached intake recording for the demo and links directly to the GitHub repository with `Demo + Star`. The body is 256 characters and passes the publication script's limit check.
+- The single active X draft now uses the attached intake recording for the demo and links directly to the GitHub repository with `Demo + Star`. The v0.1.12 body is 279 characters and passes the publication script's limit check.
 - The read-only account check still reports `duplicate: false` and the next eligible time as **2026-09-15 15:13:19 JST**. No upload or post was made before that interval.
 
 ## External signal checkpoint — 2026-09-14 18:40 JST
