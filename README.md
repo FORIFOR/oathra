@@ -14,6 +14,8 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.10/
 
 [GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.10)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
 
+動作確認後も更新を追跡するなら、[GitHubでStar](https://github.com/FORIFOR/oathra)を付けてください。実際の用途や判定の問題は[Discussion](https://github.com/FORIFOR/oathra/discussions)または[Issue](https://github.com/FORIFOR/oathra/issues)で共有できます（個人情報・通話内容は除いてください）。
+
 **すでに音声AIを作っている方へ：** v0.1.10では完了判定と同意付きの追加聞き取りを組み込めます。明確な同意がない場合は任意聞き取りをその場で終了します。シナリオYAMLの `mission.intake` も実電話へ引き継げます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
 
 [インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
