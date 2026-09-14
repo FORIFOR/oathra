@@ -66,7 +66,7 @@ const contract = defineCall({
 });
 ```
 
-同意後の回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に、質問項目・回答・発話ID・時刻を含めて保存します。契約に `intake` がなければ、この追加質問は発生しません。
+同意後の回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に、質問項目・回答・発話ID・時刻を含めて保存します。同意の可否も発話ID・時刻付きで記録するため、業務上の明示回答プロファイルと決定事項を後から監査できます。契約に `intake` がなければ、この追加質問は発生しません。
 
 シナリオをYAMLで管理する場合は、同じブロックを `mission.intake` に置きます。`oathra play ./my-scenario.yaml` でローカル確認した設定を、そのまま `oathra call --scenario ./my-scenario.yaml --to +81...` の実電話へ渡せます。
 

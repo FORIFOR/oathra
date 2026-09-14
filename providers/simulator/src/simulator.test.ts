@@ -127,10 +127,55 @@ describe("scripted agent vs scripted characters", () => {
       ["role", "ソフトウェア開発です。"],
       ["region", "東京です。"],
     ]);
+    expect(o.intake.consent).toMatchObject({ granted: true, utteranceId: expect.any(String), t: expect.any(Number) });
     expect(dialogue).toContain("追加で2点だけ伺ってもよろしいでしょうか？");
     expect(dialogue).toContain("ご担当を教えていただけますか？");
     expect(dialogue).toContain("お住まいの地域を教えていただけますか？");
     expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(2);
+  });
+
+  it("keeps an early model intake prompt out of the call until required fields settle", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const consentPrompt = "追加で1点だけ伺ってもよろしいでしょうか？";
+    const contract = defineCall({
+      ...base,
+      intake: {
+        purpose: "予約後の案内を適切にする",
+        consentPrompt,
+        fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+        maxQuestions: 1,
+      },
+    });
+    const normal = new ScriptedAgent();
+    let firstTurn = true;
+    const brain = {
+      name: "early-intake-test",
+      respond: async (ctx: Parameters<typeof normal.respond>[0]) => {
+        if (firstTurn) {
+          firstTurn = false;
+          return { text: consentPrompt, intakeQuestion: { kind: "consent" as const } };
+        }
+        return normal.respond(ctx);
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast" }),
+      brain,
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    const consentEvents = o.events.filter((event) => event.type === "intake.question" && event.kind === "consent");
+    expect(consentEvents).toHaveLength(1);
+    const firstConsent = consentEvents[0]!;
+    const priorProgress = o.events
+      .filter((event) => event.type === "mission.progress" && event.seq < firstConsent.seq)
+      .at(-1);
+    expect(priorProgress?.type).toBe("mission.progress");
+    if (priorProgress?.type === "mission.progress") expect(priorProgress.missing).toEqual([]);
+    expect(o.transcript[1]?.text).not.toBe(consentPrompt);
   });
 
   it("stops optional intake immediately when the callee declines consent", async () => {
@@ -167,6 +212,7 @@ describe("scripted agent vs scripted characters", () => {
     const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
     expect(o.result.status, dialogue).toBe("completed");
     expect(o.intake.status).toBe("declined");
+    expect(o.intake.consent).toMatchObject({ granted: false, utteranceId: expect.any(String), t: expect.any(Number) });
     expect(o.intake.answers).toHaveLength(0);
     expect(dialogue).not.toContain("ご担当を教えていただけますか？");
     expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(0);

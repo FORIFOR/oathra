@@ -32,7 +32,7 @@ const contract = defineCall({
 });
 ```
 
-After consent, answers are stored in `.oathra/calls/<callId>/intake.json` and `summary.md` with the field, answer, utterance ID and timestamp. Without `intake`, no optional questions are generated.
+After consent, answers are stored in `.oathra/calls/<callId>/intake.json` and `summary.md` with the field, answer, utterance ID and timestamp. The consent decision itself is also recorded with provenance, so an operational profile and decision memo can be audited later. Without `intake`, no optional questions are generated.
 
 For YAML-managed scenarios, place the same block under `mission.intake`. `oathra play ./my-scenario.yaml` and `oathra call --scenario ./my-scenario.yaml --to +1...` then share the same contract and stop rules, so a local check can be carried into a real call without rewriting the intake settings.
 

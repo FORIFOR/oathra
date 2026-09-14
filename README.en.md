@@ -91,7 +91,7 @@ An agent that says "予約できました" is not evidence. Oathra returns a **V
 
 Oathra does not infer a callee's attributes or quietly collect information outside the call's purpose. The normal dialogue asks only for the purpose and required fields declared in the `CallContract`, while limiting repeated questions. Decisions are saved in `result.json`, a human-readable `summary.md`, utterance-linked `evidence`, and `transcript.json`.
 
-When a workflow genuinely needs more information, add an explicit `intake` contract with a purpose, consent prompt, declared fields and a question cap. After the required call details are settled, the agent asks consent once and then asks at most one declared question per turn. A decline, hold or ambiguous reply stops intake immediately; answers are saved with utterance IDs in `.oathra/calls/<callId>/intake.json` and `summary.md`. This records explicit answers and does not infer a callee profile or sensitive traits.
+When a workflow genuinely needs more information, add an explicit `intake` contract with a purpose, consent prompt, declared fields and a question cap. After the required call details are settled, the agent asks consent once and then asks at most one declared question per turn. A decline, hold or ambiguous reply stops intake immediately; consent and answers are saved with utterance IDs and timestamps in `.oathra/calls/<callId>/intake.json` and `summary.md`. This can form an operational profile from explicit answers, but never infers a callee's attributes or sensitive traits.
 
 ```ts
 const contract = defineCall({

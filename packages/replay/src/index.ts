@@ -86,6 +86,11 @@ export function renderCallSummary(outcome: CallOutcome): string {
     lines.push("", `## ${ja ? "同意済みの聞き取り" : "Consented intake"}`);
     lines.push(`- ${ja ? "目的" : "Purpose"}: ${outcome.intake.purpose ?? ""}`);
     lines.push(`- ${ja ? "状態" : "Status"}: ${outcome.intake.status}`);
+    if (outcome.intake.consent) {
+      lines.push(
+        `- ${ja ? "同意" : "Consent"}: ${outcome.intake.consent.granted ? (ja ? "あり" : "granted") : (ja ? "なし" : "declined")} — ${ja ? "発話ID" : "utterance"}: \`${outcome.intake.consent.utteranceId}\` (${outcome.intake.consent.t}ms)`,
+      );
+    }
     if (outcome.intake.answers.length === 0) {
       lines.push(ja ? "（記録された回答はありません）" : "(No answers recorded.)");
     } else {

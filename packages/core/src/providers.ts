@@ -148,6 +148,13 @@ export type IntakeAnswer = {
   t: number;
 };
 
+/** The callee's explicit answer to the one-time intake consent prompt. */
+export type IntakeConsent = {
+  granted: boolean;
+  utteranceId: string;
+  t: number;
+};
+
 /** Runtime state surfaced to brains so they can ask one bounded question at a time. */
 export type IntakeView = {
   status: IntakeStatus;
@@ -155,6 +162,7 @@ export type IntakeView = {
   maxQuestions?: number;
   askedQuestions: number;
   pendingField?: string;
+  consent?: IntakeConsent;
   answers: IntakeAnswer[];
   declined: string[];
 };

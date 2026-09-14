@@ -28,6 +28,7 @@ import {
   type Turn,
   type TurnTrace,
   type IntakeAnswer,
+  type IntakeConsent,
   type IntakeStatus,
   type IntakeView,
 } from "@oathra/core";
@@ -101,6 +102,7 @@ export class CallRuntime {
   private intakeStatus: IntakeStatus;
   private intakeAskedQuestions = 0;
   private intakePending: { kind: "consent" } | { kind: "field"; field: string } | undefined;
+  private intakeConsent: IntakeConsent | undefined;
   private readonly intakeAnswers: IntakeAnswer[] = [];
   private readonly intakeDeclined = new Set<string>();
 
@@ -418,8 +420,66 @@ export class CallRuntime {
       maxQuestions: config.maxQuestions,
       askedQuestions: this.intakeAskedQuestions,
       ...(this.intakePending?.kind === "field" ? { pendingField: this.intakePending.field } : {}),
+      ...(this.intakeConsent ? { consent: { ...this.intakeConsent } } : {}),
       answers: [...this.intakeAnswers],
       declined: [...this.intakeDeclined],
+    };
+  }
+
+  /**
+   * Optional intake is a post-call step. Keep this invariant in the runtime
+   * even when an LLM emits an intake marker too early: the model must not be
+   * able to turn an unsettled reservation into a reason to ask for more data.
+   */
+  private canStartIntake(): boolean {
+    const contract = this.opts.contract;
+    const verified = this.engine.values();
+    if (requiredFields(contract).some((field) => verified[field] === undefined)) return false;
+    return checkConstraints(contract.constraints, verified).violations.length === 0;
+  }
+
+  private nextIntakeField(): NonNullable<CallContract["intake"]>["fields"][number] | undefined {
+    const config = this.opts.contract.intake;
+    if (!config || this.intakeAskedQuestions >= config.maxQuestions) return undefined;
+    const answered = new Set(this.intakeAnswers.map((answer) => answer.key));
+    return config.fields.find((field) => !answered.has(field.key) && !this.intakeDeclined.has(field.key));
+  }
+
+  /**
+   * Keep optional questions safe even when a model ignores the prompt. The
+   * runtime either substitutes the next contract question or removes the
+   * optional request entirely; an early or undeclared profile question is
+   * never allowed to reach the callee.
+   */
+  private guardIntakeResponse(response: BrainResponse): BrainResponse {
+    const config = this.opts.contract.intake;
+    if (!config) return response;
+    const normalized = normalizeLine(response.text).toLocaleLowerCase();
+    const consentText = normalizeLine(config.consentPrompt).toLocaleLowerCase();
+    const consentMentioned = normalized.includes(consentText);
+    const fieldMentioned = config.fields.some((field) => normalized.includes(normalizeLine(field.question).toLocaleLowerCase()));
+    const markedOptional = response.intakeQuestion !== undefined || consentMentioned || fieldMentioned;
+    if (!markedOptional) return response;
+
+    const canAskConsent = this.intakeStatus === "not_started" && this.canStartIntake();
+    if (canAskConsent) {
+      // A model that jumps straight to a field still has to obtain consent.
+      if (response.intakeQuestion?.kind === "consent" && consentMentioned) return response;
+      return { ...response, text: config.consentPrompt, intakeQuestion: { kind: "consent" }, action: "continue" };
+    }
+
+    if (this.intakeStatus === "active" && !this.intakePending) {
+      const next = this.nextIntakeField();
+      if (next) return { ...response, text: next.question, intakeQuestion: { kind: "field", field: next.key }, action: "continue" };
+    }
+
+    // Do not repeat or expose an optional prompt while waiting for consent,
+    // after a decline, or before the required mission is settled.
+    const { intakeQuestion: _ignoredIntakeQuestion, ...withoutIntakeQuestion } = response;
+    return {
+      ...withoutIntakeQuestion,
+      text: this.opts.contract.language === "ja" ? "恐れ入ります、必要な情報をもう一度確認させてください。" : "Could you confirm the remaining details, please?",
+      action: "continue",
     };
   }
 
@@ -428,7 +488,9 @@ export class CallRuntime {
     const config = this.opts.contract.intake;
     if (!config || this.intakeStatus === "declined" || this.intakeStatus === "complete") return;
     if (question.kind === "consent") {
-      if (this.intakeStatus === "not_started" || this.intakeStatus === "awaiting_consent") {
+      // Consent is asked once, and only after the required mission is settled.
+      // A duplicated model turn must never restart or pressure the callee.
+      if (this.intakeStatus === "not_started" && this.canStartIntake()) {
         this.intakeStatus = "awaiting_consent";
         this.intakePending = { kind: "consent" };
         this.emit({ type: "intake.question", kind: "consent" });
@@ -437,6 +499,9 @@ export class CallRuntime {
     }
     const field = config.fields.find((candidate) => candidate.key === question.field);
     if (!field || this.intakeStatus !== "active") return;
+    // Do not replace a question that is already waiting for an answer. This
+    // keeps one field per turn even if a provider repeats its own speech.
+    if (this.intakePending) return;
     if (this.intakeAskedQuestions >= config.maxQuestions || this.intakeAnswers.some((answer) => answer.key === field.key) || this.intakeDeclined.has(field.key)) return;
     this.intakeAskedQuestions++;
     this.intakePending = { kind: "field", field: field.key };
@@ -471,10 +536,12 @@ export class CallRuntime {
         // A non-committal or ambiguous reply is not consent. End the optional
         // intake immediately so the agent never pressures the callee to answer.
         this.intakeStatus = "declined";
+        this.intakeConsent = { granted: false, utteranceId: turn.id, t: turn.t };
         this.emit({ type: "intake.consent", granted: false, utteranceId: turn.id });
         return;
       }
       this.intakeStatus = granted ? "active" : "declined";
+      this.intakeConsent = { granted, utteranceId: turn.id, t: turn.t };
       this.emit({ type: "intake.consent", granted, utteranceId: turn.id });
       return;
     }
@@ -551,6 +618,7 @@ export class CallRuntime {
         response = { ...response, text: contract.language === "ja" ? "もしもし、お声は届いておりますでしょうか？" : "Hello, can you hear me?" };
       }
     }
+    response = this.guardIntakeResponse(response);
     trace.brainEndMs = this.now();
     if (!firstToken) trace.brainFirstTokenMs = trace.brainEndMs;
     const latencyMs = Date.now() - brainStartWall;
