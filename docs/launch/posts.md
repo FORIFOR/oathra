@@ -10,6 +10,11 @@
 - Added a visible Japanese/English note to the public Pages routes explaining that a busy or time-pressed callee ends follow-up intake instead of receiving another prompt.
 - Pages [34845320256](https://github.com/FORIFOR/oathra/actions/runs/34845320256) and CI [34845320262](https://github.com/FORIFOR/oathra/actions/runs/34845320262) passed; the live routes returned HTTP 200 and the new copy was read back.
 
+## Release setup help readback — 2026-09-14 21:56 JST
+
+- Ran `oathra setup phone --help` and `oathra phone doctor --help` from the public v0.1.15 GitHub Release tarball with no credentials. Both commands started and listed the guided API-key, carrier, gateway, engine and staged-test paths.
+- This confirms the documented setup entry points are present in the public asset; it does not claim that a provider account, phone number or paid PSTN test was configured.
+
 ## v0.1.15 intake pacing and live-context release — 2026-09-14 21:36 JST
 
 - Added a time-pressure stop guard for optional intake. Japanese and English phrases indicating that the callee is busy, in a hurry or cannot talk now end the follow-up flow without saving a guessed profile value or repeating the question.
