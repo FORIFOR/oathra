@@ -278,7 +278,8 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
     <h2>Same runtime, real phone. <em>Bring your own carrier. Bring your own model.</em></h2>
     <p class="sub">Twilio keeps its direct media-streams fast path. Plivo and any SIP trunk go through a SIP gateway (LiveKit by default, Cloud or self-hosted). The voice engine is a separate choice: GPT-Live was the most natural on our test calls, so it is the default; a Deepgram + LLM + TTS pipeline is there when you want control or lower cost.</p>
     <div class="two">
-      <pre>$ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra setup phone
+      <pre>$ pnpm oathra setup phone
+# from a clone; use the v0.1.3 command above for the release package
 
 Choose voice engine
 ❯ GPT-Live        <span class="amb">Recommended</span> · best conversation quality
@@ -397,7 +398,8 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
         </ol>
         <p><a class="btn" href="https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.ja.md">Read the setup guide →</a></p>
       </div>
-      <pre>$ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra setup phone
+      <pre>$ pnpm oathra setup phone
+# from a clone; use the v0.1.3 command above for the release package
 
 Choose voice engine
 ❯ GPT-Live       needs OPENAI_API_KEY

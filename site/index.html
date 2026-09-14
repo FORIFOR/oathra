@@ -273,7 +273,8 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
     <h2>同じ仕組みで、<em>本物の電話</em>。電話会社とモデルは別々に選ぶ。</h2>
     <p class="prose">Twilio はメディアストリーム直結の最短経路をそのまま使います。Plivo や手持ちの SIP 回線は SIP ゲートウェイ（初期実装は LiveKit、Cloud でもセルフホストでも可）を経由します。音声モデルは別軸で、テスト通話で一番自然だった GPT-Live を既定にし、Deepgram + LLM + TTS のパイプラインも残しています。</p>
     <div class="two">
-      <pre>$ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra setup phone
+      <pre>$ pnpm oathra setup phone
+# cloneしている場合。公開版は上のv0.1.3コマンドを使用
 
 音声エンジンを選択
 ❯ GPT-Live        <span class="amb">推奨</span> · 会話が最も自然
@@ -408,7 +409,8 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
         </ol>
         <p><a class="btn" href="https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.ja.md">セットアップ手順を読む →</a></p>
       </div>
-      <pre>$ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra setup phone
+      <pre>$ pnpm oathra setup phone
+# cloneしている場合。公開版は上のv0.1.3コマンドを使用
 
 Choose voice engine
 ❯ GPT-Live       needs OPENAI_API_KEY
