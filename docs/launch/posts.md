@@ -13,6 +13,7 @@
 - Current readback at 2026-09-14 03:10 UTC: GitHub 0 stars / 0 forks; X profile shows the latest account post about 9 hours old, so the next Oathra announcement remains deferred until the account-wide 24-hour spacing has elapsed (recheck before publishing).
 - GitHub Discussion #14 (Show and tell), published 2026-09-14 03:14:58 UTC and updated 03:21:34 UTC: https://github.com/FORIFOR/oathra/discussions/14. It asks voice-agent developers which utterances and events they use as booking evidence, links the no-install checker and 25-second walkthrough, and requests only redacted or synthetic transcripts. Public API readback shows 0 comments; treat later replies as feedback, not as adoption by themselves.
 - Latest readback at 2026-09-14 03:24–03:27 UTC: v0.1.4 assets show 2 tarball downloads and 1 checksum download (including our verification); GitHub still shows 0 stars / 0 forks. CI `34802645340` and Pages `34802645353` passed for the English setup rollout; CI `34802739948` passed for the metrics record.
+- 2026-09-14 03:48 UTC: posted one factual follow-up on [e2b-dev/awesome-ai-sdks#364](https://github.com/e2b-dev/awesome-ai-sdks/pull/364) with the v0.1.4 setup link and verification status. No review request or mass mention; read back as a public comment. Do not repeat on the other three PRs unless a maintainer responds.
 
 ## v0.1.3 beginner setup — 2026-09-14 JST
 
