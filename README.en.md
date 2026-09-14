@@ -11,7 +11,7 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.4/o
 
 Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.4). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
-**Already building a voice agent?** v0.1.4 adds `oathra verify` for your saved transcripts and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md).
+**Already building a voice agent?** v0.1.4 adds `oathra verify` for your saved transcripts and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
 
 [Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
 
@@ -51,13 +51,13 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 ```
 
 ```bash
-npx oathra setup phone            # pick a carrier + engine, answer 2–3 questions, done
+npx oathra setup phone            # pick a carrier + engine, answer a few guided questions
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation
 ```
 
-Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio keeps its direct Media Streams fast path. Providers that need a human step (caller-ID verification, geo permissions) get a guided one-click step instead of a wall of SIP settings. Add a carrier with `oathra provider create phone <id>`.
+Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio keeps its direct Media Streams fast path. Providers that need a human step (caller-ID verification, geo permissions) get a guided, linked step instead of a wall of SIP settings. See the [beginner setup guide](docs/SETUP.en.md) for credential links and staged tests. Add a carrier with `oathra provider create phone <id>`.
 
 ### PROVE
 
