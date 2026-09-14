@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## External signal checkpoint — 2026-09-14 19:13 JST
+
+- GitHub reports **0 stars / 0 forks**, 9 views / 9 unique visitors and 530 clones / 199 unique cloners in the current 14-day window. These counts include maintainer and automation activity and are not confirmed external users.
+- No external issue author, business inquiry or new Zenn reaction is observed. Zenn remains 1 like / 0 comments for the launch article and 0 / 0 for the evidence article.
+- The v0.1.11 tarball and checksum each show one download, matching the maintainer's package verification. The latest X check remains duplicate-free but gated until **2026-09-15 15:13:19 JST**.
+- Raw snapshot: [metrics/2026-09-14-1913-jst.json](metrics/2026-09-14-1913-jst.json). This is a measurement checkpoint, not evidence of adoption.
+
 ## Zenn public readback — 2026-09-14 19:10 JST
 
 - The GitHub source for [`oathra-launch`](../../articles/oathra-launch.md) and [`oathra-evidence-rules`](../../articles/oathra-evidence-rules.md) now links to `main`, reports the current test count and states the explicit-answer profile boundary.
