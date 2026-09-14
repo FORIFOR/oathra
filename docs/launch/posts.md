@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## LiveKit community channel research — 2026-09-14 JST
+
+- LiveKit's official community guide lists its Developer Community as a technical forum for asking questions, sharing knowledge and getting feedback: https://docs.livekit.io/intro/community/
+- This is a better audience fit than another generic launch feed because Oathra targets developers already building voice or phone agents. The next experiment is a single substantive forum post after account access and current posting rules are verified; Slack remains a separate join/terms step.
+- No LiveKit forum or Slack post was made during this check. Do not count the documentation page as distribution or endorsement.
+
 ## Facebook distribution check — 2026-09-14 JST
 
 - Existing `foriforapps` Facebook page was read back at 16:29 JST (1 follower). The Reels composer opens, but the current browser extension did not expose a file chooser for the public `docs/media/oathra-intake-ja.mp4` asset.
