@@ -3,15 +3,15 @@
   Give AI agents a phone — and proof of what happened.
 </p>
 
-Run **v0.1.2** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.3** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.2). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.3). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
-**Already building a voice agent?** v0.1.2 adds `oathra verify` for your saved transcripts and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md).
+**Already building a voice agent?** v0.1.3 adds `oathra verify` for your saved transcripts and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md).
 
 [Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
 

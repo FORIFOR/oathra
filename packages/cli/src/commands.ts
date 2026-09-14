@@ -376,18 +376,27 @@ export async function cmdDoctor(): Promise<void> {
   } catch (e) {
     console.log(bad(`Scenarios      ${(e as Error).message}`));
   }
-  const keys: Array<[string, string]> = [
-    ["DEEPGRAM_API_KEY", "Deepgram STT"],
+  const keys: Array<[string, string, string?]> = [
+    ["DEEPGRAM_API_KEY", "Deepgram STT", "https://console.deepgram.com/"],
     ["ELEVENLABS_API_KEY", "ElevenLabs TTS"],
-    ["OPENAI_API_KEY", "OpenAI brain"],
+    ["OPENAI_API_KEY", "OpenAI brain", "https://platform.openai.com/api-keys"],
     ["ANTHROPIC_API_KEY", "Anthropic brain"],
-    ["GEMINI_API_KEY", "Gemini brain"],
-    ["LIVEKIT_URL", "LiveKit"],
-    ["TWILIO_ACCOUNT_SID", "Twilio"],
+    ["GEMINI_API_KEY", "Gemini brain", "https://aistudio.google.com/apikey"],
+    ["LIVEKIT_URL", "LiveKit URL", "https://cloud.livekit.io/"],
+    ["LIVEKIT_API_KEY", "LiveKit API key", "https://cloud.livekit.io/"],
+    ["LIVEKIT_API_SECRET", "LiveKit API secret", "https://cloud.livekit.io/"],
+    ["TWILIO_ACCOUNT_SID", "Twilio SID", "https://console.twilio.com/"],
+    ["TWILIO_AUTH_TOKEN", "Twilio token", "https://console.twilio.com/"],
+    ["PLIVO_AUTH_ID", "Plivo Auth ID", "https://console.plivo.com/"],
+    ["PLIVO_AUTH_TOKEN", "Plivo token", "https://console.plivo.com/"],
   ];
   console.log("");
-  for (const [env, label] of keys) {
-    console.log(process.env[env] ? ok(`${label.padEnd(14)} key present`) : dim(`· ${label.padEnd(14)} not configured (${env})`));
+  for (const [env, label, url] of keys) {
+    if (process.env[env]) console.log(ok(`${label.padEnd(18)} configured`));
+    else {
+      console.log(dim(`· ${label.padEnd(18)} not configured (${env})`));
+      if (url) console.log(dim(`  Get it at: ${url}`));
+    }
   }
   console.log(`\n${bold("Ready on this machine")}\n`);
   console.log(ok("Simulator       AI-vs-AI and Play mode, offline"));
@@ -440,10 +449,10 @@ ${bold("Try it")}
   oathra battle [scenario]           several brains, same scenario, one card ${dim("--agent <brain> …  --markdown  --svg <file>  --png <file>")}
 
 ${bold("Real phone")}
-  oathra setup phone                 pick a carrier and a voice engine, answer a few questions
+  oathra setup phone                 guided API-key, voice-engine and carrier setup (.env is updated)
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
-  oathra phone test [--level …]      local (¥0) · gateway (¥0) · pstn (paid)
+  oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
   oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id>  --engine gpt-live|realtime|pipeline  --provider <id>")}
 
 ${bold("Trust")}

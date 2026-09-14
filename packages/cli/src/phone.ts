@@ -85,10 +85,63 @@ export function buildEngine(spec: EngineSpec): VoiceEngine {
 
 export function engineChoices(): Array<{ id: string; label: string; note: string }> {
   return [
-    { id: "gpt-live", label: "GPT-Live", note: "Recommended · best conversation quality · $0.05/min session" },
-    { id: "realtime", label: "OpenAI Realtime", note: "speech-to-speech, gpt-realtime-2.1" },
-    { id: "pipeline", label: "Pipeline", note: "Deepgram + any brain + OpenAI TTS · lower cost, customizable" },
+    { id: "gpt-live", label: "GPT-Live", note: "Recommended · needs OPENAI_API_KEY · $0.05/min session" },
+    { id: "realtime", label: "OpenAI Realtime", note: "needs OPENAI_API_KEY · speech-to-speech" },
+    { id: "pipeline", label: "Pipeline", note: "needs DEEPGRAM_API_KEY + OPENAI_API_KEY · customizable" },
   ];
+}
+
+// ---------------------------------------------------------------------------
+// First-run credentials
+// ---------------------------------------------------------------------------
+
+type CredentialGuide = { label: string; url?: string; secret?: boolean; note?: string };
+
+/** Keep setup prompts useful without putting provider-specific links in every provider package. */
+const CREDENTIAL_GUIDES: Record<string, CredentialGuide> = {
+  OPENAI_API_KEY: { label: "OpenAI API key", url: "https://platform.openai.com/api-keys", secret: true },
+  GEMINI_API_KEY: { label: "Gemini API key", url: "https://aistudio.google.com/apikey", secret: true },
+  DEEPGRAM_API_KEY: { label: "Deepgram API key", url: "https://console.deepgram.com/", secret: true },
+  TWILIO_ACCOUNT_SID: { label: "Twilio Account SID", url: "https://console.twilio.com/", note: "starts with AC" },
+  TWILIO_AUTH_TOKEN: { label: "Twilio Auth Token", url: "https://console.twilio.com/", secret: true },
+  TWILIO_PHONE_NUMBER: { label: "Twilio phone number (E.164)", url: "https://console.twilio.com/us1/develop/phone-numbers/manage/search", note: "optional during setup; Oathra picks the first voice number when blank" },
+  PLIVO_AUTH_ID: { label: "Plivo Auth ID", url: "https://console.plivo.com/", note: "starts with MA" },
+  PLIVO_AUTH_TOKEN: { label: "Plivo Auth Token", url: "https://console.plivo.com/", secret: true },
+  LIVEKIT_URL: { label: "LiveKit server URL", url: "https://cloud.livekit.io/", note: "use the wss:// URL from your LiveKit project" },
+  LIVEKIT_API_KEY: { label: "LiveKit API key", url: "https://cloud.livekit.io/", secret: true },
+  LIVEKIT_API_SECRET: { label: "LiveKit API secret", url: "https://cloud.livekit.io/", secret: true },
+};
+
+const ENGINE_CREDENTIALS: Record<EngineSpec["id"], string[]> = {
+  "gpt-live": ["OPENAI_API_KEY"],
+  realtime: ["OPENAI_API_KEY"],
+  pipeline: ["DEEPGRAM_API_KEY", "OPENAI_API_KEY"],
+};
+
+const SIP_GATEWAY_CREDENTIALS = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"];
+
+function credentialGuide(envKey: string): CredentialGuide {
+  return CREDENTIAL_GUIDES[envKey] ?? { label: envKey, secret: /TOKEN|SECRET|PASSWORD|KEY/.test(envKey) };
+}
+
+async function ensureEnvKeys(keys: string[]): Promise<void> {
+  const updates: Record<string, string> = {};
+  for (const envKey of keys) {
+    if (process.env[envKey]) {
+      const guide = credentialGuide(envKey);
+      console.log(`  ${dim(guide.label)}  ${guide.secret ? "••••••••" : process.env[envKey]}  ${dim("(from .env)")}`);
+      continue;
+    }
+    const guide = credentialGuide(envKey);
+    console.log(`\n${bold(guide.label)}`);
+    if (guide.note) console.log(`  ${dim(guide.note)}`);
+    if (guide.url) console.log(`  ${dim("Get it at:")} ${cyan(guide.url)}`);
+    const value = await ask(`${guide.label}${guide.secret ? " (入力内容は表示されません)" : ""}`, guide.secret ? { secret: true } : {});
+    if (!value) throw new Error(`${envKey} is required${guide.url ? `. Get one at ${guide.url}` : ""}`);
+    process.env[envKey] = value;
+    updates[envKey] = value;
+  }
+  if (Object.keys(updates).length) upsertEnv(updates);
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +185,59 @@ export async function startNgrok(port: number): Promise<Tunnel> {
 // Prompts
 // ---------------------------------------------------------------------------
 
+async function askSecret(question: string, optional = false): Promise<string> {
+  // Piped input is useful for CI and smoke tests; there is no terminal to mask there.
+  if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRawMode !== "function") {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      return (await rl.question(`${question}${optional ? ` ${dim("(optional)")}` : ""}\n> `)).trim();
+    } finally {
+      rl.close();
+    }
+  }
+
+  process.stdout.write(`${question}${optional ? ` ${dim("(optional)")}` : ""}\n> `);
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  return await new Promise<string>((resolve, reject) => {
+    let value = "";
+    const cleanup = () => {
+      process.stdin.off("data", onData);
+      process.stdin.setRawMode?.(false);
+      process.stdout.write("\n");
+    };
+    const onData = (chunk: Buffer | string) => {
+      for (const ch of String(chunk)) {
+        const code = ch.charCodeAt(0);
+        if (code === 3) {
+          cleanup();
+          reject(new Error("setup cancelled"));
+          return;
+        }
+        if (ch === "\r" || ch === "\n") {
+          cleanup();
+          resolve(value.trim());
+          return;
+        }
+        if (code === 8 || code === 127) {
+          if (value) {
+            value = value.slice(0, -1);
+            process.stdout.write("\b \b");
+          }
+          continue;
+        }
+        if (code >= 32 && code !== 127) {
+          value += ch;
+          process.stdout.write("•");
+        }
+      }
+    };
+    process.stdin.on("data", onData);
+  });
+}
+
 async function ask(question: string, opts: { secret?: boolean; default?: string; optional?: boolean } = {}): Promise<string> {
+  if (opts.secret) return askSecret(question, Boolean(opts.optional));
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     const suffix = opts.default ? ` ${dim(`(${opts.default})`)}` : opts.optional ? ` ${dim("(optional)")}` : "";
@@ -157,7 +262,7 @@ async function choose(title: string, items: Array<{ id: string; label: string; n
 // ---------------------------------------------------------------------------
 
 export async function phoneAdd(providerId: string | undefined, flags: Record<string, unknown>): Promise<void> {
-  const reg = buildRegistry();
+  let reg = buildRegistry();
   const providers = reg.listProviders();
   const id =
     providerId ??
@@ -180,8 +285,10 @@ export async function phoneAdd(providerId: string | undefined, flags: Record<str
       value = existing;
       console.log(`  ${dim(q.label)}  ${q.secret ? "••••••••" : existing}  ${dim("(from .env)")}`);
     }
-    if (!value) value = await ask(q.label, { secret: Boolean(q.secret), ...(q.optional ? { optional: true } : {}), ...(q.placeholder ? { default: "" } : {}) });
-    if (!value && !q.optional) throw new Error(`${q.label} is required`);
+    const guide = q.envKey ? credentialGuide(q.envKey) : undefined;
+    if (!value && guide?.url) console.log(`  ${dim("Get it at:")} ${cyan(guide.url)}`);
+    if (!value) value = await ask(`${q.label}${q.secret ? " (入力内容は表示されません)" : ""}`, { secret: Boolean(q.secret), ...(q.optional ? { optional: true } : {}), ...(q.placeholder ? { default: "" } : {}) });
+    if (!value && !q.optional) throw new Error(`${q.label} is required${guide?.url ? `. Get one at ${guide.url}` : ""}`);
     answers[q.key] = value;
     if (q.envKey && value) {
       process.env[q.envKey] = value;
@@ -189,6 +296,12 @@ export async function phoneAdd(providerId: string | undefined, flags: Record<str
     }
   }
 
+  if (!provider.capabilities.direct) {
+    await ensureEnvKeys(SIP_GATEWAY_CREDENTIALS);
+    // The registry is built before prompts so the provider list is stable. Rebuild
+    // after gateway credentials are entered so the new gateway is available now.
+    reg = buildRegistry();
+  }
   const gateway = provider.capabilities.direct ? undefined : requireGateway(reg);
   const plan = await provider.provision({ answers, env: process.env, ...(gateway ? { gateway } : {}) });
   console.log("");
@@ -242,6 +355,7 @@ async function runStep(step: ProvisionStep): Promise<void> {
 export async function setupPhone(flags: Record<string, unknown>): Promise<void> {
   console.log(`\n${bold("Oathra Phone Setup")}`);
   const engine = await choose("Choose voice engine", engineChoices(), 0);
+  await ensureEnvKeys(ENGINE_CREDENTIALS[engine as EngineSpec["id"]] ?? ["OPENAI_API_KEY"]);
   const config = loadPhoneConfig();
   config.voice.engine = engine;
   savePhoneConfig(config);
@@ -260,7 +374,8 @@ export function phoneList(): void {
   console.log(`\n${bold("Phone providers")}  ${dim(phoneConfigPath())}\n`);
   for (const p of reg.listProviders()) {
     const cfg = config.providers[p.id];
-    const missing = p.requires.filter((k) => !process.env[k]);
+    const gatewayKeys = p.capabilities.direct ? [] : SIP_GATEWAY_CREDENTIALS;
+    const missing = [...p.requires, ...gatewayKeys.filter((k) => !p.requires.includes(k))].filter((k) => !process.env[k]);
     const status = !cfg ? dim("not configured") : missing.length ? yellow(`missing ${missing.join(", ")}`) : green("ready");
     const order = config.routing.providers.indexOf(p.id);
     console.log(`  ${p.id.padEnd(8)} ${p.label.padEnd(12)} ${status}${order >= 0 ? dim(`  route #${order + 1}`) : ""}${cfg?.from ? dim(`  caller id ${String(cfg.from)}`) : cfg?.callerId ? dim(`  caller id ${String(cfg.callerId)}`) : ""}`);
@@ -311,17 +426,19 @@ export async function phoneDoctor(flags: { provider?: string; to?: string; engin
     }
     const gateway = reg.gateway(String(cfg.gateway ?? config.gateway.id));
     let engine: VoiceEngine | undefined;
+    let engineError: string | undefined;
     try {
       engine = buildEngine(engineSpec);
-    } catch {
+    } catch (e) {
       engine = undefined;
+      engineError = (e as Error).message;
     }
     const report: DoctorReport = await p.doctor({ config: cfg, env: process.env, ...(gateway ? { gateway } : {}) }, { ...(flags.to ? { destination: flags.to } : {}), ...(engine ? { engine } : {}) });
     // Voice engine section (engine-level: env present, format supported).
     const missingEnv = engine ? engine.requires.filter((k) => !process.env[k]) : [];
     const eng: DoctorSection = engine
       ? { name: "Voice Engine", checks: [{ label: engine.label, ok: missingEnv.length === 0, ...(missingEnv.length ? { detail: `${missingEnv.join(", ")} missing` } : {}) }] }
-      : { name: "Voice Engine", checks: [{ label: engineSpec.id, ok: false, detail: "could not construct engine" }] };
+      : { name: "Voice Engine", checks: [{ label: engineSpec.id, ok: false, detail: engineError ?? "could not construct engine", fix: "run `oathra setup phone` to add the required API key" }] };
     const full: DoctorReport = { ...report, sections: [...report.sections, eng], ready: report.ready && eng.checks.every((c) => c.ok) };
     console.log(`\n${bold(p.label)}\n`);
     console.log(renderDoctor(full, { color }).replace(/^/gm, "  "));
@@ -331,7 +448,7 @@ export async function phoneDoctor(flags: { provider?: string; to?: string; engin
 }
 
 // ---------------------------------------------------------------------------
-// phone test — Local (¥0) / Gateway (¥0) / PSTN (paid)
+// phone test — Local (telephony ¥0, model API usage) / Gateway (¥0) / PSTN (paid)
 // ---------------------------------------------------------------------------
 
 export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string }): Promise<void> {
@@ -339,7 +456,7 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
   const level =
     flags.level ??
     (await choose("Choose test level", [
-      { id: "local", label: "Local", note: "¥0 · engine loopback with synthesized audio" },
+      { id: "local", label: "Local", note: "telephony ¥0 · uses model APIs with synthesized audio" },
       { id: "gateway", label: "Gateway", note: "¥0 · SIP gateway loopback, no PSTN" },
       { id: "pstn", label: "PSTN", note: "paid · real phone call (carrier rate applies)" },
     ]));

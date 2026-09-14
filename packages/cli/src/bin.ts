@@ -13,8 +13,9 @@ function loadDotEnv(): void {
     const before = { ...process.env };
     process.loadEnvFile(p);
     for (const [k, v] of Object.entries(before)) if (v !== undefined) process.env[k] = v;
-  } catch {
-    /* ignore malformed .env */
+  } catch (e) {
+    console.error(`[Oathra] .env を読み込めませんでした: ${(e as Error).message}`);
+    console.error("        .env の書式を直すか、`cp .env.example .env` から作り直してください。");
   }
 }
 

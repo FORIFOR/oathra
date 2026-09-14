@@ -37,7 +37,10 @@ export function upsertEnv(values: Record<string, string>, path = resolve(process
   const lines = existsSync(path) ? readFileSync(path, "utf8").split("\n") : [];
   for (const [k, v] of Object.entries(values)) {
     const i = lines.findIndex((l) => l.startsWith(`${k}=`));
-    const line = `${k}=${v}`;
+    // Quote values containing dotenv syntax so SIP passwords and tokens with
+    // spaces, #, quotes or backslashes survive the next CLI invocation.
+    const encoded = /[\s#"'\\]/.test(v) ? `"${v.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("\n", "\\n")}"` : v;
+    const line = `${k}=${encoded}`;
     if (i >= 0) lines[i] = line;
     else lines.push(line);
   }

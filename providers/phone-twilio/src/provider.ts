@@ -57,7 +57,9 @@ export function createTwilioProvider(deps: TwilioProviderDeps = {}): PhoneProvid
     id: "twilio",
     label: "Twilio",
     capabilities: { direct: true, sip: true, outbound: true, inbound: true, sms: true },
-    requires: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"],
+    // The selected number is persisted in .oathra/phone.yaml as `from`.
+    // Requiring it in .env made the documented blank-input auto-selection unusable.
+    requires: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"],
     questions: [
       { key: "accountSid", label: "Twilio Account SID", envKey: "TWILIO_ACCOUNT_SID", placeholder: "AC…" },
       { key: "authToken", label: "Auth Token", secret: true, envKey: "TWILIO_AUTH_TOKEN" },

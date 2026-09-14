@@ -1,14 +1,14 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
-修正版 **v0.1.2** を起動（Node.js 22以上、APIキー不要）：
+修正版 **v0.1.3** を起動（Node.js 22以上、APIキー不要）：
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.2/oathra-0.1.2.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra demo
 ```
 
-[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.2)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
+[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.3)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
 
-**すでに音声AIを作っている方へ：** v0.1.2では完了判定だけを組み込めます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。
+**すでに音声AIを作っている方へ：** v0.1.3では完了判定だけを組み込めます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
 
 [インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
 
@@ -62,11 +62,13 @@ Arena では「AI同士を見る」か「自分が電話に出る」かを選べ
 ## 本物の電話
 
 ```bash
-npx oathra setup phone             # 音声エンジンと電話会社を選び、質問に2〜3個答える
-npx oathra phone doctor --to +81…  # 電話会社 · SIPゲートウェイ · 音声 · モデル · 遅延 · 料金
-npx oathra phone test              # Local ¥0 → Gateway ¥0 → PSTN（有料）
-npx oathra call --to +81… --scenario restaurant-reservation
+pnpm oathra setup phone             # 必要な API キーを確認し、音声エンジンと電話会社を設定
+pnpm oathra phone doctor --to +81…  # 電話会社 · SIPゲートウェイ · 音声 · モデル · 遅延 · 料金
+pnpm oathra phone test              # Local（電話料0円・API使用）→ Gateway ¥0 → PSTN（有料）
+pnpm oathra call --to +81… --scenario restaurant-reservation
 ```
+
+API キーの取得先、`.env` の扱い、Twilio / Plivo / Custom SIP の違い、失敗時の直し方は[初心者向けセットアップ](docs/SETUP.ja.md)を参照してください。
 
 電話会社と音声モデルは別々に選びます。
 
@@ -163,7 +165,7 @@ pnpm oathra play ./my-challenge.yaml
 
 PR で追加されたシナリオは CI が検証し、誤完了を出すものは通しません。
 
-## 正直な現状（v0.1.0）
+## 正直な現状（v0.1.3）
 
 - [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
 - [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
@@ -180,7 +182,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 インストールせずに試すなら、[ブラウザの証拠ラボ](https://forifor.github.io/oathra/#sim)へ。本体の `EvidenceEngine` と `evaluate` がブラウザで動き、自由入力・話者切替・予約取り消しをその場で判定します。入力本文は送信せず、実際の電話も発信しません。[30秒の操作録画](https://forifor.github.io/oathra/#demo-video)では、曖昧な返事 → 確定 → 取り消しを確認できます。
 
-冒頭のv0.1.2起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
+冒頭のv0.1.3起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
 
 - レストランで「たぶん大丈夫ですが、まだ確定ではありません」→ 確定にならない
 - レストランで「19時は満席です。19時半なら空いています」→ 19時は予約時刻として採用されず、19時半は AI が受諾するまで未確定
