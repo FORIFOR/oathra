@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Distribution PR metadata refresh — 2026-09-14 17:10 JST
+
+- Updated the existing [awesome-voice-agents#42](https://github.com/yzfly/awesome-voice-agents/pull/42) description in place, because it was still describing the older v0.1.0 scope.
+- The description now points to v0.1.10, the consented follow-up intake behavior, the utterance-linked `intake.json` / `summary.md` artifacts, the no-profile boundary and the 48-second demo.
+- This was an update to one relevant existing listing, not a new PR or a duplicate announcement. No maintainer response or adoption is claimed yet.
+
 ## X timeline recheck — 2026-09-14 16:54 JST
 
 - The public `@forifori_dev` timeline now shows newer account activity than the earlier checkpoint: the newest post is displayed as **1h** (status `2099380959384899784`), followed by posts displayed as 2h and 14h. The Oathra post remains the older 9月12日 entry.
