@@ -2,11 +2,10 @@
 
 Use this once the account-wide 24-hour spacing has elapsed and the current timeline has been checked. Attach `docs/media/oathra-transcript.mp4` near publication; the video is a saved model/simulator run, not a phone call.
 
-A voice agent can say “booked” after a proposal, hedge, price change or cancellation.
+Collect follow-up info without a pushy phone agent.
 
-Oathra checks transcript JSON against the callee’s words. No API key.
+Oathra v0.1.7 asks consent once after booking, asks one declared field per turn, and stops on decline or ambiguity. Explicit answers → intake.json + summary.md. No inferred profile.
 Try: https://forifor.github.io/oathra/en/check.html
-Setup: https://forifor.github.io/oathra/#setup
-Video: saved run.
+https://github.com/FORIFOR/oathra/releases/tag/v0.1.7
 
 Before publishing, verify the active account timeline, use the current v0.1.7 site and release links, upload the video close to publication, confirm media processing, and record the returned post ID, URL and timestamp in `docs/launch/posts.md`. Do not reuse an older campaign state or send a language duplicate.
