@@ -26,9 +26,7 @@ published: true
 
 [ブラウザの証拠ラボ](https://forifor.github.io/oathra/?utm_source=zenn&utm_medium=article&utm_campaign=evidence_revision#sim)で「たぶん大丈夫」→「ご予約承りました」→「やはりお取りできませんでした」と押すと、未完了→完了→未完了と変わります。自由入力もできます。
 
-https://x.com/forifori_dev/status/2099160731409379808
-
-埋め込みが表示されない場合は、[サイトで30秒の動画を見る](https://forifor.github.io/oathra/#demo-video)こともできます。
+動画は[サイトで30秒の実操作を確認できます](https://forifor.github.io/oathra/#demo-video)。
 
 本体と同じエンジンをブラウザで動かした実操作動画です。発言は操作例であり、実電話の録音ではありません。音声認識は介さず、文字を直接入力しています。
 

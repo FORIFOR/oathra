@@ -30,11 +30,7 @@ https://forifor.github.io/oathra/?utm_source=zenn&utm_medium=article&utm_campaig
 
 「自分の言葉・AI側の発言で試す」を開くと、自由入力もできます。発信側を選んで「予約できました」と送っても、それだけでは確定の証拠になりません。
 
-同じ操作を録画した30秒の動画です。
-
-https://x.com/forifori_dev/status/2099160731409379808
-
-埋め込みが表示されない場合は、[サイトで30秒の動画を見る](https://forifor.github.io/oathra/#demo-video)こともできます。
+同じ操作を録画した30秒の動画です。[サイトで30秒の動画を見る](https://forifor.github.io/oathra/#demo-video)ことができます。
 
 この体験で動いているのは、**本体と同じ文字列の判定エンジン**です。用意した発言は操作例で、結果は入力のたびに計算しています。音声認識や実際の電話を試す機能ではありません。入力文は外部へ送信せず、日付の解釈には2026年を基準年として使います。
 
