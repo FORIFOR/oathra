@@ -190,7 +190,33 @@ async function askSecret(question: string, optional = false): Promise<string> {
   if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRawMode !== "function") {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
     try {
-      return (await rl.question(`${question}${optional ? ` ${dim("(optional)")}` : ""}\n> `)).trim();
+      // readline/promises can leave question() pending when a pipe closes
+      // before a response. Reject explicitly so setup cannot exit as if it
+      // completed with a half-entered configuration.
+      return (
+        await new Promise<string>((resolve, reject) => {
+          let settled = false;
+          const onClose = () => {
+            if (settled) return;
+            settled = true;
+            reject(new Error("setup input ended before a value was entered"));
+          };
+          rl.once("close", onClose);
+          rl.question(`${question}${optional ? ` ${dim("(optional)")}` : ""}\n> `)
+            .then((value) => {
+              if (settled) return;
+              settled = true;
+              rl.off("close", onClose);
+              resolve(value);
+            })
+            .catch((error: unknown) => {
+              if (settled) return;
+              settled = true;
+              rl.off("close", onClose);
+              reject(error);
+            });
+        })
+      ).trim();
     } finally {
       rl.close();
     }
@@ -241,7 +267,30 @@ async function ask(question: string, opts: { secret?: boolean; default?: string;
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     const suffix = opts.default ? ` ${dim(`(${opts.default})`)}` : opts.optional ? ` ${dim("(optional)")}` : "";
-    const answer = (await rl.question(`${question}${suffix}\n> `)).trim();
+    const answer = (
+      await new Promise<string>((resolve, reject) => {
+        let settled = false;
+        const onClose = () => {
+          if (settled) return;
+          settled = true;
+          reject(new Error("setup input ended before a choice was entered"));
+        };
+        rl.once("close", onClose);
+        rl.question(`${question}${suffix}\n> `)
+          .then((value) => {
+            if (settled) return;
+            settled = true;
+            rl.off("close", onClose);
+            resolve(value);
+          })
+          .catch((error: unknown) => {
+            if (settled) return;
+            settled = true;
+            rl.off("close", onClose);
+            reject(error);
+          });
+      })
+    ).trim();
     return answer || opts.default || "";
   } finally {
     rl.close();
@@ -332,7 +381,7 @@ async function runStep(step: ProvisionStep): Promise<void> {
     process.stdout.write(`  ${dim("…")} ${step.title}`);
     const r = await step.run();
     process.stdout.write(`\r  ${r.ok ? green("✓") : red("✗")} ${step.title}${r.detail ? dim(`  ${r.detail}`) : ""}\n`);
-    if (!r.ok) throw new Error(`${step.title} failed${r.detail ? `: ${r.detail}` : ""}`);
+    if (!r.ok && !step.continueOnFailure) throw new Error(`${step.title} failed${r.detail ? `: ${r.detail}` : ""}`);
     return;
   }
   // Already satisfied (e.g. the automatic check before it passed): no human needed.

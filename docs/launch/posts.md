@@ -1,5 +1,13 @@
 # Launch posts and publication record
 
+## v0.1.4 setup recovery — 2026-09-14 JST
+
+- Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.4
+- `oathra setup phone` now waits on a guided Twilio number purchase / verification step and Japan outbound permission instead of aborting after the automatic check reports a missing prerequisite.
+- Piped setup input now fails explicitly when stdin closes before a value, avoiding a successful exit with an incomplete setup.
+- Validation: typecheck, Twilio provider tests (including no-number recovery), full test suite, build, and clean public package smoke test.
+- This fixes first-run friction; it is not evidence of external adoption. Stars and business inquiries remain unmeasured beyond the existing snapshots.
+
 ## v0.1.3 beginner setup — 2026-09-14 JST
 
 - Released: https://github.com/FORIFOR/oathra/releases/tag/v0.1.3

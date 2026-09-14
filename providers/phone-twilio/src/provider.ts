@@ -87,6 +87,9 @@ export function createTwilioProvider(deps: TwilioProviderDeps = {}): PhoneProvid
         type: "automatic",
         id: "number",
         title: "Find a voice-capable number",
+        // Let setup continue to the browser-guided purchase/verification step
+        // when a new Twilio account has no number yet.
+        continueOnFailure: true,
         run: async () => {
           const numbers = await listNumbers(fetchImpl, sid, token);
           const wanted = input.answers.phoneNumber?.trim();
@@ -103,10 +106,31 @@ export function createTwilioProvider(deps: TwilioProviderDeps = {}): PhoneProvid
         },
       };
 
+      const buyNumber: ProvisionStep = {
+        type: "user_action",
+        id: "buy-number",
+        title: "Buy or verify a voice-capable number",
+        reason: input.answers.phoneNumber?.trim()
+          ? `Twilio needs ${input.answers.phoneNumber.trim()} on this account before Oathra can call.`
+          : "Twilio needs at least one voice-capable number on this account before Oathra can call.",
+        url: "https://console.twilio.com/us1/develop/phone-numbers/manage/search",
+        verify: async () => {
+          const numbers = await listNumbers(fetchImpl, sid, token).catch((): NumberInfo[] => []);
+          const wanted = input.answers.phoneNumber?.trim();
+          const pick = wanted ? numbers.find((n) => n.phone_number === wanted) : numbers.find((n) => n.capabilities?.voice);
+          if (!pick?.capabilities?.voice) return false;
+          state.from = pick.phone_number;
+          return true;
+        },
+      };
+
       const jpCheck: ProvisionStep = {
         type: "automatic",
         id: "geo-jp",
         title: "Check outbound permission for Japan",
+        // Twilio commonly disables international destinations by default; the
+        // next step opens the console and waits until the user enables Japan.
+        continueOnFailure: true,
         run: async () => {
           state.jpEnabled = await japanEnabled(fetchImpl, sid, token);
           return state.jpEnabled ? { ok: true, detail: "calls to Japan enabled" } : { ok: false, detail: "calls to Japan are disabled" };
@@ -134,7 +158,7 @@ export function createTwilioProvider(deps: TwilioProviderDeps = {}): PhoneProvid
 
       // The geo check decides whether the guided step is needed; expose both so
       // setup can skip the user action when the automatic check already passed.
-      const steps: ProvisionStep[] = [verifyCreds, findNumber, jpCheck, jpAction, mediaStreams];
+      const steps: ProvisionStep[] = [verifyCreds, findNumber, buyNumber, jpCheck, jpAction, mediaStreams];
 
       return {
         steps,

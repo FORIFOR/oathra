@@ -49,17 +49,17 @@ cp .env.example .env
 pnpm oathra setup phone
 ```
 
-公開パッケージを使う場合は、v0.1.3 の GitHub 配布版を明示します。
+公開パッケージを使う場合は、v0.1.4 の GitHub 配布版を明示します。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.3/oathra-0.1.3.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.4/oathra-0.1.4.tgz oathra setup phone
 ```
 
 ウィザードは次の順で進みます。
 
 1. 音声エンジンを選び、必要なキーを表示して `.env` に保存します。
 2. 電話会社を選び、必要な認証情報を入力します。入力済みの値は再入力されません。
-3. Twilio の番号や海外発信許可など、管理画面でしか完了できない手順を URL 付きで案内します。
+3. Twilio の番号購入や海外発信許可など、管理画面でしか完了できない手順を URL 付きで案内し、完了するまで自動で確認します。
 4. 最後にローカルテストを選べます。
 
 Plivo または Custom SIP を選んだ場合は、電話会社の質問の前に LiveKit の 3 つの値も尋ねられます。秘密キーは端末に表示されず、`.oathra/phone.yaml` には保存されません。

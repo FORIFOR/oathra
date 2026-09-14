@@ -88,6 +88,8 @@ export type ProvisionStep =
       type: "automatic";
       id: string;
       title: string;
+      /** Continue to a following user_action when this check is not ready yet. */
+      continueOnFailure?: boolean;
       run(): Promise<{ ok: boolean; detail?: string }>;
     }
   | {

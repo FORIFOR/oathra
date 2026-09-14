@@ -31,6 +31,7 @@ describe("twilio provider — provision", () => {
     expect(results).toEqual([
       { id: "credentials", ok: true },
       { id: "number", ok: true },
+      { id: "buy-number", ok: true },
       { id: "geo-jp", ok: true },
       { id: "geo-jp-enable", ok: true },
       { id: "media-streams", ok: true },
@@ -72,6 +73,22 @@ describe("twilio provider — provision", () => {
     for (const s of ok.steps) if (s.type === "automatic" && s.id === "number") expect((await s.run()).ok).toBe(true);
     const bad = await p.provision({ answers: { accountSid: "AC1", authToken: "tok", phoneNumber: "+15550000000" }, env: {} as NodeJS.ProcessEnv });
     for (const s of bad.steps) if (s.type === "automatic" && s.id === "number") expect((await s.run()).ok).toBe(false);
+  });
+
+  it("offers a guided number step when a new account has no voice number", async () => {
+    const state: { numbers?: Array<{ phone_number: string; voice: boolean }> } = { numbers: [] };
+    const { fetchImpl } = mockTwilio(state);
+    const p = createTwilioProvider({ fetchImpl });
+    const plan = await p.provision({ answers: { accountSid: "AC1", authToken: "tok" }, env: {} as NodeJS.ProcessEnv });
+    const number = plan.steps.find((s) => s.id === "number");
+    expect(number?.type === "automatic" && (await number.run()).ok).toBe(false);
+    const action = plan.steps.find((s) => s.id === "buy-number");
+    expect(action?.type).toBe("user_action");
+    if (action?.type !== "user_action") throw new Error("expected buy-number action");
+    expect(await action.verify()).toBe(false);
+    state.numbers = [{ phone_number: "+19470000000", voice: true }];
+    expect(await action.verify()).toBe(true);
+    expect((await plan.finish()).config).toMatchObject({ from: "+19470000000" });
   });
 });
 

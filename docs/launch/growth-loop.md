@@ -10,7 +10,7 @@ Current X publication text: [x-transcript-check.txt](x-transcript-check.txt). Th
 
 Start the 48–72 hour audience/entry-point assessment from a successfully published relevant announcement. The filtered Reddit submission is an immediate distribution failure, not the beginning of an external trial observation window. Read early feedback sooner and fix real failures immediately. The checker has no analytics; infer trials from explicit outside reports, not page views or release downloads alone.
 
-The v0.1.3 onboarding pass is now public: [release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.3) and [Japanese setup guide](../SETUP.ja.md). It addresses the concrete first-run gap found in the v0.1.2 package (engine and gateway keys were not collected by the phone wizard). Treat the next external trial report as the test of whether this explanation is sufficient; do not count the maintainer's clean-install smoke test.
+The v0.1.4 onboarding fix is now public: [release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.4) and [Japanese setup guide](../SETUP.ja.md). It keeps the v0.1.3 credential collection and additionally continues to guided Twilio number purchase / Japan permission steps instead of stopping at the first failed check. Treat the next external trial report as the test of whether this explanation is sufficient; do not count the maintainer's clean-install smoke test.
 
 ## Objective and current diagnosis
 
