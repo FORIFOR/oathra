@@ -5,6 +5,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 const exec = promisify(execFile);
 const base = "repos/FORIFOR/oathra";
+const distributionPRs = [
+  ["caramaschiHG", "awesome-ai-agents-2026", 570],
+  ["Jenqyang", "Awesome-AI-Agents", 486],
+  ["yzfly", "awesome-voice-agents", 42],
+  ["e2b-dev", "awesome-ai-sdks", 364],
+];
 async function gh(path) {
   const { stdout } = await exec("gh", ["api", path], { timeout: 20000, maxBuffer: 2_000_000 });
   return JSON.parse(stdout);
@@ -29,6 +35,22 @@ const sources = {
     tag: r.tag_name, publishedAt: r.published_at,
     assets: r.assets.map(a => ({ name: a.name, downloads: a.download_count })),
   }))),
+  distributionPRs: () => Promise.all(distributionPRs.map(async ([owner, repo, number]) => {
+    const pr = await gh(`repos/${owner}/${repo}/pulls/${number}`);
+    return {
+      repository: `${owner}/${repo}`,
+      number,
+      state: pr.state,
+      draft: pr.draft,
+      mergeable: pr.mergeable,
+      mergeableState: pr.mergeable_state,
+      mergedAt: pr.merged_at,
+      updatedAt: pr.updated_at,
+      comments: pr.comments,
+      reviewComments: pr.review_comments,
+      url: pr.html_url,
+    };
+  })),
   zennLaunch: () => article("oathra-launch"),
   zennEvidence: () => article("oathra-evidence-rules"),
 };
