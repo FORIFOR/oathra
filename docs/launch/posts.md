@@ -121,13 +121,13 @@ Native video attachment failed because the Chrome extension lacks file URL acces
 
 Use **one** version of this concrete demo after the previous announcement is at least 24 hours old (earliest from the currently recorded history: 2026-09-14 15:38:16 UTC / 2026-09-15 00:38:16 JST). Check actual recent account activity first. The existing 12-hour follow-up should do this; do not create a duplicate scheduler.
 
-> I built a local transcript checker for voice agents. Paste JSON → inspect fields and supporting utterances. No install or API key.
+> Collect follow-up info without a pushy phone agent. Oathra v0.1.10 asks consent once, asks one declared field per turn, and stops on decline, hold or ambiguity. Explicit answers go to intake.json + summary.md.
 >
-> Demo uses a saved model/simulator run, not a phone call.
+> The 48-second Arena video is a simulator run, not a phone call.
 >
-> I'm the maintainer. Try: https://forifor.github.io/oathra/en/check.html
+> I'm the maintainer. See: https://forifor.github.io/oathra/en/#intake-video
 
-Attach `docs/media/oathra-transcript.mp4` using the existing authenticated X API flow when eligible. Do not reuse the old helper's `x-en.json` publication state or its hardcoded evidence-lab movie. Use a separate persistent state record for this campaign, verify media processing, publish once and record the returned post ID. Upload near publication so media does not expire first.
+Attach `docs/media/oathra-intake.mp4` using the existing authenticated X API flow when eligible. Do not reuse the old helper's `x-en.json` publication state or its hardcoded evidence-lab movie. Use a separate persistent state record for this campaign, verify media processing, publish once and record the returned post ID. Upload near publication so media does not expire first.
 
 At 2026-09-13 19:20:43 UTC, GitHub still reports **0 stars / 0 forks**. Goal unachieved. The immediate bottleneck remains distribution; this new trial has no measured external adoption yet. Inspect actual responses and fresh traffic at 48–72 hours, without counting our verifications.
 

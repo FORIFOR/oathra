@@ -1,11 +1,12 @@
 ## Next X announcement — English, one post
 
-Use this once the account-wide 24-hour spacing has elapsed and the current timeline has been checked. Attach `docs/media/oathra-transcript.mp4` near publication; the video is a saved model/simulator run, not a phone call.
+Use this once the account-wide 24-hour spacing has elapsed and the current timeline has been checked. Attach `docs/media/oathra-intake.mp4` near publication; the video is an Arena simulator run, not a phone call.
 
 Collect follow-up info without a pushy phone agent.
 
 Oathra v0.1.10 asks consent once after booking, asks one declared field per turn, and stops on decline, hold or ambiguity. Explicit answers → intake.json + summary.md. No inferred profile. YAML `mission.intake` carries the same rules into real calls.
-Try: https://forifor.github.io/oathra/en/check.html
+See the 48-second run: https://forifor.github.io/oathra/en/#intake-video
+Try the evidence engine: https://forifor.github.io/oathra/en/check.html
 https://github.com/FORIFOR/oathra/releases/tag/v0.1.10
 
 Before publishing, verify the active account timeline, use the current v0.1.10 site and release links, upload the video close to publication, confirm media processing, and record the returned post ID, URL and timestamp in `docs/launch/posts.md`. Do not reuse an older campaign state or send a language duplicate.
