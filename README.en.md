@@ -314,4 +314,4 @@ Apache-2.0. Oathra Cloud (managed SIP, numbers, hosted inference, teams) will be
 
 ## Contribute
 
-[Report an evidence issue](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [Report a startup or UI issue](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [Contributing guide](CONTRIBUTING.md). English and Japanese welcome.
+[Report an evidence issue](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [Report a startup or UI issue](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [Support and private inquiry guidance](SUPPORT.md) · [Contributing guide](CONTRIBUTING.md). English and Japanese welcome.
