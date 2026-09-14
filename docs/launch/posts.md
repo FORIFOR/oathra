@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## GitHub discovery copy — 2026-09-14 20:15 JST
+
+- Updated the repository About description to state the current narrow value proposition: evidence-anchored phone outcomes plus scene-aware, consented follow-up intake, with the no-API-key local check. Existing topics and homepage remain unchanged.
+- This is a metadata experiment for search and first-impression clarity, not an adoption signal; the readback remains 0 stars / 0 forks.
+
 ## X publication gate recheck — 2026-09-14 20:11 JST
 
 - The read-only X API check succeeded on retry for `@forifori_dev`; the active v0.1.12 draft is valid, duplicate-free and still ineligible until **2026-09-15 15:13:19 JST** because the latest original status is `2099380959384899784`.
