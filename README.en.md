@@ -83,6 +83,10 @@ Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio ke
 
 An agent that says "予約できました" is not evidence. Oathra returns a **VerifiedResult**: each field is anchored to an utterance from the *other* party (and to audio on real calls), and completion is decided by code, never by asking the model whether it succeeded.
 
+### Additional questions and profiling
+
+Oathra does not infer a callee's attributes or quietly collect information outside the call's purpose. The current dialogue asks only for the purpose and required fields declared in the `CallContract`, while limiting repeated questions. Decisions are saved in `result.json`, utterance-linked `evidence`, and `transcript.json`. Any extra profile fields need an explicit contract extension that declares the purpose, fields, question limit, consent, and the stop behavior when the callee declines.
+
 ---
 
 ## Try it from source
