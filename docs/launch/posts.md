@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## X publication gate recheck — 2026-09-14 20:11 JST
+
+- The read-only X API check succeeded on retry for `@forifori_dev`; the active v0.1.12 draft is valid, duplicate-free and still ineligible until **2026-09-15 15:13:19 JST** because the latest original status is `2099380959384899784`.
+- No media upload or post was attempted before the 24-hour window. The first read-only request returned a transient HTTP 503 and was retried successfully; it did not change the publication state.
+
 ## v0.1.12 public package — 2026-09-14 20:05 JST
 
 - Published the scene-aware consented intake guard from `main` as GitHub Release [v0.1.12](https://github.com/FORIFOR/oathra/releases/tag/v0.1.12). Assets are [`oathra-0.1.12.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz) and its [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz.sha256); the tarball hash is `cf00fb58ca6e2b7d77aeee52fde3eb1141b283b4524976f926097a571c58f2c0`. The package includes `startAfter`, `dependsOn`, `choices`, canonical answer matching, and the no-save stop behavior for refusal, hold, ambiguity or unmatched replies.
