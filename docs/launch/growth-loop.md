@@ -4,7 +4,7 @@
 
 The user explicitly selected this sequence: (1) focus on developers already building voice/phone agents with LiveKit or similar tools who need to detect false reservation completion; (2) show saved transcripts producing verified fields, missing requirements and JSON, with a direct integration guide; (3) obtain real feedback in relevant public communities; (4) change distribution when visits are absent, explanation/onboarding when visits do not become trials, and functionality when users encounter failures.
 
-Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not spend another cycle rebuilding the demo or expanding features without an actual reported need. The existing 12-hour heartbeat `oathra` now explicitly follows these four steps. Its cadence and notification policy are unchanged; no duplicate automation was created.
+Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not spend another cycle rebuilding the demo or expanding features without an actual reported need. The existing hourly heartbeat `oathra` now explicitly follows these four steps. It stays quiet when the state is unchanged and no duplicate automation was created.
 
 ### Current product checkpoint — v0.1.10
 
@@ -33,7 +33,7 @@ Inference: the available reach sample cannot establish whether developers want t
 
 The no-install [transcript checker](https://forifor.github.io/oathra/en/check.html) and 25-second walkthrough are public. [Details and evidence](transcript-check-experiment.md). The r/voiceagents post was submitted once but **removed by Reddit's automatic filter**. See the exact URL and readback in [posts.md](posts.md). Do not continue Reddit promotion or count the author-visible post as distribution. Native Chrome attachment is unavailable with current file access; LiveKit Slack requires a new join/terms step. GitHub Discussion [#14](https://github.com/FORIFOR/oathra/discussions/14) is now the active feedback prompt; inspect its replies before changing the evidence rules. The next X demo announcement remains eligible only after the account-wide 24-hour spacing and a fresh timeline check. No additional feature expansion is justified before outside feedback or a real bug. Stars remain 0; no external trials established.
 
-## Every 12 hours
+## On each scheduled check
 
 1. Read this file, recent publication records and git status. Preserve concurrent changes. Do not repeat completed work or republish an unchanged announcement.
 2. Run `node scripts/growth-snapshot.mjs` and write a new timestamped snapshot under `docs/launch/metrics/` only when retaining it helps comparison. A failed source is unknown, never zero. Compare daily buckets; do not add overlapping 14-day totals. Note maintainer activity and data freshness.
