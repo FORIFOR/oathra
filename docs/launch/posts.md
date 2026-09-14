@@ -3,8 +3,11 @@
 ## v0.1.6 consent-based intake release — 2026-09-14 JST
 
 - Release notes: `docs/launch/release-notes-0.1.6.md`.
-- Source: consent-gated, contract-declared intake in the runtime, brain prompts, speech-to-speech instructions and replay artifacts. The tag and assets will be recorded here after CI and package verification.
+- Published release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.6
+- Assets: [oathra-0.1.6.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz.sha256). The tarball SHA-256 is `efc2d3efac764ff97d4743bc3f2487fa1482a7b514e4726aa56c887019b9579d`.
+- Source: `cbc465b` (`feat(intake): add consent-based bounded caller information`) with runtime, brain prompts, speech-to-speech instructions, replay artifacts, docs and site updates.
 - The public docs and site are prepared for v0.1.6. npm still serves 0.1.0 until its publish credential is configured.
+- CI `34807789748` and Pages `34807789761` passed. Initial v0.1.6 asset downloads were 0 at 13:57 JST.
 
 ## v0.1.5 decision memo release — 2026-09-14 JST
 
