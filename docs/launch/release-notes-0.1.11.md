@@ -19,4 +19,6 @@ Install the public GitHub asset:
 npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz oathra demo
 ```
 
-Validation on the release source: typecheck, build, 648 passing tests with one credential-gated live test skipped, scenario validation, false-completion evaluation, adversarial evaluation and package smoke.
+Validation on the release source: typecheck, build, 648 passing tests with one credential-gated live test skipped, scenario validation, false-completion evaluation, adversarial evaluation and package smoke. The `main` branch has since added intake provenance hardening and now reports 649 passing tests; the tagged tarball remains immutable for reproducibility.
+
+For first-time setup, see the [Japanese setup guide](https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.ja.md) or [English setup guide](https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.en.md). The current branch also documents [security reporting](https://github.com/FORIFOR/oathra/blob/main/SECURITY.md) and the [integration contract](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md).

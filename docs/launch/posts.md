@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Release page onboarding clarification — 2026-09-14 19:26 JST
+
+- Updated the public [v0.1.11 release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.11) to distinguish the immutable tagged asset's 648-test validation from the current `main` branch's 649-test intake provenance hardening.
+- Added direct links from the release page to Japanese/English setup guides, the security policy and the integration contract. The release asset and checksum were not replaced.
+- Local release notes match the public body. This is a documentation and onboarding improvement; no new adoption is inferred.
+
 ## Security reporting path — 2026-09-14 19:24 JST
 
 - Added [`SECURITY.md`](../../SECURITY.md) with supported-version scope, private-reporting guidance, redaction rules and the existing provider/data boundary. It does not invent an email address or request secrets in public issues.
