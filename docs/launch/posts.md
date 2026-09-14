@@ -4,7 +4,7 @@
 
 - LiveKit's official community guide lists its Developer Community as a technical forum for asking questions, sharing knowledge and getting feedback: https://docs.livekit.io/intro/community/
 - This is a better audience fit than another generic launch feed because Oathra targets developers already building voice or phone agents. The guidelines prohibit unsolicited self-promotion except in channels explicitly designed for promotion (for example `#show-and-tell`), while allowing launch and demo sharing when it stays on-topic: https://community.livekit.io/guidelines
-- The next experiment is one substantive `#show-and-tell` post after account access is available and the current channel rules are rechecked; Slack remains a separate join/terms step. No LiveKit forum or Slack post was made during this check. Do not count the documentation page as distribution or endorsement.
+- The next experiment is one substantive `#show-and-tell` post after account access is available and the current channel rules are rechecked. The prepared text is [livekit-show-and-tell-draft.md](livekit-show-and-tell-draft.md). Slack remains a separate join/terms step. No LiveKit forum or Slack post was made during this check. Do not count the documentation page as distribution or endorsement.
 
 ## Facebook distribution check — 2026-09-14 JST
 
