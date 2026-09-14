@@ -108,6 +108,15 @@
 - GitHub Discussion #14: フォローアップ1件。外部からの返信・導入報告はまだない。
 - Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。公開APIに閲覧数はない。
 - 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま、Xはログイン・投稿間隔条件が未達のため新規投稿なし。
+
+## 2026-09-14 14:59 JST（v0.1.9 シナリオ引き継ぎ公開後）
+
+- GitHub stars / forks: **0 / 0**。外部Issueはまだ0件。
+- Traffic API: views **6 / 6 uniques**、clones **298 / 121 uniques**。CI・作者・配布確認を含むため、利用者数やスター獲得とはみなさない。
+- v0.1.9 assets: tarball **0**、checksum **0**（公開直後）。tarball SHA-256: `f9085ce1aa7be04eee6c4ed03ea222f9e882a90e871f3dc6935386a45408eaf5`。ダウンロード後のチェックサム検証は成功。
+- GitHub Discussion #14: フォローアップ1件。外部からの返信・導入報告はまだない。
+- Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。公開APIに閲覧数はない。
+- 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま。Xは次の投稿可能時刻（2026-09-15 03:01 JST以降）まで新規告知を保留。
 - GitHub topics を検索語に合わせて20件へ整理（`phone-agent`、`voice-agent-testing`、`llm-evaluation`、`call-automation` を追加）。トピック追加自体はスター獲得の証拠ではない。
 
 ## 2026-09-14 14:10 JST（v0.1.7 同意処理ホットフィックス公開後）
