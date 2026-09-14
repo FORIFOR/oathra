@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkConstraints, defineCall, isPermitted, requiredFields } from "./index.js";
+import { checkConstraints, defineCall, isPermitted, renderIntakeConsentPrompt, requiredFields } from "./index.js";
 
 describe("defineCall", () => {
   it("applies defaults", () => {
@@ -89,6 +89,24 @@ describe("defineCall", () => {
         ],
       },
     })).toThrow(/cyclic intake field dependency/);
+  });
+
+  it("makes the intake purpose audible before consent without duplicating it", () => {
+    const c = defineCall({
+      goal: "support.follow_up",
+      intake: {
+        purpose: "予約後の案内を適切にする",
+        consentPrompt: "予約とは別に2点だけ伺ってもよろしいでしょうか？",
+        fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+      },
+    });
+    expect(renderIntakeConsentPrompt(c.intake!, "ja")).toBe("追加の聞き取りの目的は「予約後の案内を適切にする」です。予約とは別に2点だけ伺ってもよろしいでしょうか？");
+    const explicit = defineCall({
+      ...c,
+      intake: { ...c.intake!, consentPrompt: "予約後の案内を適切にするため、予約とは別に伺ってもよろしいでしょうか？" },
+    });
+    expect(renderIntakeConsentPrompt(explicit.intake!, "ja")).toBe(explicit.intake!.consentPrompt);
+    expect(renderIntakeConsentPrompt(c.intake!, "en")).toContain("The purpose of the extra questions is");
   });
 });
 

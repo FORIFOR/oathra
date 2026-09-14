@@ -129,6 +129,7 @@ describe("scripted agent vs scripted characters", () => {
     ]);
     expect(o.intake.consent).toMatchObject({ granted: true, utteranceId: expect.any(String), t: expect.any(Number) });
     expect(dialogue).toContain("追加で2点だけ伺ってもよろしいでしょうか？");
+    expect(dialogue).toContain("追加の聞き取りの目的は「Offer a relevant follow-up」です。");
     expect(dialogue).toContain("ご担当を教えていただけますか？");
     expect(dialogue).toContain("お住まいの地域を教えていただけますか？");
     expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(2);

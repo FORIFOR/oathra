@@ -5,7 +5,7 @@
  * permissions are decided by the runtime, so the prompt is small and the
  * output contract is strict JSON.
  */
-import { ActionSchema, type Action } from "@oathra/contract";
+import { ActionSchema, renderIntakeConsentPrompt, type Action } from "@oathra/contract";
 import type { BrainContext, BrainResponse } from "@oathra/core";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -46,7 +46,7 @@ export function buildSystemPrompt(ctx: BrainContext): string {
       `declined fields: ${fmt(ctx.intake.declined)}`,
       ...(ctx.intake.skipped?.length ? [`skipped fields: ${fmt(ctx.intake.skipped)}`] : []),
       ...(contract.intake ? [
-        `consent prompt: ${contract.intake.consentPrompt}`,
+        `consent prompt: ${renderIntakeConsentPrompt(contract.intake, contract.language)}`,
         `intake start-after fields: ${fmt(contract.intake.startAfter ?? [])}`,
         `declared questions: ${fmt(contract.intake.fields.map((field) => ({ key: field.key, question: field.question, ...(field.dependsOn ? { dependsOn: field.dependsOn } : {}), ...(field.choices ? { choices: field.choices } : {}) })))}`,
       ] : []),

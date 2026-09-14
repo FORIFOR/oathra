@@ -9,7 +9,7 @@
  */
 import WebSocket from "ws";
 import type { Action, CallContract } from "@oathra/contract";
-import { requiredFields } from "@oathra/contract";
+import { renderIntakeConsentPrompt, requiredFields } from "@oathra/contract";
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { RealtimeBridge } from "./index.js";
@@ -175,7 +175,7 @@ export class OpenAILiveAgent {
         `${ja ? "状態" : "Status"}: ${v?.intake?.status ?? "not_started"}`,
         `${ja ? "質問数" : "Questions asked"}: ${v?.intake?.askedQuestions ?? 0} / ${c.intake.maxQuestions}`,
         `${ja ? "開始前提" : "Start-after fields"}: ${c.intake.startAfter?.join(", ") || "(required details only)"}`,
-        `${ja ? "同意文" : "Consent prompt"}: ${c.intake.consentPrompt}`,
+        `${ja ? "同意文" : "Consent prompt"}: ${renderIntakeConsentPrompt(c.intake, c.language)}`,
         `${ja ? "項目" : "Declared fields"}: ${c.intake.fields.map((field) => `${field.key}: ${field.question}${field.dependsOn?.length ? ` (depends on ${field.dependsOn.join(",")})` : ""}${field.choices?.length ? ` [choices: ${field.choices.join(", ")}]` : ""}`).join("; ")}`,
       ] : []),
       ...(c.intake ? [ja ? "追加聞き取りは開始条件と同意文の後、依存条件を満たす宣言済み質問を1回に1つだけ尋ねる。選択肢は1つだけ一致した場合に記録し、推測せず拒否・曖昧な返答なら停止する。" : "For optional intake, ask the consent prompt after start conditions, then one declared question whose dependencies are met; accept one matching choice only, never infer attributes and stop on decline or ambiguity."] : []),

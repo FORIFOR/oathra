@@ -179,6 +179,25 @@ export const IntakeSchema = z
   });
 export type Intake = z.infer<typeof IntakeSchema>;
 
+/**
+ * Render the consent line that is actually spoken to the callee.
+ *
+ * A contract keeps `purpose` and `consentPrompt` separate so callers can
+ * reuse a short prompt in their UI and tests. The spoken line must still make
+ * the collection purpose visible before asking permission. If the caller has
+ * already included the purpose in the prompt, keep the prompt unchanged to
+ * avoid repeating it.
+ */
+export function renderIntakeConsentPrompt(intake: Intake, language: "ja" | "en"): string {
+  const purpose = intake.purpose.trim();
+  const prompt = intake.consentPrompt.trim();
+  const compact = (value: string) => value.replace(/[\s、。,.!?！？「」]/g, "").toLocaleLowerCase();
+  if (!purpose || compact(prompt).includes(compact(purpose))) return prompt;
+  return language === "ja"
+    ? `追加の聞き取りの目的は「${purpose}」です。${prompt}`
+    : `The purpose of the extra questions is “${purpose}.” ${prompt}`;
+}
+
 // ---------------------------------------------------------------------------
 // CallContract
 // ---------------------------------------------------------------------------

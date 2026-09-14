@@ -9,17 +9,17 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-Run **v0.1.13** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.14** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.14/oathra-0.1.14.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.13). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.14). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
 After trying it, [star the repository](https://github.com/FORIFOR/oathra) to follow updates. Share a real use case or an unexpected judgement in [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) or an [issue](https://github.com/FORIFOR/oathra/issues); remove personal data and private call content first.
 
-**Already building a voice agent?** v0.1.13 adds scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a conservative guard against provisional reservation confirmations. It stops immediately when consent is unclear. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
+**Already building a voice agent?** v0.1.14 adds scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a conservative guard against provisional reservation confirmations. It stops immediately when consent is unclear. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
 
 [Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
 
@@ -62,8 +62,8 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 
 ```bash
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
-# from the public v0.1.13 asset:
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz oathra setup phone
+# from the public v0.1.14 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.14/oathra-0.1.14.tgz oathra setup phone
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation
@@ -91,7 +91,7 @@ An agent that says "予約できました" is not evidence. Oathra returns a **V
 
 Oathra does not infer a callee's attributes or quietly collect information outside the call's purpose. The normal dialogue asks only for the purpose and required fields declared in the `CallContract`, while limiting repeated questions. Decisions are saved in `result.json`, a human-readable `summary.md`, utterance-linked `evidence`, and `transcript.json`.
 
-When a workflow genuinely needs more information, add an explicit `intake` contract with a purpose, consent prompt, declared fields and a question cap. After the required call details are settled, the agent asks consent once and then asks at most one declared question per turn. Use `startAfter` for additional scene prerequisites, `dependsOn` to branch on an earlier explicit answer, and `choices` when a canonical answer is safer than free text. A decline, hold, ambiguous reply or unmatched choice stops intake immediately; consent and answers are saved with utterance IDs and timestamps in `.oathra/calls/<callId>/intake.json` and `summary.md`. This can form an operational profile from explicit answers, but never infers a callee's attributes or sensitive traits.
+When a workflow genuinely needs more information, add an explicit `intake` contract with a purpose, consent prompt, declared fields and a question cap. After the required call details are settled, the agent states the purpose, asks consent once and then asks at most one declared question per turn. If `consentPrompt` does not already contain the purpose, the runtime includes `purpose` in the line spoken to the callee. Use `startAfter` for additional scene prerequisites, `dependsOn` to branch on an earlier explicit answer, and `choices` when a canonical answer is safer than free text. A decline, hold, ambiguous reply or unmatched choice stops intake immediately; consent and answers are saved with utterance IDs and timestamps in `.oathra/calls/<callId>/intake.json` and `summary.md`. This can form an operational profile from explicit answers, but never infers a callee's attributes or sensitive traits.
 
 ```ts
 const contract = defineCall({
@@ -268,7 +268,7 @@ Bugs this harness caught before it went green: thousands separators splitting `2
 
 ## Status
 
-v0.1.13 (released 2026-09-14):
+v0.1.14 (released 2026-09-14):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent

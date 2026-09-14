@@ -10,7 +10,7 @@
  */
 import WebSocket from "ws";
 import type { Action, CallContract } from "@oathra/contract";
-import { ActionSchema, requiredFields } from "@oathra/contract";
+import { ActionSchema, renderIntakeConsentPrompt, requiredFields } from "@oathra/contract";
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 
@@ -337,7 +337,7 @@ export class OpenAIRealtimeAgent {
         ja
           ? "必要な予約情報と開始条件が揃ってから同意文を一度尋ね、同意後は依存条件を満たす宣言済みの質問を一度に1つだけ尋ねる。選択肢がある項目は1つだけ一致した回答を記録し、推測せず、拒否・曖昧な返答なら停止する。"
           : "After the required call details and start-after fields are settled, ask the consent prompt once. After consent, ask only one declared question whose dependencies are met; for choices, accept one matching choice only. Never infer attributes and stop on decline or ambiguity.",
-        `${ja ? "同意文" : "Consent prompt"}: ${c.intake.consentPrompt}`,
+        `${ja ? "同意文" : "Consent prompt"}: ${renderIntakeConsentPrompt(c.intake, c.language)}`,
       ] : []),
       "",
       ja ? "## ルール" : "## Rules",

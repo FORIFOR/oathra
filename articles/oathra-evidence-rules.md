@@ -159,7 +159,7 @@ CIでは、用意した発言変異を使う1万runの敵対的シミュレー�
 
 ## 自分の文字起こしを渡す
 
-v0.1.13では、判定機能を`oathra/evidence`として読み込めるSDKと、ローカルの`oathra verify`コマンド、仮押さえ・未確定を完了扱いしないガード、シーン分岐付きの同意付き追加聞き取りを配布しています。明確な同意がない場合は任意聞き取りを繰り返しません。YAMLの `mission.intake` はローカルのシミュレーターから実電話へ引き継げます。既存の電話会社やモデルを切り替えず、手元の発言を入力できます。[導入手順](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)に入力形式と、保存済みの実モデル交渉記録を再評価する手順をまとめました。追加聞き取りの実演は[48秒のArena録画](https://forifor.github.io/oathra/#intake-video)で確認できます。
+v0.1.14では、判定機能を`oathra/evidence`として読み込めるSDKと、ローカルの`oathra verify`コマンド、仮押さえ・未確定を完了扱いしないガード、シーン分岐付きの同意付き追加聞き取りを配布しています。明確な同意がない場合は任意聞き取りを繰り返しません。YAMLの `mission.intake` はローカルのシミュレーターから実電話へ引き継げます。既存の電話会社やモデルを切り替えず、手元の発言を入力できます。[導入手順](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)に入力形式と、保存済みの実モデル交渉記録を再評価する手順をまとめました。追加聞き取りの実演は[48秒のArena録画](https://forifor.github.io/oathra/#intake-video)で確認できます。
 
 追加聞き取りを使う場合も、目的・同意・質問上限を契約に明示します。ランタイムは必要な通話条件の完了後に同意を尋ね、同意された質問への次の発話だけを `intake.json` と `summary.md` に保存します。同意と回答には発話ID・時刻が付き、未宣言の項目や推測した属性は記録しません。
 

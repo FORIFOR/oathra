@@ -5,7 +5,7 @@
  * It is transport-agnostic: the simulator and a SIP transport produce the
  * same SessionEvents, so the same loop drives games and real calls.
  */
-import { checkConstraints, isPermitted, requiredFields, type Action, type CallContract } from "@oathra/contract";
+import { checkConstraints, isPermitted, renderIntakeConsentPrompt, requiredFields, type Action, type CallContract } from "@oathra/contract";
 import { EvidenceEngine, evaluate, type ConnectionState, type Utterance, type VerifiedResult } from "@oathra/evidence";
 import {
   denyAll,
@@ -483,8 +483,10 @@ export class CallRuntime {
     const config = this.opts.contract.intake;
     if (!config) return response;
     const normalized = normalizeLine(response.text).toLocaleLowerCase();
+    const spokenConsentPrompt = renderIntakeConsentPrompt(config, this.opts.contract.language);
     const consentText = normalizeLine(config.consentPrompt).toLocaleLowerCase();
-    const consentMentioned = normalized.includes(consentText);
+    const spokenConsentText = normalizeLine(spokenConsentPrompt).toLocaleLowerCase();
+    const consentMentioned = normalized.includes(consentText) || normalized.includes(spokenConsentText);
     const fieldMentioned = config.fields.some((field) => normalized.includes(normalizeLine(field.question).toLocaleLowerCase()));
     const markedOptional = response.intakeQuestion !== undefined || consentMentioned || fieldMentioned;
     if (!markedOptional) return response;
@@ -492,8 +494,8 @@ export class CallRuntime {
     const canAskConsent = this.intakeStatus === "not_started" && this.canStartIntake();
     if (canAskConsent) {
       // A model that jumps straight to a field still has to obtain consent.
-      if (response.intakeQuestion?.kind === "consent" && consentMentioned) return response;
-      return { ...response, text: config.consentPrompt, intakeQuestion: { kind: "consent" }, action: "continue" };
+      if (response.intakeQuestion?.kind === "consent" && consentMentioned) return { ...response, text: spokenConsentPrompt, intakeQuestion: { kind: "consent" }, action: "continue" };
+      return { ...response, text: spokenConsentPrompt, intakeQuestion: { kind: "consent" }, action: "continue" };
     }
 
     if (this.intakeStatus === "active" && !this.intakePending) {
@@ -541,7 +543,8 @@ export class CallRuntime {
     const config = this.opts.contract.intake;
     if (!config) return;
     const normalized = normalizeLine(text).toLocaleLowerCase();
-    if ((this.intakeStatus === "not_started" || this.intakeStatus === "awaiting_consent") && normalized.includes(normalizeLine(config.consentPrompt).toLocaleLowerCase())) {
+    const consentPrompt = renderIntakeConsentPrompt(config, this.opts.contract.language);
+    if ((this.intakeStatus === "not_started" || this.intakeStatus === "awaiting_consent") && (normalized.includes(normalizeLine(config.consentPrompt).toLocaleLowerCase()) || normalized.includes(normalizeLine(consentPrompt).toLocaleLowerCase()))) {
       this.registerIntakeQuestion({ kind: "consent" });
       return;
     }
