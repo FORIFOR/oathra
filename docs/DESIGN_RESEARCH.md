@@ -118,3 +118,14 @@
 - Zenn, "GitHub Star 100 獲得するまでにやったこと" — https://zenn.dev/nuko_suke_dev/articles/a02ebfb0b5ab4b
 - Zenn, "GitHub スターを増やす方法：AFFiNE が 6 万スターを達成した戦略" — https://zenn.dev/gingiris/articles/github-stars-increase-guide
 - レバテック LAB, catnose インタビュー — https://levtech.jp/media/article/interview/detail_283/
+
+## 2026-09-14 追加調査 — 音声AI開発者に届く見せ方
+
+公開中のZenn記事を追加で確認した。電話音声AIの全体構成をSTT・LLM・TTS・SIP/RTPの役割で整理する記事、コンタクトセンターの本番導入で「会話できる」と「業務で使える」の差を扱う記事、Function Calling とガードレールを説明する記事が検索結果に並ぶ。共通しているのは、抽象的なAI紹介ではなく、構成・失敗条件・運用上の引き際を具体的に書いている点である。
+
+- [音声AIエージェントの全体構成](https://zenn.dev/sipbridge/articles/02_voice_ai_agent_architecture): 電話基盤とAI処理を分けた構成説明。
+- [コンタクトセンター本番導入で見えた壁](https://zenn.dev/genax_corp/articles/954967870aef07): 会話品質だけでなく業務フロー・連携・ガードを評価対象にする。
+- [電話でつながる音声AIのガードレール設計](https://zenn.dev/shineos/articles/voice-ai-agent-realtime-mini-architecture): 「引き際」を設計要素として扱う。
+- [音声エージェントの評価基盤](https://zenn.dev/justinji_metal/articles/0d05af0c96e7cd): ASR誤認識、遅延、割り込み、ノイズを評価対象として明示する。
+
+Oathraのトップはこの読者に合わせ、最初に「相手の発言を根拠に完了を判定する」という具体的な差分を置き、続けて実ログ、失敗条件、ローカルでの再現、L1/L2/L3の限界を示す。追加聞き取りは「プロファイリング」と売り込まず、目的・同意・質問上限・停止条件を持つ契約機能として説明する。この方針は日本語・英語サイトとZenn記事へ反映済みである。
