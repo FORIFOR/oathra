@@ -21,6 +21,10 @@ jobs:
         run: node scripts/publish-x-intake.mjs --validate
       - name: Website must build without precompiled workspace packages
         run: pnpm build:site
+      - name: Local preview includes the recorded intake demos
+        run: |
+          test -s site/media/oathra-intake.mp4
+          test -s site/media/oathra-intake-ja.mp4
       - run: pnpm build
       - run: pnpm test
       - name: Scenarios validate
