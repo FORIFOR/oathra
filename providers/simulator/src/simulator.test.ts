@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { resolve } from "node:path";
+import { defineCall } from "@oathra/contract";
 import { contractFromScenario, loadScenarioFile } from "@oathra/scenario";
 import { runCall } from "@oathra/runtime";
 import { ScriptedAgent } from "./agent.js";
-import { HumanCharacter } from "./character.js";
+import { HumanCharacter, type CalleeContext, type CalleeReply } from "./character.js";
 import { SimulatorTransport } from "./transport.js";
 
 const ROOT = resolve(import.meta.dirname, "../../../scenarios");
@@ -80,6 +81,95 @@ describe("scripted agent vs scripted characters", () => {
     expect(types.at(-1)).toBe("result");
     expect(o.metrics.latency.turns).toBeGreaterThan(0);
     expect(o.events.every((e, i) => e.seq === i)).toBe(true);
+  });
+
+  it("asks bounded intake questions only after consent and records explicit answers", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const contract = defineCall({
+      ...base,
+      intake: {
+        purpose: "Offer a relevant follow-up",
+        consentPrompt: "追加で2点だけ伺ってもよろしいでしょうか？",
+        fields: [
+          { key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" },
+          { key: "region", label: "地域", question: "お住まいの地域を教えていただけますか？" },
+        ],
+        maxQuestions: 2,
+      },
+    });
+    const callee = {
+      name: "聞き取り検証店",
+      greeting: () => "お電話ありがとうございます。",
+      respond: ({ lastAgentText }: CalleeContext): CalleeReply => {
+        if (/追加で2点/.test(lastAgentText)) return { text: "はい、お願いします。" };
+        if (/ご担当を/.test(lastAgentText)) return { text: "ソフトウェア開発です。" };
+        if (/地域を/.test(lastAgentText)) return { text: "東京です。" };
+        if (/確定しても/.test(lastAgentText)) return { text: "ご予約承りました。" };
+        if (/19時半でお願いします/.test(lastAgentText)) return { text: "ご予約を確定してもよろしいでしょうか？" };
+        if (/予約をお願い/.test(lastAgentText) || /予約をお願いします/.test(lastAgentText)) return { text: "9月12日の19時半、2名様で空いております。" };
+        return { text: "承知しました。" };
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast", character: callee }),
+      brain: new ScriptedAgent(),
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.intake.status).toBe("complete");
+    expect(o.intake.askedQuestions).toBe(2);
+    expect(o.intake.answers.map((answer) => [answer.key, answer.value])).toEqual([
+      ["role", "ソフトウェア開発です。"],
+      ["region", "東京です。"],
+    ]);
+    expect(dialogue).toContain("追加で2点だけ伺ってもよろしいでしょうか？");
+    expect(dialogue).toContain("ご担当を教えていただけますか？");
+    expect(dialogue).toContain("お住まいの地域を教えていただけますか？");
+    expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(2);
+  });
+
+  it("stops optional intake immediately when the callee declines consent", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const contract = defineCall({
+      ...base,
+      intake: {
+        purpose: "Offer a relevant follow-up",
+        consentPrompt: "追加で1点だけ伺ってもよろしいでしょうか？",
+        fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+        maxQuestions: 1,
+      },
+    });
+    const callee = {
+      name: "拒否検証店",
+      greeting: () => "お電話ありがとうございます。",
+      respond: ({ lastAgentText }: CalleeContext): CalleeReply => {
+        if (/追加で1点/.test(lastAgentText)) return { text: "いいえ、結構です。" };
+        if (/確定しても/.test(lastAgentText)) return { text: "ご予約承りました。" };
+        if (/19時半でお願いします/.test(lastAgentText)) return { text: "ご予約を確定してもよろしいでしょうか？" };
+        if (/予約をお願い/.test(lastAgentText)) return { text: "9月12日の19時半、2名様で空いております。" };
+        return { text: "承知しました。" };
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast", character: callee }),
+      brain: new ScriptedAgent(),
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.intake.status).toBe("declined");
+    expect(o.intake.answers).toHaveLength(0);
+    expect(dialogue).not.toContain("ご担当を教えていただけますか？");
+    expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(0);
   });
 });
 

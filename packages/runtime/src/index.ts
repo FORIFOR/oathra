@@ -14,6 +14,7 @@ import {
   summarizeLatency,
   type BrainContext,
   type BrainProvider,
+  type BrainResponse,
   type CallEvent,
   type CallSession,
   type DistributiveOmit,
@@ -26,6 +27,9 @@ import {
   type TransportProvider,
   type Turn,
   type TurnTrace,
+  type IntakeAnswer,
+  type IntakeStatus,
+  type IntakeView,
 } from "@oathra/core";
 
 export type RunOptions = {
@@ -62,6 +66,7 @@ export type CallOutcome = {
   metrics: CallMetrics;
   endReason: EndReason;
   transcript: Turn[];
+  intake: IntakeView;
 };
 
 /** Answering machines and carrier voicemail prompts, ja/en. */
@@ -69,6 +74,10 @@ export const VOICEMAIL_RE =
   /留守番電話|留守番|お掛けになった電話|おかけになった電話|電話に出ることができません|発信音の後|メッセージを(?:お預かり|録音)|ただいま電話に出られません|voicemail|voice mail|leave a message|after the tone|is not available|has been forwarded to an automated/i;
 
 const normalizeLine = (t: string) => t.replace(/[\s、。,.!?！？「」]/g, "");
+
+const INTAKE_YES_RE = /^(?:はい|ええ|そうです|大丈夫(?:です)?|問題(?:ありません|ございません)|もちろん|承知(?:しました|いたしました)?|お願いします|yes|sure|okay|ok|go ahead|sounds good|of course|absolutely)(?:$|[\s、,。.!?！？])/i;
+const INTAKE_NO_RE = /^(?:いいえ|結構です|不要(?:です)?|答えたくありません|お答えできません|控えさせて|遠慮します|やめて|no|not now|rather not|prefer not|i(?:'d| would) rather not|don't want to|do not want to)(?:$|[\s、,。.!?！？])/i;
+const INTAKE_QUESTION_RE = /[?？]|でしょうか|ですか\s*$|\b(?:what|which|who|where|when|why|how|can|could)\b/i;
 
 let counter = 0;
 const newId = (prefix: string) => `${prefix}_${Date.now().toString(36)}${(counter++).toString(36)}`;
@@ -85,9 +94,15 @@ export class CallRuntime {
   private cancelled = false;
   private costUsd = 0;
   private turnIndex = 0;
+  private intakeStatus: IntakeStatus;
+  private intakeAskedQuestions = 0;
+  private intakePending: { kind: "consent" } | { kind: "field"; field: string } | undefined;
+  private readonly intakeAnswers: IntakeAnswer[] = [];
+  private readonly intakeDeclined = new Set<string>();
 
   constructor(private readonly opts: RunOptions) {
     this.callId = opts.callId ?? newId("call");
+    this.intakeStatus = opts.contract.intake ? "not_started" : "disabled";
     const engineOpts: ConstructorParameters<typeof EvidenceEngine>[0] = { language: opts.contract.language };
     if (opts.now) engineOpts.now = opts.now;
     this.engine = new EvidenceEngine(engineOpts);
@@ -211,6 +226,7 @@ export class CallRuntime {
           this.emit({ type: "agent.speech.ended", turnId, startMs: ev.startMs, endMs: ev.endMs, interrupted: ev.interrupted ?? false, t: ev.endMs });
           this.emit({ type: "transcript.final", turnId, source: "caller", text: ev.text, startMs: ev.startMs, endMs: ev.endMs, t: ev.endMs });
           this.transcript.push({ id: turnId, source: "caller", text: ev.text, t: ev.endMs });
+          this.observeIntakeQuestion(ev.text);
           this.ingest({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, audio: { startMs: ev.startMs, endMs: ev.endMs } });
           const trace: TurnTrace = { turnId, speechEndMs: ev.startMs - (ev.ttfaMs ?? 0), playbackStartMs: ev.startMs };
           if (ev.ttfaMs !== undefined) trace.ttfaMs = ev.ttfaMs;
@@ -300,7 +316,9 @@ export class CallRuntime {
             endMs: ev.endMs,
             ...(ev.asr ? { asr: ev.asr } : {}),
           });
-          this.transcript.push({ id: turnId, source: "callee", text: ev.text, t: ev.endMs });
+          const calleeTurn: Turn = { id: turnId, source: "callee", text: ev.text, t: ev.endMs };
+          this.transcript.push(calleeTurn);
+          this.captureIntakeAnswer(calleeTurn);
           this.ingest({ id: turnId, source: "callee", text: ev.text, t: ev.endMs, audio: { startMs: ev.startMs, endMs: ev.endMs }, ...(ev.asr ? { asr: ev.asr } : {}) });
           if (this.state.state === "TRANSCRIBING") this.state.transition("TURN_PENDING");
 
@@ -360,6 +378,7 @@ export class CallRuntime {
       metrics,
       endReason,
       transcript: this.transcript,
+      intake: this.intakeView(),
     };
   }
 
@@ -383,7 +402,97 @@ export class CallRuntime {
     }
     const missing = required.filter((f) => verified[f] === undefined);
     const check = checkConstraints(this.opts.contract.constraints, verified);
-    return { verified, pending, missing, violations: check.violations.map((v) => ({ ...v, rule: String(v.rule) })) };
+    return { verified, pending, missing, violations: check.violations.map((v) => ({ ...v, rule: String(v.rule) })), intake: this.intakeView() };
+  }
+
+  private intakeView(): IntakeView {
+    const config = this.opts.contract.intake;
+    if (!config) return { status: "disabled", askedQuestions: 0, answers: [], declined: [] };
+    return {
+      status: this.intakeStatus,
+      purpose: config.purpose,
+      maxQuestions: config.maxQuestions,
+      askedQuestions: this.intakeAskedQuestions,
+      ...(this.intakePending?.kind === "field" ? { pendingField: this.intakePending.field } : {}),
+      answers: [...this.intakeAnswers],
+      declined: [...this.intakeDeclined],
+    };
+  }
+
+  /** Register the question actually spoken so the next callee turn can be captured safely. */
+  private registerIntakeQuestion(question: NonNullable<BrainResponse["intakeQuestion"]>): void {
+    const config = this.opts.contract.intake;
+    if (!config || this.intakeStatus === "declined" || this.intakeStatus === "complete") return;
+    if (question.kind === "consent") {
+      if (this.intakeStatus === "not_started" || this.intakeStatus === "awaiting_consent") {
+        this.intakeStatus = "awaiting_consent";
+        this.intakePending = { kind: "consent" };
+        this.emit({ type: "intake.question", kind: "consent" });
+      }
+      return;
+    }
+    const field = config.fields.find((candidate) => candidate.key === question.field);
+    if (!field || this.intakeStatus !== "active") return;
+    if (this.intakeAskedQuestions >= config.maxQuestions || this.intakeAnswers.some((answer) => answer.key === field.key) || this.intakeDeclined.has(field.key)) return;
+    this.intakeAskedQuestions++;
+    this.intakePending = { kind: "field", field: field.key };
+    this.emit({ type: "intake.question", kind: "field", field: field.key });
+  }
+
+  /** Best-effort marker for transports that emit agent speech without BrainResponse metadata. */
+  private observeIntakeQuestion(text: string): void {
+    const config = this.opts.contract.intake;
+    if (!config) return;
+    const normalized = normalizeLine(text).toLocaleLowerCase();
+    if ((this.intakeStatus === "not_started" || this.intakeStatus === "awaiting_consent") && normalized.includes(normalizeLine(config.consentPrompt).toLocaleLowerCase())) {
+      this.registerIntakeQuestion({ kind: "consent" });
+      return;
+    }
+    if (this.intakeStatus !== "active") return;
+    const field = config.fields.find((candidate) => normalized.includes(normalizeLine(candidate.question).toLocaleLowerCase()));
+    if (field) this.registerIntakeQuestion({ kind: "field", field: field.key });
+  }
+
+  /** Consume exactly one callee turn after an explicit consent or field question. */
+  private captureIntakeAnswer(turn: Turn): void {
+    const config = this.opts.contract.intake;
+    const pending = this.intakePending;
+    if (!config || !pending) return;
+    this.intakePending = undefined;
+    if (pending.kind === "consent") {
+      const text = turn.text.trim();
+      const mixed = /(?:ですが|けど|ただ|but|however)/i.test(text);
+      const granted = !mixed && INTAKE_YES_RE.test(text) ? true : !mixed && INTAKE_NO_RE.test(text) ? false : undefined;
+      if (granted === undefined) {
+        this.intakeStatus = "awaiting_consent";
+        return;
+      }
+      this.intakeStatus = granted ? "active" : "declined";
+      this.emit({ type: "intake.consent", granted, utteranceId: turn.id });
+      return;
+    }
+
+    const field = config.fields.find((candidate) => candidate.key === pending.field);
+    if (!field) return;
+    const text = turn.text.trim();
+    if (INTAKE_QUESTION_RE.test(text)) {
+      if (this.intakeAskedQuestions >= config.maxQuestions) this.intakeStatus = "complete";
+      return;
+    }
+    const declined = INTAKE_NO_RE.test(text) || /答えたく|お答えでき|控えさせ|遠慮させて/i.test(text);
+    if (declined) {
+      this.intakeDeclined.add(field.key);
+      this.emit({ type: "intake.answer", field: field.key, declined: true, utteranceId: turn.id });
+      if (config.stopOnDecline) this.intakeStatus = "declined";
+    } else if (text) {
+      const value = text.replace(/[\r\n]+/g, " ").slice(0, 500);
+      this.intakeAnswers.push({ key: field.key, label: field.label, value, utteranceId: turn.id, transcript: text, t: turn.t });
+      this.emit({ type: "intake.answer", field: field.key, value, declined: false, utteranceId: turn.id });
+    }
+    if (this.intakeStatus === "active") {
+      const done = this.intakeAnswers.length + this.intakeDeclined.size >= config.fields.length;
+      if (done || this.intakeAskedQuestions >= config.maxQuestions) this.intakeStatus = "complete";
+    }
   }
 
   /** Run one agent turn. Returns true if the agent ended the call. */
@@ -399,6 +508,7 @@ export class CallRuntime {
       language: contract.language,
       transcript: [...this.transcript],
       mission: this.missionView(),
+      intake: this.intakeView(),
       permitted,
       elapsedMs: this.now(),
       turnIndex: this.turnIndex,
@@ -489,6 +599,8 @@ export class CallRuntime {
       this.state.transition("ENDED");
       return true;
     }
+    if (response.intakeQuestion) this.registerIntakeQuestion(response.intakeQuestion);
+    else this.observeIntakeQuestion(text);
     this.state.transition("LISTENING");
     return false;
   }

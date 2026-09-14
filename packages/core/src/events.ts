@@ -25,6 +25,9 @@ export type CallEvent = Base &
     | { type: "agent.speech.ended"; turnId: string; startMs: number; endMs: number; interrupted: boolean }
     | { type: "turn.trace"; trace: TurnTrace }
     | { type: "mission.progress"; verified: string[]; missing: string[]; pending: string[] }
+    | { type: "intake.question"; kind: "consent" | "field"; field?: string }
+    | { type: "intake.consent"; granted: boolean; utteranceId: string }
+    | { type: "intake.answer"; field: string; value?: string; declined: boolean; utteranceId: string }
     | { type: "call.ended"; reason: EndReason; durationMs: number }
     | { type: "result"; result: VerifiedResult }
     | { type: "error"; message: string; fatal: boolean }

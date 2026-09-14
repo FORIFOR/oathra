@@ -2,17 +2,37 @@
 
 [Check your own transcript in the browser](https://forifor.github.io/oathra/en/check.html). No installation or API key. Load the existing model/simulator negotiation or paste your own check JSON. Input stays in the tab; no upload or automatic storage.
 
-Oathra v0.1.5 can check reservation evidence without replacing your carrier, voice model or agent framework. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
+Oathra v0.1.6 can check reservation evidence without replacing your carrier, voice model or agent framework. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
 
 ## Install the released SDK and CLI
 
 Node.js 22+:
 
 ```bash
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.5/oathra-0.1.5.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz
 ```
 
 Use the GitHub asset: the npm registry still serves 0.1.0, which does not include this SDK or command. Both `oathra` and `oathra/evidence` export `EvidenceEngine`, `defineCall`, `evaluate` and `verifyTranscript`, with TypeScript declarations. The SDK entry does not load CLI, carrier or model clients.
+
+## Consent-based optional intake
+
+If a workflow needs an explicit answer for a post-booking follow-up, add `CallContract.intake`. Declare the `purpose`, a `consentPrompt`, the field keys and exact questions, and `maxQuestions` (up to eight). Oathra asks for consent once after the required call details are settled, then asks one declared field per turn. A decline stops intake; it never infers a profile or sensitive traits.
+
+```ts
+const contract = defineCall({
+  goal: "restaurant.reservation",
+  require: { date: true, time: true, partySize: true, confirmed: true },
+  intake: {
+    purpose: "Tailor a post-booking follow-up",
+    consentPrompt: "May I ask one separate question about your booking?",
+    fields: [{ key: "role", label: "Role", question: "What is your role?" }],
+    maxQuestions: 1,
+    stopOnDecline: true,
+  },
+});
+```
+
+After consent, answers are stored in `.oathra/calls/<callId>/intake.json` and `summary.md` with the field, answer, utterance ID and timestamp. Without `intake`, no optional questions are generated.
 
 ## Check your saved final transcripts
 

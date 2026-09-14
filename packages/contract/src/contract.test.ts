@@ -26,6 +26,33 @@ describe("defineCall", () => {
     expect(isPermitted(c, "reserve")).toBe(true);
     expect(isPermitted(c, "payment")).toBe(false);
   });
+
+  it("requires an explicit purpose, consent prompt and bounded intake fields", () => {
+    const c = defineCall({
+      goal: "restaurant.reservation",
+      intake: {
+        purpose: "Offer a relevant follow-up",
+        consentPrompt: "追加で2点だけ伺ってもよろしいでしょうか？",
+        fields: [
+          { key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" },
+          { key: "region", label: "地域", question: "お住まいの地域を教えていただけますか？" },
+        ],
+        maxQuestions: 2,
+      },
+    });
+    expect(c.intake?.maxQuestions).toBe(2);
+    expect(() => defineCall({
+      goal: "x",
+      intake: {
+        purpose: "p",
+        consentPrompt: "c",
+        fields: [
+          { key: "role", label: "r", question: "q" },
+          { key: "role", label: "r2", question: "q2" },
+        ],
+      },
+    })).toThrow(/duplicate intake field key/);
+  });
 });
 
 describe("checkConstraints", () => {

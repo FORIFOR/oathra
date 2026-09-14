@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, resolve } from "node:path";
 import type { CallContract } from "@oathra/contract";
 import type { VerifiedResult } from "@oathra/evidence";
-import { EventLog, type CallEvent, type Turn, type TurnTrace } from "@oathra/core";
+import { EventLog, type CallEvent, type IntakeView, type Turn, type TurnTrace } from "@oathra/core";
 import type { CallMetrics, CallOutcome } from "@oathra/runtime";
 
 export type CallRecording = {
@@ -13,6 +13,7 @@ export type CallRecording = {
   metrics: CallMetrics;
   transcript: Turn[];
   traces: TurnTrace[];
+  intake?: IntakeView;
 };
 
 export function defaultCallsDir(cwd = process.cwd()): string {
@@ -21,7 +22,7 @@ export function defaultCallsDir(cwd = process.cwd()): string {
 
 /**
  * Persist a call as a directory:
- *   <dir>/<callId>/events.jsonl · contract.json · result.json · summary.md · metrics.json · transcript.json
+ *   <dir>/<callId>/events.jsonl · contract.json · result.json · summary.md · metrics.json · transcript.json · intake.json
  * Audio (caller.opus / callee.opus / mixed.opus) is added by audio transports.
  */
 export function saveCall(outcome: CallOutcome, dir = defaultCallsDir()): string {
@@ -34,6 +35,7 @@ export function saveCall(outcome: CallOutcome, dir = defaultCallsDir()): string 
   writeFileSync(join(target, "metrics.json"), JSON.stringify(outcome.metrics, null, 2));
   writeFileSync(join(target, "transcript.json"), JSON.stringify(outcome.transcript, null, 2));
   writeFileSync(join(target, "traces.json"), JSON.stringify(outcome.traces, null, 2));
+  writeFileSync(join(target, "intake.json"), JSON.stringify(outcome.intake, null, 2));
   return target;
 }
 
@@ -80,6 +82,21 @@ export function renderCallSummary(outcome: CallOutcome): string {
     }
   }
 
+  if (outcome.intake && outcome.intake.status !== "disabled") {
+    lines.push("", `## ${ja ? "同意済みの聞き取り" : "Consented intake"}`);
+    lines.push(`- ${ja ? "目的" : "Purpose"}: ${outcome.intake.purpose ?? ""}`);
+    lines.push(`- ${ja ? "状態" : "Status"}: ${outcome.intake.status}`);
+    if (outcome.intake.answers.length === 0) {
+      lines.push(ja ? "（記録された回答はありません）" : "(No answers recorded.)");
+    } else {
+      for (const answer of outcome.intake.answers) {
+        lines.push(`- **${answer.label}** (${answer.key}): ${answer.value} — ${ja ? "発話" : "utterance"}: 「${answer.transcript}」`);
+      }
+    }
+    if (outcome.intake.declined.length) lines.push(`- ${ja ? "回答を拒否した項目" : "Declined fields"}: ${outcome.intake.declined.join(", ")}`);
+    lines.push(ja ? "収集目的・質問・同意を契約に明示した項目だけを記録し、相手の属性は推測しません。" : "Only contract-declared fields after consent are recorded; no callee attributes are inferred.");
+  }
+
   lines.push(
     "",
     `- ${ja ? "終了理由" : "End reason"}: ${outcome.endReason}`,
@@ -107,6 +124,7 @@ export function loadCall(pathOrId: string, dir = defaultCallsDir()): CallRecordi
     metrics: read<CallMetrics>("metrics.json"),
     transcript: existsSync(join(target, "transcript.json")) ? read<Turn[]>("transcript.json") : transcriptFromEvents(events),
     traces: existsSync(join(target, "traces.json")) ? read<TurnTrace[]>("traces.json") : events.flatMap((e) => (e.type === "turn.trace" ? [e.trace] : [])),
+    ...(existsSync(join(target, "intake.json")) ? { intake: read<IntakeView>("intake.json") } : {}),
   };
 }
 

@@ -81,6 +81,50 @@ export const BudgetSchema = z
 export type Budget = z.infer<typeof BudgetSchema>;
 
 // ---------------------------------------------------------------------------
+// Consent-based intake
+// ---------------------------------------------------------------------------
+
+/** A single non-inferred field that may be asked after the callee consents. */
+export const IntakeFieldSchema = z
+  .object({
+    /** Stable key used in the saved intake record. */
+    key: z.string().regex(/^[a-z][a-z0-9_.-]{0,63}$/),
+    /** Human-readable label shown in the decision memo. */
+    label: z.string().min(1).max(120),
+    /** The one-sentence question to ask, in the contract language. */
+    question: z.string().min(1).max(240),
+  })
+  .strict();
+export type IntakeField = z.infer<typeof IntakeFieldSchema>;
+
+/**
+ * Optional, explicit intake. Oathra never infers a profile: every field,
+ * purpose and question budget must be declared by the caller and the callee
+ * must agree before any answer is recorded.
+ */
+export const IntakeSchema = z
+  .object({
+    purpose: z.string().min(1).max(240),
+    consentPrompt: z.string().min(1).max(240),
+    fields: z.array(IntakeFieldSchema).min(1).max(8),
+    /** Maximum number of field questions (the consent prompt is separate). */
+    maxQuestions: z.number().int().positive().max(8).default(3),
+    /** Stop all optional intake when the callee declines a field. */
+    stopOnDecline: z.boolean().default(true),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const keys = new Set<string>();
+    for (const [index, field] of value.fields.entries()) {
+      if (keys.has(field.key)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["fields", index, "key"], message: `duplicate intake field key: ${field.key}` });
+      }
+      keys.add(field.key);
+    }
+  });
+export type Intake = z.infer<typeof IntakeSchema>;
+
+// ---------------------------------------------------------------------------
 // CallContract
 // ---------------------------------------------------------------------------
 
@@ -97,6 +141,8 @@ export const CallContractSchema = z
     permissions: PermissionsSchema.default({}),
     language: z.enum(["ja", "en"]).default("ja"),
     budget: BudgetSchema.default({}),
+    /** Optional consent-gated, contract-declared caller information intake. */
+    intake: IntakeSchema.optional(),
   })
   .strict();
 

@@ -13,7 +13,7 @@ contract → evidence → core → scenario → runtime → providers → replay
 1. `call.started` → `DIALING` → `transport.connect()`
 2. Consume `SessionEvent`s. `speech` events are already-transcribed far-end utterances (the simulator delivers text; audio transports run STT + TurnEngine and deliver the same event).
 3. Each callee utterance is ingested by the `EvidenceEngine` → `evidence.created` / `evidence.verified` / `mission.progress`.
-4. `THINKING`: the `BrainProvider` receives a `BrainContext` with the contract, transcript and a **MissionView** (verified / callee-pending / missing / violations). It returns text; it never decides completion.
+4. `THINKING`: the `BrainProvider` receives a `BrainContext` with the contract, transcript, **MissionView** (verified / callee-pending / missing / violations) and optional consent-gated intake state. It returns text; it never decides completion.
 5. `VERIFYING` / `AWAITING_PERMISSION`: requested actions are checked against `contract.permissions`; the `PermissionGate` (human-in-the-loop) is asked only for actions the contract did not pre-authorise.
 6. `SYNTHESIZING` → `SPEAKING` → `session.speak()`; a `TurnTrace` records speech_end → turn_confirm → brain → tts → playback and TTFA.
 7. On hangup / budget / cancel: `evaluate(contract, engine, connection)` → `result`.
@@ -35,6 +35,6 @@ contract → evidence → core → scenario → runtime → providers → replay
 
 ```
 .oathra/calls/<callId>/
-  events.jsonl   contract.json   result.json   summary.md   metrics.json   transcript.json   traces.json
+  events.jsonl   contract.json   result.json   summary.md   metrics.json   transcript.json   traces.json   intake.json
   (caller.opus / callee.opus / mixed.opus on audio transports)
 ```

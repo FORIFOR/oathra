@@ -96,7 +96,7 @@ export async function cmdPlay(positional: string[], flags: Flags): Promise<void>
     const dir = saveCall(run.outcome);
     console.log(dim(`\nSaved: ${dir}\n  oathra replay ${run.outcome.callId}`));
   }
-  if (flags.json) console.log(JSON.stringify({ result: run.outcome.result, metrics: run.outcome.metrics, score: run.score }, null, 2));
+  if (flags.json) console.log(JSON.stringify({ result: run.outcome.result, intake: run.outcome.intake, metrics: run.outcome.metrics, score: run.score }, null, 2));
 }
 
 export async function cmdCall(_positional: string[], flags: Flags): Promise<void> {

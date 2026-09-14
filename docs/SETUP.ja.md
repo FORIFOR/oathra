@@ -62,10 +62,10 @@ cp .env.example .env
 pnpm oathra setup phone
 ```
 
-公開パッケージを使う場合は、v0.1.5 の GitHub 配布版を明示します。
+公開パッケージを使う場合は、v0.1.6 の GitHub 配布版を明示します。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.5/oathra-0.1.5.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz oathra setup phone
 ```
 
 ウィザードは次の順で進みます。

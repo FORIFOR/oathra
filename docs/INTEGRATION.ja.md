@@ -2,7 +2,7 @@
 
 [ブラウザで自分の文字起こしを検証する](https://forifor.github.io/oathra/check.html)。インストール・APIキー不要。公開済みのモデル／シミュレーター交渉ログも読み込めます。入力はタブ内で処理し、送信・自動保存しません。
 
-Oathra v0.1.5では、電話会社・音声モデル・エージェント基盤を移行せず、保存済みの文字起こしを検査できます。判定はローカルで動き、API呼び出し・APIキーは不要です。[English / 詳細な入力仕様](INTEGRATION.md)
+Oathra v0.1.6では、電話会社・音声モデル・エージェント基盤を移行せず、保存済みの文字起こしを検査できます。判定はローカルで動き、API呼び出し・APIキーは不要です。[English / 詳細な入力仕様](INTEGRATION.md)
 
 実電話まで試す場合は、API キーの取得先と段階テストをまとめた[初心者向けセットアップ](SETUP.ja.md)を先に確認してください。
 
@@ -11,7 +11,7 @@ Oathra v0.1.5では、電話会社・音声モデル・エージェント基盤�
 Node.js 22以上で実行します。
 
 ```bash
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.5/oathra-0.1.5.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz
 ```
 
 npmレジストリの0.1.0には今回のSDK・検査コマンドがありません。上記のGitHub配布版を使ってください。
@@ -47,6 +47,26 @@ console.log(JSON.stringify(result, null, 2));
 ```
 
 `EvidenceEngine`、`defineCall`、`evaluate`も型定義付きで読み込めます。発言を逐次処理する場合は、通話ごとにエンジンを作り、終了時に実際の接続状態を渡して評価します。
+
+## 同意付きの追加聞き取り
+
+予約後の案内などで相手の明示回答が必要な場合だけ、`CallContract.intake` を追加します。`purpose`、同意を得る `consentPrompt`、質問文とキーの配列、`maxQuestions`（最大8問）を必ず宣言してください。必要な予約情報が確定した後に同意を一度尋ね、同意後は1回に1項目だけ質問します。拒否された場合は停止し、推測やセンシティブ属性の収集は行いません。
+
+```ts
+const contract = defineCall({
+  goal: "restaurant.reservation",
+  require: { date: true, time: true, partySize: true, confirmed: true },
+  intake: {
+    purpose: "予約後の案内を適切にする",
+    consentPrompt: "予約とは別に1点だけ伺ってもよろしいでしょうか？",
+    fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+    maxQuestions: 1,
+    stopOnDecline: true,
+  },
+});
+```
+
+同意後の回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に、質問項目・回答・発話ID・時刻を含めて保存します。契約に `intake` がなければ、この追加質問は発生しません。
 
 ## 公開済みの記録で動作を見る
 

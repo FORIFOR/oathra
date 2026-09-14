@@ -46,6 +46,11 @@ describe("parseBrainJson", () => {
     expect(parseBrainJson('{"text":"x","requestedAction":{"action":"payment","detail":"pay 100"}}').requestedAction).toEqual({ action: "payment", detail: "pay 100" });
     expect(parseBrainJson('{"text":"x","requestedAction":{"action":"launch_rocket"}}').requestedAction).toBeUndefined();
   });
+  it("keeps only a valid intake question marker", () => {
+    expect(parseBrainJson('{"text":"追加で伺ってもよろしいでしょうか？","intakeQuestion":{"kind":"consent"}}').intakeQuestion).toEqual({ kind: "consent" });
+    expect(parseBrainJson('{"text":"x","intakeQuestion":{"kind":"field","field":"role"}}').intakeQuestion).toEqual({ kind: "field", field: "role" });
+    expect(parseBrainJson('{"text":"x","intakeQuestion":{"kind":"field","field":"Role!"}}').intakeQuestion).toBeUndefined();
+  });
   it("caps text length", () => {
     expect(parseBrainJson(JSON.stringify({ text: "あ".repeat(1000) })).text.length).toBeLessThanOrEqual(300);
   });
@@ -63,6 +68,25 @@ describe("prompt building", () => {
   it("tells the model to hang up when nothing is missing", () => {
     const done = { ...ctx, mission: { verified: { date: "2026-09-12", time: "19:30", confirmed: true }, pending: {}, missing: [], violations: [] } };
     expect(buildSystemPrompt(done)).toContain('set action to "hangup"');
+  });
+  it("describes consent and the question cap when intake is configured", () => {
+    const withIntake: BrainContext = {
+      ...ctx,
+      contract: defineCall({
+        ...ctx.contract,
+        intake: {
+          purpose: "Offer a relevant follow-up",
+          consentPrompt: "追加で1点だけ伺ってもよろしいでしょうか？",
+          fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+          maxQuestions: 1,
+        },
+      }),
+      intake: { status: "awaiting_consent", purpose: "Offer a relevant follow-up", maxQuestions: 1, askedQuestions: 0, answers: [], declined: [] },
+    };
+    const p = buildSystemPrompt(withIntake);
+    expect(p).toContain("Optional consent-based intake");
+    expect(p).toContain("field questions asked");
+    expect(p).toContain("consent");
   });
   it("maps transcript to alternating user/assistant messages, callee first", () => {
     const m = buildMessages(ctx);

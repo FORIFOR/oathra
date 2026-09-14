@@ -76,8 +76,28 @@ export class ScriptedAgent implements BrainProvider {
     const party = typeof input.partySize === "number" ? input.partySize : undefined;
     const name = typeof input.name === "string" ? input.name : undefined;
 
-    // 0. Mission complete -> close politely.
-    if (mission.missing.length === 0 && mission.violations.length === 0) {
+    // 0. Optional intake starts only after the booking terms are settled. It is
+    // consent-gated, bounded and driven entirely by the contract's declared fields.
+    const missionSettled = mission.violations.length === 0 && mission.missing.length === 0;
+    const intake = ctx.intake;
+    if (ctx.turnIndex > 0 && missionSettled && intake && intake.status !== "disabled" && intake.status !== "declined" && intake.status !== "complete") {
+      const intakeConfig = contract.intake;
+      if (intakeConfig && (intake.status === "not_started" || intake.status === "awaiting_consent")) {
+        return { text: intakeConfig.consentPrompt, intakeQuestion: { kind: "consent" } };
+      }
+      if (intakeConfig && intake.status === "active") {
+        if (intake.askedQuestions >= (intake.maxQuestions ?? intakeConfig.maxQuestions)) {
+          return { text: en ? "Thank you for sharing that. Goodbye." : "お聞かせいただき、ありがとうございました。失礼いたします。", action: "hangup" };
+        }
+        const answered = new Set(intake.answers.map((answer) => answer.key));
+        const declined = new Set(intake.declined);
+        const next = intakeConfig.fields.find((field) => !answered.has(field.key) && !declined.has(field.key));
+        if (next) return { text: next.question, intakeQuestion: { kind: "field", field: next.key } };
+      }
+    }
+
+    // 0b. Mission complete -> close politely.
+    if (ctx.turnIndex > 0 && mission.missing.length === 0 && mission.violations.length === 0) {
       this.closing = true;
       return { text: en ? "Thank you very much. See you then, goodbye." : "ありがとうございます。それではよろしくお願いいたします。失礼いたします。", action: "hangup" };
     }

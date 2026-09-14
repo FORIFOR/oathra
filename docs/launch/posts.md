@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## v0.1.6 consent-based intake release — 2026-09-14 JST
+
+- Release notes: `docs/launch/release-notes-0.1.6.md`.
+- Source: consent-gated, contract-declared intake in the runtime, brain prompts, speech-to-speech instructions and replay artifacts. The tag and assets will be recorded here after CI and package verification.
+- The public docs and site are prepared for v0.1.6. npm still serves 0.1.0 until its publish credential is configured.
+
 ## v0.1.5 decision memo release — 2026-09-14 JST
 
 - Published release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.5

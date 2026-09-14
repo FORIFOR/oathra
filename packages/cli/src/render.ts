@@ -60,6 +60,9 @@ export function resultBox(outcome: CallOutcome, score?: OathraScore): string {
   lines.push("");
   lines.push(r.complete ? bold("VERIFIED") : dim("NOT VERIFIED"));
   lines.push(`Evidence: ${r.evidence.filter((e) => e.verified).length}`);
+  if (outcome.intake.status !== "disabled") {
+    lines.push(`Optional intake: ${outcome.intake.status} · ${outcome.intake.answers.length} answer(s)`);
+  }
   lines.push(`Confidence: ${r.confidence.toFixed(3)}`);
   const p50 = outcome.metrics.latency.ttfaP50Ms;
   lines.push(`Latency: ${p50 !== undefined ? `${p50}ms p50` : "n/a"}`);

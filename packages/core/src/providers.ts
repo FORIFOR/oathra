@@ -132,6 +132,31 @@ export type MissionView = {
   missing: string[];
   /** Constraint violations on verified values, if any. */
   violations: Array<{ field: string; rule: string; expected: unknown; actual: unknown }>;
+  /** Optional consent-gated intake state for self-speaking transports. */
+  intake?: IntakeView;
+};
+
+export type IntakeStatus = "disabled" | "not_started" | "awaiting_consent" | "active" | "declined" | "complete";
+
+/** One explicit answer captured after consent; never an inferred attribute. */
+export type IntakeAnswer = {
+  key: string;
+  label: string;
+  value: string;
+  utteranceId: string;
+  transcript: string;
+  t: number;
+};
+
+/** Runtime state surfaced to brains so they can ask one bounded question at a time. */
+export type IntakeView = {
+  status: IntakeStatus;
+  purpose?: string;
+  maxQuestions?: number;
+  askedQuestions: number;
+  pendingField?: string;
+  answers: IntakeAnswer[];
+  declined: string[];
 };
 
 export type BrainContext = {
@@ -139,6 +164,8 @@ export type BrainContext = {
   language: Language;
   transcript: Turn[];
   mission: MissionView;
+  /** Optional consent-gated intake state. Absent means this call has no intake. */
+  intake?: IntakeView;
   /** Actions the agent is allowed to take without asking. */
   permitted: Action[];
   /** Milliseconds since the call started. */
@@ -157,6 +184,8 @@ export type BrainResponse = {
   usage?: { inputTokens?: number; outputTokens?: number; costUsd?: number };
   /** The line is repeated on purpose (the callee asked to hear it again); the runtime must not rewrite it. */
   verbatim?: boolean;
+  /** Deterministic runtime marker for a consent or one-field intake question. */
+  intakeQuestion?: { kind: "consent" } | { kind: "field"; field: string };
 };
 
 export interface BrainProvider {
