@@ -8,6 +8,11 @@
 - This makes the latest implementation runnable from a tagged public asset; it is not evidence of adoption. Stars, external replies and business inquiries are still measured separately.
 - External-signal readback at 20:05 JST remains **0 stars / 0 forks**, with 9 repository views / 9 unique visitors and no external issue or business inquiry. The new v0.1.12 assets were at 0 downloads immediately after publication; the public tarball was fetched and checksum-verified by the maintainer. Raw snapshot: [metrics/2026-09-14-2008-jst.json](metrics/2026-09-14-2008-jst.json).
 
+## Discussion #14 refresh — 2026-09-14 20:07 JST
+
+- Edited the existing [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) in place to point at v0.1.12 and describe the scene-aware `startAfter` / `dependsOn` / `choices` behavior. The three feedback questions and redacted-trace boundary remain; no duplicate discussion or unsolicited message was created.
+- This is an entry-point update, not external feedback or adoption. The discussion still has no external replies.
+
 ## Scene-aware intake guard — 2026-09-14 19:49 JST
 
 - Added declarative `startAfter`, `dependsOn` and `choices` controls to consented intake. The runtime now waits for scene prerequisites, follows only dependency-ready questions and records a single canonical choice; unmatched, ambiguous or non-answers are never saved.
