@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## X timeline recheck — 2026-09-14 16:54 JST
+
+- The public `@forifori_dev` timeline now shows newer account activity than the earlier checkpoint: the newest post is displayed as **1h** (status `2099380959384899784`), followed by posts displayed as 2h and 14h. The Oathra post remains the older 9月12日 entry.
+- No X post was published in this check. Because the newest activity has only relative timing, conservatively defer the Oathra announcement until **2026-09-15 16:54 JST or later**, then recheck the live timeline immediately before posting. This supersedes the earlier 03:01 JST estimate.
+- The active text and attachment remain [x-transcript-check.txt](x-transcript-check.txt) and `docs/media/oathra-intake.mp4`; do not reuse an old publication state or post a duplicate.
+
 ## TikTok upload check — 2026-09-14 JST
 
 - TikTok Studio for `@foriforapps` is reachable and the video upload page opens. The existing Oathra 00:59 reel remains at 0 views / 0 likes / 0 comments; the next eligible Oathra announcement is the 48-second intake recording after 20:10 JST.
