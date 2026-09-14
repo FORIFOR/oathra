@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## Contributor and support funnel — 2026-09-14 17:49 JST
+
+- Added [`SUPPORT.md`](../../SUPPORT.md) and linked it from both READMEs so evidence reports, startup problems, integration questions and private business inquiries have separate paths.
+- Added [`.github/pull_request_template.md`](../../.github/pull_request_template.md) to require verification scope, simulator-versus-real-call labels and a privacy check before contributions are submitted.
+- GitHub Community Profile readback improved from 57% to 71% after the PR template was published. This is a repository-health signal, not evidence of external adoption.
+- Commits `6bcb43f`, `0ca3de6` and `c85b7b5` passed the full CI workflow. No new announcement or direct message was sent.
+
 ## X API publication guard — 2026-09-14 17:20 JST
 
 - Added [`scripts/publish-x-intake.mjs`](../../scripts/publish-x-intake.mjs), which reads the single current draft, checks the 280-character limit, verifies the authenticated account timeline, enforces a 24-hour spacing window and refuses duplicate text before any upload. With `--publish`, it uploads `docs/media/oathra-intake.mp4`, waits for media processing, publishes once and writes a URL/ID record without exposing credentials.
