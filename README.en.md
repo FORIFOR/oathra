@@ -51,7 +51,9 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 ```
 
 ```bash
-npx oathra setup phone            # pick a carrier + engine, answer a few guided questions
+pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
+# from the public v0.1.4 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.4/oathra-0.1.4.tgz oathra setup phone
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation
