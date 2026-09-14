@@ -2,9 +2,12 @@
 
 ## v0.1.5 decision memo release — 2026-09-14 JST
 
-- Release notes: `docs/launch/release-notes-0.1.5.md` (tagged release follows after the package is built and checked).
-- Source: `51c1e37` (`feat(replay): add human-readable decision memo`) plus the current site/Zenn scope updates.
+- Published release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.5
+- Assets: [oathra-0.1.5.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.5/oathra-0.1.5.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.5/oathra-0.1.5.tgz.sha256). The tarball SHA-256 is `ec49b221ac231b6ef512d2c37bad3fdf214e8ebc5fda34d2cdf997881c7d219f`.
+- Release notes: `docs/launch/release-notes-0.1.5.md`.
+- Source: `b4c7365` (`feat(release): prepare v0.1.5 decision memo package`) with the decision memo and current site/Zenn scope updates.
 - The public commands and setup guides now target the v0.1.5 GitHub asset. npm still serves 0.1.0 until its publish credential is configured.
+- CI `34806329638` and Pages `34806329657` passed. Release asset readback returned HTTP 302 to the signed download URLs; initial asset downloads were 0 at 13:32 JST.
 
 ## Decision memo update — 2026-09-14 JST
 

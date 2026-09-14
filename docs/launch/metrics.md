@@ -89,3 +89,12 @@
 - Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。2記事とも決定メモとプロファイリング境界の改稿を公開HTMLで確認。
 - 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま、Xはログイン・投稿間隔条件が未達のため新規投稿なし。
 - GitHub topics を検索語に合わせて20件へ整理（`phone-agent`、`voice-agent-testing`、`llm-evaluation`、`call-automation` を追加）。トピック追加自体はスター獲得の証拠ではない。
+
+## 2026-09-14 13:32 JST（v0.1.5 Release公開後）
+
+- GitHub stars / forks: **0 / 0**。外部Issueはまだ0件。
+- Traffic API: views **6 / 6 uniques**、clones **298 / 121 uniques**。CI・作者・配布確認を含むため、利用者数やスター獲得とはみなさない。
+- v0.1.5 assets: tarball **0**、checksum **0**（公開直後）。tarball SHA-256: `ec49b221ac231b6ef512d2c37bad3fdf214e8ebc5fda34d2cdf997881c7d219f`。
+- GitHub Discussion #14: フォローアップ1件。外部からの返信・導入報告はまだない。
+- Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。公開APIに閲覧数はない。
+- 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま、Xはログイン・投稿間隔条件が未達のため新規投稿なし。
