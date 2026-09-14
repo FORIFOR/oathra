@@ -76,10 +76,10 @@ pnpm oathra setup phone
 pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
 ```
 
-公開パッケージを使う場合は、v0.1.12 の GitHub 配布版を明示します。
+公開パッケージを使う場合は、v0.1.13 の GitHub 配布版を明示します。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz oathra setup phone
 ```
 
 ウィザードは次の順で進みます。

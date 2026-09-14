@@ -106,11 +106,11 @@ const constraints = checkConstraints(contract.constraints, values);
 
 現段階は、動きを見せて技術的な相談ができる段階です。有償PoCを受けられることや、本番運用に対応済みであることは宣言していません。そこには、実電話での評価、障害時の扱い、データの保持・削除などの確認が残っています。
 
-v0.1.12のシーン分岐付き追加聞き取り・仮押さえ誤完了ガード・決定メモは[リリースノート](https://github.com/FORIFOR/oathra/releases/tag/v0.1.12)に、導入手順は[初心者向けセットアップ](https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.ja.md)に記載しています。
+v0.1.13のシーン分岐付き追加聞き取り・仮押さえ誤完了ガード・決定メモは[リリースノート](https://github.com/FORIFOR/oathra/releases/tag/v0.1.13)に、導入手順は[初心者向けセットアップ](https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.ja.md)に記載しています。
 
 ## 自分の音声AIでも使う
 
-v0.1.12では、電話基盤を移行せずに判定だけを使えるようにし、仮押さえ・未確定・承認待ちを予約完了と誤認しません。保存した通話には決定メモと同意付き追加聞き取りの記録も出力します。`startAfter`・`dependsOn`・`choices` でシーンに応じて質問を分岐できます。明確な同意がない場合は任意聞き取りをその場で終了します。YAMLの `mission.intake` はローカルのシミュレーターから実電話へ引き継げます。`oathra verify`に手元の文字起こしを渡す方法と、`oathra/evidence`からTypeScriptで読み込む方法があります。APIキーは不要です。[入力形式・追加聞き取り・導入手順・LiveKit接続例](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)を公開しています。LiveKit接続例は型を検査した段階で、実セッションは未検証です。実際の流れは[48秒のArena録画](https://forifor.github.io/oathra/#intake-video)で確認できます。
+v0.1.13では、電話基盤を移行せずに判定だけを使えるようにし、仮押さえ・未確定・承認待ちを予約完了と誤認しません。保存した通話には決定メモと同意付き追加聞き取りの記録も出力します。`startAfter`・`dependsOn`・`choices` でシーンに応じて質問を分岐できます。明確な同意がない場合は任意聞き取りをその場で終了します。YAMLの `mission.intake` はローカルのシミュレーターから実電話へ引き継げます。`oathra verify`に手元の文字起こしを渡す方法と、`oathra/evidence`からTypeScriptで読み込む方法があります。APIキーは不要です。[入力形式・追加聞き取り・導入手順・LiveKit接続例](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)を公開しています。LiveKit接続例は型を検査した段階で、実セッションは未検証です。実際の流れは[48秒のArena録画](https://forifor.github.io/oathra/#intake-video)で確認できます。
 
 追加聞き取りは、契約に目的・同意文・質問項目・上限を宣言したときだけ有効になります。必要な予約情報が確定してから同意を尋ね、同意後は1回に1項目だけ聞き、拒否されたら停止します。保存されるのは相手が明示的に答えた内容で、業務用プロファイルには使えますが、属性を推測するプロファイリングではありません。同意と回答には発話ID・時刻が付き、`summary.md` に決定事項と一緒に残ります。
 
@@ -131,9 +131,9 @@ v0.1.12では、電話基盤を移行せずに判定だけを使えるように�
 ローカルの対話デモは、Node.js 22以上で起動できます。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz oathra demo
 ```
 
-これはAPIキー不要のローカルデモです。実電話には別途、電話・音声サービスの設定が必要です。上のコマンドはGitHubのv0.1.12配布版を使います。npmレジストリの版は0.1.0です。
+これはAPIキー不要のローカルデモです。実電話には別途、電話・音声サービスの設定が必要です。上のコマンドはGitHubのv0.1.13配布版を使います。npmレジストリの版は0.1.0です。
 
 https://github.com/FORIFOR/oathra
