@@ -2,7 +2,7 @@
 
 [ブラウザで自分の文字起こしを検証する](https://forifor.github.io/oathra/check.html)。インストール・APIキー不要。公開済みのモデル／シミュレーター交渉ログも読み込めます。入力はタブ内で処理し、送信・自動保存しません。
 
-Oathra v0.1.14では、電話会社・音声モデル・エージェント基盤を移行せず、保存済みの文字起こしを検査できます。仮押さえ・未確定・承認待ちを予約完了と扱わない判定も含みます。判定はローカルで動き、API呼び出し・APIキーは不要です。[English / 詳細な入力仕様](INTEGRATION.md)
+Oathra v0.1.15では、電話会社・音声モデル・エージェント基盤を移行せず、保存済みの文字起こしを検査できます。仮押さえ・未確定・承認待ちを予約完了と扱わない判定も含みます。判定はローカルで動き、API呼び出し・APIキーは不要です。[English / 詳細な入力仕様](INTEGRATION.md)
 
 実電話まで試す場合は、API キーの取得先と段階テストをまとめた[初心者向けセットアップ](SETUP.ja.md)を先に確認してください。
 
@@ -11,7 +11,7 @@ Oathra v0.1.14では、電話会社・音声モデル・エージェント基盤
 Node.js 22以上で実行します。
 
 ```bash
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.14/oathra-0.1.14.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.15/oathra-0.1.15.tgz
 ```
 
 npmレジストリの0.1.0には今回のSDK・検査コマンドがありません。上記のGitHub配布版を使ってください。
@@ -50,7 +50,7 @@ console.log(JSON.stringify(result, null, 2));
 
 ## 同意付きの追加聞き取り
 
-予約後の案内などで相手の明示回答が必要な場合だけ、`CallContract.intake` を追加します。`purpose`、同意を得る `consentPrompt`、質問文とキーの配列、`maxQuestions`（最大8問）を必ず宣言してください。必要な予約情報が確定した後、目的を読み上げて同意を一度尋ね、同意後は1回に1項目だけ質問します。`consentPrompt` に目的が含まれていない場合は、ランタイムが実際に話す同意文へ `purpose` を自動付加します。業務シーンの前提を追加する場合は `startAfter`、前の回答に応じて次の質問を出す場合は `dependsOn`、定型化できる回答は `choices` を使えます。拒否、保留、曖昧な返答、選択肢に一致しない返答の場合はその場で停止し、推測やセンシティブ属性の収集は行いません。
+予約後の案内などで相手の明示回答が必要な場合だけ、`CallContract.intake` を追加します。`purpose`、同意を得る `consentPrompt`、質問文とキーの配列、`maxQuestions`（最大8問）を必ず宣言してください。必要な予約情報が確定した後、目的を読み上げて同意を一度尋ね、同意後は1回に1項目だけ質問します。`consentPrompt` に目的が含まれていない場合は、ランタイムが実際に話す同意文へ `purpose` を自動付加します。業務シーンの前提を追加する場合は `startAfter`、前の回答に応じて次の質問を出す場合は `dependsOn`、定型化できる回答は `choices` を使えます。拒否、保留、曖昧な返答、忙しさや時間不足の返答、選択肢に一致しない返答の場合はその場で停止し、推測やセンシティブ属性の収集は行いません。
 
 ```ts
 const contract = defineCall({
@@ -72,7 +72,7 @@ const contract = defineCall({
 
 同意後の回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に、質問項目・回答・発話ID・時刻を含めて保存します。同意の可否も発話ID・時刻付きで記録するため、業務上の明示回答プロファイルと決定事項を後から監査できます。契約に `intake` がなければ、この追加質問は発生しません。
 
-`stopOnDecline` は旧設定との互換性のため受け付けますが、拒否・保留・曖昧な返答があった場合は常に追加聞き取りを終了します。設定で相手への再質問を有効にすることはできません。
+`stopOnDecline` は旧設定との互換性のため受け付けますが、拒否・保留・曖昧な返答・忙しさや時間不足の返答があった場合は常に追加聞き取りを終了します。設定で相手への再質問を有効にすることはできません。
 
 シナリオをYAMLで管理する場合は、同じブロックを `mission.intake` に置きます。`oathra play ./my-scenario.yaml` でローカル確認した設定を、そのまま `oathra call --scenario ./my-scenario.yaml --to +81...` の実電話へ渡せます。
 

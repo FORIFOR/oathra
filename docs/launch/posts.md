@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## v0.1.15 intake pacing and live-context release — 2026-09-14 21:36 JST
+
+- Added a time-pressure stop guard for optional intake. Japanese and English phrases indicating that the callee is busy, in a hurry or cannot talk now end the follow-up flow without saving a guessed profile value or repeating the question.
+- OpenAI Realtime and GPT-Live context updates now include recorded answers, declined or skipped fields and the field awaiting an answer. Saved decision memos include each explicit intake answer's utterance ID and timestamp.
+- Verification passed: 656 tests passed with one credential-gated LiveKit test skipped; scenario validation, the 10,000-run adversarial evaluation, build, typecheck, dependency lint, site build and X draft validation all passed. Release package and public Pages update will be checked after the source commit is pushed.
+
 ## Discussion #14 synchronized — 2026-09-14 21:21 JST
 
 - Updated the existing [GitHub Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) body in place to v0.1.14. It now explains purpose disclosure before consent, links the current release/setup, and keeps the three technical feedback questions.

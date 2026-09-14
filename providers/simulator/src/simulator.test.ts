@@ -382,7 +382,7 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.events.filter((event) => event.type === "intake.consent")).toHaveLength(1);
   });
 
-  it.each(["少々お待ちください。", "少し考えます。", "結構です。"])("stops field intake on a hold, hedge or refusal (%s) without saving it as an answer", async (nonAnswer) => {
+  it.each(["少々お待ちください。", "少し考えます。", "結構です。", "今ちょっと急いでおります。"])("stops field intake on a hold, hedge, refusal or time-pressure signal (%s) without saving it as an answer", async (nonAnswer) => {
     const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
     const base = contractFromScenario(scenario);
     const contract = defineCall({

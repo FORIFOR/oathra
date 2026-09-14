@@ -8,11 +8,11 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
-### Current product checkpoint — v0.1.14
+### Current product checkpoint — v0.1.15
 
-The scene-aware intake guard is now packaged in the public GitHub release. `startAfter`, `dependsOn` and `choices` keep follow-up questions tied to settled prerequisites and explicit answers; refusal, hold, ambiguity or an unmatched choice stops without saving a guessed profile. The release package and Pages command are aligned at v0.1.14. GitHub stars, external replies and business inquiries remain separate measurements.
+The scene-aware intake guard is now packaged in the public GitHub release. `startAfter`, `dependsOn` and `choices` keep follow-up questions tied to settled prerequisites and explicit answers; refusal, hold, ambiguity, time pressure or an unmatched choice stops without saving a guessed profile. Realtime context updates also carry recorded, declined and skipped fields, and decision memos include intake utterance provenance. The release package and Pages command are aligned at v0.1.15. GitHub stars, external replies and business inquiries remain separate measurements.
 
-The latest readback at 21:16 JST is still 0 stars / 0 forks and 9 repository views / 9 unique visitors; no external issue or business inquiry is observed. The X v0.1.14 draft remains valid and duplicate-free but is gated until 2026-09-15 20:20:30 JST. The next justified campaign action is one fresh X announcement after that check; do not multiply channel posts while the audience signal is absent.
+The latest readback at 21:16 JST is still 0 stars / 0 forks and 9 repository views / 9 unique visitors; no external issue or business inquiry is observed. The X v0.1.15 draft remains valid and duplicate-free but is gated until 2026-09-15 20:20:30 JST. The next justified campaign action is one fresh X announcement after that check; do not multiply channel posts while the audience signal is absent.
 
 ### Superseded product checkpoint — v0.1.11
 

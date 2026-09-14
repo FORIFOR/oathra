@@ -37,14 +37,42 @@ afterAll(() => wss.close());
 
 describe("OpenAIRealtimeAgent", () => {
   it("maps Realtime events to session events and forwards audio", async () => {
-    const contract = defineCall({ goal: "restaurant.reservation", require: { time: true, confirmed: true }, permissions: { ask: true } });
+    const contract = defineCall({
+      goal: "restaurant.reservation",
+      require: { time: true, confirmed: true },
+      permissions: { ask: true },
+      intake: {
+        purpose: "案内を適切にする",
+        consentPrompt: "追加で1点だけ伺ってもよろしいでしょうか？",
+        fields: [
+          { key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" },
+          { key: "region", label: "地域", question: "地域を教えていただけますか？" },
+        ],
+        maxQuestions: 2,
+      },
+    });
     const agent = new OpenAIRealtimeAgent({ contract, apiKey: "test", model: "fake", url: `ws://127.0.0.1:${port}` });
     const events: SessionEvent[] = [];
     const audio: number[] = [];
     const t0 = Date.now();
     await agent.connect({ sendAudio: (b) => audio.push(b.length), clearAudio: () => undefined, emit: (e) => events.push(e), now: () => Date.now() - t0 });
     agent.pushAudio(new Uint8Array(160));
-    agent.updateContext({ verified: { time: "19:30" }, pending: {}, missing: ["confirmed"], violations: [] });
+    agent.updateContext({
+      verified: { time: "19:30" },
+      pending: {},
+      missing: ["confirmed"],
+      violations: [],
+      intake: {
+        status: "active",
+        purpose: "案内を適切にする",
+        maxQuestions: 2,
+        askedQuestions: 1,
+        pendingField: "region",
+        answers: [{ key: "role", label: "ご担当", value: "幹事です。", utteranceId: "u1", transcript: "幹事です。", t: 1000 }],
+        declined: [],
+        skipped: [],
+      },
+    });
     await new Promise((r) => setTimeout(r, 700));
     const types = events.map((e) => e.type);
     expect(types).toContain("speech.started");
@@ -60,6 +88,8 @@ describe("OpenAIRealtimeAgent", () => {
     const updates = received.filter((m) => m.type === "session.update") as Array<{ session: { instructions: string } }>;
     expect(updates.length).toBeGreaterThanOrEqual(2);
     expect(updates[1]!.session.instructions).toContain('"time":"19:30"');
+    expect(updates[1]!.session.instructions).toContain('"key":"role","value":"幹事です。"');
+    expect(updates[1]!.session.instructions).toContain("region");
     expect(received.some((m) => m.type === "input_audio_buffer.append")).toBe(true);
     expect(received.some((m) => m.type === "conversation.item.create")).toBe(true);
     agent.close();

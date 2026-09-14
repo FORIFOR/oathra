@@ -83,6 +83,9 @@ const INTAKE_QUESTION_RE = /[?？]|でしょうか|ですか\s*$|\b(?:what|which
 // value. Stop the optional flow rather than repeating the question.
 const INTAKE_HOLD_RE = /少々お待ち|そのままお待ち|お待ちください|確認して(?:まいります|みます)|一旦(?:お待ち|確認)|one moment|hold on|please hold|hold the line|bear with me/i;
 const INTAKE_HEDGE_RE = /少し考え|考え(?:ておき|ます)|たぶん|多分|おそらく|恐らく|かもしれ|わかりません|分かりません|まだ決めて|確認してから|後で(?:お伝え|回答)|not sure|maybe|perhaps|i need to think|let me check/i;
+// Time pressure is a polite opt-out signal too. Treat it like a refusal so
+// the caller does not turn "今は急いでいます" into another follow-up prompt.
+const INTAKE_BUSY_RE = /今(?:は|ちょっと|少し)?(?:急いで|時間が(?:ありません|ない)|手が離せません)|急いで(?:います|おります)|忙し(?:い|しくて)|立て込んで|今は難し(?:い|くて)|また後で|お時間(?:が|は)?(?:ありません|ない)|not a good time|i(?:'m| am) busy|in a hurry|don't have time|do not have time|call(?: me)? back later|maybe later/i;
 
 let counter = 0;
 const newId = (prefix: string) => `${prefix}_${Date.now().toString(36)}${(counter++).toString(36)}`;
@@ -585,7 +588,7 @@ export class CallRuntime {
       ? field.choices.filter((choice) => normalizeLine(text).toLocaleLowerCase().includes(normalizeLine(choice).toLocaleLowerCase()))
       : undefined;
     const invalidChoice = Boolean(field.choices && (matchedChoice?.length !== 1));
-    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text) || invalidChoice || (INTAKE_YES_RE.test(text) && !field.choices);
+    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text) || INTAKE_BUSY_RE.test(text) || invalidChoice || (INTAKE_YES_RE.test(text) && !field.choices);
     if (declined || nonAnswer) {
       this.intakeDeclined.add(field.key);
       this.emit({ type: "intake.answer", field: field.key, declined: true, utteranceId: turn.id });

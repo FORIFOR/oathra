@@ -98,7 +98,7 @@ export function renderCallSummary(outcome: CallOutcome): string {
       lines.push(ja ? "（記録された回答はありません）" : "(No answers recorded.)");
     } else {
       for (const answer of outcome.intake.answers) {
-        lines.push(`- **${answer.label}** (${answer.key}): ${answer.value} — ${ja ? "発話" : "utterance"}: 「${answer.transcript}」`);
+        lines.push(`- **${answer.label}** (${answer.key}): ${answer.value} — ${ja ? "発話" : "utterance"}: 「${answer.transcript}」 — ${ja ? "発話ID" : "utterance ID"}: \`${answer.utteranceId}\` (${answer.t}ms)`);
       }
     }
     if (outcome.intake.declined.length) lines.push(`- ${ja ? "回答を拒否した項目" : "Declined fields"}: ${outcome.intake.declined.join(", ")}`);
