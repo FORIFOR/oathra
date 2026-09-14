@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Public funnel smoke check — 2026-09-14 21:03 JST
+
+- Japanese and English Pages routes, `portfolio.js`, the v0.1.13 release links and the intake/evidence video assets returned HTTP 200.
+- The private business-inquiry endpoint accepted a Pages-origin CORS preflight with HTTP 204 and `Access-Control-Allow-Origin: https://forifor.github.io`. No inquiry was submitted and no test lead was created.
+
 ## X gate reliability — 2026-09-14 21:00 JST
 
 - The publication helper now retries transient 429/5xx failures for idempotent account, timeline and media-status reads with bounded backoff. Upload and tweet POSTs remain non-retried to avoid duplicate publication (`scripts/publish-x-intake.mjs`).
