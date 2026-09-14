@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## External signal checkpoint — 2026-09-14 20:19 JST
+
+- GitHub remains at **0 stars / 0 forks**, 9 views / 9 unique visitors and no external issue or business inquiry. Zenn remains 1 like / 0 comments for the launch article and 0 / 0 for the evidence article.
+- v0.1.12 assets now show 2 tarball downloads and 1 checksum download. These may include maintainer/public verification, so they are recorded as distribution signals rather than external users. Raw snapshot: [metrics/2026-09-14-2019-jst.json](metrics/2026-09-14-2019-jst.json).
+
 ## GitHub discovery copy — 2026-09-14 20:15 JST
 
 - Updated the repository About description to state the current narrow value proposition: evidence-anchored phone outcomes plus scene-aware, consented follow-up intake, with the no-API-key local check. Existing topics and homepage remain unchanged.
