@@ -421,6 +421,7 @@ publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0�
 - Assets: [`oathra-0.1.11.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz.sha256). SHA-256: `7b55e925c10df67087da910946a57ec4378fc6039bb614f1c542a48414711d05`; public download and checksum verification passed.
 - Public package smoke passed: the tarball validates and runs `restaurant-reservation-intake` with the two explicit intake answers. CI [34827095040](https://github.com/FORIFOR/oathra/actions/runs/34827095040) and Pages [34827002643](https://github.com/FORIFOR/oathra/actions/runs/34827002643) passed. The X announcement remains scheduled only after the account-wide spacing checkpoint; no duplicate post was sent.
 - GitHub Discussion [#14](https://github.com/FORIFOR/oathra/discussions/14) was updated to v0.1.11 and received maintainer comment [18431488](https://github.com/FORIFOR/oathra/discussions/14#discussioncomment-18431488), asking for redacted or synthetic traces and one useful follow-up field. No external reply is claimed.
+- Existing distribution PR [awesome-voice-agents#42](https://github.com/yzfly/awesome-voice-agents/pull/42) was updated in place to v0.1.11 and the provisional-confirmation guard. It remains open with no maintainer response; no merge or adoption is claimed.
 
 ## Growth snapshot after v0.1.11 — 2026-09-14 18:19 JST
 

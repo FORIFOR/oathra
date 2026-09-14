@@ -14,7 +14,7 @@ The latest 2026-09-14 18:19 JST readback remains 0 stars / 0 forks, while GitHub
 
 The authenticated X readback at 17:55 JST shows the account at 1 follower (previously 0) and the latest account post at 7 impressions (previously 5), with no like, reply, repost or quote. This is a small distribution signal, not proof that the follower or impressions came from the Oathra audience. The Oathra announcement remains gated until 2026-09-15 15:13:19 JST.
 
-The existing [awesome-voice-agents#42](https://github.com/yzfly/awesome-voice-agents/pull/42) listing was updated in place at 17:10 JST to describe v0.1.10's consented intake and link the 48-second demo; it remains compatible with the v0.1.11 guard. This is a distribution experiment for the selected voice-agent audience; no maintainer response or adoption is claimed.
+The existing [awesome-voice-agents#42](https://github.com/yzfly/awesome-voice-agents/pull/42) listing was updated in place again after v0.1.11 publication to describe the current release, provisional-confirmation guard and consented intake. It remains open with no maintainer response; this is a distribution experiment for the selected voice-agent audience, not evidence of adoption.
 
 The Japanese and English Pages routes contain the v0.1.11 command, the intake recording, scenario link and private inquiry form. A CORS preflight to the form's leads and events endpoints returned 204 for the Pages origin; no inquiry was submitted during verification.
 
