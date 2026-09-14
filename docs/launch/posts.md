@@ -19,6 +19,7 @@
 - Choosing the local `docs/media/oathra-intake-ja.mp4` was blocked before transmission by the Chrome extension's file-URL permission. No file was uploaded and no TikTok post was published.
 - The prepared caption and publication checklist are in [tiktok-intake-ja.txt](tiktok-intake-ja.txt); it matches the attached intake recording and states that the run is an Arena simulator, not a real phone call.
 - To resume, Chrome must allow file URLs for the ChatGPT extension: open `chrome://extensions`, choose the extension's **Details**, and enable **Allow access to file URLs**. After that setting is enabled, recheck the timing and publish one intake video, then record the processed media, post URL/ID and time here. Do not duplicate the existing reel.
+- A direct attempt to open `chrome://extensions` from this browser session was rejected by its URL policy at 17:15 JST. No workaround or indirect browser control was attempted; the setting must be changed through the normal Chrome UI.
 
 ## LiveKit community channel research — 2026-09-14 JST
 
