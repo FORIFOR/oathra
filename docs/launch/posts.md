@@ -6,6 +6,7 @@
 - Published GitHub Release: [v0.1.10](https://github.com/FORIFOR/oathra/releases/tag/v0.1.10), targeting `479801793feefd1102bea1e3f66255f672d40d98`.
 - Assets: [oathra-0.1.10.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.10/oathra-0.1.10.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.10/oathra-0.1.10.tgz.sha256). SHA-256: `ef44225def641386238b118f76354ec72fcd5a09ac5d417632fd89bc8531ea2d`; downloaded asset and checksum verification passed.
 - Clean package smoke passed: the tarball exposes `oathra demo`, `scenario validate`, the intake scenario and the localized Arena title. CI `34815087930` and Pages `34815087897` passed for the v0.1.10 source commit.
+- GitHub Discussion #14 comment `18428933` now points to v0.1.10 and asks voice-agent teams for one or two contract-declared follow-up fields. It requests only redacted or synthetic transcripts; no external feedback or adoption is claimed.
 - No X post was made in this turn because the account-wide spacing checkpoint remains 2026-09-15 03:01 JST. TikTok's next eligible time remains 20:10 JST; follow the existing heartbeat and recheck live activity before publishing.
 
 ## v0.1.9 scenario intake handoff — 2026-09-14 JST
