@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## External signal checkpoint — 2026-09-14 18:40 JST
+
+- GitHub reports **0 stars / 0 forks**, 9 views / 9 unique visitors and 530 clones / 199 unique cloners in the 14-day window. The daily buckets and release downloads include maintainer or automation checks, so they are not counted as external users.
+- The v0.1.11 release assets show one tarball and one checksum download, matching the public package smoke verification. Zenn remains 1 like / 0 comments for the launch article and 0 / 0 for the evidence article. No external issue author or business inquiry is observed.
+- The active X draft remains duplicate-free but is not eligible until **2026-09-15 15:13:19 JST**. No new post was sent in this checkpoint.
+- Raw snapshot: [metrics/2026-09-14-1840-jst.json](metrics/2026-09-14-1840-jst.json). This is a measurement checkpoint, not evidence of adoption.
+
 ## Local demo parity fix — 2026-09-14 18:34 JST
 
 - `pnpm build:site` now synchronizes newly recorded files from `docs/media/` into the ignored `site/media/` directory used by a local preview. Before this fix, the Pages assembly copied the intake videos but a fresh local build returned 404 for them.
