@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## X gate reliability — 2026-09-14 21:00 JST
+
+- The publication helper now retries transient 429/5xx failures for idempotent account, timeline and media-status reads with bounded backoff. Upload and tweet POSTs remain non-retried to avoid duplicate publication (`scripts/publish-x-intake.mjs`).
+- `--validate` still reports a 279-character draft. A live readback succeeded after the earlier transient 503: the draft is duplicate-free and remains eligible after **2026-09-15 20:20:30 JST**.
+
 ## v0.1.13 public package — 2026-09-14 20:57 JST
 
 - Published the post-release CLI and replay fixes as GitHub Release [v0.1.13](https://github.com/FORIFOR/oathra/releases/tag/v0.1.13), targeting commit [`071dbdf`](https://github.com/FORIFOR/oathra/commit/071dbdff32c69ddf809a29768817a21ec17b7fb7). Assets are [`oathra-0.1.13.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz) and its [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz.sha256); the tarball hash is `3a7d0554654edd1b4ec0cb40dd313863fd69338e6d947fd660af1b26eb0b8288`.

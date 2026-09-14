@@ -73,6 +73,27 @@ async function request(method, baseUrl, { query = {}, body, headers = {} } = {})
   return data;
 }
 
+/**
+ * Retry only idempotent reads after transient provider failures. Publication
+ * POSTs intentionally continue to use request() directly so a timeout can
+ * never create an unnoticed duplicate post.
+ */
+async function requestRead(baseUrl, options = {}, attempts = 3) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await request("GET", baseUrl, options);
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      const transient = / returned (?:429|5\d\d):/.test(message);
+      if (!transient || attempt === attempts - 1) throw error;
+      await new Promise((resolveWait) => setTimeout(resolveWait, 1000 * 2 ** attempt));
+    }
+  }
+  throw lastError;
+}
+
 function draftText() {
   const source = readFileSync(DRAFT, "utf8");
   const match = /^A phone agent[\s\S]*?(?=\nBefore publishing)/m.exec(source);
@@ -83,10 +104,10 @@ function draftText() {
 }
 
 async function accountAndTweets() {
-  const me = await request("GET", "https://api.twitter.com/2/users/me", {
+  const me = await requestRead("https://api.twitter.com/2/users/me", {
     query: { "user.fields": "id,name,username,public_metrics" },
   });
-  const tweets = await request("GET", `https://api.twitter.com/2/users/${me.data.id}/tweets`, {
+  const tweets = await requestRead(`https://api.twitter.com/2/users/${me.data.id}/tweets`, {
     query: { max_results: "100", exclude: "retweets,replies", "tweet.fields": "created_at,public_metrics,text" },
   });
   return { me: me.data, tweets: tweets.data ?? [] };
@@ -122,7 +143,7 @@ async function uploadVideo() {
     if (state === "failed") throw new Error(`X media processing failed: ${JSON.stringify(info.processing_info)}`);
     const waitMs = Math.max(2, Number(info.processing_info.check_after_secs ?? 2)) * 1000;
     await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
-    info = await request("GET", "https://upload.twitter.com/1.1/media/upload.json", {
+    info = await requestRead("https://upload.twitter.com/1.1/media/upload.json", {
       query: { command: "STATUS", media_id: uploaded.media_id_string },
     });
   }
