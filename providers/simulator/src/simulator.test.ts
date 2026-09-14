@@ -212,7 +212,7 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.events.filter((event) => event.type === "intake.consent")).toHaveLength(1);
   });
 
-  it("stops field intake on a hold or hedge without saving it as an answer", async () => {
+  it.each(["少々お待ちください。", "少し考えます。"])("stops field intake on a hold or hedge (%s) without saving it as an answer", async (nonAnswer) => {
     const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
     const base = contractFromScenario(scenario);
     const contract = defineCall({
@@ -229,7 +229,7 @@ describe("scripted agent vs scripted characters", () => {
       greeting: () => "お電話ありがとうございます。",
       respond: ({ lastAgentText }: CalleeContext): CalleeReply => {
         if (/追加で1点/.test(lastAgentText)) return { text: "はい、お願いします。" };
-        if (/ご担当を/.test(lastAgentText)) return { text: "少し考えます。" };
+        if (/ご担当を/.test(lastAgentText)) return { text: nonAnswer };
         if (/確定しても/.test(lastAgentText)) return { text: "ご予約承りました。" };
         if (/19時半でお願いします/.test(lastAgentText)) return { text: "ご予約を確定してもよろしいでしょうか？" };
         if (/予約をお願い/.test(lastAgentText)) return { text: "9月12日の19時半、2名様で空いております。" };
