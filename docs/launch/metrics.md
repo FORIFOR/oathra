@@ -54,3 +54,13 @@
 - GitHub Discussion #14: 公開済み、コメント0件。外部の具体的な発話例を得るための質問を掲載。
 - Zenn: `oathra-launch` いいね1、`oathra-evidence-rules` いいね0。公開APIに閲覧数はない。
 - X: アカウント全体の最新投稿から24時間未満のため、v0.1.4動画告知は未投稿。次回は投稿直前にタイムラインとログイン状態を再確認する。
+
+## 2026-09-14 12:27 JST（英語セットアップ導線公開後）
+
+- GitHub stars / forks: 0 / 0。
+- Traffic API views（14日）: 6回 / 6 uniques、clones: 298回 / 121 uniques。CI・配布確認・作者の操作を含むため、外部利用者数とはみなさない。
+- v0.1.4 release assets: `oathra-0.1.4.tgz` 2 downloads、checksum 1 download。配布確認を含み、採用の証拠ではない。
+- GitHub Discussion #14: コメント0件。外部の発話例・導入報告はまだ得られていない。
+- Zenn: `oathra-launch` いいね1、`oathra-evidence-rules` いいね0。公開APIに閲覧数はない。
+- X: 公開プロフィールの最新投稿は約10時間前で、24時間間隔を満たしていない。アカウントは未ログイン表示のため、新規動画告知は投稿せず、次回も公開直前に時刻と認証状態を再確認する。
+- 変更: `docs/SETUP.en.md` を追加し、README と英語サイトから英語の初心者向けセットアップに直接遷移できるようにした（commit `ea7ecd0`）。CI `34802645340` と Pages `34802645353` は success。
