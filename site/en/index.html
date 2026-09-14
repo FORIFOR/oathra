@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Oathra — Give AI agents a phone, and proof of what happened</title>
-<meta name="description" content="Oathra is an open-source runtime for AI agents that call, negotiate and act on the real world — with verified results. Playable simulator, real phone calls, evidence engine. Try v0.1.8 with no API key.">
+<meta name="description" content="Oathra is an open-source runtime for AI agents that call, negotiate and act on the real world — with verified results. Playable simulator, real phone calls, evidence engine. Try v0.1.9 with no API key.">
 <meta property="og:title" content="Oathra — Give AI agents a phone, and proof of what happened">
 <meta property="og:description" content="Playable, verifiable phone actions for AI agents. Bring your own carrier. Bring your own model. 0 / 10,000 false completions.">
 <meta property="og:image" content="https://forifor.github.io/oathra/media/oathra-battle-en-poster.png">
@@ -193,8 +193,8 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
       <p class="kicker">OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p>
       <h1>An AI makes the call.<br>The result is checked against <em>what the other side said</em>.</h1>
       <p class="lede">A voice-agent runtime for reservations, orders and confirmations. Date, time, party size, terms and the proof of confirmation are stored with the call. When the agent says "booked", nothing settles until the callee says so.</p>
-      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.8/oathra-0.1.8.tgz oathra demo"><b>$</b> Copy v0.1.8 command</button></div>
-      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.8">Install v0.1.8 with the latest fixes</a> · Copy buttons use the GitHub Release package. npm remains at 0.1.0.</p>
+      <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz oathra demo"><b>$</b> Copy v0.1.9 command</button></div>
+      <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.9">Install v0.1.9 with the latest fixes</a> · Copy buttons use the GitHub Release package. npm remains at 0.1.0.</p>
       <p class="note">The production evidence engine runs in your browser. Your input stays here; no phone call is placed. <code>npx oathra demo</code> needs no API key.</p>
     </div>
     <div class="sim" id="sim" data-lang="en"></div>
@@ -206,7 +206,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <div><b>Twilio verified</b><small>Plivo · SIP implemented, not PSTN-verified</small></div>
   </div>
 
-<section id="integrate"><h2>Add evidence checks to the voice agent you already have.</h2><div class="prose"><p>Keep your carrier and model. Use <code>oathra verify</code> in v0.1.8 to check saved transcripts locally and get JSON fields, missing requirements and supporting utterances. No API key needed.</p><p>A typed SDK at <code>oathra/evidence</code> and a LiveKit integration example are included.</p><p><a class="btn" href="check.html">Check a transcript in your browser →</a></p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">Use your own transcripts →</a> · <a href="https://github.com/FORIFOR/oathra">Star on GitHub to follow updates</a></p><p class="note">Checks supported language rules; does not verify a venue's booking system. The LiveKit example is type-checked, not tested on a live call.</p></div><div class="video-section" id="transcript-video"><h2>25 seconds: from transcript to evidence</h2><video class="demo-video" style="width:100%;max-width:850px" controls playsinline preload="none" poster="../media/oathra-transcript-poster.jpg"><source src="../media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="../media/oathra-transcript-en.vtt" default></video><p class="note">Actual browser interaction with the saved GPT-4o-mini / hotel simulator recording. This is not a real phone call. <a href="check.html">Try it yourself →</a></p></div></section>
+<section id="integrate"><h2>Add evidence checks to the voice agent you already have.</h2><div class="prose"><p>Keep your carrier and model. Use <code>oathra verify</code> in v0.1.9 to check saved transcripts locally and get JSON fields, missing requirements and supporting utterances. No API key needed.</p><p>A typed SDK at <code>oathra/evidence</code> and a LiveKit integration example are included.</p><p><a class="btn" href="check.html">Check a transcript in your browser →</a></p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">Use your own transcripts →</a> · <a href="https://github.com/FORIFOR/oathra">Star on GitHub to follow updates</a></p><p class="note">Checks supported language rules; does not verify a venue's booking system. The LiveKit example is type-checked, not tested on a live call.</p></div><div class="video-section" id="transcript-video"><h2>25 seconds: from transcript to evidence</h2><video class="demo-video" style="width:100%;max-width:850px" controls playsinline preload="none" poster="../media/oathra-transcript-poster.jpg"><source src="../media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="../media/oathra-transcript-en.vtt" default></video><p class="note">Actual browser interaction with the saved GPT-4o-mini / hotel simulator recording. This is not a real phone call. <a href="check.html">Try it yourself →</a></p></div></section>
 <section class="intake-callout" id="intake"><h2>Follow up without pushing the callee.</h2><p>After the required booking details settle, Oathra asks consent once. With consent, it asks one contract-declared question per turn. A decline, hold or ambiguous reply ends intake immediately; only explicit answers go to <code>intake.json</code> and <code>summary.md</code>.</p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">See the contract and saved format →</a></p></section><section id="demo-video"><h2>Watch success turn back into incomplete.</h2><div class="player player-video"><video controls playsinline preload="none" poster="../media/oathra-evidence-en-poster.jpg"><source src="../media/oathra-evidence-en.mp4" type="video/mp4"><track kind="captions" src="../media/oathra-evidence-en.vtt" srclang="en" label="English" default></video></div><p class="cap">30 seconds · recorded interaction with the real evidence engine · captions, no audio. Browser frames captured at 4 fps and encoded at 30 fps. Not a phone-call recording.</p><p><a href="#sim">Try your own wording →</a></p></section>
   <section id="real">
     <div class="replay-h"><h2>A real-model negotiation</h2><p>GPT-4o mini negotiating with a simulated hotel that lists at ¥23,500. No real hotel was called. The run is redrawn at 3× from the saved events. Not a recording.</p></div>
@@ -281,7 +281,7 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
     <p class="sub">Twilio keeps its direct media-streams fast path. Plivo and any SIP trunk go through a SIP gateway (LiveKit by default, Cloud or self-hosted). The voice engine is a separate choice: GPT-Live was the most natural on our test calls, so it is the default; a Deepgram + LLM + TTS pipeline is there when you want control or lower cost.</p>
     <div class="two">
       <pre>$ pnpm oathra setup phone
-# from a clone; use the v0.1.8 command above for the release package
+# from a clone; use the v0.1.9 command above for the release package
 
 Choose voice engine
 ❯ GPT-Live        <span class="amb">Recommended</span> · best conversation quality
@@ -401,7 +401,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
         <p><a class="btn" href="https://github.com/FORIFOR/oathra/blob/main/docs/SETUP.en.md">Read the setup guide →</a></p>
       </div>
       <pre>$ pnpm oathra setup phone
-# from a clone; use the v0.1.8 command above for the release package
+# from a clone; use the v0.1.9 command above for the release package
 
 Choose voice engine
 ❯ GPT-Live       needs OPENAI_API_KEY
@@ -428,7 +428,7 @@ How would you like to make calls?
     <div class="cta">
       <h2>Start with two agents on the phone.</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.8/oathra-0.1.8.tgz oathra demo"><b>$</b> Copy v0.1.8 command <span class="copy">copy</span></button>
+        <button class="cmd" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz oathra demo"><b>$</b> Copy v0.1.9 command <span class="copy">copy</span></button>
         <a class="cmd" href="https://github.com/FORIFOR/oathra" style="text-decoration:none"><b>→</b> github.com/FORIFOR/oathra <span class="copy">star</span></a>
       </div>
     </div>

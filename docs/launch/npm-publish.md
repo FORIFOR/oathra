@@ -1,12 +1,12 @@
 # npm publishing path
 
-The public v0.1.8 package is currently distributed from the GitHub Release because the local npm session is not authenticated. The repository now includes a manual GitHub Actions path so a maintainer only needs to configure the credential once and select the tag to publish.
+The public v0.1.9 package is currently distributed from the GitHub Release because the local npm session is not authenticated. The repository now includes a manual GitHub Actions path so a maintainer only needs to configure the credential once and select the tag to publish.
 
 ## One-time setup
 
 1. Create an npm automation token with permission to publish `oathra`.
 2. Add it to the repository as the Actions secret `NPM_TOKEN`.
-3. Open **Actions → Publish npm package → Run workflow** and enter the exact Git tag, such as `v0.1.8`.
+3. Open **Actions → Publish npm package → Run workflow** and enter the exact Git tag, such as `v0.1.9`.
 
 The workflow checks out that tag, builds the bundled CLI and SDK, confirms that the tag version equals `packages/cli/package.json`, and publishes with npm provenance. It fails before publishing when the secret is missing or the versions differ.
 

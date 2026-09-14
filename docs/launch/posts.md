@@ -1,5 +1,13 @@
 # Launch posts and publication record
 
+## v0.1.9 scenario intake handoff — 2026-09-14 JST
+
+- Source: `826226c` (`feat(scenario): carry consented intake into phone calls`), pushed to `main` after the v0.1.8 package was already public.
+- `mission.intake` is now accepted in scenario YAML and carried into the `CallContract` used by both `oathra play` and `oathra call --scenario ./my-scenario.yaml`.
+- Local validation passed: build, typecheck, 148 tests with one credential-gated live test skipped, and `git diff --check`.
+- Main CI `34811155009` passed: dependency check, build, tests, scenario validation, false-completion eval, 10,000-run adversarial eval and package smoke.
+- A new GitHub Release asset is required before external users receive this path; release notes: [v0.1.9](release-notes-0.1.9.md).
+
 ## v0.1.8 intake non-answer hardening — 2026-09-14 JST
 
 - Source: `779d764` (`fix(intake): stop on non-answer field replies`) and `8e12bdf` (`test(intake): cover hold and hedge replies`), pushed to `main`.

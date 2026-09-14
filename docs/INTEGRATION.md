@@ -2,14 +2,14 @@
 
 [Check your own transcript in the browser](https://forifor.github.io/oathra/en/check.html). No installation or API key. Load the existing model/simulator negotiation or paste your own check JSON. Input stays in the tab; no upload or automatic storage.
 
-Oathra v0.1.8 can check reservation evidence without replacing your carrier, voice model or agent framework. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
+Oathra v0.1.9 can check reservation evidence without replacing your carrier, voice model or agent framework. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)
 
 ## Install the released SDK and CLI
 
 Node.js 22+:
 
 ```bash
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.8/oathra-0.1.8.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz
 ```
 
 Use the GitHub asset: the npm registry still serves 0.1.0, which does not include this SDK or command. Both `oathra` and `oathra/evidence` export `EvidenceEngine`, `defineCall`, `evaluate` and `verifyTranscript`, with TypeScript declarations. The SDK entry does not load CLI, carrier or model clients.
