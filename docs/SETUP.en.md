@@ -9,6 +9,19 @@ The browser [evidence lab](https://forifor.github.io/oathra/en/check.html) needs
 For the local simulator, use Node.js 22 or newer:
 
 ```bash
+node --version  # v22 or newer
+pnpm --version  # 10.12.2 or newer
+```
+
+If `pnpm` is not installed, install it once with npm:
+
+```bash
+npm install --global pnpm@10.12.2
+```
+
+If you do not want to clone the repository, skip this section and use the GitHub Release `npx` command below.
+
+```bash
 git clone https://github.com/FORIFOR/oathra.git
 cd oathra
 pnpm install
@@ -97,4 +110,3 @@ When reporting a problem, include the command, the red check and the provider na
 ## What is and is not verified
 
 Twilio direct calling and the GPT-Live engine have been exercised in development calls. Plivo and Custom SIP are implemented through LiveKit but their PSTN path is not yet verified. The evidence checker validates transcript claims; it does not inspect a carrier's reservation ledger. See the [readiness gates](READINESS.md) before using the project for a production workflow.
-

@@ -13,6 +13,19 @@ https://forifor.github.io/oathra/check.html
 ローカルのシミュレータを動かす場合は Node.js 22 以上を用意します。
 
 ```bash
+node --version   # v22 以上
+pnpm --version   # 10.12.2 以上
+```
+
+`pnpm` が見つからない場合は、Node.js に付属する npm で一度だけ入れます。
+
+```bash
+npm install --global pnpm@10.12.2
+```
+
+リポジトリを clone せずに試す場合は、後述の GitHub Release 用 `npx` コマンドだけで動かせます。
+
+```bash
 git clone https://github.com/FORIFOR/oathra.git
 cd oathra
 pnpm install
