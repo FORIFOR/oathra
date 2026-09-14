@@ -1,4 +1,5 @@
 export * from "./types.js";
+export * from "./proof.js";
 export * from "./normalize.js";
 export {
   extractClaims,

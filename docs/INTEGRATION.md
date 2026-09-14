@@ -40,6 +40,42 @@ After consent, answers are stored in `.oathra/calls/<callId>/intake.json` and `s
 
 `stopOnDecline` is still accepted for older contracts, but a refusal, hold or ambiguous reply always ends optional intake. A contract cannot turn repeated questions back on.
 
+## Verify an action through external records (ActionProof)
+
+A callee saying “your reservation is confirmed” is V1 conversation proof. The transcript alone cannot prove that the venue's ledger accepted the booking. `@oathra/evidence` now exposes `ActionProof`, which compares one expected action with conversation evidence, authenticated notifications and authenticated system records.
+
+```ts
+import {
+  conversationObservation,
+  evaluateActionProof,
+  type ActionExpectation,
+} from "@oathra/evidence";
+
+const expected: ActionExpectation = {
+  action: "restaurant.reservation",
+  fields: { date: "2026-09-20", time: "19:30", partySize: 2 },
+};
+
+// Build V1 from verifyTranscript() output. The agent's own words are not proof.
+const conversation = conversationObservation(expected, transcriptResult);
+
+// `confirmation` is normalized by an authenticated VerificationProvider /
+// VerificationAdapter for an email, SMS or webhook.
+const proof = evaluateActionProof(expected, [conversation, confirmation], {
+  now: new Date(),
+});
+```
+
+The levels are `claimed` (V0, unverified), `conversation` (V1), `confirmation` (V2), `system` (V3) and `outcome` (V4). V2+ observations must be authenticated by the provider (`sourceVerified: true`), carry a stable `referenceId`, contain every expected field, and use valid ISO-8601 timestamps. Expired or future records and field conflicts are rejected; a valid lower-level observation remains available when a higher-level record fails validation.
+
+External integrations implement this contract. Authentication, signature checks, PII handling and retries stay in the provider; Oathra performs the deterministic comparison on the returned observation.
+
+Your host application implements `VerificationProvider.verify(expected, context)` and returns a `ProofObservation` from the authenticated connection. Return `sourceVerified: false` when authentication fails. A concrete provider implementation depends on the service contract, signature scheme and retention requirements, so none is included in this repository.
+
+This release does not ship OpenTable, TableCheck or Google Reserve adapters, credentials or network calls. [OpenTable's developer documentation](https://dev.opentable.com/) describes partner access for its Sync / Booking APIs, and [Google Reserve's Booking Server readiness steps](https://developers.google.com/actions-center/verticals/reservations/e2e/integration-steps/booking-server-ready) must be completed before a production adapter. Do not treat visual scraping, unsigned forwarded messages or an agent's self-report as V2/V3 proof.
+
+Email, SMS and webhook payloads can contain personal data. Define purpose, consent, retention and deletion in the host application, and keep credentials, full message bodies and customer data out of `metadata` and logs. V4 (a visit, payment or other business outcome) is a separate, explicit `outcome` observation from an operator or business system; a phone call cannot prove it by itself.
+
 For YAML-managed scenarios, place the same block under `mission.intake`. `oathra play ./my-scenario.yaml` and `oathra call --scenario ./my-scenario.yaml --to +1...` then share the same contract and stop rules, so a local check can be carried into a real call without rewriting the intake settings.
 
 ```yaml

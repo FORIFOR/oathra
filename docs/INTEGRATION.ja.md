@@ -74,6 +74,43 @@ const contract = defineCall({
 
 `stopOnDecline` は旧設定との互換性のため受け付けますが、拒否・保留・曖昧な返答・忙しさや時間不足の返答があった場合は常に追加聞き取りを終了します。設定で相手への再質問を有効にすることはできません。
 
+## 行動の完了を外部記録まで検証する（ActionProof）
+
+会話で相手が「予約を承りました」と言ったことは、V1（conversation）の証拠です。店舗の台帳に登録されたことまでは、文字起こしだけでは証明できません。`@oathra/evidence` には、同じ期待値を会話・認証済み通知・認証済み業務システムの記録に照合する `ActionProof` を追加しました。
+
+```ts
+import {
+  conversationObservation,
+  evaluateActionProof,
+  type ActionExpectation,
+  type ProofObservation,
+} from "@oathra/evidence";
+
+const expected: ActionExpectation = {
+  action: "restaurant.reservation",
+  fields: { date: "2026-09-20", time: "19:30", partySize: 2 },
+};
+
+// verifyTranscript() の結果から V1 を作る。AI 自身の発言は証拠にならない。
+const conversation = conversationObservation(expected, transcriptResult);
+
+// confirmation は VerificationProvider / VerificationAdapter が、認証済み
+// メール・SMS・Webhook の内容を ProofObservation に正規化した値。
+const proof = evaluateActionProof(expected, [conversation, confirmation], {
+  now: new Date(),
+});
+```
+
+判定レベルは `claimed`（V0・未検証）、`conversation`（V1）、`confirmation`（V2）、`system`（V3）、`outcome`（V4）です。V2 以降の観測には、プロバイダ側で認証済みであることを示す `sourceVerified: true`、安定した `referenceId`、期待した全フィールド、ISO-8601 の時刻が必要です。期限切れ・未来の記録・値の不一致は検証されず、低いレベルの有効な証拠があればその証拠だけが残ります。
+
+外部接続は次の契約で実装します。認証、署名検証、PII の取り扱い、リトライは各プロバイダ側で行い、Oathra は返された観測を決定的に照合します。
+
+利用側は `VerificationProvider` の `verify(expected, context)` を実装し、認証済み接続から `ProofObservation` を返します。認証できない場合は `sourceVerified: false` として返してください。具体的なプロバイダ実装はサービスの契約・署名方式・保存要件に依存するため、このリポジトリには含めていません。
+
+このリリースには OpenTable、TableCheck、Google Reserve などへの接続コードや認証情報は含めていません。[OpenTable の開発者向け資料](https://dev.opentable.com/)ではパートナー向け Sync / Booking API への申請が案内され、[Google Reserve の Booking Server 手順](https://developers.google.com/actions-center/verticals/reservations/e2e/integration-steps/booking-server-ready)でも事前の readiness が必要です。利用契約と認証情報が揃った後に、対象サービスごとのアダプターを追加してください。画面の見た目だけのスクレイピング、署名のないメール転送、AI の自己申告は V2/V3 の証拠として扱いません。
+
+メール・SMS・Webhook の本文には個人情報が含まれる可能性があります。目的、同意、保存期間、削除方法を利用側で定め、`metadata` やログに認証情報・本文全量・顧客情報を入れないでください。V4（実来店・決済などの結果）は、店舗や運用担当からの明示的な結果報告を別の `outcome` 観測として受け取る段階であり、電話だけで自動的に証明するものではありません。
+
 シナリオをYAMLで管理する場合は、同じブロックを `mission.intake` に置きます。`oathra play ./my-scenario.yaml` でローカル確認した設定を、そのまま `oathra call --scenario ./my-scenario.yaml --to +81...` の実電話へ渡せます。
 
 ```yaml

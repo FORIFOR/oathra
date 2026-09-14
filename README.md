@@ -18,6 +18,8 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.15/
 
 **すでに音声AIを作っている方へ：** v0.1.15では完了判定と、`startAfter`・`dependsOn`・`choices` でシーンに応じて分岐できる同意付き追加聞き取りを組み込めます。仮押さえ・未確定・承認待ちを予約完了と誤認しない保守的な判定も含みます。明確な同意がない場合や相手が急いでいる場合は任意聞き取りをその場で終了します。シナリオYAMLの `mission.intake` も実電話へ引き継げます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
 
+予約や注文の完了を外部記録まで追跡する場合は、`oathra/evidence` の `ActionProof` で V0（自己申告）から V1（会話）、V2（認証済みメール・SMS・Webhook）、V3（認証済み業務システム）、V4（結果報告）を同じ期待値に照合できます。外部サービスの認証と接続は利用側の `VerificationProvider` / `VerificationAdapter` に委ね、Oathra は期限・参照ID・フィールド一致を決定的に検査します。OpenTable、TableCheck、Google Reserveの実接続アダプターや認証情報は含めていません。[ActionProofの導入手順](docs/INTEGRATION.ja.md#行動の完了を外部記録まで検証するactionproof)。
+
 [インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
 
 <p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>

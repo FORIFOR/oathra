@@ -27,6 +27,16 @@ contract → evidence → core → scenario → runtime → providers → replay
 - `confirmed` is verified only by explicit callee confirmation phrases.
 - The MissionView shown to brains exposes only *callee* pending offers so an agent cannot accept its own proposal.
 
+## Closed-loop action proof
+
+`packages/evidence/src/proof.ts` extends conversation evidence without coupling the evidence package to a vendor or network client:
+
+1. `conversationObservation()` maps an existing `VerifiedResult` to V1 conversation proof.
+2. A host-owned `VerificationProvider` / `VerificationAdapter` authenticates an email, SMS, webhook, browser, calendar, POS or reservation API record and returns a `ProofObservation`.
+3. `evaluateActionProof()` compares every observation with the same `ActionExpectation`, checks source authentication, stable reference IDs, exact fields and freshness, then selects the highest valid level (V0 claimed → V1 conversation → V2 confirmation → V3 system → V4 outcome).
+
+Invalid external observations remain in the audit checks and cannot upgrade a result. A valid lower-level observation is retained when a higher-level record conflicts or expires. Provider credentials, partner agreements and PII retention stay outside Oathra; this repository ships no vendor adapter or network call.
+
 ## Simulator
 
 `SimulatorTransport` implements `TransportProvider`; a `CalleeCharacter` answers. Scripted characters are deterministic (seeded) and expose `truth()` so eval can detect false completions. `HumanCharacter` lets a person answer in Play mode. Pace `realtime` sleeps for speech durations; `fast` uses a virtual clock.
