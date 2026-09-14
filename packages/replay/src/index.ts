@@ -83,7 +83,10 @@ export function renderCallSummary(outcome: CallOutcome): string {
   }
 
   if (outcome.intake && outcome.intake.status !== "disabled") {
-    lines.push("", `## ${ja ? "同意済みの業務プロファイル" : "Consented operational profile"}`);
+    const intakeHeading = outcome.intake.consent?.granted
+      ? (ja ? "同意済みの業務プロファイル" : "Consented operational profile")
+      : (ja ? "追加聞き取りの記録" : "Follow-up intake record");
+    lines.push("", `## ${intakeHeading}`);
     lines.push(`- ${ja ? "目的" : "Purpose"}: ${outcome.intake.purpose ?? ""}`);
     lines.push(`- ${ja ? "状態" : "Status"}: ${outcome.intake.status}`);
     if (outcome.intake.consent) {
