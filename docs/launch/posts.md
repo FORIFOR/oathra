@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Security reporting path — 2026-09-14 19:24 JST
+
+- Added [`SECURITY.md`](../../SECURITY.md) with supported-version scope, private-reporting guidance, redaction rules and the existing provider/data boundary. It does not invent an email address or request secrets in public issues.
+- GitHub Community Profile readback improved from **85% to 100%**. CI [34832936882](https://github.com/FORIFOR/oathra/actions/runs/34832936882) passed.
+- This improves repository trust and support routing; it is not evidence of external adoption or production readiness.
+
 ## Beginner setup copy action — 2026-09-14 19:17 JST
 
 - Added a one-click copy action for `pnpm oathra setup phone` beside the API setup transcript on both Japanese and English Pages routes. It reuses the existing clipboard fallback and does not change credential handling.
