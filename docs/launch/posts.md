@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## Zenn public readback — 2026-09-14 19:10 JST
+
+- The GitHub source for [`oathra-launch`](../../articles/oathra-launch.md) and [`oathra-evidence-rules`](../../articles/oathra-evidence-rules.md) now links to `main`, reports the current test count and states the explicit-answer profile boundary.
+- A public readback of [the launch article](https://zenn.dev/forifori/articles/oathra-launch) and [the evidence article](https://zenn.dev/forifori/articles/oathra-evidence-rules) still shows the older body and commit links. Both pages show `Log in`; no authenticated Zenn editor session or publishing token is available in this task, so no external edit or login attempt was made.
+- The public launch article remains at 1 like / 0 comments and the evidence article at 0 likes / 0 comments. Treat the source update as prepared, not as a published Zenn revision, until a future authenticated readback confirms the body changed.
+
 ## Explicit profile provenance hardening — 2026-09-14 19:02 JST
 
 - The runtime now enforces the intake boundary even when a model emits an optional question too early or names a field outside the contract: it waits for settled required fields, substitutes the next declared question, or removes the optional request. Duplicate consent and field markers are ignored so the callee is not pressured.
