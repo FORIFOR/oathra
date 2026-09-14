@@ -4,7 +4,9 @@
 
 - Added a time-pressure stop guard for optional intake. Japanese and English phrases indicating that the callee is busy, in a hurry or cannot talk now end the follow-up flow without saving a guessed profile value or repeating the question.
 - OpenAI Realtime and GPT-Live context updates now include recorded answers, declined or skipped fields and the field awaiting an answer. Saved decision memos include each explicit intake answer's utterance ID and timestamp.
-- Verification passed: 656 tests passed with one credential-gated LiveKit test skipped; scenario validation, the 10,000-run adversarial evaluation, build, typecheck, dependency lint, site build and X draft validation all passed. Release package and public Pages update will be checked after the source commit is pushed.
+- Published GitHub Release [v0.1.15](https://github.com/FORIFOR/oathra/releases/tag/v0.1.15), targeting commit [`d869234`](https://github.com/FORIFOR/oathra/commit/d869234ac7c2d07bde80f849cc2cf59ceb07b6eb). Assets are [`oathra-0.1.15.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.15/oathra-0.1.15.tgz) and its checksum; the verified SHA-256 is `bde36f137e1b90830aa5e028b06b92c4de670473e253dc225c6e609c1f62e6e9`.
+- Verification passed: 656 tests passed with one credential-gated LiveKit test skipped; scenario validation, the 10,000-run adversarial evaluation, build, typecheck, dependency lint, site build and X draft validation all passed. CI [34844583111](https://github.com/FORIFOR/oathra/actions/runs/34844583111) and Pages [34844583139](https://github.com/FORIFOR/oathra/actions/runs/34844583139) passed. The public tarball checksum and embedded `oathra@0.1.15` were verified, and the intake scenario returned `completed` with two explicit answers.
+- Fresh metrics at 21:40 JST remain **0 stars / 0 forks**, 9 views / 9 unique visitors, no external issue or business inquiry; the v0.1.15 assets were at 0 downloads immediately after publication. Raw snapshot: [metrics/2026-09-14-2140-jst.json](metrics/2026-09-14-2140-jst.json).
 
 ## Discussion #14 synchronized — 2026-09-14 21:21 JST
 

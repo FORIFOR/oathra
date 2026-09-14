@@ -1,0 +1,344 @@
+{
+  "capturedAt": "2026-09-14T12:40:40.155Z",
+  "sources": {
+    "repository": {
+      "available": true,
+      "value": {
+        "stars": 0,
+        "forks": 0,
+        "pushedAt": "2026-09-14T12:40:15Z"
+      }
+    },
+    "views14days": {
+      "available": true,
+      "value": {
+        "count": 9,
+        "uniques": 9,
+        "views": [
+          {
+            "timestamp": "2026-08-31T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-01T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-02T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-03T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-04T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-05T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-06T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-07T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-08T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-09T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-10T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-11T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-12T00:00:00Z",
+            "count": 6,
+            "uniques": 6
+          },
+          {
+            "timestamp": "2026-09-13T00:00:00Z",
+            "count": 3,
+            "uniques": 3
+          }
+        ]
+      }
+    },
+    "clones14days": {
+      "available": true,
+      "value": {
+        "count": 530,
+        "uniques": 199,
+        "clones": [
+          {
+            "timestamp": "2026-08-31T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-01T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-02T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-03T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-04T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-05T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-06T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-07T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-08T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-09T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-10T00:00:00Z",
+            "count": 0,
+            "uniques": 0
+          },
+          {
+            "timestamp": "2026-09-11T00:00:00Z",
+            "count": 73,
+            "uniques": 31
+          },
+          {
+            "timestamp": "2026-09-12T00:00:00Z",
+            "count": 225,
+            "uniques": 92
+          },
+          {
+            "timestamp": "2026-09-13T00:00:00Z",
+            "count": 232,
+            "uniques": 94
+          }
+        ]
+      }
+    },
+    "referrers14days": {
+      "available": true,
+      "value": [
+        {
+          "referrer": "github.com",
+          "count": 1,
+          "uniques": 1
+        }
+      ]
+    },
+    "externalIssues": {
+      "available": true,
+      "value": {
+        "first100IssuesAndPullRequests": true,
+        "issues": []
+      }
+    },
+    "releases": {
+      "available": true,
+      "value": [
+        {
+          "tag": "v0.1.15",
+          "publishedAt": "2026-09-14T12:40:15Z",
+          "assets": [
+            {
+              "name": "oathra-0.1.15.tgz",
+              "downloads": 0
+            },
+            {
+              "name": "oathra-0.1.15.tgz.sha256",
+              "downloads": 0
+            }
+          ]
+        },
+        {
+          "tag": "v0.1.14",
+          "publishedAt": "2026-09-14T12:15:22Z",
+          "assets": [
+            {
+              "name": "oathra-0.1.14.tgz",
+              "downloads": 2
+            },
+            {
+              "name": "oathra-0.1.14.tgz.sha256",
+              "downloads": 1
+            }
+          ]
+        },
+        {
+          "tag": "v0.1.13",
+          "publishedAt": "2026-09-14T11:56:38Z",
+          "assets": [
+            {
+              "name": "oathra-0.1.13.tgz",
+              "downloads": 1
+            },
+            {
+              "name": "oathra-0.1.13.tgz.sha256",
+              "downloads": 1
+            }
+          ]
+        },
+        {
+          "tag": "v0.1.12",
+          "publishedAt": "2026-09-14T11:03:37Z",
+          "assets": [
+            {
+              "name": "oathra-0.1.12.tgz",
+              "downloads": 2
+            },
+            {
+              "name": "oathra-0.1.12.tgz.sha256",
+              "downloads": 1
+            }
+          ]
+        },
+        {
+          "tag": "v0.1.11",
+          "publishedAt": "2026-09-14T09:16:23Z",
+          "assets": [
+            {
+              "name": "oathra-0.1.11.tgz",
+              "downloads": 1
+            },
+            {
+              "name": "oathra-0.1.11.tgz.sha256",
+              "downloads": 1
+            }
+          ]
+        }
+      ]
+    },
+    "distributionPRs": {
+      "available": true,
+      "value": [
+        {
+          "repository": "caramaschiHG/awesome-ai-agents-2026",
+          "number": 570,
+          "state": "open",
+          "draft": false,
+          "mergeable": true,
+          "mergeableState": "clean",
+          "mergedAt": null,
+          "updatedAt": "2026-09-12T15:22:01Z",
+          "comments": 0,
+          "reviewComments": 0,
+          "url": "https://github.com/caramaschiHG/awesome-ai-agents-2026/pull/570"
+        },
+        {
+          "repository": "Jenqyang/Awesome-AI-Agents",
+          "number": 486,
+          "state": "open",
+          "draft": false,
+          "mergeable": true,
+          "mergeableState": "clean",
+          "mergedAt": null,
+          "updatedAt": "2026-09-12T15:22:23Z",
+          "comments": 0,
+          "reviewComments": 0,
+          "url": "https://github.com/Jenqyang/Awesome-AI-Agents/pull/486"
+        },
+        {
+          "repository": "yzfly/awesome-voice-agents",
+          "number": 42,
+          "state": "open",
+          "draft": false,
+          "mergeable": true,
+          "mergeableState": "clean",
+          "mergedAt": null,
+          "updatedAt": "2026-09-14T09:22:18Z",
+          "comments": 0,
+          "reviewComments": 0,
+          "url": "https://github.com/yzfly/awesome-voice-agents/pull/42"
+        },
+        {
+          "repository": "e2b-dev/awesome-ai-sdks",
+          "number": 364,
+          "state": "open",
+          "draft": false,
+          "mergeable": true,
+          "mergeableState": "clean",
+          "mergedAt": null,
+          "updatedAt": "2026-09-14T03:48:05Z",
+          "comments": 4,
+          "reviewComments": 0,
+          "url": "https://github.com/e2b-dev/awesome-ai-sdks/pull/364"
+        }
+      ]
+    },
+    "zennLaunch": {
+      "available": true,
+      "value": {
+        "slug": "oathra-launch",
+        "likes": 1,
+        "comments": 0,
+        "published": "2026-09-12T23:41:41.057+09:00"
+      }
+    },
+    "zennEvidence": {
+      "available": true,
+      "value": {
+        "slug": "oathra-evidence-rules",
+        "likes": 0,
+        "comments": 0,
+        "published": "2026-09-14T00:38:04.883+09:00"
+      }
+    }
+  },
+  "interpretation": [
+    "Unavailable data is unknown, never zero. Traffic can lag; compare daily buckets, not summed overlapping windows.",
+    "Views, clones and asset downloads include maintainer/automation checks and cannot count external users.",
+    "Zenn likes are not page views. This snapshot does not measure X impressions, website conversion, retention or private business inquiries.",
+    "An external issue is a signal to investigate, not proof of adoption. Stars alone do not establish business demand."
+  ]
+}
