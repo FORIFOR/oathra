@@ -7,6 +7,12 @@
 - GitHub Community Profile readback improved from 57% to 71% after the PR template was published. This is a repository-health signal, not evidence of external adoption.
 - Commits `6bcb43f`, `0ca3de6` and `c85b7b5` passed the full CI workflow. No new announcement or direct message was sent.
 
+## Homepage Star CTA clarity — 2026-09-14 17:53 JST
+
+- The Japanese and English site headers now label the repository link `GitHubでStar` / `Star on GitHub`, while keeping the existing evidence demo and private inquiry links unchanged.
+- Pages deployment [34824977452](https://github.com/FORIFOR/oathra/actions/runs/34824977452) and CI [34824977511](https://github.com/FORIFOR/oathra/actions/runs/34824977511) passed. Public readback confirmed the new labels, intake video and private inquiry form.
+- This is a conversion-path change, not evidence of additional visitors or stars. Current GitHub stars remain 0.
+
 ## X API publication guard — 2026-09-14 17:20 JST
 
 - Added [`scripts/publish-x-intake.mjs`](../../scripts/publish-x-intake.mjs), which reads the single current draft, checks the 280-character limit, verifies the authenticated account timeline, enforces a 24-hour spacing window and refuses duplicate text before any upload. With `--publish`, it uploads `docs/media/oathra-intake.mp4`, waits for media processing, publishes once and writes a URL/ID record without exposing credentials.
