@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Facebook distribution check — 2026-09-14 JST
+
+- Existing `foriforapps` Facebook page was read back at 16:29 JST (1 follower). The Reels composer opens, but the current browser extension did not expose a file chooser for the public `docs/media/oathra-intake-ja.mp4` asset.
+- No file was uploaded and no Facebook post was published. Do not count this as reach; retry only when a supported upload path is available.
+
 ## GitHub metadata clarity update — 2026-09-14 JST
 
 - Repository description now leads with the discoverable problem and entry point: "Prevent false completion in voice agents: evidence-anchored phone outcomes, consented follow-up intake, TypeScript SDK + CLI, no API key for local checks."
