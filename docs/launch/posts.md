@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Discussion #14 synchronized — 2026-09-14 21:21 JST
+
+- Updated the existing [GitHub Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) body in place to v0.1.14. It now explains purpose disclosure before consent, links the current release/setup, and keeps the three technical feedback questions.
+- No new comment, mention, DM or test inquiry was created. The public thread still asks for redacted or synthetic traces and states the unverified PSTN boundary.
+
 ## v0.1.14 purpose disclosure release — 2026-09-14 21:16 JST
 
 - Published the consent-transparency improvement as GitHub Release [v0.1.14](https://github.com/FORIFOR/oathra/releases/tag/v0.1.14), targeting commit [`c2f37f5`](https://github.com/FORIFOR/oathra/commit/c2f37f576961013f0afd6d1568eef19f32990bd3). The runtime now states the declared intake purpose before asking consent; an explicitly purpose-bearing `consentPrompt` is not duplicated. Brain-kit, GPT-Live and OpenAI Realtime use the same rendered line.
