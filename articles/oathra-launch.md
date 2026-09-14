@@ -12,6 +12,8 @@ published: true
 
 この記事では、ブラウザで試せる判定の動きと、その設計、実電話で確認できた範囲を紹介します。電話AIや、実行結果を検証するエージェントを作っている方向けです。
 
+Oathra は、電話相手の属性を推測してプロファイルを作ることを目的にしていません。聞く項目は `CallContract` に明示した目的と必須条件に限り、同じ質問の反復を抑えます。追加の聞き取りを行う場合も、目的・項目・質問上限・同意・拒否時の停止を契約に書いてから扱う方針です。
+
 ## まず30秒で試す
 
 [予約の証拠ラボを開く](https://forifor.github.io/oathra/?utm_source=zenn&utm_medium=article&utm_campaign=launch_revision#sim)。インストールもAPIキーも不要です。
@@ -74,6 +76,8 @@ const constraints = checkConstraints(contract.constraints, values);
 電話ランタイムでは、これらに加えて接続状態が `completed` であることも必要です。ブラウザの証拠ラボでは、文字からの判定だけを切り出すため、この接続条件を満たしたものとして評価しています。
 
 証拠には、値だけでなく話者・発言全文・該当箇所・合意や訂正の関係が残ります。後から「なぜ19時半になったのか」を発言まで戻って確認するためです。
+
+通話を保存すると、機械処理用の `result.json` と `transcript.json` に加えて、人が読むための `.oathra/calls/<callId>/summary.md` も出力します。要約には確認済みの決定事項、不足項目、根拠となった発話、信頼度、終了理由が並びます。要約が新しい推測を作るのではなく、検証済みの証拠を読みやすく並べ替えるだけにしています。
 
 [抽出・失効ルールを詳しく説明した記事はこちら](https://zenn.dev/forifori/articles/oathra-evidence-rules)。コードは [EvidenceEngine](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/engine.ts) と [evaluate](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/evaluate.ts) にあります。
 
