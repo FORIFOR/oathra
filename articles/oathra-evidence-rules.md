@@ -161,7 +161,7 @@ CIでは、用意した発言変異を使う1万runの敵対的シミュレー�
 
 ## 自分の文字起こしを渡す
 
-v0.1.4では、判定機能を`oathra/evidence`として読み込めるSDKと、ローカルの`oathra verify`コマンドを配布しています。既存の電話会社やモデルを切り替えず、手元の発言を入力できます。[導入手順](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)に入力形式と、保存済みの実モデル交渉記録を再評価する手順をまとめました。
+v0.1.5では、判定機能を`oathra/evidence`として読み込めるSDKと、ローカルの`oathra verify`コマンドを配布しています。既存の電話会社やモデルを切り替えず、手元の発言を入力できます。[導入手順](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)に入力形式と、保存済みの実モデル交渉記録を再評価する手順をまとめました。
 
 [ブラウザで自分のログを検証するページ](https://forifor.github.io/oathra/check.html)も追加しました。インストールせずに、次の3操作で試せます。
 

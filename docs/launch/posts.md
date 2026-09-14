@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## v0.1.5 decision memo release — 2026-09-14 JST
+
+- Release notes: `docs/launch/release-notes-0.1.5.md` (tagged release follows after the package is built and checked).
+- Source: `51c1e37` (`feat(replay): add human-readable decision memo`) plus the current site/Zenn scope updates.
+- The public commands and setup guides now target the v0.1.5 GitHub asset. npm still serves 0.1.0 until its publish credential is configured.
+
 ## Decision memo update — 2026-09-14 JST
 
 - Source: `51c1e37` (`feat(replay): add human-readable decision memo`), pushed to `main`.
