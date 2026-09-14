@@ -1,11 +1,13 @@
 # Launch posts and publication record
 
-## main intake non-answer hardening — 2026-09-14 JST
+## v0.1.8 intake non-answer hardening — 2026-09-14 JST
 
 - Source: `779d764` (`fix(intake): stop on non-answer field replies`) and `8e12bdf` (`test(intake): cover hold and hedge replies`), pushed to `main`.
 - A field response such as 「少々お待ちください」 or 「少し考えます」 is now treated as a non-answer: the field is not saved and optional intake stops without repeating the question.
-- CI `34809944711` passed (build, 146 tests with one credential-gated live test skipped, scenarios, eval, adversarial 10,000-run check and package smoke).
-- The v0.1.7 release asset predates this edge-case fix; use the current `main` checkout until the next package release is cut.
+- CI `34809944711` passed (build, 147 tests with one credential-gated live test skipped, scenarios, eval, adversarial 10,000-run check and package smoke).
+- Prepared package and release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.8
+- Assets: [oathra-0.1.8.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.8/oathra-0.1.8.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.8/oathra-0.1.8.tgz.sha256). The tarball SHA-256 is `b776ae20583b99bde2e9c5b395e8f28aee57a20aa4220c7a94aae2c8bbbacc6a`.
+- Release tag target is `05a79ed`; Pages `34810513995` passed and the public Japanese/English routes expose the v0.1.8 command. The downloaded asset reproduced the local checksum.
 
 ## v0.1.7 non-pushy consent hotfix — 2026-09-14 JST
 
