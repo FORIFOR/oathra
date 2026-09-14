@@ -6,6 +6,7 @@
 - `oathra setup phone` now waits on a guided Twilio number purchase / verification step and Japan outbound permission instead of aborting after the automatic check reports a missing prerequisite.
 - Piped setup input now fails explicitly when stdin closes before a value, avoiding a successful exit with an incomplete setup.
 - Added `docs/SETUP.en.md` and linked it from the English README and website so the public release has a copy-paste credential guide for international users (`ea7ecd0` → `256d589`).
+- Added a manual, version-checked npm publish workflow and maintainer runbook (`.github/workflows/npm-publish.yml`, `docs/launch/npm-publish.md`). It requires the real `NPM_TOKEN` Actions secret and does not publish without it.
 - Validation: typecheck, Twilio provider tests (including no-number recovery), full test suite, build, and clean public package smoke test.
 - This fixes first-run friction; it is not evidence of external adoption. Stars and business inquiries remain unmeasured beyond the existing snapshots.
 - Both Zenn source articles now point to v0.1.4 and the current setup guide; the connected Zenn repository will deploy these revisions on push.
