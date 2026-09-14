@@ -88,3 +88,4 @@
 - GitHub Discussion #14: フォローアップ1件（決定メモと同意ベースの追加聞き取り案）。外部からの返信はまだない。
 - Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。2記事とも決定メモとプロファイリング境界の改稿を公開HTMLで確認。
 - 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま、Xはログイン・投稿間隔条件が未達のため新規投稿なし。
+- GitHub topics を検索語に合わせて20件へ整理（`phone-agent`、`voice-agent-testing`、`llm-evaluation`、`call-automation` を追加）。トピック追加自体はスター獲得の証拠ではない。
