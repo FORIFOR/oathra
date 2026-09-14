@@ -4,6 +4,7 @@
 
 - TikTok Studio for `@foriforapps` is reachable and the video upload page opens. The existing Oathra 00:59 reel remains at 0 views / 0 likes / 0 comments; the next eligible Oathra announcement is the 48-second intake recording after 20:10 JST.
 - Choosing the local `docs/media/oathra-intake-ja.mp4` was blocked before transmission by the Chrome extension's file-URL permission. No file was uploaded and no TikTok post was published.
+- The prepared caption and publication checklist are in [tiktok-intake-ja.txt](tiktok-intake-ja.txt); it matches the attached intake recording and states that the run is an Arena simulator, not a real phone call.
 - To resume, Chrome must allow file URLs for the ChatGPT extension: open `chrome://extensions`, choose the extension's **Details**, and enable **Allow access to file URLs**. After that setting is enabled, recheck the timing and publish one intake video, then record the processed media, post URL/ID and time here. Do not duplicate the existing reel.
 
 ## LiveKit community channel research — 2026-09-14 JST
