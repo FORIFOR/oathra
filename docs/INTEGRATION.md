@@ -34,6 +34,21 @@ const contract = defineCall({
 
 After consent, answers are stored in `.oathra/calls/<callId>/intake.json` and `summary.md` with the field, answer, utterance ID and timestamp. Without `intake`, no optional questions are generated.
 
+For YAML-managed scenarios, place the same block under `mission.intake`. `oathra play ./my-scenario.yaml` and `oathra call --scenario ./my-scenario.yaml --to +1...` then share the same contract and stop rules, so a local check can be carried into a real call without rewriting the intake settings.
+
+```yaml
+mission:
+  objective: restaurant.reservation
+  require: { date: true, time: true, partySize: true, confirmed: true }
+  intake:
+    purpose: Tailor a post-booking follow-up
+    consentPrompt: May I ask one separate question about your booking?
+    fields:
+      - { key: role, label: Role, question: What is your role? }
+    maxQuestions: 1
+    stopOnDecline: true
+```
+
 ## Check your saved final transcripts
 
 Prepare a JSON document with these fields, using your own recorded utterances:

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ConstraintsSchema, PermissionsSchema } from "@oathra/contract";
+import { ConstraintsSchema, IntakeSchema, PermissionsSchema } from "@oathra/contract";
 
 export const PersonaSchema = z
   .object({
@@ -31,6 +31,8 @@ export const MissionSchema = z
     /** Fields that must be verified for success. */
     require: z.record(z.string(), z.boolean()).default({}),
     permissions: PermissionsSchema.default({}),
+    /** Optional consent-gated, contract-declared caller information intake. */
+    intake: IntakeSchema.optional(),
     /** Text shown to the player describing the mission. */
     brief: z.string().optional(),
   })

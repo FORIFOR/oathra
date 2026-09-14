@@ -68,6 +68,21 @@ const contract = defineCall({
 
 同意後の回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に、質問項目・回答・発話ID・時刻を含めて保存します。契約に `intake` がなければ、この追加質問は発生しません。
 
+シナリオをYAMLで管理する場合は、同じブロックを `mission.intake` に置きます。`oathra play ./my-scenario.yaml` でローカル確認した設定を、そのまま `oathra call --scenario ./my-scenario.yaml --to +81...` の実電話へ渡せます。
+
+```yaml
+mission:
+  objective: restaurant.reservation
+  require: { date: true, time: true, partySize: true, confirmed: true }
+  intake:
+    purpose: 予約後の案内を適切にする
+    consentPrompt: 予約とは別に1点だけ伺ってもよろしいでしょうか？
+    fields:
+      - { key: role, label: ご担当, question: ご担当を教えていただけますか？ }
+    maxQuestions: 1
+    stopOnDecline: true
+```
+
 ## 公開済みの記録で動作を見る
 
 ソースを取得して`pnpm install && pnpm build`を実行後：

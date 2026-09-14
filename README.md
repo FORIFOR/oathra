@@ -169,6 +169,21 @@ pnpm oathra scenario validate ./my-challenge.yaml
 pnpm oathra play ./my-challenge.yaml
 ```
 
+追加の聞き取りもシナリオの `mission.intake` に同じ形で宣言できます。`oathra play` と `oathra call --scenario ./my-scenario.yaml` はこの設定を `CallContract` に引き継ぐため、ローカル検証から実電話へ設定を持ち替える必要がありません。質問は必須項目が確定した後だけ始まり、回答は保存済み通話の `intake.json` と `summary.md` で確認できます。
+
+```yaml
+mission:
+  objective: restaurant.reservation
+  require: { date: true, time: true, partySize: true, confirmed: true }
+  intake:
+    purpose: 予約後の案内を適切にする
+    consentPrompt: 予約とは別に1点だけ伺ってもよろしいでしょうか？
+    fields:
+      - { key: role, label: ご担当, question: ご担当を教えていただけますか？ }
+    maxQuestions: 1
+    stopOnDecline: true
+```
+
 PR で追加されたシナリオは CI が検証し、誤完了を出すものは通しません。
 
 ## 正直な現状（v0.1.8）

@@ -94,6 +94,7 @@ export function contractFromScenario(s: Scenario): CallContract {
     constraints: s.mission.constraints,
     permissions: s.mission.permissions,
     language: s.language,
+    ...(s.mission.intake ? { intake: s.mission.intake } : {}),
   });
 }
 

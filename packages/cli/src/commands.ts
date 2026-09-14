@@ -453,7 +453,7 @@ ${bold("Real phone")}
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
-  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id>  --engine gpt-live|realtime|pipeline  --provider <id>")}
+  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|realtime|pipeline  --provider <id>")}
 
 ${bold("Trust")}
   oathra verify <json | ->           check your final transcripts locally; JSON output, no API key

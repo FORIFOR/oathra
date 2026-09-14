@@ -96,6 +96,12 @@ pnpm oathra phone test --level pstn --to +819012345678
 pnpm oathra call --to +819012345678 --scenario restaurant-reservation
 ```
 
+自分のYAMLシナリオを使う場合は、`--scenario` にファイルパスを渡します。`mission.intake` を書いておけば、同意付きの追加聞き取りもローカルの `play` と同じ設定で実電話に引き継がれます。
+
+```bash
+pnpm oathra call --to +819012345678 --scenario ./my-scenario.yaml
+```
+
 電話会社の通話料、音声モデル、文字起こし API の料金が別々に発生します。テスト用の番号と、発信先の国際電話許可を先に確認してください。
 
 ## 5. つまずいたとき
