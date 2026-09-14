@@ -262,12 +262,14 @@ Bugs this harness caught before it went green: thousands separators splitting `2
 
 ## Status
 
-v0.1.0 (released 2026-09-12):
+v0.1.11 (released 2026-09-14):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent
 - [x] Arena (Watch / Play), CLI, Replay, Eval, Battle (SVG/PNG cards)
 - [x] Scenario DSL + CI gate; 0 / 10,000 adversarial simulator runs
+- [x] Consent-based, contract-declared follow-up intake with utterance-linked `intake.json` and `summary.md`; unclear consent, holds and non-answers stop immediately
+- [x] Provisional, pending-approval and post-confirmation-change guards; 500 regression cases cover Japanese provisional phrases
 - [x] LLM brains: OpenAI, Gemini, Ollama via `BrainProvider` (Anthropic next)
 - [x] Phone Layer: `oathra setup phone`, `phone add|list|doctor|test|remove`, preferred-order routing with fallback, reference pricing
 - [x] Twilio direct (verified on real calls), Plivo SIP + custom SIP via the LiveKit gateway (implemented against provider docs, PSTN unverified)
