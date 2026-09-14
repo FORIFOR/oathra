@@ -6,6 +6,12 @@
 - GitHub's latest 14-day API snapshot reports **0 stars / 0 forks**, 9 views / 9 unique visitors and 530 clones / 199 unique cloners. The new 2026-09-13 buckets are not attributable to external users, so they are recorded as signals only.
 - Raw GitHub snapshot: [2026-09-14-1756-jst.json](metrics/2026-09-14-1756-jst.json). No new announcement was sent; X remains eligible after **2026-09-15 15:13:19 JST**.
 
+## Repository trust metadata — 2026-09-14 17:58 JST
+
+- Added [`CODE_OF_CONDUCT.md`](../../CODE_OF_CONDUCT.md) with bilingual behavior and reporting guidance, including the existing privacy boundary for public issues.
+- GitHub Community Profile now reports **85%** health after the code of conduct and pull request template were published. This is a repository-quality signal, not adoption or star growth.
+- Commit `31bfcda` is public; its CI check is pending at the time of this record.
+
 ## Contributor and support funnel — 2026-09-14 17:49 JST
 
 - Added [`SUPPORT.md`](../../SUPPORT.md) and linked it from both READMEs so evidence reports, startup problems, integration questions and private business inquiries have separate paths.
