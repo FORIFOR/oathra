@@ -73,8 +73,8 @@
 
 ### 配布
 
-やった: リポジトリ公開、Pages、rc.1、Discussions、awesome リスト PR ×2、X 投稿 ×5。
-事例に照らすと、**効くはずのもの（Show HN、Zenn 記事）がふたつとも未着手**で、効かないと分かっているもの（awesome リスト、本人の X）だけが済んでいる。
+やった: リポジトリ公開、Pages、v0.1.10、Discussions、日英の実操作動画、Zenn 2記事の改稿、awesome リスト PR の更新、X告知の下書きと重複防止ガード。
+公開後の状態では、Zenn記事とサイト・READMEの導線は反映済み。Show HNはアカウント制限のため投稿せず、Xはアカウント全体の24時間間隔を満たすまで保留している。awesome リストへの新規追加は行わない。
 
 ## 作り直しの方針
 
@@ -99,10 +99,10 @@
 
 ### 配布 v2
 
-- **Show HN**（英語、タイトル案: `Show HN: Oathra – AI phone agents where "booked" is only true if the callee said it`）。投稿は HN アカウントが要るのでユーザーの操作
-- **Zenn 記事**（`articles/oathra-launch.md` は下書き済み。GitHub 連携でそのまま公開）
-- README は「一文＋GIF＋3 ステップ」の順に組み替える
-- awesome リスト PR の追加はしない（効果が確認できない）
+- **Show HN**（英語、タイトル案: `Show HN: Oathra – AI phone agents where "booked" is only true if the callee said it`）は、現アカウントへの投稿制限が解除されるまで保留する。制限を迂回しない。
+- **Zenn 記事**は既存2本を改稿して公開済み。人気記事の「問題→実演→具体的な実装→検証範囲」の順を適用し、閲覧数が取得できないことも記録している。
+- README は「一文＋実行コマンド＋動画・フィードバック導線」の順へ更新済み。
+- awesome リスト PR の追加はしない（効果が確認できない）。既存の `awesome-voice-agents#42` は v0.1.10 の説明へ更新済み。
 
 ## 出典
 
