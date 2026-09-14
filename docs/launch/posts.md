@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## X publication gate moved — 2026-09-14 20:21 JST
+
+- The read-only X check found a newer original account post (`2099458262051754414`, `2026-09-14T11:20:30Z`), so the active v0.1.12 draft remains duplicate-free but is now eligible only after **2026-09-15 20:20:30 JST**.
+- No upload or publication was attempted. Recheck the live timeline immediately before the next allowed window; do not rely on the earlier 15:13 estimate.
+
 ## External signal checkpoint — 2026-09-14 20:19 JST
 
 - GitHub remains at **0 stars / 0 forks**, 9 views / 9 unique visitors and no external issue or business inquiry. Zenn remains 1 like / 0 comments for the launch article and 0 / 0 for the evidence article.
