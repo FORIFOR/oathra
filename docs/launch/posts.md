@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## Latest main usability and demo QA — 2026-09-14 20:41 JST
+
+- `play --json` now emits machine-readable JSON only and includes `savedPath`, so `result` and explicit `intake` answers can be passed to another system without scraping terminal output (`c226e78`).
+- `replay` remains compatible with calls saved before `intake.json`; declined intake is labeled as a follow-up record rather than a consented profile (`428310c`, `6053bb6`).
+- Headless Arena QA ran against a clean local port and produced all 12 screenshots at desktop/mobile and light/dark states. Watch, result, details, time travel and Play flows completed with no page errors. Output: `/tmp/oathra-qa-current-20260914/`.
+- CI [34839422534](https://github.com/FORIFOR/oathra/actions/runs/34839422534) passed all checks, including build, 654 tests with one credential-gated LiveKit test skipped, scenario validation, false-completion evaluation, 10,000-run adversarial evaluation and package smoke.
+
 ## X publication gate moved — 2026-09-14 20:21 JST
 
 - The read-only X check found a newer original account post (`2099458262051754414`, `2026-09-14T11:20:30Z`), so the active v0.1.12 draft remains duplicate-free but is now eligible only after **2026-09-15 20:20:30 JST**.
