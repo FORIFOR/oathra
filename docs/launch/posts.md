@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## v0.1.13 public package — 2026-09-14 20:57 JST
+
+- Published the post-release CLI and replay fixes as GitHub Release [v0.1.13](https://github.com/FORIFOR/oathra/releases/tag/v0.1.13), targeting commit [`071dbdf`](https://github.com/FORIFOR/oathra/commit/071dbdff32c69ddf809a29768817a21ec17b7fb7). Assets are [`oathra-0.1.13.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz) and its [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.13/oathra-0.1.13.tgz.sha256); the tarball hash is `3a7d0554654edd1b4ec0cb40dd313863fd69338e6d947fd660af1b26eb0b8288`.
+- Downloaded the public asset and verified the checksum and embedded package version (`oathra@0.1.13`). The release includes machine-readable `play --json`, pre-intake constraint gating and replay compatibility fixes; the scene-aware consented intake boundary remains unchanged.
+- The source commit's Pages workflow [34840720270](https://github.com/FORIFOR/oathra/actions/runs/34840720270) passed. The current readback remains **0 stars / 0 forks**, 9 views / 9 unique visitors, and no external issue or business inquiry; the two new assets are still at 0 downloads immediately after publication. Raw snapshot: [metrics/2026-09-14-2057-jst.json](metrics/2026-09-14-2057-jst.json).
+
 ## Latest main usability and demo QA — 2026-09-14 20:41 JST
 
 - `play --json` now emits machine-readable JSON only and includes `savedPath`, so `result` and explicit `intake` answers can be passed to another system without scraping terminal output (`c226e78`).
@@ -9,7 +15,7 @@
 
 ## X publication gate moved — 2026-09-14 20:21 JST
 
-- The read-only X check found a newer original account post (`2099458262051754414`, `2026-09-14T11:20:30Z`), so the active v0.1.12 draft remains duplicate-free but is now eligible only after **2026-09-15 20:20:30 JST**.
+- The read-only X check found a newer original account post (`2099458262051754414`, `2026-09-14T11:20:30Z`), so the active v0.1.13 draft remains duplicate-free but is now eligible only after **2026-09-15 20:20:30 JST**.
 - No upload or publication was attempted. Recheck the live timeline immediately before the next allowed window; do not rely on the earlier 15:13 estimate.
 
 ## External signal checkpoint — 2026-09-14 20:19 JST
