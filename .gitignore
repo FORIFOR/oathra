@@ -8,6 +8,9 @@ calls/
 coverage/
 .DS_Store
 packages/cli/assets/
+# Release assets are uploaded to GitHub Releases, not committed to the source tree.
+packages/cli/oathra-*.tgz
+packages/cli/oathra-*.tgz.sha256
 packages/cli/README.md
 packages/cli/LICENSE
 site/media/
