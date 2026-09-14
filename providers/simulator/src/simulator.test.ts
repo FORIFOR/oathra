@@ -171,6 +171,46 @@ describe("scripted agent vs scripted characters", () => {
     expect(dialogue).not.toContain("ご担当を教えていただけますか？");
     expect(o.events.filter((event) => event.type === "intake.answer")).toHaveLength(0);
   });
+
+  it("does not repeat consent after an ambiguous reply", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const contract = defineCall({
+      ...base,
+      intake: {
+        purpose: "Offer a relevant follow-up",
+        consentPrompt: "追加で1点だけ伺ってもよろしいでしょうか？",
+        fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+        maxQuestions: 1,
+      },
+    });
+    const callee = {
+      name: "保留回答検証店",
+      greeting: () => "お電話ありがとうございます。",
+      respond: ({ lastAgentText }: CalleeContext): CalleeReply => {
+        if (/追加で1点/.test(lastAgentText)) return { text: "少し考えます。" };
+        if (/確定しても/.test(lastAgentText)) return { text: "ご予約承りました。" };
+        if (/19時半でお願いします/.test(lastAgentText)) return { text: "ご予約を確定してもよろしいでしょうか？" };
+        if (/予約をお願い/.test(lastAgentText)) return { text: "9月12日の19時半、2名様で空いております。" };
+        return { text: "承知しました。" };
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast", character: callee }),
+      brain: new ScriptedAgent(),
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    const dialogue = o.transcript.map((t) => `${t.source}: ${t.text}`).join("\n");
+    expect(o.result.status, dialogue).toBe("completed");
+    expect(o.intake.status).toBe("declined");
+    expect(o.intake.answers).toHaveLength(0);
+    expect(dialogue.match(/追加で1点だけ伺ってもよろしいでしょうか？/g)).toHaveLength(1);
+    expect(dialogue).not.toContain("ご担当を教えていただけますか？");
+    expect(o.events.filter((event) => event.type === "intake.consent")).toHaveLength(1);
+  });
 });
 
 describe("ScriptedAgent stall guard", () => {

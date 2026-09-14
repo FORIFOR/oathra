@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## v0.1.7 non-pushy consent hotfix — 2026-09-14 JST
+
+- Release notes: `docs/launch/release-notes-0.1.7.md`.
+- The optional intake now stops on an ambiguous or hesitant consent reply instead of repeating the prompt.
+- Source commit and release will be recorded after CI and asset readback.
+
 ## v0.1.6 consent-based intake release — 2026-09-14 JST
 
 - Release notes: `docs/launch/release-notes-0.1.6.md`.

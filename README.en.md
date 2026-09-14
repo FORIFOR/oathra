@@ -9,15 +9,15 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-Run **v0.1.6** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.7** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.6). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.7). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
-**Already building a voice agent?** v0.1.6 adds `oathra verify` and consent-based optional intake for your saved transcripts, plus a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
+**Already building a voice agent?** v0.1.7 adds `oathra verify` and consent-based optional intake for your saved transcripts, stopping immediately when consent is unclear, plus a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
 
 [Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
 
@@ -58,8 +58,8 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 
 ```bash
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
-# from the public v0.1.6 asset:
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz oathra setup phone
+# from the public v0.1.7 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz oathra setup phone
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation
@@ -87,7 +87,7 @@ An agent that says "予約できました" is not evidence. Oathra returns a **V
 
 Oathra does not infer a callee's attributes or quietly collect information outside the call's purpose. The normal dialogue asks only for the purpose and required fields declared in the `CallContract`, while limiting repeated questions. Decisions are saved in `result.json`, a human-readable `summary.md`, utterance-linked `evidence`, and `transcript.json`.
 
-When a workflow genuinely needs more information, add an explicit `intake` contract with a purpose, consent prompt, declared fields and a question cap. After the required call details are settled, the agent asks consent once and then asks at most one declared question per turn. A decline stops intake; answers are saved with utterance IDs in `.oathra/calls/<callId>/intake.json` and `summary.md`. This records explicit answers and does not infer a callee profile or sensitive traits.
+When a workflow genuinely needs more information, add an explicit `intake` contract with a purpose, consent prompt, declared fields and a question cap. After the required call details are settled, the agent asks consent once and then asks at most one declared question per turn. A decline, hold or ambiguous reply stops intake immediately; answers are saved with utterance IDs in `.oathra/calls/<callId>/intake.json` and `summary.md`. This records explicit answers and does not infer a callee profile or sensitive traits.
 
 ```ts
 const contract = defineCall({

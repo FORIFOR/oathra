@@ -6,15 +6,15 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-修正版 **v0.1.6** を起動（Node.js 22以上、APIキー不要）：
+修正版 **v0.1.7** を起動（Node.js 22以上、APIキー不要）：
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.6/oathra-0.1.6.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz oathra demo
 ```
 
-[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.6)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
+[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.7)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
 
-**すでに音声AIを作っている方へ：** v0.1.6では完了判定と同意付きの追加聞き取りを組み込めます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
+**すでに音声AIを作っている方へ：** v0.1.7では完了判定と同意付きの追加聞き取りを組み込めます。明確な同意がない場合は任意聞き取りをその場で終了します。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
 
 [インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
 
@@ -171,7 +171,7 @@ pnpm oathra play ./my-challenge.yaml
 
 PR で追加されたシナリオは CI が検証し、誤完了を出すものは通しません。
 
-## 正直な現状（v0.1.6）
+## 正直な現状（v0.1.7）
 
 - [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
 - [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
@@ -188,7 +188,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 インストールせずに試すなら、[ブラウザの証拠ラボ](https://forifor.github.io/oathra/#sim)へ。本体の `EvidenceEngine` と `evaluate` がブラウザで動き、自由入力・話者切替・予約取り消しをその場で判定します。入力本文は送信せず、実際の電話も発信しません。[30秒の操作録画](https://forifor.github.io/oathra/#demo-video)では、曖昧な返事 → 確定 → 取り消しを確認できます。
 
-冒頭のv0.1.6起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
+冒頭のv0.1.7起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
 
 - レストランで「たぶん大丈夫ですが、まだ確定ではありません」→ 確定にならない
 - レストランで「19時は満席です。19時半なら空いています」→ 19時は予約時刻として採用されず、19時半は AI が受諾するまで未確定
@@ -200,7 +200,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 Oathra は電話相手の属性を推測したり、目的外の情報を密かに集めたりしません。通常の対話は `CallContract` に書いた目的・必須項目だけを質問し、同じ質問の反復を抑えます。決定事項は `result.json`、人が読める `summary.md`、発話に紐づいた `evidence`、`transcript.json` に記録します。
 
-追加情報が本当に必要な業務では、契約に同意文・目的・項目・質問上限を明示した `intake` を使えます。必要な予約情報が確定した後に同意を一度尋ね、同意後は宣言済みの質問を1回に1つだけ尋ねます。拒否されたら停止し、回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に発話ID付きで残ります。これは明示回答の記録であり、電話相手のプロファイリングやセンシティブ属性の推測ではありません。
+追加情報が本当に必要な業務では、契約に同意文・目的・項目・質問上限を明示した `intake` を使えます。必要な予約情報が確定した後に同意を一度尋ね、同意後は宣言済みの質問を1回に1つだけ尋ねます。拒否・保留・曖昧な返答ならその場で停止し、回答は `.oathra/calls/<callId>/intake.json` と `summary.md` に発話ID付きで残ります。これは明示回答の記録であり、電話相手のプロファイリングやセンシティブ属性の推測ではありません。
 
 ```ts
 const contract = defineCall({

@@ -464,7 +464,10 @@ export class CallRuntime {
       const mixed = /(?:ですが|けど|ただ|but|however)/i.test(text);
       const granted = !mixed && INTAKE_YES_RE.test(text) ? true : !mixed && INTAKE_NO_RE.test(text) ? false : undefined;
       if (granted === undefined) {
-        this.intakeStatus = "awaiting_consent";
+        // A non-committal or ambiguous reply is not consent. End the optional
+        // intake immediately so the agent never pressures the callee to answer.
+        this.intakeStatus = "declined";
+        this.emit({ type: "intake.consent", granted: false, utteranceId: turn.id });
         return;
       }
       this.intakeStatus = granted ? "active" : "declined";
