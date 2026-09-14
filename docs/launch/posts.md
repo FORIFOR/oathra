@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Discussion #14 synchronized to v0.1.15 — 2026-09-14 21:43 JST
+
+- Updated the existing [GitHub Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) body in place. It now links v0.1.15 and describes the time-pressure stop guard, live profile context and utterance-linked decision memo.
+- Preserved the three technical feedback questions and the request for redacted or synthetic traces. No new comment, mention, DM or test inquiry was created.
+
 ## v0.1.15 intake pacing and live-context release — 2026-09-14 21:36 JST
 
 - Added a time-pressure stop guard for optional intake. Japanese and English phrases indicating that the callee is busy, in a hurry or cannot talk now end the follow-up flow without saving a guessed profile value or repeating the question.
