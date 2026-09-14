@@ -79,3 +79,12 @@
 - 公開サイトの日本語・英語トップ、検証ページ、5本の動画URLをHTTP 200で確認。非公開相談フォームの許可Origin preflightもHTTP 204で確認。
 - 配布PR 4件はすべて open / clean。e2b-dev/awesome-ai-sdks#364 に追加した1件の状況共有コメントへの返信はまだない。
 - Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。Xの新規投稿とnpm公開は、認証・投稿間隔の条件が解消するまで実行しない。
+
+## 2026-09-14 13:16 JST（決定メモとZenn改稿の公開後）
+
+- GitHub stars / forks: **0 / 0**。外部Issue・PRはまだ0件。
+- Traffic API: views **6 / 6 uniques**、clones **298 / 121 uniques**。CI・作者・配布確認を含むため、外部利用者数とはみなさない。
+- v0.1.4 assets: `oathra-0.1.4.tgz` **3**、checksum **1**。配布確認を含み、採用の証拠ではない。
+- GitHub Discussion #14: フォローアップ1件（決定メモと同意ベースの追加聞き取り案）。外部からの返信はまだない。
+- Zenn: `oathra-launch` いいね **1**、`oathra-evidence-rules` いいね **0**。2記事とも決定メモとプロファイリング境界の改稿を公開HTMLで確認。
+- 配布PR 4件はすべて open / clean。npmは `npm view oathra version` が **0.1.0** のまま、Xはログイン・投稿間隔条件が未達のため新規投稿なし。
