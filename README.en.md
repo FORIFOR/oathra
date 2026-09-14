@@ -9,17 +9,17 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-Run **v0.1.10** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.11** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.10/oathra-0.1.10.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.10). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.11). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
 After trying it, [star the repository](https://github.com/FORIFOR/oathra) to follow updates. Share a real use case or an unexpected judgement in [Discussions](https://github.com/FORIFOR/oathra/discussions) or an [issue](https://github.com/FORIFOR/oathra/issues); remove personal data and private call content first.
 
-**Already building a voice agent?** v0.1.10 adds `oathra verify` and consent-based optional intake for your saved transcripts, stopping immediately when consent is unclear, plus YAML scenario handoff into real calls and a typed SDK at `oathra/evidence`. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
+**Already building a voice agent?** v0.1.11 adds a conservative guard against provisional reservation confirmations alongside `oathra verify` and consent-based optional intake for your saved transcripts, stopping immediately when consent is unclear. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
 
 [Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
 
@@ -62,8 +62,8 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 
 ```bash
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
-# from the public v0.1.10 asset:
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.10/oathra-0.1.10.tgz oathra setup phone
+# from the public v0.1.11 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz oathra setup phone
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation

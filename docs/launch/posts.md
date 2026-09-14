@@ -413,3 +413,8 @@ publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0�
 - 両投稿をX APIで読み返し、`replied_to` とRelease URLを確認済み。新規の独立投稿や個別の試用依頼ではない。
 - 新しい動画投稿2本の公開指標は取得時点で0。impression_countの精度は確認できないため、露出ゼロとは断定しない。
 - GitHubの公開、サイト、日英実操作動画、Zenn改稿、GitHub配布版、相談・報告導線は公開済み。スターの大量獲得や商談成立は未確認。npm公開は認証待ち、実電話100件は未実施。
+# Public v0.1.11 package — 2026-09-14 JST
+
+- Integrated PR #12 (`27b7383`) into `main`, adding conservative detection for provisional, pending-approval and confirmation-needed reservation language plus 500 regression cases.
+- Updated the active README, integration/setup guides, Japanese and English Pages copy, Zenn source articles and outreach drafts to use the v0.1.11 GitHub asset.
+- The GitHub Release and asset upload are the next publication step; no download, star or business-inquiry result is counted until the public asset and checksum are read back.
