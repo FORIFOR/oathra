@@ -64,3 +64,9 @@
 - Zenn: `oathra-launch` いいね1、`oathra-evidence-rules` いいね0。公開APIに閲覧数はない。
 - X: 公開プロフィールの最新投稿は約10時間前で、24時間間隔を満たしていない。アカウントは未ログイン表示のため、新規動画告知は投稿せず、次回も公開直前に時刻と認証状態を再確認する。
 - 変更: `docs/SETUP.en.md` を追加し、README と英語サイトから英語の初心者向けセットアップに直接遷移できるようにした（commit `ea7ecd0`）。CI `34802645340` と Pages `34802645353` は success。
+
+## 2026-09-14 12:45 JST（Zenn記事の対象読者を明示）
+
+- `oathra-evidence-rules` の公開APIで本文更新を確認（`body_updated_at`: 2026-09-14 12:44 JST）。`llm`・`evaluation`トピックを追加し、対象読者と読後に確認できる3項目を冒頭へ追加（commit `78cabbc`）。
+- 反映直後のいいね: 0。閲覧数は公開APIから取得できないため未取得。
+- GitHub stars / forks: 0 / 0、Discussion #14コメント: 0。変更効果はまだ判定しない。
