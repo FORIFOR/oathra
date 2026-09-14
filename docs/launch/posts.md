@@ -4,7 +4,9 @@
 
 - Release notes: `docs/launch/release-notes-0.1.7.md`.
 - The optional intake now stops on an ambiguous or hesitant consent reply instead of repeating the prompt.
-- Source commit and release will be recorded after CI and asset readback.
+- Published release: https://github.com/FORIFOR/oathra/releases/tag/v0.1.7
+- Assets: [oathra-0.1.7.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.7/oathra-0.1.7.tgz.sha256). The tarball SHA-256 is `1aa87068614034d9dd9c80628374726f606c6a2c0529a756097df314c03dfeb4`.
+- Source: `679da95` (`fix(intake): stop on ambiguous consent`). CI `34808573894` and Pages `34808573878` passed. Initial v0.1.7 asset downloads were 0 at 2026-09-14 14:10 JST.
 
 ## v0.1.6 consent-based intake release — 2026-09-14 JST
 
