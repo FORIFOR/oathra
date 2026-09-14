@@ -4,7 +4,7 @@ Use this once the account-wide 24-hour spacing has elapsed and the current timel
 
 A phone agent can say "booked" when nobody agreed.
 
-Oathra v0.1.11: consent once, one declared follow-up field per turn, stop on decline/hold/ambiguity. Provisional confirmations stay incomplete until the callee commits clearly. Explicit answers → intake.json + summary.md. No inferred profile.
+Oathra v0.1.11: consent once, one declared follow-up field per turn, stop on decline/hold/ambiguity. Explicit answers → intake.json + summary.md. No inferred profile.
 
 Demo: https://forifor.github.io/oathra/en/#intake-video
 
