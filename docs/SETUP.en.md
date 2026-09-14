@@ -60,10 +60,10 @@ From a clone:
 pnpm oathra setup phone
 ```
 
-For the public release package, use the v0.1.9 GitHub asset explicitly:
+For the public release package, use the v0.1.10 GitHub asset explicitly:
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.10/oathra-0.1.10.tgz oathra setup phone
 ```
 
 The wizard:
