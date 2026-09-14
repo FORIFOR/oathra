@@ -81,22 +81,29 @@ export async function cmdPlay(positional: string[], flags: Flags): Promise<void>
   const scenario = findScenario(positional[0]);
   const brain = resolveBrain(str(flags.brain, "scripted")!);
   const fast = Boolean(flags.fast);
-  console.log(`\n${bold(scenario.title)}  ${dim(`(${scenario.difficulty} · ${scenario.domain} · ${brain.name})`)}`);
-  if (scenario.mission.brief) console.log(dim(scenario.mission.brief));
-  console.log("");
+  const json = Boolean(flags.json);
+  if (!json) {
+    console.log(`\n${bold(scenario.title)}  ${dim(`(${scenario.difficulty} · ${scenario.domain} · ${brain.name})`)}`);
+    if (scenario.mission.brief) console.log(dim(scenario.mission.brief));
+    console.log("");
+  }
   const run = await runScenario(scenario, {
     brain,
     pace: fast ? "fast" : "realtime",
     seed: num(flags.seed, scenario.seed),
-    onEvent: liveRenderer(scenario, { quiet: Boolean(flags.quiet) }),
+    ...(json ? {} : { onEvent: liveRenderer(scenario, { quiet: Boolean(flags.quiet) }) }),
   });
+  let savedPath: string | undefined;
+  if (flags.save !== false && !flags["no-save"]) {
+    savedPath = saveCall(run.outcome);
+    if (!json) console.log(dim(`\nSaved: ${savedPath}\n  oathra replay ${run.outcome.callId}`));
+  }
+  if (json) {
+    console.log(JSON.stringify({ result: run.outcome.result, intake: run.outcome.intake, metrics: run.outcome.metrics, score: run.score, ...(savedPath ? { savedPath } : {}) }, null, 2));
+    return;
+  }
   console.log("");
   console.log(resultBox(run.outcome, run.score));
-  if (flags.save !== false && !flags["no-save"]) {
-    const dir = saveCall(run.outcome);
-    console.log(dim(`\nSaved: ${dir}\n  oathra replay ${run.outcome.callId}`));
-  }
-  if (flags.json) console.log(JSON.stringify({ result: run.outcome.result, intake: run.outcome.intake, metrics: run.outcome.metrics, score: run.score }, null, 2));
 }
 
 export async function cmdCall(_positional: string[], flags: Flags): Promise<void> {
