@@ -2,9 +2,9 @@
 
 ## v0.1.12 public package — 2026-09-14 20:05 JST
 
-- Published the scene-aware consented intake guard from `main` as GitHub Release [v0.1.12](https://github.com/FORIFOR/oathra/releases/tag/v0.1.12). The package includes `startAfter`, `dependsOn`, `choices`, canonical answer matching, and the no-save stop behavior for refusal, hold, ambiguity or unmatched replies.
+- Published the scene-aware consented intake guard from `main` as GitHub Release [v0.1.12](https://github.com/FORIFOR/oathra/releases/tag/v0.1.12). Assets are [`oathra-0.1.12.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz) and its [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.12/oathra-0.1.12.tgz.sha256); the tarball hash is `cf00fb58ca6e2b7d77aeee52fde3eb1141b283b4524976f926097a571c58f2c0`. The package includes `startAfter`, `dependsOn`, `choices`, canonical answer matching, and the no-save stop behavior for refusal, hold, ambiguity or unmatched replies.
 - Updated the Japanese and English README, setup/integration guides, existing article sources, launch drafts and Pages command to use the v0.1.12 asset. The 48-second Arena recording remains the same verified simulator demonstration.
-- Validation before publication: typecheck, full test suite, scenario validation, build, site build, dependency lint, package smoke and `git diff --check` passed. CI and Pages completed successfully for the source commit.
+- Validation before publication: typecheck, full test suite (**653 passed, 1 skipped credential-gated LiveKit**), scenario validation, build, site build, dependency lint, package smoke and `git diff --check` passed. CI [34836228259](https://github.com/FORIFOR/oathra/actions/runs/34836228259) and Pages [34836228257](https://github.com/FORIFOR/oathra/actions/runs/34836228257) completed successfully for the source commit. The public tarball was downloaded and its hash matched the release checksum.
 - This makes the latest implementation runnable from a tagged public asset; it is not evidence of adoption. Stars, external replies and business inquiries are still measured separately.
 
 ## Scene-aware intake guard — 2026-09-14 19:49 JST
