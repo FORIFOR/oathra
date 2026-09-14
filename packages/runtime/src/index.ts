@@ -494,7 +494,6 @@ export class CallRuntime {
     const canAskConsent = this.intakeStatus === "not_started" && this.canStartIntake();
     if (canAskConsent) {
       // A model that jumps straight to a field still has to obtain consent.
-      if (response.intakeQuestion?.kind === "consent" && consentMentioned) return { ...response, text: spokenConsentPrompt, intakeQuestion: { kind: "consent" }, action: "continue" };
       return { ...response, text: spokenConsentPrompt, intakeQuestion: { kind: "consent" }, action: "continue" };
     }
 
