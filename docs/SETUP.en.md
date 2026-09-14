@@ -31,6 +31,14 @@ pnpm oathra demo
 
 `demo`, `play` and `eval` use the built-in simulator and run without provider credentials.
 
+To inspect the public page locally, build the site and serve the static directory. The build also syncs the recordings from `docs/media/`.
+
+```bash
+pnpm build:site
+python3 -m http.server 4380 --directory site
+# http://127.0.0.1:4380/ or /en/
+```
+
 ## 2. Choose credentials for a real phone
 
 The shortest real-call path is **Twilio + GPT-Live**. Twilio connects directly to Oathra. Plivo and Custom SIP use a LiveKit SIP gateway as well.

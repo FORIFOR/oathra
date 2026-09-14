@@ -35,6 +35,14 @@ pnpm oathra demo
 
 `demo`、`play`、`eval` は組み込みシミュレータを使うため、API キーなしで実行できます。
 
+公開ページをローカルで確認する場合は、サイトをビルドしてから静的サーバーを起動します。動画も `docs/media/` から同期されます。
+
+```bash
+pnpm build:site
+python3 -m http.server 4380 --directory site
+# http://127.0.0.1:4380/ または /en/
+```
+
 ## 2. 実電話に必要なものを選ぶ
 
 最初の実電話は **Twilio + GPT-Live** が最短です。Twilio は Oathra から直接接続でき、Plivo と独自 SIP は LiveKit の SIP ゲートウェイも必要になります。
