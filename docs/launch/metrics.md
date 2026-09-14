@@ -44,3 +44,13 @@
 - 他者の新規Issue: なし（一覧の4件はすべてFORIFOR作成）。
 - npm配布版: 0.1.0。修正済み0.1.1とのずれを確認したため、GitHub Releaseで導入可能なCLIパッケージを準備。
 - Zenn改稿コミット `01d0f07` のCIはsuccess。2記事の新タイトル・全見出し・動画リンクは公開HTMLで確認済み。
+
+## 2026-09-14 12:18 JST（v0.1.4・Discussion公開後）
+
+- GitHub stars / forks: 0 / 0。
+- Traffic API views（14日）: 6回 / 6 uniques。公開後の作者・CI確認を含むため、外部利用者数とはみなさない。
+- Traffic API clones（14日）: 298回 / 121 uniques。CI・配布・作者の確認を含むため、外部利用者数とはみなさない。
+- v0.1.4 release assets: ダウンロード0（公開直後の値）。SHA256はダウンロード先で検証可能な形式に修正済み。
+- GitHub Discussion #14: 公開済み、コメント0件。外部の具体的な発話例を得るための質問を掲載。
+- Zenn: `oathra-launch` いいね1、`oathra-evidence-rules` いいね0。公開APIに閲覧数はない。
+- X: アカウント全体の最新投稿から24時間未満のため、v0.1.4動画告知は未投稿。次回は投稿直前にタイムラインとログイン状態を再確認する。
