@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## main intake non-answer hardening — 2026-09-14 JST
+
+- Source: `779d764` (`fix(intake): stop on non-answer field replies`) and `8e12bdf` (`test(intake): cover hold and hedge replies`), pushed to `main`.
+- A field response such as 「少々お待ちください」 or 「少し考えます」 is now treated as a non-answer: the field is not saved and optional intake stops without repeating the question.
+- CI `34809944711` passed (build, 146 tests with one credential-gated live test skipped, scenarios, eval, adversarial 10,000-run check and package smoke).
+- The v0.1.7 release asset predates this edge-case fix; use the current `main` checkout until the next package release is cut.
+
 ## v0.1.7 non-pushy consent hotfix — 2026-09-14 JST
 
 - Release notes: `docs/launch/release-notes-0.1.7.md`.
