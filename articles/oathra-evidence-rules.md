@@ -12,7 +12,7 @@ published: true
 
 この記事では、曖昧な返事・代案・条件変更・取り消しをどう処理するか、実装を追って説明します。全文を理解するモデルではなく、正規表現と状態管理による判定です。
 
-この設計は、電話相手の属性を推測してプロファイルを作るためのものではありません。判定対象は `CallContract` で宣言した項目に限定し、目的外の聞き取りや、同じ質問の繰り返しを避けます。追加の情報を扱うときは、目的・質問上限・同意・拒否時の停止を契約に含め、発話の根拠を残せる形にします。
+この設計は、電話相手の属性を推測してプロファイルを作るためのものではありません。判定対象は `CallContract` で宣言した項目に限定し、目的外の聞き取りや、同じ質問の繰り返しを避けます。追加の情報を扱うときは、目的・質問上限・同意・拒否時の停止を契約に含め、相手が明示した回答から業務用プロファイルを作れるよう発話の根拠を残します。
 
 **対象読者**：音声AIやLLMエージェントの完了条件を、モデルの自己申告ではなくコードで検証したい開発者。
 
@@ -58,7 +58,7 @@ https://x.com/forifori_dev/status/2099160731409379808
 
 「19時はいっぱいですが19時半なら空いております」を一文として抽出すると、19:00と19:30の両方が現れます。
 
-そこで、句読点に加え、逆接の一部でも節を分けます。以下は[実装の抜粋](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/extract.ts)です。
+そこで、句読点に加え、逆接の一部でも節を分けます。以下は[実装の抜粋](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/extract.ts)です。
 
 ```ts
 const sub = c.text.split(/(?<=ですが|ますが|けど|けれど|but\s)/);
@@ -72,7 +72,7 @@ const sub = c.text.split(/(?<=ですが|ますが|けど|けれど|but\s)/);
 
 曖昧語は `HEDGE_RE` で見ています。「たぶん」「と思います」「確認します」、英語の `probably` や `let me check` などです。
 
-同意の判定は、単に「大丈夫です」に一致すればよいわけではありません。[`isAgreement`](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/extract.ts) は次の条件を持ちます。
+同意の判定は、単に「大丈夫です」に一致すればよいわけではありません。[`isAgreement`](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/extract.ts) は次の条件を持ちます。
 
 ```ts
 export function isAgreement(text: string, source: Speaker): boolean {
@@ -102,7 +102,7 @@ export function isAgreement(text: string, source: Speaker): boolean {
 
 最後の経路は、`COMMIT_RE` と条件の再提示を組み合わせた処理です。以前の記事では確定経路を二つと説明していましたが、現行のコードにはこの分岐もあります。
 
-肯定応答の判定では、疑問文や曖昧語、拒否を除外します。ただし、経路ごとの条件は完全に同一ではありません。[`ingest` の確定質問を処理する箇所](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/engine.ts)で確認できます。正規表現の数だけで判定全体を説明できない理由でもあります。
+肯定応答の判定では、疑問文や曖昧語、拒否を除外します。ただし、経路ごとの条件は完全に同一ではありません。[`ingest` の確定質問を処理する箇所](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/engine.ts)で確認できます。正規表現の数だけで判定全体を説明できない理由でもあります。
 
 ## 4. 確定は、そのときの条件に紐づける
 
@@ -132,7 +132,7 @@ if (!stale) out.confirmed = true;
 
 ## 検証で確認できたことと、まだ言えないこと
 
-[既存の検証記録](https://github.com/FORIFOR/oathra/blob/f205900/docs/launch/miscompletion-cases.md)では、店員役の発言をエンジンへ直接入力して、次の結果を確認しています。
+[既存の検証記録](https://github.com/FORIFOR/oathra/blob/main/docs/launch/miscompletion-cases.md)では、店員役の発言をエンジンへ直接入力して、次の結果を確認しています。
 
 | 条件 | 結果 |
 | --- | --- |
@@ -155,15 +155,15 @@ CIでは、用意した発言変異を使う1万runの敵対的シミュレー�
 期待と異なる判定があれば、[Issue](https://github.com/FORIFOR/oathra/issues)に、個人情報を除いた発言の順序・期待結果・実際の結果を残してもらえると助かります。単語の追加で直るものか、状態の扱いを変える必要があるものかを調べたいです。
 
 - [Oathra全体の設計と実電話の開発記録](https://zenn.dev/forifori/articles/oathra-launch)
-- [抽出の実装：extract.ts](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/extract.ts)
-- [状態管理の実装：engine.ts](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/engine.ts)
+- [抽出の実装：extract.ts](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/extract.ts)
+- [状態管理の実装：engine.ts](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/engine.ts)
 
 
 ## 自分の文字起こしを渡す
 
 v0.1.11では、判定機能を`oathra/evidence`として読み込めるSDKと、ローカルの`oathra verify`コマンド、仮押さえ・未確定を完了扱いしないガード、同意付きの追加聞き取りを配布しています。明確な同意がない場合は任意聞き取りを繰り返しません。YAMLの `mission.intake` はローカルのシミュレーターから実電話へ引き継げます。既存の電話会社やモデルを切り替えず、手元の発言を入力できます。[導入手順](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)に入力形式と、保存済みの実モデル交渉記録を再評価する手順をまとめました。追加聞き取りの実演は[48秒のArena録画](https://forifor.github.io/oathra/#intake-video)で確認できます。
 
-追加聞き取りを使う場合も、目的・同意・質問上限を契約に明示します。ランタイムは必要な通話条件の完了後に同意を尋ね、同意された質問への次の発話だけを `intake.json` と `summary.md` に保存します。未宣言の項目や、推測した属性は記録しません。
+追加聞き取りを使う場合も、目的・同意・質問上限を契約に明示します。ランタイムは必要な通話条件の完了後に同意を尋ね、同意された質問への次の発話だけを `intake.json` と `summary.md` に保存します。同意と回答には発話ID・時刻が付き、未宣言の項目や推測した属性は記録しません。
 
 [ブラウザで自分のログを検証するページ](https://forifor.github.io/oathra/check.html)も追加しました。インストールせずに、次の3操作で試せます。
 

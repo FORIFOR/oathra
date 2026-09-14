@@ -12,7 +12,7 @@ published: true
 
 この記事では、ブラウザで試せる判定の動きと、その設計、実電話で確認できた範囲を紹介します。電話AIや、実行結果を検証するエージェントを作っている方向けです。
 
-Oathra は、電話相手の属性を推測してプロファイルを作ることを目的にしていません。聞く項目は `CallContract` に明示した目的と必須条件に限り、同じ質問の反復を抑えます。追加の聞き取りを行う場合も、目的・項目・質問上限・同意・拒否時の停止を契約に書いてから扱う方針です。
+Oathra は、電話相手の属性を推測するプロファイルは作りません。業務上必要な項目を `CallContract` に宣言すれば、相手が同意して明示した回答から運用プロファイルを作れます。追加の聞き取りを行う場合も、目的・項目・質問上限・同意・拒否時の停止を契約に書いてから扱い、同じ質問の反復を抑えます。
 
 ## まず30秒で試す
 
@@ -79,7 +79,7 @@ const constraints = checkConstraints(contract.constraints, values);
 
 通話を保存すると、機械処理用の `result.json` と `transcript.json` に加えて、人が読むための `.oathra/calls/<callId>/summary.md` も出力します。要約には確認済みの決定事項、不足項目、根拠となった発話、信頼度、終了理由が並びます。要約が新しい推測を作るのではなく、検証済みの証拠を読みやすく並べ替えるだけにしています。
 
-[抽出・失効ルールを詳しく説明した記事はこちら](https://zenn.dev/forifori/articles/oathra-evidence-rules)。コードは [EvidenceEngine](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/engine.ts) と [evaluate](https://github.com/FORIFOR/oathra/blob/f205900/packages/evidence/src/evaluate.ts) にあります。
+[抽出・失効ルールを詳しく説明した記事はこちら](https://zenn.dev/forifori/articles/oathra-evidence-rules)。コードは [EvidenceEngine](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/engine.ts) と [evaluate](https://github.com/FORIFOR/oathra/blob/main/packages/evidence/src/evaluate.ts) にあります。
 
 ## 実電話では、判定以外にもつまずいた
 
@@ -101,12 +101,12 @@ const constraints = checkConstraints(contract.constraints, values);
 
 | 検証 | 確認できた範囲 |
 | --- | --- |
-| 自動テスト | 139件合格。ライブ接続テスト1件はスキップ |
+| 自動テスト | 649件合格。ライブ接続テスト1件はスキップ |
 | 敵対的シミュレーション | 用意した発言変異1万runで誤完了0。実電話の成功率ではない |
 | ブラウザの操作 | 英語の確定・取り消しなどを10回反復し、30項目の確認を通過 |
 | 実電話 | 上記3回の開発記録。実電話100件の業務評価は未実施 |
 
-[公開時の検証記録](https://github.com/FORIFOR/oathra/blob/f205900/docs/launch/2026-09-14.md)と[導入準備の一覧](https://github.com/FORIFOR/oathra/blob/f205900/docs/READINESS.md)を置いています。
+[公開時の検証記録](https://github.com/FORIFOR/oathra/blob/main/docs/launch/2026-09-14.md)と[導入準備の一覧](https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md)を置いています。
 
 現段階は、動きを見せて技術的な相談ができる段階です。有償PoCを受けられることや、本番運用に対応済みであることは宣言していません。そこには、実電話での評価、障害時の扱い、データの保持・削除などの確認が残っています。
 
@@ -116,7 +116,7 @@ v0.1.11の仮押さえ誤完了ガードと、v0.1.10から続く同意付き追
 
 v0.1.11では、電話基盤を移行せずに判定だけを使えるようにし、仮押さえ・未確定・承認待ちを予約完了と誤認しません。保存した通話には決定メモと同意付き追加聞き取りの記録も出力します。明確な同意がない場合は任意聞き取りを繰り返しません。YAMLの `mission.intake` はローカルのシミュレーターから実電話へ引き継げます。`oathra verify`に手元の文字起こしを渡す方法と、`oathra/evidence`からTypeScriptで読み込む方法があります。APIキーは不要です。[入力形式・追加聞き取り・導入手順・LiveKit接続例](https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md)を公開しています。LiveKit接続例は型を検査した段階で、実セッションは未検証です。実際の流れは[48秒のArena録画](https://forifor.github.io/oathra/#intake-video)で確認できます。
 
-追加聞き取りは、契約に目的・同意文・質問項目・上限を宣言したときだけ有効になります。必要な予約情報が確定してから同意を尋ね、同意後は1回に1項目だけ聞き、拒否されたら停止します。保存されるのは相手が明示的に答えた内容で、属性を推測するプロファイリングではありません。
+追加聞き取りは、契約に目的・同意文・質問項目・上限を宣言したときだけ有効になります。必要な予約情報が確定してから同意を尋ね、同意後は1回に1項目だけ聞き、拒否されたら停止します。保存されるのは相手が明示的に答えた内容で、業務用プロファイルには使えますが、属性を推測するプロファイリングではありません。同意と回答には発話ID・時刻が付き、`summary.md` に決定事項と一緒に残ります。
 
 [ブラウザで自分のログを検証するページ](https://forifor.github.io/oathra/check.html)も追加しました。インストールせずに、次の3操作で試せます。
 
