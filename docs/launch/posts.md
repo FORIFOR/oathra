@@ -8,6 +8,7 @@
 - Clean package smoke passed: the tarball exposes `oathra demo`, `scenario validate`, the intake scenario and the localized Arena title. CI `34815087930` and Pages `34815087897` passed for the v0.1.10 source commit.
 - GitHub Discussion #14 comment `18428933` now points to v0.1.10 and asks voice-agent teams for one or two contract-declared follow-up fields. It requests only redacted or synthetic transcripts; no external feedback or adoption is claimed.
 - Growth snapshot at 2026-09-14 16:06 JST: 0 stars / 0 forks, 6 views / 6 unique visitors, 298 clones / 121 unique cloners, v0.1.10 assets 1 tarball + 1 checksum download (our verification), Zenn 1 / 0 likes, and no external issue or business inquiry. [Raw snapshot](metrics/2026-09-14-1605-jst.json).
+- TikTok Studio readback at 2026-09-14 16:10 JST: the existing Oathra 00:59 reel (published 2026-09-13 20:10 JST) shows 0 views / 0 likes / 0 comments. The next eligible Oathra post is the 48-second intake recording after 2026-09-14 20:10 JST; do not duplicate the existing reel.
 - No X post was made in this turn because the account-wide spacing checkpoint remains 2026-09-15 03:01 JST. TikTok's next eligible time remains 20:10 JST; follow the existing heartbeat and recheck live activity before publishing.
 
 ## v0.1.9 scenario intake handoff — 2026-09-14 JST
