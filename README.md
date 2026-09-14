@@ -27,6 +27,8 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.10/
 
 ## これは何か
 
+[企業紹介の条件・反復検証・実電話100件の未完了ゲート](docs/ENTERPRISE_READINESS.md)
+
 Oathra は、AI エージェントが電話をかけて交渉し、予約や注文を取るためのオープンソースのランタイムです（Apache-2.0、TypeScript）。
 
 普通に作ると、AI は席が取れていなくても「予約できました」と言い切ります。留守番電話に予約を頼み続けたり、予算を超えた値段を話の流れで受けたりもします。実際に全部起きました。

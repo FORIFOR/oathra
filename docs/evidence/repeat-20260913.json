@@ -1,0 +1,310 @@
+{
+  "scope": "scripted simulator; CLI table and raw log",
+  "runs": 60,
+  "completed": 50,
+  "incomplete": 10,
+  "falseCompletions": 0,
+  "logSha256": "0e31cccf6d0036ff121eebf37a9d51865c07065c7b6a9e4c4952dbae683464fa",
+  "results": [
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "bulk-buy",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "false-completion-trap",
+      "status": "incomplete",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "impossible-hotel",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "restaurant-reservation-en",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    },
+    {
+      "scenario": "serial-number",
+      "status": "completed",
+      "falseCompletions": 0
+    }
+  ]
+}
