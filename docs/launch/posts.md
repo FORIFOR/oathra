@@ -8,6 +8,8 @@
 - Main CI `34811155009` passed: dependency check, build, tests, scenario validation, false-completion eval, 10,000-run adversarial eval and package smoke.
 - Published GitHub Release: [v0.1.9](https://github.com/FORIFOR/oathra/releases/tag/v0.1.9), targeting `ecc43eec`. Assets: [oathra-0.1.9.tgz](https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.9/oathra-0.1.9.tgz.sha256). SHA-256: `f9085ce1aa7be04eee6c4ed03ea222f9e882a90e871f3dc6935386a45408eaf5`; downloaded asset and checksum verification passed.
 - Release notes: [v0.1.9](release-notes-0.1.9.md). npm remains at 0.1.0 until the real `NPM_TOKEN` is configured.
+- Commit `991c284` adds the built-in `restaurant-reservation-intake` Arena mission, an intake panel, and Japanese/English simulator recordings. CI `34814443009` and Pages `34814442926` passed; the public routes serve both MP4 files and captions.
+- GitHub Discussion #14 comment `18428933` was edited at 2026-09-14 15:42 JST to link the intake recording and ask for contract-declared follow-up fields. It remains a maintainer prompt; no external feedback or adoption is claimed.
 
 ## v0.1.8 intake non-answer hardening — 2026-09-14 JST
 
