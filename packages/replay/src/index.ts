@@ -21,7 +21,7 @@ export function defaultCallsDir(cwd = process.cwd()): string {
 
 /**
  * Persist a call as a directory:
- *   <dir>/<callId>/events.jsonl · contract.json · result.json · metrics.json · transcript.json
+ *   <dir>/<callId>/events.jsonl · contract.json · result.json · summary.md · metrics.json · transcript.json
  * Audio (caller.opus / callee.opus / mixed.opus) is added by audio transports.
  */
 export function saveCall(outcome: CallOutcome, dir = defaultCallsDir()): string {
@@ -30,10 +30,68 @@ export function saveCall(outcome: CallOutcome, dir = defaultCallsDir()): string 
   writeFileSync(join(target, "events.jsonl"), outcome.events.map((e) => JSON.stringify(e)).join("\n") + "\n");
   writeFileSync(join(target, "contract.json"), JSON.stringify(outcome.contract, null, 2));
   writeFileSync(join(target, "result.json"), JSON.stringify(outcome.result, null, 2));
+  writeFileSync(join(target, "summary.md"), renderCallSummary(outcome));
   writeFileSync(join(target, "metrics.json"), JSON.stringify(outcome.metrics, null, 2));
   writeFileSync(join(target, "transcript.json"), JSON.stringify(outcome.transcript, null, 2));
   writeFileSync(join(target, "traces.json"), JSON.stringify(outcome.traces, null, 2));
   return target;
+}
+
+/**
+ * Render a human-readable decision memo from verified, utterance-linked data.
+ * This intentionally includes only contract fields and evidence; it does not
+ * infer or add a callee profile.
+ */
+export function renderCallSummary(outcome: CallOutcome): string {
+  const ja = outcome.contract.language === "ja";
+  const result = outcome.result;
+  const status = ja
+    ? { completed: "完了", incomplete: "未完了", constraint_violation: "条件違反", failed: "失敗" }[result.status]
+    : { completed: "completed", incomplete: "incomplete", constraint_violation: "constraint violation", failed: "failed" }[result.status];
+  const lines = [
+    `# ${ja ? "通話決定メモ" : "Call decision memo"}`,
+    "",
+    `- ${ja ? "通話ID" : "Call ID"}: \`${outcome.callId}\``,
+    `- ${ja ? "目的" : "Goal"}: ${outcome.contract.goal}`,
+    `- ${ja ? "状態" : "Status"}: ${status}`,
+    `- ${ja ? "完了" : "Complete"}: ${result.complete ? "✓" : "—"}`,
+    `- ${ja ? "信頼度" : "Confidence"}: ${(result.confidence * 100).toFixed(1)}%`,
+    "",
+    `## ${ja ? "確認済みの決定事項" : "Verified decisions"}`,
+  ];
+
+  const fields = Object.entries(result.fields);
+  if (fields.length === 0) {
+    lines.push(ja ? "（確認済みの項目はありません）" : "(No verified fields.)");
+  } else {
+    for (const [field, value] of fields) lines.push(`- **${field}**: ${formatSummaryValue(value)}`);
+  }
+
+  lines.push("", `## ${ja ? "不足項目" : "Missing fields"}`);
+  lines.push(result.missing.length ? result.missing.map((field) => `- ${field}`).join("\n") : ja ? "なし" : "None");
+
+  const verifiedEvidence = result.evidence.filter((e) => e.verified);
+  lines.push("", `## ${ja ? "発話証拠" : "Utterance evidence"}`);
+  if (verifiedEvidence.length === 0) {
+    lines.push(ja ? "（確認済みの発話証拠はありません）" : "(No verified utterance evidence.)");
+  } else {
+    for (const evidence of verifiedEvidence) {
+      lines.push(`- **${evidence.field}** = ${formatSummaryValue(evidence.value)} — ${evidence.source}: 「${evidence.span}」`);
+    }
+  }
+
+  lines.push(
+    "",
+    `- ${ja ? "終了理由" : "End reason"}: ${outcome.endReason}`,
+    `- ${ja ? "ターン数" : "Turns"}: ${outcome.metrics.turns}`,
+    `- ${ja ? "所要時間" : "Duration"}: ${(outcome.metrics.durationMs / 1000).toFixed(1)}s`,
+  );
+  return `${lines.join("\n")}\n`;
+}
+
+function formatSummaryValue(value: unknown): string {
+  if (typeof value === "string") return value.replaceAll("\n", " ");
+  return JSON.stringify(value);
 }
 
 export function loadCall(pathOrId: string, dir = defaultCallsDir()): CallRecording {

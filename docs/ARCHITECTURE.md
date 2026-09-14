@@ -35,6 +35,6 @@ contract → evidence → core → scenario → runtime → providers → replay
 
 ```
 .oathra/calls/<callId>/
-  events.jsonl   contract.json   result.json   metrics.json   transcript.json   traces.json
+  events.jsonl   contract.json   result.json   summary.md   metrics.json   transcript.json   traces.json
   (caller.opus / callee.opus / mixed.opus on audio transports)
 ```
