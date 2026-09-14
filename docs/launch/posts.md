@@ -420,3 +420,9 @@ publish 後にこちらで行うこと: README/サイトの「npm: oathra 0.1.0�
 - Published GitHub Release: [v0.1.11](https://github.com/FORIFOR/oathra/releases/tag/v0.1.11), targeting `8fede42a8df7568fc6ce67801064b62509fc0bbe`.
 - Assets: [`oathra-0.1.11.tgz`](https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz) and [SHA-256 file](https://github.com/FORIFOR/oathra/releases/download/v0.1.11/oathra-0.1.11.tgz.sha256). SHA-256: `7b55e925c10df67087da910946a57ec4378fc6039bb614f1c542a48414711d05`; public download and checksum verification passed.
 - Public package smoke passed: the tarball validates and runs `restaurant-reservation-intake` with the two explicit intake answers. CI [34827095040](https://github.com/FORIFOR/oathra/actions/runs/34827095040) and Pages [34827002643](https://github.com/FORIFOR/oathra/actions/runs/34827002643) passed. The X announcement remains scheduled only after the account-wide spacing checkpoint; no duplicate post was sent.
+
+## Growth snapshot after v0.1.11 — 2026-09-14 18:19 JST
+
+- GitHub remains **0 stars / 0 forks**. The 14-day API window reports 9 views / 9 unique visitors and 530 clones / 199 unique cloners; these counts include unknown and maintainer activity and are not treated as external adoption.
+- v0.1.11 assets currently report 0 downloads in the GitHub API; the public tarball was nevertheless fetched and checksum-verified for smoke testing, so this is not an adoption signal. Zenn remains 1 / 0 likes and no external issue or business inquiry is observed.
+- Raw snapshot: [2026-09-14-1819-jst.json](metrics/2026-09-14-1819-jst.json). X remains eligible after **2026-09-15 15:13:19 JST** and has not been republished early.
