@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## X draft CTA refinement — 2026-09-14 18:44 JST
+
+- The single active X draft now uses the attached intake recording for the demo and links directly to the GitHub repository with `Demo + Star`. The body is 256 characters and passes the publication script's limit check.
+- The read-only account check still reports `duplicate: false` and the next eligible time as **2026-09-15 15:13:19 JST**. No upload or post was made before that interval.
+
 ## External signal checkpoint — 2026-09-14 18:40 JST
 
 - GitHub reports **0 stars / 0 forks**, 9 views / 9 unique visitors and 530 clones / 199 unique cloners in the 14-day window. The daily buckets and release downloads include maintainer or automation checks, so they are not counted as external users.
