@@ -131,6 +131,8 @@ pnpm oathra replay <callId> --at 00:18.420     # time travel
 pnpm oathra doctor
 ```
 
+`play --json` emits only `result`, `intake` and the saved `savedPath`, without headings or transcript lines. You can pass the verified decisions and explicit answers to another system without scraping terminal output.
+
 ## The idea in one object
 
 The top-level object is not an "Agent". It is a **CallContract**: what the call must achieve, what it may do, and what counts as done.

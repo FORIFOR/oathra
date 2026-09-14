@@ -66,6 +66,8 @@ pnpm oathra replay <callId> --at 00:18.420     # その時点の状態に巻き�
 pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemini --png card.png --json run.json
 ```
 
+`play --json` は会話ログや見出しを混ぜず、`result`・`intake`・保存先の `savedPath` だけをJSONで返します。決定事項や明示回答を別の業務システムへ渡すときに使えます。
+
 Arena では「AI同士を見る」か「自分が電話に出る」かを選べます。後者はあなたが店員役になって、AI の交渉を受ける側になります。
 
 同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
