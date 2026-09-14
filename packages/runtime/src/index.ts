@@ -452,7 +452,12 @@ export class CallRuntime {
     const verified = this.engine.values();
     const prerequisites = new Set([...requiredFields(contract), ...(contract.intake?.startAfter ?? [])]);
     if ([...prerequisites].some((field) => verified[field] === undefined)) return false;
-    return checkConstraints(contract.constraints, verified).violations.length === 0;
+    const constraintCheck = checkConstraints(contract.constraints, verified);
+    // A constraint that is still unknown means the scene is not settled yet.
+    // Do not start optional intake until every declared mission condition is
+    // both known and satisfied; otherwise a model could collect follow-up
+    // information while the booking is still being negotiated.
+    return constraintCheck.unknown.length === 0 && constraintCheck.violations.length === 0;
   }
 
   private canAskIntakeField(field: NonNullable<CallContract["intake"]>["fields"][number]): boolean {

@@ -258,6 +258,49 @@ describe("scripted agent vs scripted characters", () => {
     expect(o.transcript[1]?.text).not.toBe(consentPrompt);
   });
 
+  it("keeps intake closed while a declared mission constraint is still unknown", async () => {
+    const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
+    const base = contractFromScenario(scenario);
+    const consentPrompt = "追加で1点だけ伺ってもよろしいでしょうか？";
+    const contract = defineCall({
+      ...base,
+      // This condition is deliberately not required by the base scenario and
+      // is never supplied by the callee. An unresolved constraint must block
+      // optional intake just like an unresolved required field.
+      constraints: { ...base.constraints, channel: { eq: "店頭" } },
+      intake: {
+        purpose: "予約後の案内を適切にする",
+        consentPrompt,
+        fields: [{ key: "role", label: "ご担当", question: "ご担当を教えていただけますか？" }],
+        maxQuestions: 1,
+      },
+    });
+    const normal = new ScriptedAgent();
+    let firstTurn = true;
+    const brain = {
+      name: "unknown-constraint-intake-test",
+      respond: async (ctx: Parameters<typeof normal.respond>[0]) => {
+        if (firstTurn) {
+          firstTurn = false;
+          return { text: consentPrompt, intakeQuestion: { kind: "consent" as const } };
+        }
+        return normal.respond(ctx);
+      },
+    };
+    const o = await runCall({
+      contract,
+      transport: new SimulatorTransport({ scenario, pace: "fast" }),
+      brain,
+      now: NOW,
+      scenarioId: scenario.id,
+      openingTimeoutMs: 50,
+    });
+    expect(o.result.status).toBe("completed");
+    expect(o.intake.status).toBe("not_started");
+    expect(o.events.filter((event) => event.type === "intake.question")).toHaveLength(0);
+    expect(o.transcript.map((turn) => turn.text)).not.toContain(consentPrompt);
+  });
+
   it("stops optional intake immediately when the callee declines consent", async () => {
     const scenario = loadScenarioFile(resolve(ROOT, "restaurant/restaurant-reservation.yaml"));
     const base = contractFromScenario(scenario);
