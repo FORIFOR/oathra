@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## X API publication guard — 2026-09-14 17:20 JST
+
+- Added [`scripts/publish-x-intake.mjs`](../../scripts/publish-x-intake.mjs), which reads the single current draft, checks the 280-character limit, verifies the authenticated account timeline, enforces a 24-hour spacing window and refuses duplicate text before any upload. With `--publish`, it uploads `docs/media/oathra-intake.mp4`, waits for media processing, publishes once and writes a URL/ID record without exposing credentials.
+- A read-only check succeeded for `@forifori_dev` (X API v2 HTTP 200). The newest original post is `2099380959384899784` at `2026-09-14T06:13:19Z`; the calculated earliest eligible time is **2026-09-15 15:13:19 JST**. The active draft is now 275 Unicode characters (and shorter under X URL weighting).
+- The publish guard was exercised before eligibility; it stopped before media upload with the expected 24-hour error. No X post or media upload was made.
+
 ## Distribution PR metadata refresh — 2026-09-14 17:10 JST
 
 - Updated the existing [awesome-voice-agents#42](https://github.com/yzfly/awesome-voice-agents/pull/42) description in place, because it was still describing the older v0.1.0 scope.
