@@ -1,5 +1,11 @@
 # Launch posts and publication record
 
+## External signal checkpoint — 2026-09-14 17:55 JST
+
+- The authenticated X readback shows `@forifori_dev` at **1 follower** (previously 0) and the newest original post at **7 impressions** (previously 5), with 0 likes, replies, reposts and quotes. No identity or source is inferred from these aggregate values.
+- GitHub's latest 14-day API snapshot reports **0 stars / 0 forks**, 9 views / 9 unique visitors and 530 clones / 199 unique cloners. The new 2026-09-13 buckets are not attributable to external users, so they are recorded as signals only.
+- Raw GitHub snapshot: [2026-09-14-1756-jst.json](metrics/2026-09-14-1756-jst.json). No new announcement was sent; X remains eligible after **2026-09-15 15:13:19 JST**.
+
 ## Contributor and support funnel — 2026-09-14 17:49 JST
 
 - Added [`SUPPORT.md`](../../SUPPORT.md) and linked it from both READMEs so evidence reports, startup problems, integration questions and private business inquiries have separate paths.
