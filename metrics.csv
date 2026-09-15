@@ -1,0 +1,32 @@
+project_id,対象種別：アカウント／投稿／サイト／リポジトリ／製品,対象IDまたはURL,指標名,値,単位,対象期間の開始と終了,数値の取得日時,データ取得元,確認状態,補足
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHubスター,0,star,累計（2026-09-14時点）,2026-09-14 23:52 JST,GitHub REST repo API,確認済み,0件であることを確認
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,フォーク,0,fork,累計,2026-09-14 23:52 JST,GitHub REST repo API,確認済み,0件であることを確認
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHub表示（14日API集計）,9,view,2026-08-31〜2026-09-13,2026-09-14 23:52 JST,repos/FORIFOR/oathra/traffic/views,確認済み,訪問者の帰属不明
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHubユニーク訪問者（14日）,9,unique visitor,2026-08-31〜2026-09-13,2026-09-14 23:52 JST,GitHub traffic API,確認済み,日跨ぎ重複除去済み。誰が見たか不明
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHub表示（日別合計）,9,view,2026-09-07〜2026-09-13,2026-09-14 23:52 JST,GitHub daily buckets,確認済み（導出）,7日ユニークは取得不可
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHubユニーク（日別合計）,9,daily unique sum,2026-09-07〜2026-09-13,2026-09-14 23:52 JST,GitHub daily buckets,確認済み（制限付き）,日跨ぎ重複除去不可
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHub表示,,view,2026-08-15〜2026-09-13,2026-09-14 23:52 JST,GitHub traffic API,取得不可,API上限14日
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHubクローン（14日）,530,clone,2026-08-31〜2026-09-13,2026-09-14 23:52 JST,repos/FORIFOR/oathra/traffic/clones,確認済み,本人・自動処理を除外できない
+oathra,リポジトリ,https://github.com/FORIFOR/oathra,GitHubユニーククローン（14日）,199,unique cloner,2026-08-31〜2026-09-13,2026-09-14 23:52 JST,GitHub traffic API,確認済み,外部利用者数とは断定しない
+oathra,リリース,https://github.com/FORIFOR/oathra/releases/tag/v0.1.15,tarballダウンロード,3,download,累計（公開〜2026-09-14）,2026-09-14 23:52 JST,GitHub release API,確認済み,公開tarball検証を含む可能性あり
+oathra,リリース,https://github.com/FORIFOR/oathra/releases/tag/v0.1.15,checksumダウンロード,2,download,累計,2026-09-14 23:52 JST,GitHub release API,確認済み,外部試用とは断定しない
+oathra,製品,https://www.npmjs.com/package/oathra,npmパッケージダウンロード,140,download,2026-09-07〜2026-09-13,2026-09-14 23:58 JST,npm downloads point API,確認済み,package全体。bot/CI/本人を除外不可
+oathra,製品,https://www.npmjs.com/package/oathra,npmパッケージダウンロード,140,download,2026-08-15〜2026-09-13,2026-09-14 23:58 JST,npm downloads point API,確認済み,公開日以降のみ。利用者帰属不可
+oathra,アカウント,https://x.com/forifori_dev,フォロワー,1,follower,現在残高,2026-09-14 23:52 JST,X API v2 read-only,確認済み,アカウント全体
+oathra,アカウント,https://x.com/forifori_dev,投稿数,41,post,現在残高,2026-09-14 23:52 JST,X API v2 read-only,確認済み,アカウント全体
+oathra,投稿,https://x.com/forifori_dev/status/2098671529647366272,表示,2,view,投稿公開〜2026-09-14,2026-09-14 23:58 JST,公開X HTML,確認済み,likes/replies/reposts 0
+oathra,投稿,https://x.com/forifori_dev/status/2098671635201220831,表示,2,view,投稿公開〜2026-09-14,2026-09-14 23:58 JST,公開X HTML,確認済み,likes/replies/reposts 0
+oathra,投稿,https://x.com/forifori_dev/status/2099164321620340968,表示,1,view,投稿公開〜2026-09-14,2026-09-14 23:58 JST,公開X HTML,確認済み,既存投稿への返信。反応0
+oathra,投稿,https://x.com/forifori_dev/status/2099164351789965643,表示,3,view,投稿公開〜2026-09-14,2026-09-14 23:58 JST,公開X HTML,確認済み,既存投稿への返信。反応0
+oathra,アカウント,https://zenn.dev/forifori,launch記事いいね,1,like,累計,2026-09-14 23:58 JST,Zenn公開HTML,確認済み,views未取得
+oathra,アカウント,https://zenn.dev/forifori,evidence記事いいね,0,like,累計,2026-09-14 23:58 JST,Zenn公開HTML,確認済み,views未取得
+oathra,投稿,https://dev.to/forifor/i-let-an-ai-make-phone-calls-then-took-the-word-booked-away-from-it-5484,positive reactions,0,reaction,累計,2026-09-14 23:58 JST,DEV public API,確認済み,comments 0・views未取得
+oathra,投稿,https://dev.to/forifor/four-regexes-and-a-staleness-rule-how-my-phone-agent-refuses-to-call-probably-fine-a-booking-3ech,positive reactions,0,reaction,累計,2026-09-14 23:58 JST,DEV public API,確認済み,comments 1・views未取得
+oathra,投稿,https://dev.to/forifor/four-regexes-and-a-staleness-rule-how-my-phone-agent-refuses-to-call-probably-fine-a-booking-3ech,comments,1,comment,累計,2026-09-14 23:58 JST,DEV public API,確認済み,外部コメントか追加確認が必要
+oathra,投稿,https://www.tiktok.com/@foriforapps,再生,0,view,公開〜2026-09-14,2026-09-14 16:10 JST,TikTok Studio資料,資料記載のみ,動画URL/ID未取得。59秒Oathra reel
+oathra,投稿,https://github.com/FORIFOR/oathra/issues,外部Issue,0,issue,公開開始〜2026-09-14,2026-09-14 23:52 JST,GitHub issues API,確認済み,open 3件はすべてFORIFOR作成
+oathra,リポジトリ,外部配布PR 4件,マージ済みPR,0,PR,公開開始〜2026-09-14,2026-09-14 23:58 JST,各GitHub PR API,確認済み,4件すべてOPEN
+oathra,製品,https://github.com/FORIFOR/oathra/releases/tag/v0.1.15,adversarial false completion,0 / 10000,run / false completion,v0.1.15検証時,2026-09-14 23:52 JST,Release notes / CI,確認済み（内部検証）,シミュレータでありPSTN成功率ではない
+oathra,サイト,https://forifor.github.io/oathra/,訪問者・セッション・CTAクリック,,count,2026-08-15〜2026-09-14,2026-09-14 23:58 JST,site event backend,未確認,計測コードあり。受信データ未取得
+oathra,製品,https://forifor.github.io/oathra/#business,問い合わせ・商談・契約・売上,,count / JPY,2026-08-15〜2026-09-14,2026-09-14 23:58 JST,form backend / CRM,未確認,送信していないため0件とはしない
+oathra,製品,実電話プロバイダ,外部試用人数・継続利用・PSTN成功率,,user / rate,2026-08-15〜2026-09-14,2026-09-14 23:58 JST,provider dashboards,未確認,credentials・番号・課金通話・100件試験未確認

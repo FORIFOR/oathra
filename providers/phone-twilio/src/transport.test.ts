@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import WebSocket from "ws";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { mulawSilence } from "@oathra/audio-kit";
 import type { CarrierEvent } from "@oathra/phone";
 import { MULAW_8K } from "@oathra/voice";
@@ -10,8 +13,9 @@ const PORT = 4991;
 
 describe("TwilioDirectTransport (fake Twilio media stream)", () => {
   it("emits connected/audio/mark, sends media+mark+clear, and hangs up", async () => {
+    const recordDir = mkdtempSync(join(tmpdir(), "oathra-twilio-"));
     const transport = new TwilioDirectTransport({ accountSid: "AC", authToken: "x", from: "+10000000000", publicWsUrl: "wss://example.test", port: PORT, placeCall: false });
-    const media = await transport.dial({ to: "+818000000000", language: "ja", contract: defineCall({ goal: "chat.casual" }) });
+    const media = await transport.dial({ to: "+818000000000", language: "ja", contract: defineCall({ goal: "chat.casual" }), recordDir });
     expect(media.audio).toEqual(MULAW_8K);
 
     const received: Record<string, unknown>[] = [];
@@ -51,9 +55,16 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     expect(events.some((e) => e.type === "mark" && e.name === "m1")).toBe(true);
     expect(media.now()).toBeGreaterThan(0);
 
-    await media.hangup("test");
+    // Exercise the carrier stop path: it starts hangup asynchronously, so the
+    // reader must not finish before the recording files are flushed.
+    send({ event: "stop" });
     await reader;
+    expect(existsSync(join(recordDir, "callee.wav"))).toBe(true);
+    expect(existsSync(join(recordDir, "caller.wav"))).toBe(true);
+    expect(readFileSync(join(recordDir, "callee.wav")).subarray(0, 4).toString()).toBe("RIFF");
+    expect(readFileSync(join(recordDir, "caller.wav")).subarray(0, 4).toString()).toBe("RIFF");
     client.close();
+    rmSync(recordDir, { recursive: true, force: true });
   });
 
   it("rejects when Twilio refuses the call", async () => {

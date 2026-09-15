@@ -76,7 +76,8 @@ export const VOICEMAIL_RE =
 
 const normalizeLine = (t: string) => t.replace(/[\s、。,.!?！？「」]/g, "");
 
-const INTAKE_YES_RE = /^(?:はい|ええ|そうです|大丈夫(?:です)?|問題(?:ありません|ございません)|もちろん|承知(?:しました|いたしました)?|お願いします|yes|sure|okay|ok|go ahead|sounds good|of course|absolutely)(?:$|[\s、,。.!?！？])/i;
+const INTAKE_YES_RE = /^(?:はい|ええ|うん|そうです|いいよ|いいです|大丈夫(?:です|だよ)?|問題(?:ありません|ございません)|もちろん|承知(?:しました|いたしました)?|お願いします|聞いて(?:も)?いい(?:よ|です)?|yes|sure|okay|ok|go ahead|sounds good|of course|absolutely)(?:$|[\s、,。.!?！？])/i;
+const INTAKE_BARE_YES_RE = /^(?:はい|ええ|うん|そうです|いいよ|いいです|大丈夫(?:です|だよ)?|問題(?:ありません|ございません)|もちろん|承知(?:しました|いたしました)?|お願いします|聞いて(?:も)?いい(?:よ|です)?|yes|sure|okay|ok|go ahead|sounds good|of course|absolutely)[\s。.!?！？]*$/i;
 const INTAKE_NO_RE = /^(?:いいえ|結構です|不要(?:です)?|答えたくありません|お答えできません|控えさせて|遠慮します|やめて|no|not now|rather not|prefer not|i(?:'d| would) rather not|don't want to|do not want to)(?:$|[\s、,。.!?！？])/i;
 const INTAKE_QUESTION_RE = /[?？]|でしょうか|ですか\s*$|\b(?:what|which|who|where|when|why|how|can|could)\b/i;
 // Optional intake must never turn a hold, hedge or non-answer into a profile
@@ -563,7 +564,7 @@ export class CallRuntime {
     this.intakePending = undefined;
     if (pending.kind === "consent") {
       const text = turn.text.trim();
-      const mixed = /(?:ですが|けど|ただ|but|however)/i.test(text);
+      const mixed = /(?:ですが|けど|でも|ただ|but|however)/i.test(text);
       const granted = !mixed && INTAKE_YES_RE.test(text) ? true : !mixed && INTAKE_NO_RE.test(text) ? false : undefined;
       if (granted === undefined) {
         // A non-committal or ambiguous reply is not consent. End the optional
@@ -588,7 +589,7 @@ export class CallRuntime {
       ? field.choices.filter((choice) => normalizeLine(text).toLocaleLowerCase().includes(normalizeLine(choice).toLocaleLowerCase()))
       : undefined;
     const invalidChoice = Boolean(field.choices && (matchedChoice?.length !== 1));
-    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text) || INTAKE_BUSY_RE.test(text) || invalidChoice || (INTAKE_YES_RE.test(text) && !field.choices);
+    const nonAnswer = !text || INTAKE_QUESTION_RE.test(text) || INTAKE_HOLD_RE.test(text) || INTAKE_HEDGE_RE.test(text) || INTAKE_BUSY_RE.test(text) || invalidChoice || (INTAKE_BARE_YES_RE.test(text) && !field.choices);
     if (declined || nonAnswer) {
       this.intakeDeclined.add(field.key);
       this.emit({ type: "intake.answer", field: field.key, declined: true, utteranceId: turn.id });

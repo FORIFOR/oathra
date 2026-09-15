@@ -8,11 +8,23 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
+### Measurement checkpoint — 2026-09-15 19:06 JST
+
+The fresh read-only snapshot reports **0 stars / 0 forks**, 11 repository views / 11 unique visitors and 2,015 clones / 357 unique cloners in the available 14-day window. The daily buckets and clone totals include maintainer or automation activity and are not confirmed external users. No external issue or business inquiry is observed; Zenn remains 1 like for `oathra-launch` and 0 for `oathra-evidence-rules`. v0.1.16 assets remain at 2 downloads each, matching maintainer verification. No new social post was sent. Raw snapshot: [metrics/2026-09-15-1905-jst.json](metrics/2026-09-15-1905-jst.json).
+
+### 実電話音声再評価チェックポイント — 2026-09-15 21:41 JST
+
+修正版で指定済みの同意対象番号へ21:37 JSTと21:41 JSTに発信したが、いずれも接続後に留守番電話へ転送され、それぞれ34秒・36秒で終了した。したがって、これらの通話では会話音声・検索委譲・同意付き聞き取り・プロファイル保存を実機確認できない。直前の21:23 JST通話は相手の発話を取得した一方、発信音声が無音で、無音PCM先行デルタを割り込み扱いした不具合を再現した。PCM16LE 24kHz↔μ-law 8kHz変換と実音量判定を修正し、全テスト（672 passed / 1 skipped）、型チェック、依存方向チェック、ビルドを通過。ローカル実音量検査はRMS 1,533、ピーク10,876。実電話での修正後会話成功は未確認のまま。詳細は [real-calls.md](real-calls.md)。
+
 ### Current product checkpoint — v0.1.16
 
 The scene-aware intake guard and the typed `ActionProof` evidence levels are now packaged in the public GitHub release. `startAfter`, `dependsOn` and `choices` keep follow-up questions tied to settled prerequisites and explicit answers; refusal, hold, ambiguity, time pressure or an unmatched choice stops without saving a guessed profile. `ActionProof` keeps claimed, conversation, confirmation, system and outcome evidence separate and rejects expired, unreferenced or conflicting higher-level observations. Realtime context updates also carry recorded, declined and skipped fields, and decision memos include intake utterance provenance. The release package and Pages command are aligned at v0.1.16. GitHub stars, external replies and business inquiries remain separate measurements.
 
-The latest readback at 03:47 JST is still 0 stars / 0 forks and 9 repository views / 9 unique visitors; no external issue or business inquiry is observed. The v0.1.16 assets show 0 downloads at capture, before any campaign post. The X v0.1.16 draft is valid and duplicate-free but remains gated until 2026-09-15 20:20:30 JST. The next justified campaign action is one fresh X announcement after that check; do not multiply channel posts while the audience signal is absent. Raw snapshot: [metrics/2026-09-15-0347-jst.json](metrics/2026-09-15-0347-jst.json).
+The latest readback at 13:02 JST is still 0 stars / 0 forks and 9 repository views / 9 unique visitors; no external issue or business inquiry is observed. The v0.1.16 assets show 2 downloads each, but these include maintainer verification and are not external-user evidence. The X v0.1.16 draft is valid and duplicate-free but remains gated until 2026-09-15 20:20:30 JST. The next justified campaign action is one fresh X announcement after that check; do not multiply channel posts while the audience signal is absent. Raw snapshot: [metrics/2026-09-15-1302-jst.json](metrics/2026-09-15-1302-jst.json).
+
+### Facebook announcement checkpoint — 2026-09-15 05:13 JST
+
+The public `foriforapps` Facebook Page has the earlier text announcement ([post 122110079709465551](https://www.facebook.com/permalink.php?story_fbid=122110079709465551&id=61593966556275)) and a separate 49-second Oathra demo Reel. Meta Business Suite lists the Reel as public at 05:08 JST under post ID `122110105899465551`; the [public profile Reels tab](https://www.facebook.com/profile.php?id=61593966556275&sk=reels_tab) lists it, and the [public Reel page](https://www.facebook.com/reel/2065669370975652) opens the video and caption. Initial readback at 05:13 JST is reach 0, views 0, viewers 0, reactions 0, comments 0, shares 0, saves 0 and link clicks 0; these immediate values are not adoption evidence. Do not publish a duplicate Facebook Reel before a fresh response check.
 
 ### Superseded product checkpoint — v0.1.11
 

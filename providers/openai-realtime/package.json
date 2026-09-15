@@ -20,6 +20,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@oathra/audio-kit": "workspace:*",
     "@oathra/contract": "workspace:*",
     "@oathra/core": "workspace:*",
     "@oathra/evidence": "workspace:*",

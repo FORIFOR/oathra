@@ -1,8 +1,8 @@
 /**
  * VoiceEngine adapters for the speech-to-speech agents. A carrier bridge feeds
- * chunks in any format; we convert to μ-law 8 kHz (both OpenAI voice APIs
- * accept `audio/pcmu` natively) and publish the model's audio, clears and
- * session events on the engine's output queue.
+ * chunks in any format; the adapters normalize the carrier side to μ-law 8 kHz
+ * while each OpenAI agent uses its own native WebSocket format internally, then
+ * publish model audio, clears and session events on the engine's output queue.
  */
 import type { Action } from "@oathra/contract";
 import type { MissionView } from "@oathra/core";

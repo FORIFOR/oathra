@@ -51,6 +51,7 @@ export class TwilioDirectSession implements CarrierMediaSession {
   private firstMediaMs: number | undefined;
   private readonly calleeChunks: Uint8Array[] = [];
   private readonly callerChunks: Array<{ atMs: number; bytes: Uint8Array }> = [];
+  private hangupPromise: Promise<void> | undefined;
 
   constructor(
     private readonly opts: TwilioDirectOptions,
@@ -191,8 +192,16 @@ export class TwilioDirectSession implements CarrierMediaSession {
   }
 
   async hangup(reason?: string): Promise<void> {
-    if (this.ended) return;
+    // A carrier `stop` event starts hangup asynchronously. Repeated callers
+    // (the bridge and runtime both close a session) must await that same
+    // promise so recordings are finished before the call outcome is saved.
+    if (this.hangupPromise) return this.hangupPromise;
     this.ended = true;
+    this.hangupPromise = this.finishHangup(reason);
+    return this.hangupPromise;
+  }
+
+  private async finishHangup(reason?: string): Promise<void> {
     void reason;
     if (this.callSid && this.opts.placeCall !== false) {
       try {

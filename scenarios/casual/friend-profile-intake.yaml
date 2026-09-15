@@ -1,0 +1,50 @@
+version: 1
+id: friend-profile-intake
+title: Friend Chat · Consent-based profile
+description: A casual friend-like call that asks consent before recording two non-sensitive answers for the next conversation.
+difficulty: normal
+language: ja
+domain: generic
+tags: [casual, realtime, intake, consent]
+
+mission:
+  objective: chat.casual
+  brief: 友達らしく近況を聞き、短い雑談の後に同意を得て次回の話題に役立つ情報を2点だけ伺ってください。
+  input:
+    topic: 最近ハマっていること
+    persona: 明るくて聞き上手。タメ口で短く相槌を返し、相手の話を広げる。
+  require: {}
+  constraints: {}
+  permissions:
+    ask: true
+  intake:
+    purpose: 次回の会話を相手の関心に合わせる
+    consentPrompt: 近況に合わせて次回の話題を選ぶために、2点だけ聞いてもいい？
+    fields:
+      - key: current_interest
+        label: 最近の関心
+        question: 最近ハマっていることって何？
+      - key: next_topic
+        label: 次回の話題
+        question: 次に話すなら、どんな話題がいい？
+    maxQuestions: 2
+    stopOnDecline: true
+
+callee:
+  persona:
+    name: 友達
+    patience: 0.9
+    flexibility: 0.9
+    friendliness: 0.9
+    avatar: ^_^
+    style: 明るく自然な友達。短い返答で近況を話し、聞かれたことには無理のない範囲で答える。
+  knowledge: {}
+  rules:
+    - 友達らしい短い雑談として応答する
+    - 追加聞き取りは同意した場合だけ答える
+    - 答えたくない項目は断り、理由を説明しない
+
+win: {}
+
+score:
+  success: 0

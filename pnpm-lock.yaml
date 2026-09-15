@@ -336,6 +336,9 @@ importers:
 
   providers/openai-realtime:
     dependencies:
+      '@oathra/audio-kit':
+        specifier: workspace:*
+        version: link:../audio-kit
       '@oathra/contract':
         specifier: workspace:*
         version: link:../../packages/contract

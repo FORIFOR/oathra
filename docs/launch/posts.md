@@ -1,5 +1,22 @@
 # Launch posts and publication record
 
+## Awesome-AI-Agents #486 review response — 2026-09-15 18:06 JST
+
+- The curation review requested removal of no-API-key and cost/access language from the Oathra entry. The existing PR branch already contains commits `4f00df5` and `26025b9`, which shorten the entry to neutral technical capabilities and explicitly describe the standalone OSS evidence-verification engine.
+- Replied on the PR with the exact updated wording and requested re-review: https://github.com/Jenqyang/Awesome-AI-Agents/pull/486#issuecomment-5677611656. The PR remains open with the earlier `CHANGES_REQUESTED` review state; no merge or listing adoption is claimed.
+
+## Facebook Oathra v0.1.16 demo Reel — 2026-09-15 05:08 JST
+
+- Published the 49-second `oathra-intake-ja-square.mp4` from the `foriforapps` Facebook Page through Meta Business Suite with public audience. Business Suite post ID: `122110105899465551`; the item is marked `リール` and shows `0:49`.
+- Public verification: the [foriforapps Reels tab](https://www.facebook.com/profile.php?id=61593966556275&sk=reels_tab) lists the new tile, and the [public Reel page](https://www.facebook.com/reel/2065669370975652) opens the video with the Oathra caption and public visibility icon. Public Reel ID: `2065669370975652`.
+- Initial readback at 2026-09-15 05:13 JST: reach 0, views 0, viewers 0, reactions 0, comments 0, shares 0, saves 0 and link clicks 0. These are immediate platform values and are not adoption evidence.
+
+## Facebook Oathra v0.1.16 announcement — 2026-09-15 04:31 JST
+
+- Published a public text post from the `foriforapps` Facebook Page via Meta Business Suite. Post ID: `122110079709465551`; public permalink: https://www.facebook.com/permalink.php?story_fbid=122110079709465551&id=61593966556275
+- The post introduces Oathra v0.1.16, explains the `ActionProof` chain (conversation → confirmation → system record → outcome), states the stop behavior for ambiguity, time pressure or refusal, and links the Pages demo/setup and GitHub repository. The final text is preserved in the Meta Business Suite readback and contains no unverified adoption claim.
+- The earlier announcement is text-only. The separate video Reel above is the verified media publication for this campaign.
+
 ## Phone readiness readback — 2026-09-15 03:50 JST
 
 - `pnpm oathra phone doctor` confirmed the configured Twilio account is authenticated and active, the caller ID is owned and voice-capable, and GPT-Live is ready. The media endpoint still requires a live call or a public WebSocket URL.

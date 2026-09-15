@@ -619,18 +619,55 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
   if (!to || !/^\+\d{8,15}$/.test(to)) throw new Error("--to must be an E.164 number, e.g. --to +819012345678");
   const reg = buildRegistry();
   const config = loadPhoneConfig();
-  const router = new PhoneRouter(reg, config);
-  const routes = router.resolve({ destination: to, ...(flags.provider ? { prefer: flags.provider } : {}) });
-  if (!routes.length) {
-    console.log(`\n${warn("No phone provider is ready.")}  Run ${cyan("oathra phone add")} (Twilio, Plivo or custom SIP).`);
-    process.exitCode = 2;
-    return;
-  }
   const engineSpec = parseEngineSpec(flags.engine, flags.brain, config.voice.engine);
   const engine = buildEngine(engineSpec);
   const scenario = findScenario(flags.scenario ?? "restaurant-reservation");
   const base = contractFromScenario(scenario);
   const contract: CallContract = defineCall({ ...base, target: { phone: to, name: flags.name ?? scenario.callee.persona.name } });
+
+  // Direct media-stream providers need a public URL while their transport is
+  // constructed. Prepare the tunnel before routing so a ready Twilio route is
+  // not discarded before the per-call transport can be injected below.
+  const routeOrder = flags.provider ? [flags.provider] : config.routing.providers.length ? config.routing.providers : Object.keys(config.providers);
+  const needsDirectTunnel = !flags.publicUrl && !process.env.OATHRA_PUBLIC_WS_URL && routeOrder.some((id) => {
+    const provider = reg.provider(id);
+    const cfg = config.providers[id];
+    return Boolean(provider?.capabilities.direct && cfg && !provider.requires.some((key) => !process.env[key]));
+  });
+  let tunnel: Tunnel | undefined;
+  const callPort = flags.port ?? 4243;
+  let publicWsUrl = flags.publicUrl ?? process.env.OATHRA_PUBLIC_WS_URL;
+  if (needsDirectTunnel) {
+    if (!onPath("ngrok")) throw new Error("Direct media streams need a public wss:// URL: install ngrok or pass --public-url");
+    process.stdout.write(dim("Starting ngrok tunnel... "));
+    tunnel = await startNgrok(callPort);
+    publicWsUrl = tunnel.url;
+    console.log(ok(publicWsUrl));
+  }
+
+  // Pass the runtime URL into direct provider construction. The persisted
+  // phone config remains unchanged and never receives credentials.
+  const routeConfig = {
+    ...config,
+    providers: Object.fromEntries(Object.entries(config.providers).map(([id, cfg]) => [
+      id,
+      reg.provider(id)?.capabilities.direct && publicWsUrl ? { ...cfg, publicWsUrl, port: callPort } : cfg,
+    ])),
+  };
+  const router = new PhoneRouter(reg, routeConfig);
+  let routes: ReturnType<PhoneRouter["resolve"]>;
+  try {
+    routes = router.resolve({ destination: to, ...(flags.provider ? { prefer: flags.provider } : {}) });
+  } catch (error) {
+    tunnel?.stop();
+    throw error;
+  }
+  if (!routes.length) {
+    tunnel?.stop();
+    console.log(`\n${warn("No phone provider is ready.")}  Run ${cyan("oathra phone add")} (Twilio, Plivo or custom SIP).`);
+    process.exitCode = 2;
+    return;
+  }
 
   console.log(`\n${bold("Oathra · phone call")}\n`);
   console.log(`${dim("Scenario")}   ${scenario.title}  ${dim(`(${scenario.id})`)}`);
@@ -647,14 +684,13 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
   const recordDir = flags.noSave ? undefined : join(defaultCallsDir(), callId);
   if (recordDir) mkdirSync(recordDir, { recursive: true });
 
-  let tunnel: Tunnel | undefined;
   let lastError: Error | undefined;
   for (const route of routes) {
     try {
       // Direct media-stream carriers need a public URL for the carrier to reach us.
       if (route.transport.path === "direct") {
-        const port = flags.port ?? 4243;
-        let publicWsUrl = flags.publicUrl ?? process.env.OATHRA_PUBLIC_WS_URL;
+        const port = callPort;
+        publicWsUrl = flags.publicUrl ?? process.env.OATHRA_PUBLIC_WS_URL ?? tunnel?.url;
         if (!publicWsUrl) {
           if (!onPath("ngrok")) throw new Error("Direct media streams need a public wss:// URL: install ngrok or pass --public-url");
           process.stdout.write(dim("Starting ngrok tunnel... "));
