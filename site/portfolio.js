@@ -24,3 +24,26 @@
   finally{pending=false;button.disabled=false;}
  });
 })();
+
+
+/* Progressive onboarding: static approved copy only; no new data collection. */
+(() => {
+  'use strict';
+  const source = document.currentScript?.src;
+  if (!source) return;
+  const mount = () => {
+    const anchor = document.getElementById("integrate");
+    if (!anchor || !document.getElementById("sim") || document.getElementById("first-use")) return;
+    const ja = document.documentElement.lang === 'ja';
+    const content = ja ? "<section class=\"first-use\" id=\"first-use\"><h2>判定から始める、3つの入口。</h2><ol><li><a href=\"#sim\">ブラウザーで確定と保留を比べる →</a><p>サンプル発言を判定。電話は発信しません。</p></li><li><a href=\"check.html\">自分の文字起こしで検証する →</a><p>保存済みの会話から根拠を確認します。</p></li><li><a href=\"https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md\">既存の音声AIに組み込む →</a><p>対応する発言規則と、確認できる証拠の範囲を先に確認します。</p></li></ol></section>" : "<section class=\"first-use\" id=\"first-use\"><h2>Start with the evidence.</h2><ol><li><a href=\"#sim\">Compare a confirmed and a pending reply →</a><p>Try sample utterances without placing a phone call.</p></li><li><a href=\"check.html\">Inspect your own transcript →</a><p>Review evidence from a saved conversation in the English checker.</p></li><li><a href=\"https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md\">Integrate with your voice agent →</a><p>Review supported utterance rules and evidence limits before integrating.</p></li></ol></section>";
+    const template = document.createElement('template');
+    template.innerHTML = content;
+    const style = document.createElement('link');
+    style.rel = 'stylesheet';
+    style.href = new URL('onboarding.css', source).href;
+    document.head.append(style);
+    anchor.before(template.content);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, {once:true});
+  else mount();
+})();
