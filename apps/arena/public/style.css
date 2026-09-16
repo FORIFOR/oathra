@@ -1,3 +1,4 @@
 /* Preserve existing component/state rules, then apply the evidence workspace. */
 @import url('./style-base.css');
 @import url('./workspace.css');
+@import url('./quiet-cinema.css');
