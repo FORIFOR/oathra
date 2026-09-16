@@ -1,0 +1,26 @@
+/* Quiet Cinema for Oathra: the call is the stage; evidence stays legible and factual. */
+:root{--qc-paper:#f6f5f0;--qc-ink:#20251f;--qc-stage:#171a17;--qc-stage-line:#303530;--qc-accent:#c9860c}
+:root:not([data-theme="dark"]){--bg:var(--qc-paper);--panel:#fffefa;--ink:var(--qc-ink)}
+body::before{opacity:.18}
+.topbar{background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:none}
+.start-inner{padding-top:56px;padding-bottom:64px}
+.start-title{max-width:13ch;font-weight:540;letter-spacing:-.045em}
+.mode-toggle,.scenario-list>button,.provider-list .provider{box-shadow:none}
+.scenario-list>button{border-radius:10px;background:var(--panel)}
+.call-frame{padding-top:34px}
+.call-title{font-weight:560;max-width:28ch}
+.parties{padding-block:16px}
+.transcript{background:var(--qc-stage)!important;border-color:var(--qc-stage-line)!important;border-radius:16px!important;color:#eceee9!important;box-shadow:none!important}
+.transcript .line{border-color:#303530!important}
+.transcript .who{color:#aeb6ae!important}
+.transcript .say{color:#f4f2ec!important;font-size:16px;line-height:1.9}
+.transcript-empty{color:#aeb6ae!important}
+.panels{gap:14px}
+.panel{border-radius:12px;box-shadow:none}
+.evidence-list li,.mission-list li,.intake-list li{line-height:1.85}
+.result-wrap{border-radius:12px}
+.drawer-body{border-radius:12px}
+.btn,.tt-btn,.local-btn,.mode-btn,.tab{border-radius:8px}
+.live{letter-spacing:.09em}
+@media(max-width:900px){.start-inner{padding-top:36px}.transcript{border-radius:12px!important}.call-frame{padding-top:22px}}
+@media(prefers-reduced-motion:reduce){body::before{display:none}}
