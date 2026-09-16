@@ -26,17 +26,22 @@ with sync_playwright() as p:
             page.locator('#real-back').click()
             page.locator('#scenario-list button').first.click()
             page.locator('#screen-call').wait_for(state='visible')
-            page.wait_for_function("document.querySelector('#transcript').children.length>0",timeout=20000)
+            # The initial "Dialing" paragraph is not a conversation.
+            page.wait_for_function("document.querySelectorAll('#transcript .line.agent .say').length>0 && document.querySelectorAll('#transcript .line.callee .say').length>0",timeout=60000)
+            page.wait_for_function("document.querySelector('#result-wrap').textContent.trim().length>0",timeout=60000)
+            turns=page.locator('#transcript .line').count()
+            evidence_count=page.locator('#evidence-list li').count()
+            assert turns>=2 and evidence_count>0, 'No populated evidence to review'
             transcript=page.locator('#transcript').bounding_box(); evidence=page.locator('.panels').bounding_box()
             assert transcript and evidence
             if width>900: assert evidence['x']>=transcript['x']+transcript['width']-1,'Evidence must be alongside transcript'
             else: assert evidence['y']>=transcript['y']+transcript['height']-1,'Evidence must stack below transcript'
             page.locator('#drawer-toggle').click()
             page.locator('#drawer-body').wait_for(state='visible')
-            assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'), 'Call screen overflows'
+            assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'), 'Populated call screen overflows'
             assert not errors,errors
             page.screenshot(path=str(out/f'arena-{width}-{scheme}.png'),full_page=True)
-            report.append({'width':width,'scheme':scheme,'start':True,'real_phone_disabled':True,'scripted_transcript':True,'evidence_layout':True,'details':True})
+            report.append({'width':width,'scheme':scheme,'start':True,'real_phone_disabled':True,'scripted_turns':turns,'evidence_items':evidence_count,'result_rendered':True,'evidence_layout':True,'details':True})
             context.close()
     browser.close()
 (out/'report.json').write_text(json.dumps(report,indent=2))
