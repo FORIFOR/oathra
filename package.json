@@ -16,6 +16,8 @@
     "lint:deps": "node scripts/check-deps.mjs",
     "oathra": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js",
     "demo": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js demo",
+    "first-proof": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js demo",
+    "doctor": "tsc -b tsconfig.build.json && node packages/cli/dist/bin.js doctor",
     "clean": "rm -rf packages/*/dist providers/*/dist apps/*/dist",
     "bundle": "node scripts/bundle-cli.mjs",
     "qa:arena": "node scripts/qa-arena.mjs",
