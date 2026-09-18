@@ -29,7 +29,7 @@ main.wrap{padding-bottom:120px}
 .kicker{margin:0 0 24px;padding-bottom:10px;border-bottom:1px solid var(--ink);font-size:10px;letter-spacing:.14em}
 h1{font-size:clamp(42px,5vw,72px);line-height:1.04;letter-spacing:-.055em;margin-bottom:26px;max-width:10.5em;text-wrap:balance}
 .hero-a h1{font-size:clamp(42px,5vw,72px);line-height:1.04}
-h1 em,.hero-a h1 em{display:block;margin-top:7px;font-size:.78em;color:var(--accent);letter-spacing:-.045em}
+h1 em,.hero-a h1 em{color:var(--accent);letter-spacing:-.045em}
 .hero-c .lede,.lede{font-size:16px;line-height:1.8;color:var(--ink2);max-width:35em;margin-bottom:24px}
 .ctas{gap:8px;margin-top:28px}
 .btn{height:46px;padding:0 17px;border-radius:1px;font-size:14px;border-color:var(--ink);background:var(--ink);color:#F7F4ED}
