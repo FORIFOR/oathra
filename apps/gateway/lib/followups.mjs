@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
+import { builtinRegistry } from './plugins.mjs';
+import { freezeData, jsonData } from '../../../sdk/plugin-kit/index.mjs';
 import { assert, Fault, hash, jsonFetch, text } from './security.mjs';
 
 /** External writes have their own immutable preview and approval. Unknown delivery is never retried automatically. */
 export class Followups {
-  constructor(service, env = process.env, fetchImpl = fetch) { this.service=service; this.store=service.store; this.env=env; this.fetchImpl=fetchImpl; }
+  constructor(service, env = process.env, fetchImpl = fetch, registry = builtinRegistry(env)) { this.service=service; this.store=service.store; this.env=env; this.fetchImpl=fetchImpl; this.registry=registry; }
+  plugin(kind) { this.registry.demand(kind,'followup:execute'); return this.registry.get(kind,'capability'); }
+  recipient(kind,c) { const effect=this.plugin(kind).manifest.effect; return effect==='crm'?c.crmId:effect==='sms'?c.phone:c.email; }
   available(u) {
     if (u.id !== this.env.OATHRA_INTEGRATION_OWNER) return [];
-    return [this.env.GOOGLE_REFRESH_TOKEN && this.env.GOOGLE_CLIENT_ID && this.env.GOOGLE_CLIENT_SECRET ? ['email','calendar'] : [], this.env.HUBSPOT_ACCESS_TOKEN ? ['crm'] : [], this.env.OATHRA_SMS_ENABLED === 'true' && this.env.TWILIO_AUTH_TOKEN ? ['sms'] : []].flat();
+    return this.registry.list('capability').filter(p=>p.enabled&&p.configured&&p.effect!=='call').map(p=>p.id);
   }
   policy(u, m, kind) {
     this.service.write(u);
@@ -20,28 +24,25 @@ export class Followups {
     return contact;
   }
   preview(u, missionId, input) {
-    const m=this.service.own('mission',missionId,u),kind=input.kind;
-    assert(['email','calendar','crm','sms'].includes(kind),'invalid_followup_kind');
-    const c=this.policy(u,m,kind),id=randomUUID(); let details;
-    if(kind==='email' || kind==='sms') {
+    const m=this.service.own('mission',missionId,u),kind=input.kind,p=this.plugin(kind),effect=p.manifest.effect;
+    const c=this.policy(u,m,kind),id=randomUUID();
+    if(effect==='email'||effect==='sms') {
       assert(m.result?.verified?.material_send_allowed===true || !!m.result?.verified?.meeting_agreed_on_call,'contact_permission_not_in_call_evidence',403);
-      // Permission to email does not imply SMS permission: the operator reviews the specific channel basis too.
-      const basis=text(input.contactPermissionBasis,1000);
-      details={recipient:kind==='email'?c.email:c.phone,body:text(input.body,kind==='sms'?500:12000),subject:kind==='email'?text(input.subject,150):'',contactPermissionBasis:basis};
-      assert(details.recipient,'contact_email_required');
-      if(kind==='sms') details.chargeNotice='SMS通信料が別途発生します。通話の費用上限には含みません。';
-    } else if(kind==='calendar') {
-      const start=m.result?.verified?.meeting_agreed_on_call; assert(start && Date.parse(start)>this.store.now(),'future_meeting_agreement_required',409);
-      assert(c.email,'contact_email_required');
-      const minutes=Number(input.minutes??15); assert(Number.isInteger(minutes)&&minutes>=5&&minutes<=120,'invalid_meeting_duration');
-      details={recipient:c.email,title:text(input.title??`${m.product.name} 打ち合わせ`,150),start,end:new Date(Date.parse(start)+minutes*60000).toISOString(),minutes,
-        note:'日時は電話で合意。所要時間は送信者が指定した招待内容です。招待承諾はまだ確認していません。'};
-    } else {
-      assert(/^\d+$/.test(c.crmId??''),'registered_crm_contact_id_required');
-      details={recipient:c.crmId,body:text(input.body,12000)};
-    }
-    const action={id,owner:u.id,missionId:m.id,kind,details,status:'PREVIEW',createdAt:this.store.now(),missionFingerprint:this.service.fingerprint(m),expiresAt:this.store.now()+300000};
-    action.approvalToken=this.service.grant(u,m,'followup',{followupId:id,payloadHash:hash(JSON.stringify(details))});
+      text(input.contactPermissionBasis,1000);
+    } else if(effect==='calendar') {
+      assert(m.result?.verified?.meeting_agreed_on_call && Date.parse(m.result.verified.meeting_agreed_on_call)>this.store.now(),'future_meeting_agreement_required',409);
+    } else assert(/^\d+$/.test(c.crmId??''),'registered_crm_contact_id_required');
+    const recipient=this.recipient(kind,c);assert(recipient,'contact_email_required');
+    const prepared=p.adapter.preview(freezeData(jsonData(input)),{mission:freezeData(jsonData(m)),contact:freezeData(jsonData(c)),now:this.store.now()});
+    assert(prepared && typeof prepared==='object'&&!Array.isArray(prepared)&&typeof prepared.then!=='function','invalid_capability_preview');
+    const details=jsonData(prepared,32000);
+    assert(!Object.hasOwn(details,'recipient')||details.recipient===recipient,'plugin_cannot_replace_recipient',403);
+    details.recipient=recipient;
+    if(effect==='email'||effect==='sms')details.contactPermissionBasis=text(input.contactPermissionBasis,1000);
+    if(effect==='calendar')assert(Date.parse(details.start)===Date.parse(m.result.verified.meeting_agreed_on_call)&&Date.parse(details.end)>Date.parse(details.start)&&Date.parse(details.end)-Date.parse(details.start)<=120*60000,'calendar_time_must_match_evidence');
+    const pluginIdentity=p.identity;
+    const action={id,owner:u.id,missionId:m.id,kind,effect,pluginIdentity,details,status:'PREVIEW',createdAt:this.store.now(),missionFingerprint:this.service.fingerprint(m),expiresAt:this.store.now()+300000};
+    action.approvalToken=this.service.grant(u,m,'followup',{followupId:id,payloadHash:hash(JSON.stringify(details)),pluginIdentity});
     const {approvalToken,...stored}=action; this.store.put('followup',stored); return action;
   }
   async googleToken() {
@@ -56,45 +57,37 @@ export class Followups {
     assert(action.status==='PREVIEW' && action.expiresAt>this.store.now(),'followup_expired_or_used',409);
     const {grant,m}=this.service.validGrant(u,input.approvalToken,'followup');
     assert(grant.followupId===id && m.id===action.missionId && grant.payloadHash===hash(JSON.stringify(action.details)),'approval_scope_mismatch',403);
+    assert(action.pluginIdentity===this.registry.identity(action.kind)&&grant.pluginIdentity===action.pluginIdentity,'plugin_changed_review_again',409);
     const c=this.policy(u,m,action.kind);
-    assert(action.details.recipient===(action.kind==='crm'?c.crmId:action.kind==='sms'?c.phone:c.email),'recipient_changed_review_again',409);
+    assert(action.details.recipient===this.recipient(action.kind,c),'recipient_changed_review_again',409);
     // Access-token refresh is not an external user-visible write and occurs before reserving the send.
     const bearer=['email','calendar'].includes(action.kind)?await this.googleToken():null;
     this.store.tx(()=>{
       // Recheck after the token refresh; concurrent requests must not send twice.
       action=this.service.own('followup',id,u);assert(action.status==='PREVIEW','followup_already_executing',409);
       this.service.validGrant(u,input.approvalToken,'followup');const currentContact=this.policy(u,this.service.own('mission',m.id,u),action.kind);
-      assert(action.details.recipient===(action.kind==='crm'?currentContact.crmId:action.kind==='sms'?currentContact.phone:currentContact.email),'recipient_changed_review_again',409);
+      assert(action.details.recipient===this.recipient(action.kind,currentContact),'recipient_changed_review_again',409);
+      assert(action.pluginIdentity===this.registry.identity(action.kind),'plugin_changed_review_again',409);
       action.status='EXECUTING';this.store.put('followup',action);this.store.delKey('approval',tokenHash);this.store.setKey(`followup:${u.id}`,key,requestHash);this.store.audit(u.id,'followup.approved',id);
     });
     try {
-      const response=await this.send(action,bearer);
+      const beforeSend=()=>{const current=this.policy(u,this.service.own('mission',action.missionId,u),action.kind);assert(action.details.recipient===this.recipient(action.kind,current),'recipient_changed_review_again',409);assert(action.pluginIdentity===this.registry.identity(action.kind),'plugin_changed_review_again',409);};
+      beforeSend();
+      const response=await this.send(freezeData(jsonData(action)),bearer,beforeSend);
+      assert(response && (typeof response.id==='string'||typeof response.sid==='string'),'provider_receipt_missing',502);
       action.status='SUBMITTED';action.providerId=response.id??response.sid??null; action.submittedAt=this.store.now();
       action.delivery='Provider accepted the request; recipient receipt, reading, and acceptance are not established.';
-      if(action.kind==='calendar')action.attendeeResponse='needsAction';
+      if(action.effect==='calendar')action.attendeeResponse='needsAction';
     } catch(error) { action.status=error.definitive?'REJECTED':'UNKNOWN';action.error='delivery_requires_provider_reconciliation'; }
     this.store.put('followup',action);return action;
   }
-  async send(a,bearer) {
-    const d=a.details; let url,init;
-    if(a.kind==='email') {
-      const subject=Buffer.from(d.subject).toString('base64');
-      const raw=Buffer.from(`To: ${d.recipient}\r\nSubject: =?UTF-8?B?${subject}?=\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\nMessage-ID: <${a.id}@oathra.invalid>\r\n\r\n${Buffer.from(d.body).toString('base64').match(/.{1,76}/g).join('\r\n')}\r\n`).toString('base64url');
-      url='https://gmail.googleapis.com/gmail/v1/users/me/messages/send';init={headers:{authorization:`Bearer ${bearer}`,'content-type':'application/json'},body:JSON.stringify({raw})};
-    } else if(a.kind==='calendar') {
-      url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.env.GOOGLE_CALENDAR_ID??'primary')}/events?sendUpdates=all`;
-      init={headers:{authorization:`Bearer ${bearer}`,'content-type':'application/json'},body:JSON.stringify({id:a.id.replaceAll('-',''),summary:d.title,start:{dateTime:d.start},end:{dateTime:d.end},attendees:[{email:d.recipient,responseStatus:'needsAction'}],description:d.note,extendedProperties:{private:{oathraMission:a.missionId}}})};
-    } else if(a.kind==='crm') {
-      url='https://api.hubapi.com/crm/v3/objects/notes';
-      const escaped=d.body.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
-      init={headers:{authorization:`Bearer ${this.env.HUBSPOT_ACCESS_TOKEN}`,'content-type':'application/json'},body:JSON.stringify({properties:{hs_timestamp:new Date().toISOString(),hs_note_body:escaped},associations:[{to:{id:d.recipient},types:[{associationCategory:'HUBSPOT_DEFINED',associationTypeId:202}]}]})};
-    } else {
-      url=`https://api.twilio.com/2010-04-01/Accounts/${this.env.TWILIO_ACCOUNT_SID}/Messages.json`;
-      init={headers:{authorization:'Basic '+Buffer.from(`${this.env.TWILIO_ACCOUNT_SID}:${this.env.TWILIO_AUTH_TOKEN}`).toString('base64'),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({From:this.env.TWILIO_PHONE_NUMBER,To:d.recipient,Body:d.body})};
-    }
-    const response=await this.fetchImpl(url,{...init,method:'POST',signal:AbortSignal.timeout(12000),redirect:'error'});
-    if(!response.ok){const e=new Fault(502,'followup_provider_error');e.definitive=response.status>=400&&response.status<500&&response.status!==408;throw e;}
-    return response.json();
+  async send(a,bearer,beforeSend) {
+    const p=this.plugin(a.kind),abort=new AbortController();let timer;
+    // A timeout means UNKNOWN. The adapter may have reached the provider; do not auto-retry.
+    try { return await Promise.race([
+      p.adapter.execute(freezeData(jsonData(a)),{bearer,fetchImpl:(...args)=>{beforeSend?.();return this.fetchImpl(...args);},signal:abort.signal}),
+      new Promise((_,reject)=>{timer=setTimeout(()=>{abort.abort();reject(new Error('capability_timeout'));},12000);})
+    ]); } finally {clearTimeout(timer);}
   }
   async refreshCalendar(u,id) {
     const a=this.service.own('followup',id,u);assert(a.kind==='calendar'&&a.providerId,'calendar_receipt_required');

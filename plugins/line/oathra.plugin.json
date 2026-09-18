@@ -1,0 +1,33 @@
+{
+  "id": "line",
+  "name": "LINE",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "channel",
+  "entry": "./index.mjs",
+  "permissions": [
+    "mission:draft",
+    "mission:read",
+    "approval:request",
+    "channel:send",
+    "media:transcribe"
+  ],
+  "environment": [
+    "LINE_CHANNEL_SECRET",
+    "LINE_CHANNEL_ACCESS_TOKEN",
+    "OPENAI_API_KEY",
+    "OATHRA_TRANSCRIBE_MODEL"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "features": {
+    "text": true,
+    "audio": true,
+    "interactiveApproval": true,
+    "progress": true,
+    "result": true
+  }
+}

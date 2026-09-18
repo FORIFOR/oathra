@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 import { Store } from './lib/store.mjs';
 import { Service, terminal } from './lib/service.mjs';
 import { Channels } from './lib/channels.mjs';
+import { loadPluginRegistry } from './lib/plugins.mjs';
+import { freezeData, jsonData } from '../../sdk/plugin-kit/index.mjs';
 import { Worker, simulate } from './lib/worker.mjs';
 import { Followups } from './lib/followups.mjs';
 import { Phone } from './lib/phone.mjs';
@@ -40,9 +42,15 @@ function send(res,status,value,type='application/json; charset=utf-8'){
 }
 export async function createGateway(config,options={}){
   const env=options.env??process.env,store=options.store??new Store(config.dbPath,config.dataKey),service=new Service(store,config);
-  const followups=new Followups(service,env);
-  const channels=options.channels??new Channels(service,env),phone=options.phone??new Phone(service,env);
-  const execute=options.execute??(config.mode==='simulator'?simulate:(m,hooks)=>phone.execute(m,hooks));
+  const phone=options.phone??new Phone(service,env);
+  const executeCall=options.execute??(config.mode==='simulator'?simulate:(m,hooks)=>phone.execute(m,hooks));
+  const registry=options.registry??await loadPluginRegistry(env,{now:()=>store.now(),fetchImpl:options.fetchImpl??fetch,executeCall});
+  const callPlugin=env.OATHRA_CALL_PLUGIN??'call';
+  assert(registry.get(callPlugin,'capability').manifest.effect==='call','invalid_call_plugin',500);
+  config.callPluginIdentity=registry.identity(callPlugin);
+  const followups=new Followups(service,env,options.fetchImpl??fetch,registry);
+  const channels=options.channels??new Channels(service,env,registry,options.fetchImpl??fetch);
+  const execute=(m,hooks)=>{registry.demand(callPlugin,'call:execute');return registry.capability(callPlugin).execute(freezeData(jsonData(m)),{signal:hooks.signal,onEvent:hooks.onEvent,control:hooks.control});};
   const worker=new Worker(service,channels,execute),limits=new Map();
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
@@ -52,8 +60,10 @@ export async function createGateway(config,options={}){
       const url=new URL(req.url,'http://gateway.local'),path=url.pathname,method=req.method;
       if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return send(res,200,readFileSync(new URL('./public/'+file,import.meta.url)),type);}
       if(method==='GET'&&path==='/healthz')return send(res,200,{ok:true,mode:config.mode});
-      if(method==='POST'&&['/hooks/line','/hooks/slack'].includes(path)){
-        const raw=await body(req);return send(res,200,channels.receive(path.endsWith('line')?'line':'slack',raw,req.headers));
+      const channelHook=path.match(/^\/hooks\/(?:channels\/)?([a-z][a-z0-9-]{0,47})$/);
+      if(method==='POST'&&channelHook){
+        assert(channels.has?.(channelHook[1]),'channel_not_enabled',404);
+        const raw=await body(req);return send(res,200,channels.receive(channelHook[1],raw,req.headers));
       }
       if(method==='POST'&&path.startsWith('/hooks/twilio/')){
         const raw=await body(req),params=Object.fromEntries(new URLSearchParams(raw.toString()));
@@ -68,8 +78,9 @@ export async function createGateway(config,options={}){
         const raw=await body(req);try{data=JSON.parse(raw.toString()||'{}');}catch{throw new Fault(400,'invalid_json');}
         assert(data&&typeof data==='object'&&!Array.isArray(data),'json_object_required');
       }
-      if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},account:service.account(u),integrations:followups.available(u),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).map(({transcript,runtimeResult,...m})=>m),
+      if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},account:service.account(u),integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).map(({transcript,runtimeResult,...m})=>m),
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl}});
+      if(method==='GET'&&path==='/v1/plugins'){assert(u.role==='admin','administrator_required',403);return send(res,200,{apiVersion:1,plugins:registry.list()});}
       if(method==='POST'&&path==='/v1/consent')return send(res,200,service.saveConsent(u,data.version));
       if(method==='POST'&&path==='/v1/products/import'){service.write(u);return send(res,200,await importProduct(data.url));}
       if(method==='POST'&&path==='/v1/products')return send(res,201,service.product(u,data));
@@ -109,7 +120,7 @@ export async function createGateway(config,options={}){
   });
   server.requestTimeout=15000;server.headersTimeout=10000;server.maxHeadersCount=64;
   if(config.liveReady&&!options.execute)await phone.attach(server);
-  return {server,service,store,worker,phone,channels,async close(){await worker.stop();server.closeAllConnections();await new Promise(r=>server.close(r));phone.wss?.close();if(!options.store)store.close();}};
+  return {server,service,store,worker,phone,channels,registry,async close(){await worker.stop();server.closeAllConnections();await new Promise(r=>server.close(r));phone.wss?.close();await registry.close();if(!options.store)store.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const config=configuration(),app=await createGateway(config);

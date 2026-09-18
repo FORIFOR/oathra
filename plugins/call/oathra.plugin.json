@@ -1,0 +1,18 @@
+{
+  "id": "call",
+  "name": "Oathra phone runtime",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "capability",
+  "entry": "./index.mjs",
+  "permissions": [
+    "call:execute"
+  ],
+  "environment": [],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "effect": "call"
+}

@@ -1,0 +1,22 @@
+{
+  "id": "email",
+  "name": "Gmail",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "capability",
+  "entry": "./index.mjs",
+  "permissions": [
+    "followup:execute"
+  ],
+  "environment": [
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_REFRESH_TOKEN"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "effect": "email"
+}

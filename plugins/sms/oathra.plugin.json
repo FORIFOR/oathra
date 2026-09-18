@@ -1,0 +1,23 @@
+{
+  "id": "sms",
+  "name": "Twilio SMS",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "capability",
+  "entry": "./index.mjs",
+  "permissions": [
+    "followup:execute"
+  ],
+  "environment": [
+    "OATHRA_SMS_ENABLED",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_PHONE_NUMBER"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "effect": "sms"
+}

@@ -20,6 +20,7 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
           pnpm build
+          pnpm exec tsc --noEmit --strict --module nodenext --target es2022 --lib es2023,dom apps/gateway/test/sdk-types.mts
           node apps/gateway/test/runtime-smoke.mjs
   ios:
     runs-on: macos-latest
