@@ -25,6 +25,14 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.17/
 <p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>
 追加の聞き取りを実際に見るなら、[48秒の Arena 録画](https://forifor.github.io/oathra/#intake-video)と [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml)を確認できます。
 
+## Omnichannel Sales — LINE / iOS / Web から電話を任せる
+
+Oathra を「電話アプリ」ではなく、どこからでも呼び出せる evidence-first な電話実行エージェントへ拡張する設計を進めています。LINE・iOS・Web・Slack・API は同じ Mission のリモコンで、実行と完了判定は既存ランタイムが担当します。
+
+最初の体験は **商品情報を確認 → 自分に電話して試す → 1人の相手と目的を確認 → 明示承認 → 発信 → 相手の言葉に基づく結果** です。メッセージを送っただけで外部へ発信したり、曖昧な返答を商談成立にしたりしません。
+
+設計・安全境界・LINE UX・iOS構成・実装ゲートは [docs/OMNICHANNEL_SALES.md](docs/OMNICHANNEL_SALES.md) を参照してください。
+
 <p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a></p>
 
 ## これは何か
