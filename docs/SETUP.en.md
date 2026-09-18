@@ -74,10 +74,10 @@ To skip the two choice menus, pin the voice engine and carrier. API keys are sti
 pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
 ```
 
-For the public release package, use the v0.1.16 GitHub asset explicitly:
+For the public release package, use the v0.1.17 GitHub asset explicitly:
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.16/oathra-0.1.16.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.17/oathra-0.1.17.tgz oathra setup phone
 ```
 
 The wizard:

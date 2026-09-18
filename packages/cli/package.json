@@ -1,6 +1,6 @@
 {
   "name": "oathra",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Local transcript evidence checks and playable phone agents. No API key needed for verification.",
   "license": "Apache-2.0",
   "type": "module",
