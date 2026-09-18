@@ -1,0 +1,7 @@
+{$OATHRA_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy gateway:4244 {
+    flush_interval -1
+  }
+  header Strict-Transport-Security "max-age=31536000"
+}

@@ -1,0 +1,33 @@
+services:
+  gateway:
+    build:
+      context: ../../..
+      dockerfile: apps/gateway/deploy/Dockerfile
+    env_file: ../../../.env.gateway
+    environment:
+      HOST: 0.0.0.0
+      OATHRA_DB: /data/gateway.sqlite
+    volumes:
+      - gateway-data:/data
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    expose: ["4244"]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      OATHRA_DOMAIN: ${OATHRA_DOMAIN:?Set the DNS domain pointing to this server}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+volumes:
+  gateway-data:
+  caddy-data:
+  caddy-config:
