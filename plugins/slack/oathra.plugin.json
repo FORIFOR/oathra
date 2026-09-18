@@ -1,0 +1,30 @@
+{
+  "id": "slack",
+  "name": "Slack",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "channel",
+  "entry": "./index.mjs",
+  "permissions": [
+    "mission:draft",
+    "mission:read",
+    "approval:request",
+    "channel:send"
+  ],
+  "environment": [
+    "SLACK_SIGNING_SECRET",
+    "SLACK_BOT_TOKEN"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "features": {
+    "text": true,
+    "audio": false,
+    "interactiveApproval": true,
+    "progress": true,
+    "result": true
+  }
+}

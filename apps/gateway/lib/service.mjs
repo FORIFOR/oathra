@@ -53,7 +53,7 @@ export class Service {
     assert(estimate <= maxUsd, 'estimated_cost_exceeds_budget');
     const m = { id: randomUUID(), owner: u.id, team: u.team, revision: 1, status: 'DRAFT', product, target, request, goal,
       candidateSlots: slots, testOnMe: self, mode: this.config.mode, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
-      callerId: this.config.callerId ?? 'simulator', createdAt: this.store.now(), origin, sourceKey, result: null };
+      callerId: this.config.callerId ?? 'simulator', callPluginIdentity: this.config.callPluginIdentity ?? null, createdAt: this.store.now(), origin, sourceKey, result: null };
     this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); this.store.audit(u.id, 'mission.drafted', m.id); });
     return m;
   }
@@ -65,7 +65,7 @@ export class Service {
     const changed = { ...replacement, id: m.id, createdAt: m.createdAt, origin: m.origin, sourceKey: m.sourceKey, revision: m.revision + 1 };
     this.store.put('mission', changed); return changed;
   }
-  fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode])); }
+  fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode,m.callPluginIdentity??null])); }
   grant(u, m, action = 'start', extra = {}) {
     this.write(u); const token = random();
     this.store.setKey('approval', hash(token), JSON.stringify({ owner: u.id, mission: m.id, revision: m.revision, fingerprint: this.fingerprint(m), action, ...extra }), 300_000);
@@ -81,6 +81,7 @@ export class Service {
   }
   checkPolicy(u, m) {
     const account = this.account(u);
+    assert((m.callPluginIdentity??null)===(this.config.callPluginIdentity??null),'call_plugin_changed_review_again',409);
     assert(account.consentVersion === this.config.consentVersion, 'privacy_consent_required', 403);
     assert(!this.store.suppressed(u.team, m.target.phone), 'recipient_suppressed', 403);
     const p = this.own('product', m.product.id, u); assert(p.revision === m.product.revision, 'product_changed_review_again', 409);
