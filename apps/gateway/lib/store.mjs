@@ -1,0 +1,80 @@
+import { DatabaseSync } from 'node:sqlite';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { chmodSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { assert, hash, mac, random } from './security.mjs';
+
+/** A single-node durable store. Every payload (including webhook messages) is encrypted with AES-256-GCM. */
+export class Store {
+  constructor(path, key, now = () => Date.now()) {
+    assert(typeof key === 'string' && /^[a-f0-9]{64}$/i.test(key), 'data_key_must_be_32_bytes_hex', 500);
+    this.cipherKey = Buffer.from(key, 'hex'); this.now = now;
+    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    this.db = new DatabaseSync(path);
+    this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
+      CREATE TABLE IF NOT EXISTS records(kind TEXT NOT NULL,id TEXT NOT NULL,owner TEXT NOT NULL,status TEXT NOT NULL,body TEXT NOT NULL,updated INTEGER NOT NULL,PRIMARY KEY(kind,id));
+      CREATE INDEX IF NOT EXISTS records_owner ON records(kind,owner,status);
+      CREATE TABLE IF NOT EXISTS keys(scope TEXT NOT NULL,key TEXT NOT NULL,value TEXT NOT NULL,expires INTEGER NOT NULL,PRIMARY KEY(scope,key));
+      CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,mission TEXT NOT NULL,owner TEXT NOT NULL,body TEXT NOT NULL,created INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,owner TEXT NOT NULL,action TEXT NOT NULL,subject TEXT NOT NULL,created INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS lease(id INTEGER PRIMARY KEY CHECK(id=1),holder TEXT NOT NULL,expires INTEGER NOT NULL);`);
+    if (path !== ':memory:') chmodSync(path, 0o600);
+  }
+  seal(value) {
+    const iv = randomBytes(12), c = createCipheriv('aes-256-gcm', this.cipherKey, iv);
+    return Buffer.concat([iv, c.update(JSON.stringify(value)), c.final(), c.getAuthTag()]).toString('base64');
+  }
+  open(value) {
+    const b = Buffer.from(value, 'base64'), d = createDecipheriv('aes-256-gcm', this.cipherKey, b.subarray(0, 12));
+    d.setAuthTag(b.subarray(-16)); return JSON.parse(Buffer.concat([d.update(b.subarray(12, -16)), d.final()]).toString());
+  }
+  tx(fn) { this.db.exec('BEGIN IMMEDIATE'); try { const r = fn(); this.db.exec('COMMIT'); return r; } catch (e) { this.db.exec('ROLLBACK'); throw e; } }
+  get(kind, id) { const row = this.db.prepare('SELECT body FROM records WHERE kind=? AND id=?').get(kind, id); return row ? this.open(row.body) : null; }
+  put(kind, record) {
+    this.db.prepare('INSERT INTO records VALUES(?,?,?,?,?,?) ON CONFLICT(kind,id) DO UPDATE SET owner=excluded.owner,status=excluded.status,body=excluded.body,updated=excluded.updated')
+      .run(kind, record.id, record.owner, record.status ?? '', this.seal(record), this.now()); return record;
+  }
+  list(kind, owner, status) {
+    let sql = 'SELECT body FROM records WHERE kind=?'; const args = [kind];
+    if (owner !== undefined) { sql += ' AND owner=?'; args.push(owner); }
+    if (status !== undefined) { sql += ' AND status=?'; args.push(status); }
+    return this.db.prepare(sql + ' ORDER BY updated DESC LIMIT 1000').all(...args).map(r => this.open(r.body));
+  }
+  key(scope, key) { const r = this.db.prepare('SELECT value FROM keys WHERE scope=? AND key=? AND expires>?').get(scope, key, this.now()); return r?.value; }
+  setKey(scope, key, value, ttl = 3650 * 86400_000) {
+    this.db.prepare('INSERT INTO keys VALUES(?,?,?,?) ON CONFLICT(scope,key) DO UPDATE SET value=excluded.value,expires=excluded.expires').run(scope, key, value, this.now() + ttl);
+  }
+  delKey(scope, key) { this.db.prepare('DELETE FROM keys WHERE scope=? AND key=?').run(scope, key); }
+  suppress(team, phone) { this.setKey(`suppress:${team}`, mac(this.cipherKey, phone), 'true'); }
+  suppressed(team, phone) { return !!this.key(`suppress:${team}`, mac(this.cipherKey, phone)); }
+  event(mission, event) {
+    const r = this.db.prepare('INSERT INTO events(mission,owner,body,created) VALUES(?,?,?,?)').run(mission.id, mission.owner, this.seal(event), this.now());
+    return Number(r.lastInsertRowid);
+  }
+  events(mission, owner, after = 0) { return this.db.prepare('SELECT seq,body FROM events WHERE mission=? AND owner=? AND seq>? ORDER BY seq LIMIT 500').all(mission, owner, after).map(r => ({ seq: r.seq, ...this.open(r.body) })); }
+  audit(owner, action, subject) { this.db.prepare('INSERT INTO audit(owner,action,subject,created) VALUES(?,?,?,?)').run(owner, action, hash(subject), this.now()); }
+  lease(holder) {
+    return this.tx(() => {
+      const r = this.db.prepare('SELECT * FROM lease WHERE id=1').get();
+      if (r && r.holder !== holder && r.expires > this.now()) return false;
+      this.db.prepare('INSERT INTO lease VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET holder=excluded.holder,expires=excluded.expires').run(holder, this.now() + 30_000); return true;
+    });
+  }
+  enqueue(kind, id, owner, payload) { if (this.get(kind, id)) return; this.put(kind, { id, owner, status: 'pending', attempts: 0, available: this.now(), payload }); }
+  next(kind) { return this.list(kind, undefined, 'pending').reverse().find(r => r.available <= this.now()); }
+  removeMission(m) {
+    this.tx(() => { for (const kind of ['followup','inbox','outbox']) for (const r of this.list(kind,m.owner)) {
+      if (r.missionId===m.id || r.payload?.missionId===m.id || (kind==='inbox' && r.id===m.sourceKey)) this.db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind,r.id);
+    }
+    this.db.prepare('DELETE FROM events WHERE mission=?').run(m.id); this.db.prepare("DELETE FROM records WHERE kind='mission' AND id=?").run(m.id); this.audit(m.owner, 'mission.deleted', m.id); });
+  }
+  prune(retentionDays = 30) {
+    const cutoff = this.now() - retentionDays * 86400_000;
+    this.db.prepare('DELETE FROM keys WHERE expires<?').run(this.now());
+    this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox') AND status IN ('done','failed') AND updated<?").run(cutoff);
+    this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-48*3600000);
+    this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);
+    for (const m of this.list('mission')) if (m.finishedAt && m.finishedAt < cutoff) this.removeMission(m);
+  }
+  close() { this.db.close(); }
+}
