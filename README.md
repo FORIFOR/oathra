@@ -197,6 +197,23 @@ mission:
 
 PR で追加されたシナリオは CI が検証し、誤完了を出すものは通しません。
 
+## MCP から使う（main、未リリース）
+
+`oathra mcp` は stdio の MCP サーバです。Claude Code や Claude Desktop などから、ツール呼び出し 1 回でシミュレータ通話を走らせ、相手の発言に紐づく証拠つきの結果を受け取れます。
+
+```json
+{ "mcpServers": { "oathra": { "command": "node", "args": ["<repo>/packages/cli/dist/bundle/bin.js", "mcp"] } } }
+```
+
+| ツール | 内容 |
+|--|--|
+| `simulate_call` | 組み込みエージェントと台本の相手で 1 通話。seed を固定すれば同じ結果 |
+| `verify_transcript` | 手元の文字起こしを `oathra verify` と同じ判定にかける |
+| `inspect_call` | 保存済みの通話の結果・証拠。`at: "00:12"` でその時点の状態 |
+| `list_calls` / `list_scenarios` | 保存済みの通話、使えるシナリオ |
+
+全部ローカルで動き、API キーも費用もかかりません。実電話を発信するツールと、有料の LLM を選ぶ引数は意図的に入れていません。`inspect_call` は `.oathra/calls/` の中身を MCP クライアントに渡すので、実通話の記録がある場所で使うときはその点だけ注意してください。
+
 ## 正直な現状（v0.1.16）
 
 - [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
@@ -206,7 +223,8 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 - [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、OpenAI Realtime、Deepgram + LLM + TTS
 - [ ] Telnyx、Wavix、Sinch、ElevenLabs TTS
 - [ ] 金額・番号の二重 ASR、パイプライン 650 ms 目標
-- [ ] MCP サーバ（call · inspect_call · intervene · cancel_call）は v0.2
+- [x] MCP サーバ `oathra mcp`（simulate_call · verify_transcript · inspect_call · list_calls · list_scenarios）。ローカルだけで動き、実電話は発信しない。main に入っていて、次のリリースから配布
+- [ ] MCP からの実電話（call · intervene · cancel_call）。実通話の再検証が済んでから
 
 ここに書いた数字は全部自分で計測したもので、書いてあるコマンドで再現できます。
 

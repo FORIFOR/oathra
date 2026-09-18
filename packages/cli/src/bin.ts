@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cmdBattle, cmdCall, cmdDemo, cmdDoctor, cmdEval, cmdPhone, cmdPlay, cmdProvider, cmdReplay, cmdScenario, cmdSetup, help, parseArgs } from "./commands.js";
 import { bad } from "./ui.js";
+import { serveMcpStdio } from "./mcp.js";
 import { verifyTranscript } from "./transcript.js";
 
 /** Load ./.env if present (values already in the environment win). */
@@ -22,8 +23,8 @@ function loadDotEnv(): void {
 async function main(): Promise<void> {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const [cmd, ...rest] = positional;
-  // Transcript checks require no provider credentials or .env loading.
-  if (cmd !== "verify") loadDotEnv();
+  // Transcript checks and the MCP server are local: no provider credentials or .env loading.
+  if (cmd !== "verify" && cmd !== "mcp") loadDotEnv();
   if (!cmd || flags.help || cmd === "help") {
     console.log(help());
     return;
@@ -36,6 +37,7 @@ async function main(): Promise<void> {
       process.exitCode = result.complete ? 0 : 2;
       return;
     }
+    case "mcp": return serveMcpStdio(process.env.OATHRA_VERSION ?? "dev");
     case "demo": return cmdDemo(flags);
     case "play": return cmdPlay(rest, flags);
     case "call": return cmdCall(rest, flags);

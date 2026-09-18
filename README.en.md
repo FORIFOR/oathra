@@ -268,6 +268,23 @@ Adversarial runs wrap every scripted callee with a mutation that tries to fool t
 
 Bugs this harness caught before it went green: thousands separators splitting `21,100円` into `100円`; a confirmation staying valid after the price was re-negotiated without a new confirmation; a callee "confirming" a different value than the one accepted. Each has a regression test.
 
+## Use it over MCP (main, unreleased)
+
+`oathra mcp` is an MCP server over stdio. From Claude Code, Claude Desktop or any MCP client, one tool call runs a simulated phone call and returns a result backed by evidence from the callee's own words.
+
+```json
+{ "mcpServers": { "oathra": { "command": "node", "args": ["<repo>/packages/cli/dist/bundle/bin.js", "mcp"] } } }
+```
+
+| Tool | What it does |
+|--|--|
+| `simulate_call` | One call between the built-in agent and a scripted callee. Same seed, same result |
+| `verify_transcript` | Runs your own transcript through the same check as `oathra verify` |
+| `inspect_call` | Result and evidence of a saved call; `at: "00:12"` shows the state at that moment |
+| `list_calls` / `list_scenarios` | Saved calls, available scenarios |
+
+Everything runs locally with no API key and no cost. There is deliberately no tool that dials a real phone and no argument that selects a paid LLM. `inspect_call` hands the contents of `.oathra/calls/` to the MCP client, so keep that in mind where real-call recordings are stored.
+
 ## Status
 
 v0.1.16 (released 2026-09-15):
@@ -284,7 +301,8 @@ v0.1.16 (released 2026-09-15):
 - [x] Voice Layer: GPT-Live (recommended, verified on real calls), OpenAI Realtime, Deepgram + LLM + OpenAI TTS pipeline
 - [ ] Telnyx, Wavix, Sinch, didlogic providers; ElevenLabs TTS; self-hosted SIP gateways beyond LiveKit
 - [ ] Dual-ASR safe path for dates / amounts / numbers, preemptive generation
-- [ ] MCP server (`call`, `inspect_call`, `intervene`, `cancel_call`) — v0.2
+- [x] MCP server `oathra mcp` (`simulate_call`, `verify_transcript`, `inspect_call`, `list_calls`, `list_scenarios`). Local only; it never dials. On main, ships with the next release
+- [ ] Real calls over MCP (`call`, `intervene`, `cancel_call`) — after real-call re-verification
 - [ ] Provider benchmarks
 
 Simulator numbers (latency, scores) are from the simulator. Real-call latency today is roughly 2 s to first audio (LLM + TTS); the 650 ms target is the Phase 4 work.

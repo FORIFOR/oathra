@@ -473,6 +473,7 @@ ${bold("Extend")}
   oathra scenario validate <yaml>    check a community scenario
   oathra scenario list
   oathra provider create phone <id>  scaffold a carrier provider
+  oathra mcp                         MCP server over stdio: simulate_call, verify_transcript, inspect_call (local, never dials)
 
 ${bold("Check")}
   oathra doctor                      runtime, keys, brains, phone readiness
