@@ -63,7 +63,8 @@ export class Followups {
     this.store.tx(()=>{
       // Recheck after the token refresh; concurrent requests must not send twice.
       action=this.service.own('followup',id,u);assert(action.status==='PREVIEW','followup_already_executing',409);
-      this.service.validGrant(u,input.approvalToken,'followup');this.policy(u,m,action.kind);
+      this.service.validGrant(u,input.approvalToken,'followup');const currentContact=this.policy(u,this.service.own('mission',m.id,u),action.kind);
+      assert(action.details.recipient===(action.kind==='crm'?currentContact.crmId:action.kind==='sms'?currentContact.phone:currentContact.email),'recipient_changed_review_again',409);
       action.status='EXECUTING';this.store.put('followup',action);this.store.delKey('approval',tokenHash);this.store.setKey(`followup:${u.id}`,key,requestHash);this.store.audit(u.id,'followup.approved',id);
     });
     try {

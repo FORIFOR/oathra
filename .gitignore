@@ -24,3 +24,10 @@ video/.work/tts/*
 
 # Generated from source by pnpm build:site
 site/playground.js
+
+# Gateway credentials and databases must never enter source control.
+.env.gateway
+.env.gateway.*
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

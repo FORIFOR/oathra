@@ -66,6 +66,7 @@ export class Store {
     this.tx(() => { for (const kind of ['followup','inbox','outbox']) for (const r of this.list(kind,m.owner)) {
       if (r.missionId===m.id || r.payload?.missionId===m.id || (kind==='inbox' && r.id===m.sourceKey)) this.db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind,r.id);
     }
+    if(m.sourceKey) this.db.prepare("DELETE FROM records WHERE kind='inbox' AND id=?").run(m.sourceKey);
     this.db.prepare('DELETE FROM events WHERE mission=?').run(m.id); this.db.prepare("DELETE FROM records WHERE kind='mission' AND id=?").run(m.id); this.audit(m.owner, 'mission.deleted', m.id); });
   }
   prune(retentionDays = 30) {
@@ -74,7 +75,7 @@ export class Store {
     this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox') AND status IN ('done','failed') AND updated<?").run(cutoff);
     this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-48*3600000);
     this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);
-    for (const m of this.list('mission')) if (m.finishedAt && m.finishedAt < cutoff) this.removeMission(m);
+    for (const m of this.list('mission')) if (m.status !== 'UNKNOWN' && !m.stopNeedsReconciliation && m.finishedAt && m.finishedAt < cutoff) this.removeMission(m);
   }
   close() { this.db.close(); }
 }

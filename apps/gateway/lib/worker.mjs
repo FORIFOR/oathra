@@ -77,6 +77,7 @@ export class Worker {
       if(this.store.get('mission',m.id)?.optOut) { result.status='DECLINED'; result.doNotContact=true; result.verified={}; result.evidence.push({field:'do_not_contact',source:'dtmf',value:true,quote:'電話の連絡停止操作（2）'}); }
       if(result.doNotContact) this.store.suppress(m.team,m.target.phone);
       current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':e.uncertain?'UNKNOWN':'FAILED';
+      if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       current.error=e.code??'execution_failed'; current.result=result; current.transcript=turns; current.finishedAt=this.store.now();
       this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.service.notify(current,'result');
     } finally { clearTimeout(watchdog); }

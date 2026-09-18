@@ -3,6 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { assert, Fault, jsonFetch, random, twilioSignature } from './security.mjs';
 
 const xml = s => String(s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
+export function verifiedOperatorNumber(account, target) {
+  assert(account.verifiedPhone && account.verifiedPhone !== target && account.phoneVerificationProvider === 'twilio-verify', 'handoff_requires_real_verified_operator_number', 409);
+  return account.verifiedPhone;
+}
+export function definitiveDialRejection(status) { return status >= 400 && status < 500 && status !== 408; }
 export class Phone {
   constructor(service,env=process.env) { this.service=service; this.store=service.store; this.config=service.config; this.env=env; this.sessions=new Map(); }
   auth() { return `Basic ${Buffer.from(`${this.env.TWILIO_ACCOUNT_SID}:${this.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`; }
@@ -15,6 +20,7 @@ export class Phone {
     m.carrierStatus=data.status; m.actualCarrierCharge=data.price===null?null:{amount:data.price,currency:data.price_unit};
     if(['completed','failed','busy','no-answer','canceled'].includes(data.status) && ['UNKNOWN','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(m.status)) {
       m.status=stop?'CANCELLED':'INCOMPLETE'; m.finishedAt=this.store.now();
+      m.stopNeedsReconciliation=false;
     }
     this.store.put('mission',m); this.store.audit(u.id,'carrier.reconciled',id); return m;
   }
@@ -87,7 +93,7 @@ export class Phone {
     const abort=()=>{runtime.cancel();void carrier.hangup();}; hooks.signal.addEventListener('abort',abort,{once:true});
     hooks.control.handoff=async()=>{
       const u=this.service.user(m.owner), account=this.service.account(u);
-      assert(account.verifiedPhone && account.verifiedPhone!==m.target.phone,'handoff_requires_different_verified_operator_number',409);
+      verifiedOperatorNumber(account, m.target.phone);
       assert(carrier.sid && carrier.consent && !carrier.transferred,'call_not_ready_for_handoff',409);
       const current=this.store.get('mission',m.id), token=random();
       this.store.setKey('handoff',token,m.id,86400_000);
@@ -117,7 +123,7 @@ class Session {
     let response;
     try { response=await fetch(this.phone.callURL(),{method:'POST',headers:{authorization:this.phone.auth(),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({To:this.m.target.phone,From:this.phone.config.callerId,Twiml:twiml,Timeout:'20',TimeLimit:String(this.m.maxSeconds),Record:'false'}),signal:AbortSignal.timeout(12_000)}); }
     catch { const error=new Fault(502,'dial_request_outcome_unknown'); this.uncertain=true; error.uncertain=true; this.finish(); throw error; }
-    if(!response.ok){this.finish();throw new Fault(502,'carrier_dial_rejected');}
+    if(!response.ok){this.finish();const error=new Fault(502,definitiveDialRejection(response.status)?'carrier_dial_rejected':'dial_request_outcome_unknown');this.uncertain=!definitiveDialRejection(response.status);error.uncertain=this.uncertain;throw error;}
     let data;try { data=await response.json();assert(/^CA[a-f0-9]{32}$/i.test(data.sid),'carrier_sid_missing',502); } catch { this.uncertain=true;this.finish();const e=new Fault(502,'carrier_sid_unknown');e.uncertain=true;throw e;}this.sid=data.sid;
     this.hooks.onEvent({type:'carrier.sid',sid:this.sid});
     this.timer=setTimeout(()=>{this.queue.push({type:'error',message:'media_connection_timeout',fatal:true});void this.hangup();},60_000);
@@ -129,6 +135,8 @@ class Session {
       let event;try{event=JSON.parse(raw.toString());}catch{socket.close(1008);return;}
       if(event.event==='start'){
         if(event.start?.callSid!==this.sid || event.start?.accountSid!==this.phone.env.TWILIO_ACCOUNT_SID){socket.close(1008);return;}
+        const format=event.start?.mediaFormat;
+        if(format?.encoding!=='audio/x-mulaw'||format?.sampleRate!==8000||format?.channels!==1){socket.close(1008);return;}
         this.streamSid=event.start.streamSid??event.streamSid;clearTimeout(this.timer);this.queue.push({type:'connected',callId:this.sid});
       }else if(event.event==='media' && this.streamSid && event.media?.track==='inbound'){
         this.queue.push({type:'audio',chunk:{...this.audio,data:new Uint8Array(Buffer.from(event.media.payload,'base64'))}});

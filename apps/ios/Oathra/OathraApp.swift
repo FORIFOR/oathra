@@ -25,7 +25,8 @@ import SwiftUI
 }
 struct ConnectionView: View {
     @EnvironmentObject var api: API
-    @State private var url = "", token = ""
+    @State private var url = ""
+    @State private var token = ""
     var body: some View {
         NavigationStack { ScrollView { VStack(alignment: .leading, spacing: 26) {
             Text("oathra.").font(.system(size: 32, weight: .bold, design: .rounded))
@@ -40,9 +41,17 @@ struct ConnectionView: View {
 }
 struct ComposerView: View {
     @EnvironmentObject var api: API
-    @State private var request = "", productId = "", contactId = "", goal = "meeting", slots = ""
-    @State private var selfTest = false, seconds = 180.0, budget = 10.0, working = false
-    @State private var review: Review?, started: Mission?
+    @State private var request = ""
+    @State private var productId = ""
+    @State private var contactId = ""
+    @State private var goal = "meeting"
+    @State private var slots = ""
+    @State private var selfTest = false
+    @State private var seconds = 180.0
+    @State private var budget = 10.0
+    @State private var working = false
+    @State private var review: Review?
+    @State private var started: Mission?
     var body: some View {
         Form {
             Section {
@@ -87,7 +96,8 @@ struct ReviewView: View {
     @Environment(\.dismiss) var dismiss
     let review: Review
     var onStarted: (Mission) -> Void
-    @State private var approved = false, busy = false
+    @State private var approved = false
+    @State private var busy = false
     @State private var key = UUID().uuidString
     var body: some View {
         NavigationStack { Form {
@@ -117,7 +127,9 @@ struct MissionDetailView: View {
     @EnvironmentObject var api: API
     @Environment(\.scenePhase) private var phase
     let id: String
-    @State private var mission: Mission?, review: Review?, handoff = false
+    @State private var mission: Mission?
+    @State private var review: Review?
+    @State private var handoff = false
     var body: some View {
         List {
             if let m = mission {
@@ -146,9 +158,20 @@ struct MissionDetailView: View {
 }
 struct SettingsView: View {
     @EnvironmentObject var api: API
-    @State private var productName = "", url = "", facts = "", reviewed = false
-    @State private var name = "", phone = "", email = "", basis = "", relationship = "inquiry"
-    @State private var myPhone = "", code = "", verifyConsent = false, linkMessage = "", busy = false
+    @State private var productName = ""
+    @State private var url = ""
+    @State private var facts = ""
+    @State private var reviewed = false
+    @State private var name = ""
+    @State private var phone = ""
+    @State private var email = ""
+    @State private var basis = ""
+    @State private var relationship = "inquiry"
+    @State private var myPhone = ""
+    @State private var code = ""
+    @State private var verifyConsent = false
+    @State private var linkMessage = ""
+    @State private var busy = false
     var body: some View {
         Form {
             Section("会話データの取り扱い") {
