@@ -9,6 +9,7 @@
 リポジトリのルートでNode.js 22.16以降を使用します。
 
 ```sh
+pnpm install --frozen-lockfile && pnpm build   # 商談成立の判定は packages/evidence の証拠エンジンが行うため、先にビルドします
 node apps/gateway/setup.mjs
 node --env-file=.env.gateway apps/gateway/server.mjs
 ```

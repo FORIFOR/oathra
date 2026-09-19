@@ -1,13 +1,29 @@
-/** Conservative transcript evaluation. Supported expressions are intentionally bounded and tested.
+/** Sales verdicts.
+ *
+ * Whether a meeting was agreed is decided by the Oathra evidence engine (`packages/evidence`), the same
+ * deterministic check behind every other Oathra result, in its appointment mode: the caller proposes a slot
+ * and the callee's clean commitment confirms it. Hedges, deferrals, scheduling conflicts and refusals never do.
+ * This file only adds the sales-specific facts the engine has no field for (materials permission,
+ * acknowledgement, do-not-contact) and maps the engine's result onto the mission's result shape.
+ *
  * This is transcript evidence, not a guarantee of ASR correctness or of a future meeting occurring. */
+let EvidenceEngine, evaluate, defineCall;
+try {
+  ({ EvidenceEngine, evaluate } = await import('../../../packages/evidence/dist/index.js'));
+  ({ defineCall } = await import('../../../packages/contract/dist/index.js'));
+} catch (error) {
+  throw new Error('Oathra Gateway needs the built evidence engine. Run `pnpm install --frozen-lockfile && pnpm build` in the repository root first.', { cause: error });
+}
+const MEETING = defineCall({ goal: 'sales.meeting', language: 'ja', require: { date: true, time: true, confirmed: true }, confirmation: 'callee_acceptance' });
+
 export const stopContact = t => /(?:今後|二度と|もう).{0,12}(?:電話|連絡).{0,8}(?:しない|しなくて|不要|やめ)|(?:電話|連絡).{0,8}(?:しないで|不要|やめて)|do not (?:call|contact)|don't (?:call|contact)|remove me|stop calling/i.test(t);
-export const refusal = /(?:不要です|お断り|興味(?:が)?(?:ない|ありません)|結構です|not interested)/i;
+// 「それで結構です」 accepts; only a free-standing 「結構です」 declines.
+export const refusal = /(?:不要です|お断り|興味(?:が)?(?:ない|ありません)|(?<![でて])結構です|not interested)/i;
 const uncertain = /仮(?:予約|押さえ)?|未確定|承認待ち|多分|たぶん|かもしれ|確認してから|検討|maybe|perhaps|tentative|not sure|pending/i;
 const negative = /キャンセル|取り消|無理|できません|難しい|だめ|ダメ|変更|cancel|cannot|can't|not available/i;
-const agreement = /お願いします|承知(?:しました|いたしました)|大丈夫です|確定です|お待ちしています|お約束します|confirmed|works for me|sounds good/i;
-const bareYes = /^(?:はい|ええ|承知しました|お願いします|大丈夫です|yes|confirmed|sounds good)[。.!！\s]*$/i;
 const question = /[?？]|ですか|でしょうか|ませんか/;
 
+/** Parses an explicit timestamp for follow-up scheduling input. It is not used to judge what the callee agreed to. */
 export function dateTime(t, now = Date.now()) {
   const iso = t.match(/\b(20\d\d)-(\d{2})-(\d{2})[T\s]+(\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}:\d{2})?/);
   if (iso) {
@@ -37,28 +53,40 @@ export function dateTime(t, now = Date.now()) {
   if (check.getUTCMonth() + 1 !== mo || check.getUTCDate() !== day || epoch <= now || epoch - now > 180 * 86400_000) return null;
   return value;
 }
+/** The agreed instant, or null when the engine has not settled date, time and the callee's commitment. */
+function agreedMeeting(turns, mission, now) {
+  const engine = new EvidenceEngine({ language: 'ja', now: new Date(now), confirmation: 'callee_acceptance' });
+  turns.forEach((turn, index) => {
+    const text = String(turn.text ?? '').normalize('NFKC').trim();
+    if ((turn.source === 'caller' || turn.source === 'callee') && text) engine.ingest({ id: String(turn.id ?? `turn-${index}`), source: turn.source, text, t: index });
+  });
+  const result = evaluate(MEETING, engine, 'completed');
+  if (!result.complete) return null;
+  const value = `${result.fields.date}T${result.fields.time}:00+09:00`, epoch = Date.parse(value);
+  // Evidence of a slot in the past, or implausibly far ahead, is not a meeting.
+  if (!Number.isFinite(epoch) || epoch <= now || epoch - now > 180 * 86400_000) return null;
+  if (mission.candidateSlots?.length && !mission.candidateSlots.some(s => Date.parse(s) === epoch)) return null;
+  const commitment = [...result.evidence].reverse().find(e => e.field === 'confirmed' && e.source === 'callee' && e.verified);
+  const proposal = result.evidence.find(e => e.field === 'date' && e.source === 'caller' && e.verified);
+  return { value, turn: commitment?.utteranceId, quote: commitment?.transcript, proposal: proposal?.transcript };
+}
+
 export function evaluateSales(turns, mission, connected, now = Date.now()) {
-  const evidence = []; let meeting = null, material = false, acknowledged = false, declined = false, dnc = false;
-  let previous = null;
+  const evidence = []; let material = false, acknowledged = false, declined = false, dnc = false;
   for (const [index, turn] of turns.entries()) {
     const t = String(turn.text ?? '').normalize('NFKC');
-    if (turn.source === 'callee') {
-      const ref = { turn: turn.id ?? `turn-${index}`, source: 'callee', quote: t.slice(0, 600) };
-      if (stopContact(t) || refusal.test(t)) { declined = true; dnc = true; meeting = null; material = false; evidence.push({ ...ref, field: 'do_not_contact', value: true }); }
-      if (negative.test(t) || uncertain.test(t)) { meeting = null; material = false; }
-      if (!dnc && !negative.test(t) && !uncertain.test(t) && !question.test(t)) {
-        if (/(?:資料|パンフレット).{0,12}(?:送ってください|送付してください|送ってもらえます)|please send (?:me )?(?:the )?(?:material|brochure|deck)/i.test(t)) { material = true; evidence.push({ ...ref, field: 'material_send_allowed', value: true }); }
-        if (/説明(?:を)?(?:ありがとう|理解しました)|説明.{0,8}わかりました|thank you for (?:the )?explanation/i.test(t)) { acknowledged = true; evidence.push({ ...ref, field: 'presentation_acknowledged', value: true }); }
-        let dt = agreement.test(t) ? dateTime(t, now) : null;
-        if (!dt && bareYes.test(t.trim()) && previous?.source === 'caller' && /商談|打ち合わせ|お打合せ|meeting/i.test(previous.text) && !uncertain.test(previous.text) && !negative.test(previous.text)) dt = dateTime(previous.text, now);
-        if (dt && (!mission.candidateSlots?.length || mission.candidateSlots.some(s => Date.parse(s) === Date.parse(dt)))) {
-          meeting = dt; evidence.push({ ...ref, field: 'meeting_agreed_on_call', value: dt, ...(bareYes.test(t.trim()) ? { confirmedProposal: previous?.text?.slice(0, 600) } : {}) });
-        }
-      }
+    if (turn.source !== 'callee') continue;
+    const ref = { turn: turn.id ?? `turn-${index}`, source: 'callee', quote: t.slice(0, 600) };
+    if (stopContact(t) || refusal.test(t)) { declined = true; dnc = true; material = false; evidence.push({ ...ref, field: 'do_not_contact', value: true }); }
+    if (negative.test(t) || uncertain.test(t)) material = false;
+    if (!dnc && !negative.test(t) && !uncertain.test(t) && !question.test(t)) {
+      if (/(?:資料|パンフレット).{0,12}(?:送ってください|送付してください|送ってもらえます)|please send (?:me )?(?:the )?(?:material|brochure|deck)/i.test(t)) { material = true; evidence.push({ ...ref, field: 'material_send_allowed', value: true }); }
+      if (/説明(?:を)?(?:ありがとう|理解しました)|説明.{0,8}わかりました|thank you for (?:the )?explanation/i.test(t)) { acknowledged = true; evidence.push({ ...ref, field: 'presentation_acknowledged', value: true }); }
     }
-    previous = turn;
   }
-  const verified = { ...(material ? { material_send_allowed: true } : {}), ...(acknowledged ? { presentation_acknowledged: true } : {}), ...(meeting ? { meeting_agreed_on_call: meeting } : {}) };
+  const meeting = dnc ? null : agreedMeeting(turns, mission, now);
+  if (meeting) evidence.push({ turn: meeting.turn, source: 'callee', quote: String(meeting.quote ?? '').slice(0, 600), field: 'meeting_agreed_on_call', value: meeting.value, ...(meeting.proposal ? { confirmedProposal: meeting.proposal.slice(0, 600) } : {}) });
+  const verified = { ...(material ? { material_send_allowed: true } : {}), ...(acknowledged ? { presentation_acknowledged: true } : {}), ...(meeting ? { meeting_agreed_on_call: meeting.value } : {}) };
   const required = mission.goal === 'meeting' ? 'meeting_agreed_on_call' : mission.goal === 'materials' ? 'material_send_allowed' : 'presentation_acknowledged';
   return { status: declined ? 'DECLINED' : connected && verified[required] ? 'COMPLETED' : 'INCOMPLETE', verified,
     missing: verified[required] ? [] : [required], evidence, doNotContact: dnc,

@@ -63,6 +63,8 @@ Do not add a generic "positive" field. Use explicit facts:
 - `meeting_confirmed`
 - `do_not_contact`
 
+Whether a meeting was agreed is decided by `packages/evidence` (`evaluate()` with `confirmation: "callee_acceptance"`), not by gateway-local rules; `apps/gateway/lib/sales.mjs` only adds the sales-specific facts the engine has no field for and maps the result. A slot needs both sides: the caller's proposal (or restatement) and the callee's clean commitment.
+
 "Maybe next week" is not a meeting. "Send me the deck" is not a meeting. A calendar event created by the caller is not acceptance by the callee. Evidence remains attached to the callee utterance or authenticated external record.
 
 ## Safety defaults

@@ -13,13 +13,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.16.0
-      - name: Standalone gateway tests (no credentials, no external calls)
-        run: node --test apps/gateway/test/*.node.mjs
-      - name: Build existing runtime and verify integration imports
+      - name: Build the runtime and evidence engine (the gateway's verdict comes from packages/evidence)
         run: |
           corepack enable
           pnpm install --frozen-lockfile
           pnpm build
+      - name: Gateway tests (no credentials, no external calls)
+        run: node --test apps/gateway/test/*.node.mjs
+      - name: Verify integration imports
+        run: |
           pnpm exec tsc --noEmit --strict --module nodenext --target es2022 --lib es2023,dom apps/gateway/test/sdk-types.mts
           node apps/gateway/test/runtime-smoke.mjs
   ios:
