@@ -12,6 +12,7 @@
 <header>
   <a class="brand" href="/">oathra<span class="brand-dot">.</span></a>
   <span id="mode" class="badge" hidden></span>
+  <button id="open-settings" class="quiet small" hidden>設定</button>
   <button id="logout" class="quiet small" hidden>ログアウト</button>
 </header>
 
@@ -25,72 +26,90 @@
       <input id="token" type="password" autocomplete="off" required placeholder="管理者から受け取ったトークンを貼り付け">
       <button type="submit" class="primary">はじめる</button>
     </form>
+    <details class="where">
+      <summary>トークンはどこにありますか？</summary>
+      <p><b>自分のパソコンで動かしている場合：</b>最初のセットアップ（<code>node apps/gateway/setup.mjs</code>）が作った <code>.oathra/operator-token.txt</code> の中身です。Macなら、ターミナルで次を実行するとコピーできます。</p>
+      <pre>pbcopy &lt; .oathra/operator-token.txt</pre>
+      <p><b>だれかが用意したサーバーを使う場合：</b>そのサーバーの管理者から受け取ってください。</p>
+      <p class="hint">トークンはパスワードと同じです。人に見せたり、チャットに貼ったりしないでください。</p>
+    </details>
     <p class="hint">トークンはこのページを開いている間だけ保持します。電話会社やAIのAPIキーを入力する必要はありません。</p>
   </section>
 
-  <!-- Signed in: one page, top to bottom -->
+  <!-- Signed in: one screen. Ask on the left, what is happening on the right, settings in a panel. -->
   <div id="workspace" hidden>
 
-    <section id="setup" class="card" hidden>
-      <h2>はじめに <span id="setup-count" class="pill"></span></h2>
-      <p class="muted">電話を任せる前に、次の準備が必要です。終わったものから消えていきます。</p>
+    <section id="setup" class="banner" hidden>
+      <strong>はじめに <span id="setup-count" class="pill"></span></strong>
       <ol id="setup-steps" class="steps"></ol>
     </section>
 
-    <section id="ask" class="card">
-      <h1>だれに、なにを電話しますか？</h1>
-      <p id="readiness" class="notice"></p>
-      <form id="mission-form">
-        <div class="columns">
-          <label>電話する相手
-            <select id="contact"></select>
-          </label>
-          <label>紹介する商品
-            <select id="product" required></select>
-          </label>
-        </div>
-        <label class="check"><input id="test-me" type="checkbox">まず自分の番号にかけて試す</label>
-
-        <fieldset class="choices">
-          <legend>この電話の目的</legend>
-          <label class="choice"><input type="radio" name="goal" value="meeting" checked><span><b>商談の日時を決める</b><small>相手が日時をはっきり了承したときだけ「決まった」になります</small></span></label>
-          <label class="choice"><input type="radio" name="goal" value="materials"><span><b>資料を送ってよいか聞く</b><small>了承があれば、あとでメールやSMSを送れます</small></span></label>
-          <label class="choice"><input type="radio" name="goal" value="introduce"><span><b>商品を説明する</b><small>説明を聞いてもらえたかを確認します</small></span></label>
-        </fieldset>
-
-        <label for="request">伝えたいこと（そのままの言葉で）</label>
-        <textarea id="request" rows="3" required placeholder="例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。"></textarea>
-
-        <details>
-          <summary>くわしい設定（通話の上限・候補日時）</summary>
+    <div class="board">
+      <section id="ask" class="card">
+        <h1>だれに、なにを電話しますか？</h1>
+        <form id="mission-form">
           <div class="columns">
-            <label>通話の上限（秒）<input id="seconds" type="number" min="30" max="600" value="180"></label>
-            <label>費用の上限（USD）<input id="budget" type="number" min="0.01" step="0.01" value="1"></label>
+            <label>電話する相手
+              <select id="contact"></select>
+            </label>
+            <label>紹介する商品
+              <select id="product" required></select>
+            </label>
           </div>
-          <label>候補日時（1行に1つ。例：2026-10-03T15:00:00+09:00）<textarea id="slots" rows="2"></textarea></label>
-        </details>
 
-        <button type="submit" class="primary wide">内容を確認する</button>
-        <p class="hint center">まだ電話はかかりません。次の画面で内容を確かめて、承認したときだけ発信します。</p>
-      </form>
-    </section>
+          <fieldset class="choices">
+            <legend>この電話の目的</legend>
+            <label class="choice"><input type="radio" name="goal" value="meeting" checked><b>商談の日時を決める</b></label>
+            <label class="choice"><input type="radio" name="goal" value="materials"><b>資料を送ってよいか聞く</b></label>
+            <label class="choice"><input type="radio" name="goal" value="introduce"><b>商品を説明する</b></label>
+          </fieldset>
+          <p id="goal-help" class="hint"></p>
 
-    <section id="current" class="card" hidden>
-      <div id="detail"></div>
-    </section>
+          <label for="request">伝えたいこと（そのままの言葉で）</label>
+          <textarea id="request" rows="3" required placeholder="例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。"></textarea>
 
-    <section id="history-section" class="card">
-      <div class="row">
-        <h2>これまでの電話</h2>
-        <button id="refresh" class="quiet small">更新</button>
+          <label class="check"><input id="test-me" type="checkbox">まず自分の番号にかけて試す</label>
+          <details>
+            <summary>くわしい設定（通話の上限・候補日時）</summary>
+            <div class="columns">
+              <label>通話の上限（秒）<input id="seconds" type="number" min="30" max="600" value="180"></label>
+              <label>費用の上限（USD）<input id="budget" type="number" min="0.01" step="0.01" value="1"></label>
+            </div>
+            <label>候補日時（1行に1つ。例：2026-10-03T15:00:00+09:00）<textarea id="slots" rows="2"></textarea></label>
+          </details>
+
+          <button type="submit" class="primary wide">内容を確認する</button>
+          <p id="readiness" class="hint center"></p>
+        </form>
+      </section>
+
+      <div class="side">
+        <section id="current" class="card">
+          <div id="detail"></div>
+          <div id="detail-empty" class="empty">
+            <h2>いまの電話</h2>
+            <p class="muted">左で内容を確認して承認すると、ここに進み具合と結果が出ます。</p>
+            <ol class="flow"><li>内容を確認</li><li>承認して発信</li><li>相手の言葉で結果</li></ol>
+          </div>
+        </section>
+
+        <section id="history-section" class="card">
+          <div class="row">
+            <h2>これまでの電話</h2>
+            <button id="refresh" class="quiet small">更新</button>
+          </div>
+          <div id="history" class="list"></div>
+          <button id="more" class="quiet small" hidden>もっと見る</button>
+        </section>
       </div>
-      <div id="history" class="list"></div>
-      <button id="more" class="quiet small" hidden>もっと見る</button>
-    </section>
+    </div>
+  </div>
 
-    <section id="settings" class="card">
-      <h2>設定</h2>
-      <p class="muted">必要なときだけ開いてください。</p>
+  <div id="notice" role="status" aria-live="polite" hidden></div>
+
+  <dialog id="settings" class="panel">
+    <form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form>
+    <h2>設定</h2>
 
       <details id="s-consent">
         <summary>会話データの取り扱い <span id="consent-state" class="pill"></span></summary>
@@ -144,6 +163,7 @@
       <details id="s-phone">
         <summary>自分の電話番号を確認する <span id="phone-state" class="pill"></span></summary>
         <p class="muted">「自分の番号にかけて試す」と、通話中に自分へ交代するときに使います。</p>
+        <p id="phone-unavailable" class="notice" hidden></p>
         <form id="phone-form">
           <div class="columns">
             <label>電話番号（国番号から）<input id="my-phone" type="tel" placeholder="+81 90…" required></label>
@@ -173,10 +193,7 @@
         <p class="hint">登録と設定の状態です。実アカウントでの疎通や実電話の成功を示すものではありません。</p>
         <div id="plugin-list"></div>
       </details>
-    </section>
-  </div>
-
-  <div id="notice" role="status" aria-live="polite" hidden></div>
+  </dialog>
 
   <dialog id="review">
     <form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form>

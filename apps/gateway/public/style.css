@@ -9,11 +9,12 @@
 [hidden] { display: none !important; }
 body { margin: 0; }
 
-header, footer { display: flex; align-items: center; gap: 14px; max-width: 760px; margin: 0 auto; padding: 20px 20px; }
+header, footer { display: flex; align-items: center; gap: 12px; max-width: 760px; margin: 0 auto; padding: 14px 20px; }
+body.signed-in header, body.signed-in footer, body.signed-in main { max-width: 1240px; }
 header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
 .brand, footer > span:first-child { font-size: 26px; font-weight: 750; letter-spacing: -1.5px; text-decoration: none; color: inherit; margin-right: auto; }
 .brand-dot { color: #708b5d; }
-footer { color: var(--muted); font-size: 13px; padding-top: 32px; padding-bottom: 48px; }
+footer { color: var(--muted); font-size: 13px; padding-top: 8px; padding-bottom: 24px; }
 .badge { font-size: 13px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); white-space: nowrap; }
 .badge.practice { background: var(--accent-soft); border-color: #c9d8cb; color: var(--accent); }
 .badge.live { background: #fbe9e5; border-color: #ecc3ba; color: var(--bad); font-weight: 650; }
@@ -23,6 +24,10 @@ main { max-width: 760px; margin: 0 auto; padding: 20px 20px 0; }
 .welcome { margin-top: 8vh; text-align: center; padding: 44px 28px; }
 .welcome form { text-align: left; max-width: 420px; margin: 28px auto 0; }
 .welcome .hint { max-width: 420px; margin: 20px auto 0; }
+.welcome .where { max-width: 420px; margin: 18px auto 0; text-align: left; border: 0; }
+.welcome .where > summary { font-weight: 500; font-size: 15px; color: var(--accent); justify-content: center; }
+.welcome .where p { font-size: 15px; }
+code { background: #f0f0ec; padding: 1px 6px; border-radius: 6px; font-size: .92em; overflow-wrap: anywhere; }
 
 h1 { font-size: clamp(26px, 5vw, 34px); font-weight: 650; letter-spacing: -.03em; line-height: 1.4; margin: 0 0 14px; }
 h2 { font-size: 21px; font-weight: 650; letter-spacing: -.02em; margin: 0 0 10px; }
@@ -47,8 +52,8 @@ textarea { resize: vertical; line-height: 1.7; }
 select:disabled { background: #f0f0ec; color: var(--muted); }
 input:focus, textarea:focus, select:focus, button:focus-visible, summary:focus-visible, .choice:focus-within { outline: 3px solid #7fa588; outline-offset: 2px; }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.check { display: flex; align-items: flex-start; gap: 12px; font-weight: 500; line-height: 1.6; cursor: pointer; }
-.check input { width: 24px; height: 24px; min-height: 0; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+.check { display: flex; align-items: center; gap: 12px; font-weight: 500; line-height: 1.6; cursor: pointer; }
+.check input { width: 24px; height: 24px; min-height: 0; margin: 0; padding: 0; flex: none; accent-color: var(--accent); }
 .inline { display: flex; align-items: flex-end; gap: 12px; }
 .inline label { flex: 1; margin: 0; }
 .inline + form { margin-top: 18px; }
@@ -139,3 +144,78 @@ pre:empty { display: none; }
   .steps li { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+
+/* ------------------------------------------------------------------ one screen
+   Ask on the left, what is happening on the right. On a laptop nothing needs scrolling:
+   the right-hand cards scroll inside themselves when a call has a long result. */
+.board { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.side { display: grid; gap: 20px; min-width: 0; }
+.board .card { margin-bottom: 0; padding: 24px; }
+.board h1 { font-size: 24px; margin-bottom: 16px; }
+.board label { margin-bottom: 14px; }
+.board textarea#request { min-height: 0; }
+/* header 76 + gaps + the history card ≈ 330px; the call card takes what is left of the window. */
+#current { min-height: 250px; max-height: max(250px, calc(100vh - 362px)); overflow: auto; overscroll-behavior: contain; }
+#history-section .list { max-height: 84px; overflow: auto; overscroll-behavior: contain; margin: 4px 0 0; }
+#history-section { padding-block: 18px; }
+body.signed-in footer { display: none; }
+body.signed-in main { padding-bottom: 20px; }
+.board input:not([type=checkbox]):not([type=radio]), .board select { min-height: 48px; padding-block: 11px; }
+.board .check { margin-top: 12px; }
+.board form details { margin-bottom: 8px; }
+.empty .flow { list-style: none; counter-reset: f; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0; margin: 18px 0 0; }
+.empty .flow li { counter-increment: f; font-size: 14px; color: var(--muted); text-align: center; padding: 14px 8px; border: 1.5px dashed var(--line); border-radius: 12px; }
+.empty .flow li::before { content: counter(f); display: block; font-weight: 700; color: var(--accent); font-size: 18px; }
+
+/* Setup is a thin banner, not a card. */
+.banner { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding: 12px 18px; margin-bottom: 16px; background: #fdf6e7; border: 1px solid #ecd9ae; border-radius: 14px; }
+.banner .steps { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+.banner .steps li { padding: 4px 6px 4px 12px; background: #fff; border-radius: 99px; gap: 8px; }
+.banner .steps li::before { width: 22px; height: 22px; font-size: 12px; }
+.banner .steps li span { font-size: 14px; }
+.banner .steps li button { min-height: 36px; border-radius: 99px; }
+
+/* The goal is one row of three; the explanation of the chosen one sits underneath. */
+fieldset.choices { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+fieldset.choices legend { grid-column: 1 / -1; }
+.choice { align-items: center; justify-content: center; text-align: center; padding: 10px 8px; min-height: 56px; position: relative; }
+.choice input { position: absolute; opacity: 0; width: 100%; height: 100%; inset: 0; margin: 0; cursor: pointer; }
+.choice b { font-size: 15px; line-height: 1.4; }
+#goal-help { min-height: 1.7em; margin-bottom: 14px; }
+
+/* Settings open over the page instead of being another page. */
+dialog.panel { margin: 0 0 0 auto; height: 100vh; max-height: 100vh; width: min(560px, 100vw); border-radius: 20px 0 0 20px; }
+dialog.panel > details:first-of-type { border-top: 0; }
+
+@media (max-width: 999px) {
+  .board { grid-template-columns: 1fr; }
+  #current { max-height: none; min-height: 0; }
+  #history-section .list { max-height: none; }
+  dialog.panel { border-radius: 0; width: 100vw; }
+}
+@media (max-width: 600px) {
+  fieldset.choices { grid-template-columns: 1fr; }
+  .banner { padding: 12px; }
+  .banner .steps li { border-radius: 14px; width: 100%; }
+}
+
+/* Short laptop screens: same layout, tighter spacing, so the board still fits without scrolling. */
+@media (min-width: 1000px) and (max-height: 960px) {
+  header { padding-block: 8px; }
+  main { padding-top: 12px; }
+  .board { gap: 14px; } .side { gap: 14px; }
+  .board .card { padding: 16px 20px; }
+  .board h1 { font-size: 21px; margin-bottom: 10px; }
+  .board label { margin-bottom: 10px; font-size: 14px; }
+  .board input:not([type=checkbox]):not([type=radio]), .board select { min-height: 44px; padding-block: 8px; margin-top: 5px; }
+  .board textarea#request { height: 76px; padding-block: 10px; margin-top: 5px; }
+  .choice { min-height: 48px; padding-block: 6px; }
+  #goal-help { margin-bottom: 8px; font-size: 13px; }
+  .board .check { margin-top: 8px; margin-bottom: 4px; }
+  .board form details > summary { min-height: 44px; padding-block: 4px; }
+  .board form details { margin-bottom: 4px; }
+  button.wide { margin-top: 2px; min-height: 48px; }
+  #readiness { margin: 8px 0 0; font-size: 13px; }
+  #history-section { padding-block: 12px; }
+  .banner { margin-bottom: 10px; padding-block: 8px; }
+}

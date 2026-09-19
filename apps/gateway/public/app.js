@@ -44,6 +44,74 @@ const ERRORS = {
   read_only_account: 'このアカウントは見るだけの権限です。',
   unauthorized: 'トークンが違うようです。もう一度貼り付けてください。',
   rate_limited: '操作が多すぎます。少し待ってからお試しください。',
+  // Filling in forms
+  invalid_text: '入力が空か、長すぎます。内容を確かめてください。',
+  invalid_email: 'メールアドレスの形を確かめてください。',
+  invalid_crm_contact_id: 'HubSpot Contact ID は数字だけで入力してください。',
+  contact_relationship_required: '連絡する理由を選んでください。',
+  product_facts_require_review: '「内容が正しいことを確認しました」にチェックを入れてください。',
+  invalid_duration: '通話の上限（秒）が範囲の外です。「くわしい設定」で見直してください。',
+  invalid_budget: '費用の上限が範囲の外です。「くわしい設定」で見直してください。',
+  invalid_slots: '候補日時は8つまでです。',
+  slot_requires_future_time_and_timezone: '候補日時は「2026-10-03T15:00:00+09:00」のように、これから先の日時を時差つきで入力してください。',
+  invalid_goal: '電話の目的を選んでください。',
+  review_current_privacy_notice: '会話データの取り扱いが更新されています。ページを読み込み直して、もう一度同意してください。',
+  // Importing a product page
+  unsafe_product_url: 'このURLは取り込めません。https:// で始まる公開ページを指定してください。',
+  private_address_blocked: 'このURLは取り込めません。社内ネットワークなど、外から見えないページは対象外です。',
+  product_page_unavailable: 'ページを開けませんでした。URLを確かめるか、内容を手で入力してください。',
+  product_page_too_large: 'ページが大きすぎて取り込めません。内容を手で入力してください。',
+  product_page_timeout: 'ページの応答が遅く、取り込めませんでした。内容を手で入力してください。',
+  // Things that changed between confirming and calling
+  mission_already_started: 'この電話はすでに始まっています。',
+  mission_changed_review_again: '内容が変わったので、もう一度「内容を確認する」から進めてください。',
+  product_changed_review_again: '商品の内容が変わったので、もう一度確認してください。',
+  contact_changed_review_again: '相手の情報が変わったので、もう一度確認してください。',
+  recipient_changed_review_again: '送り先が変わったので、もう一度確認してください。',
+  plugin_changed_review_again: '接続先のサービスが更新されたので、もう一度確認してください。',
+  call_plugin_changed_review_again: '電話の接続方法が更新されたので、もう一度確認してください。',
+  configuration_changed: 'サーバーの設定が変わりました。もう一度「内容を確認する」から進めてください。',
+  verified_phone_changed: '確認済みの自分の番号が変わりました。もう一度確認してください。',
+  idempotency_conflict: '同じ操作が重なりました。ページを読み込み直してください。',
+  explicit_call_approval_required: 'チェックを入れて、この1件の発信を承認してください。',
+  // Own number and live calls
+  phone_verification_not_configured: 'このサーバーでは、SMSで番号を確認する設定がまだ済んでいません。練習モードでは確認は不要です。',
+  verification_sms_approval_required: 'チェックを入れて、確認用SMSの送信に同意してください。',
+  invalid_verification_code: '確認コードは数字で入力してください。',
+  verification_not_approved: '確認コードが違うようです。もう一度入力してください。',
+  verification_expired: '確認コードの有効期限が切れました。もう一度SMSを送ってください。',
+  verification_daily_limit: '今日はこれ以上SMSを送れません。明日お試しください。',
+  verification_check_limit: 'コードの入力回数が上限に達しました。1時間ほど待ってからお試しください。',
+  real_phone_verification_required: '実電話で自分にかけるには、SMSで確認した自分の番号が必要です。',
+  simulator_contact_not_valid_for_live: 'この相手は練習用です。実電話では使えません。',
+  // During and after a call
+  handoff_not_available: 'いまは自分に代われません。通話中にだけ使えます。',
+  call_not_ready_for_handoff: '相手がまだ続行を了承していないため、代われません。',
+  insufficient_time_for_handoff: '通話の残り時間が少なく、代われません。',
+  handoff_requires_real_verified_operator_number: '代わるには、SMSで確認した自分の番号が必要です（相手と同じ番号は使えません）。',
+  handoff_outcome_unknown: '交代できたか確認できませんでした。「回線の状態を確認する」を押してください。',
+  carrier_sid_unknown_check_provider_console: '回線の情報が残っていません。電話会社の管理画面で状態を確認してください。',
+  stop_and_reconcile_call_before_deletion: 'この電話は状態がはっきりしていません。先に「回線の状態を確認する」を押してください。',
+  // Follow-ups
+  finished_real_call_required: 'メールや予定を送れるのは、実電話が終わったあとだけです（練習では送れません）。',
+  integration_not_configured_for_this_account: 'このアカウントでは、その送り先のサービスが設定されていません。',
+  followup_requires_business_contact: '自分へのテスト電話には送れません。',
+  followup_attempt_limit: 'この電話について送れる回数の上限に達しました。',
+  contact_permission_not_in_call_evidence: '相手が「送ってよい」と言った記録がないため、送れません。',
+  future_meeting_agreement_required: '相手と決まった、これから先の商談日時がないため、予定を送れません。',
+  calendar_time_must_match_evidence: '予定の日時は、電話で決まった日時と同じにしてください。',
+  registered_crm_contact_id_required: 'この相手に HubSpot Contact ID が登録されていません。',
+  contact_email_required: 'この相手にメールアドレスが登録されていません。',
+  followup_expired_or_used: '確認から時間がたったか、すでに送りました。もう一度「送る内容を確認」から進めてください。',
+  explicit_followup_approval_required: 'チェックを入れて、送る内容を承認してください。',
+  google_authorization_failed: 'Googleへの接続に失敗しました。管理者に確認してください。',
+  // Chat link, permissions, misc
+  link_code_expired: '連携用メッセージの有効期限が切れました。もう一度作ってください。',
+  channel_already_linked: 'このチャットは、別のアカウントとつながっています。',
+  administrator_required: 'この操作は管理者だけができます。',
+  not_found: '見つかりませんでした。ページを読み込み直してください。',
+  request_too_large: '入力が大きすぎます。短くしてください。',
+  cross_origin_request_denied: 'このページのアドレスが、サーバーの設定と違います。設定されたアドレスで開き直してください。',
 };
 
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = String(text); if (cls) n.className = cls; return n; };
@@ -61,7 +129,8 @@ async function api(path, method = 'GET', data, headers = {}) {
     ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
   });
   const value = await r.json();
-  if (!r.ok) throw Error(ERRORS[value.error] ?? `うまくいきませんでした（${value.error ?? r.status}）`);
+  // A code the page has no words for still gets a sentence; the code stays for whoever is asked to help.
+  if (!r.ok) throw Error(ERRORS[value.error] ?? `うまくいきませんでした。少し待ってもう一度お試しください。（問い合わせ用コード：${value.error ?? r.status}）`);
   return value;
 }
 /** Wire a form or button: disable while running, show failures as a message instead of throwing. */
@@ -83,7 +152,17 @@ function options(id, values, placeholder) {
   select.replaceChildren(...(values.length ? values : [{ id: '', name: placeholder }]).map(v => { const o = el('option', v.name); o.value = v.id; return o; }));
   if (values.some(v => v.id === old)) select.value = old;
 }
-function open(id) { const d = $(id); d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+/** Settings live in a panel over the page; opening one section closes the others so the panel stays short. */
+function open(id) {
+  for (const d of document.querySelectorAll('#settings > details')) d.open = d.id === id;
+  if (!$('settings').open) $('settings').showModal();
+  if (id) $(id).scrollIntoView({ block: 'nearest' });
+}
+const GOAL_HELP = {
+  meeting: '相手が日時をはっきり了承したときだけ「決まった」になります。',
+  materials: '了承があれば、あとでメールやSMSを送れます。',
+  introduce: '説明を聞いてもらえたかを確認します。',
+};
 
 // ---------------------------------------------------------------------------------------------- setup
 
@@ -100,6 +179,12 @@ function renderSetup() {
   $('consent-state').textContent = consented ? '同意済み' : '未同意';
   $('consent').hidden = consented;
   $('phone-state').textContent = state.account.verifiedPhone ? '確認済み' : '未確認';
+  // Verifying a number sends a real SMS through the carrier. Where that is not set up, say so instead of offering a form that fails.
+  const canVerify = state.available?.phoneVerification === true;
+  $('phone-form').hidden = !canVerify; $('phone-unavailable').hidden = canVerify;
+  $('phone-unavailable').textContent = state.configuration.mode === 'simulator'
+    ? '練習モードでは番号の確認は必要ありません。練習用の番号が最初から入っているので、「まず自分の番号にかけて試す」もそのまま試せます（実際の電話はかかりません）。'
+    : 'このサーバーでは、SMSで番号を確認する設定（Twilio Verify）がまだ済んでいません。管理者に確認してください。';
 }
 
 // ---------------------------------------------------------------------------------------------- page
@@ -111,8 +196,10 @@ async function refresh() {
   $('mode').textContent = c.mode === 'simulator' ? '練習モード（電話はかかりません）' : '実電話モード';
   $('mode').className = 'badge ' + (c.mode === 'simulator' ? 'practice' : 'live');
   $('readiness').textContent = c.mode === 'simulator'
-    ? '練習モードです。台本の相手と話すだけで、実際の電話はかかりません。費用もかかりません。'
-    : c.liveReady ? '実電話モードです。発信の前に、相手・目的・費用を必ず確認します。' : '実電話の設定が終わっていません（未設定：' + c.missing.join('、') + '）';
+    ? 'まだ電話はかかりません。練習モードなので、承認しても実際の電話はかからず、費用もかかりません。'
+    : c.liveReady ? 'まだ電話はかかりません。次の画面で相手・目的・費用を確かめて、承認したときだけ発信します。' : '実電話の設定が終わっていません（未設定：' + c.missing.join('、') + '）';
+  $('goal-help').textContent = GOAL_HELP[goal()];
+  $('detail-empty').hidden = selected !== null;
   options('product', state.products, '（設定で商品を登録してください）');
   options('contact', state.contacts, '（設定で相手を登録してください）');
   options('suppress-contact', state.contacts, '（登録された相手がいません）');
@@ -129,12 +216,12 @@ function suggestRequest() {
   $('request').value = GOAL_TEXT[goal()](name); $('request').dataset.suggested = 'true';
 }
 // Keep the suggestion in step with the choices, but never overwrite what the person typed.
-for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { if ($('request').dataset.suggested === 'true') suggestRequest(); });
+for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { $('goal-help').textContent = GOAL_HELP[goal()]; if ($('request').dataset.suggested === 'true') suggestRequest(); });
 $('request').addEventListener('input', () => { $('request').dataset.suggested = 'false'; });
 $('test-me').addEventListener('change', () => { $('contact').disabled = $('test-me').checked; });
 
 function renderHistory() {
-  const all = state.missions, shown = showAll ? all : all.slice(0, 5), dest = $('history');
+  const all = state.missions, shown = showAll ? all : all.slice(0, 4), dest = $('history');
   dest.replaceChildren();
   if (!all.length) dest.append(el('p', 'まだありません。上のフォームから最初の電話を任せてみましょう。', 'muted'));
   for (const m of shown) {
@@ -143,7 +230,7 @@ function renderHistory() {
     b.addEventListener('click', () => openMission(m.id).catch(e => notice(e.message)));
     dest.append(b);
   }
-  $('more').hidden = showAll || all.length <= 5;
+  $('more').hidden = showAll || all.length <= 4;
 }
 const tone = s => s === 'COMPLETED' ? 'good' : ['DECLINED', 'FAILED', 'UNKNOWN'].includes(s) ? 'bad' : FINISHED.includes(s) ? 'open' : 'busy';
 
@@ -153,15 +240,15 @@ async function openMission(id, scroll = true) {
   selected = id;
   renderDetail(await api('/missions/' + id));
   renderHistory();
-  if (scroll) $('current').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (scroll && window.matchMedia('(max-width: 999px)').matches) $('current').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 let lastDetail = '';
 function renderDetail(m) {
   // The page polls; redraw only when something changed, so an open transcript stays open and nothing jumps.
   const snapshot = JSON.stringify([m, state.followups?.filter(f => f.missionId === m.id), state.integrations]);
-  if (snapshot === lastDetail && !$('current').hidden) return; lastDetail = snapshot;
-  const d = $('detail'); $('current').hidden = false; d.replaceChildren();
+  if (snapshot === lastDetail && $('detail').childElementCount) return; lastDetail = snapshot;
+  const d = $('detail'); $('detail-empty').hidden = true; d.replaceChildren();
   d.append(el('p', `${m.target.name} への電話${m.mode === 'simulator' ? '（練習）' : ''}`, 'eyebrow'), el('h2', STATUS[m.status] ?? m.status, 'state-title ' + tone(m.status)));
 
   if (!FINISHED.includes(m.status) && m.status !== 'DRAFT') {
@@ -209,10 +296,10 @@ function renderDetail(m) {
   if (m.mode === 'live' && m.status === 'ACTIVE') actions.append(button('自分に代わる', async () => { if (confirm('確認済みの自分の番号につなぎます。回線がもう1本ぶんの料金がかかります。続けますか？')) { await api('/missions/' + m.id + '/handoff', 'POST', { acknowledged: true }); await openMission(m.id, false); } }));
   if (m.mode === 'live' && m.carrierSid && ['UNKNOWN', 'HANDOFF_PENDING', 'HANDOFF_ACTIVE'].includes(m.status)) actions.append(button('回線の状態を確認する', async () => { await api('/missions/' + m.id + '/reconcile', 'POST', { acknowledged: true }); await openMission(m.id, false); }));
   if (['COMPLETED', 'INCOMPLETE'].includes(m.status) && state.integrations?.length) actions.append(button('メール・予定などを送る', () => { followup = null; $('followup-preview').textContent = ''; $('followup-send').disabled = true; $('followup-ack').checked = false; $('followup').showModal(); }));
-  if (FINISHED.includes(m.status)) actions.append(button('同じ相手にもう一度', () => { $('contact').value = m.target.id; $('request').value = m.request; $('request').dataset.suggested = 'false'; $('ask').scrollIntoView({ behavior: 'smooth' }); }));
+  if (FINISHED.includes(m.status)) actions.append(button('同じ相手にもう一度', () => { $('contact').value = m.target.id; $('request').value = m.request; $('request').dataset.suggested = 'false'; $('request').focus(); }));
   if (['DRAFT', 'COMPLETED', 'INCOMPLETE', 'DECLINED', 'FAILED', 'CANCELLED'].includes(m.status)) actions.append(button('この記録を消す', async () => {
     if (!confirm('この電話の記録を消します。メールなど、すでに外部に送ったものは消えません。')) return;
-    await api('/missions/' + m.id, 'DELETE'); selected = null; $('current').hidden = true; await refresh();
+    await api('/missions/' + m.id, 'DELETE'); selected = null; lastDetail = ''; $('detail').replaceChildren(); await refresh();
   }));
   d.append(actions);
 }
@@ -238,22 +325,23 @@ async function showReview(id) {
 
 on('login-form', 'submit', async () => {
   token = $('token').value.trim(); await refresh(); $('token').value = '';
-  $('login').hidden = true; $('workspace').hidden = false; $('logout').hidden = false;
+  $('login').hidden = true; $('workspace').hidden = false; $('logout').hidden = false; $('open-settings').hidden = false; document.body.classList.add('signed-in');
   const running = state.missions.find(m => !FINISHED.includes(m.status) && m.status !== 'DRAFT');
   if (running) await openMission(running.id, false);
 });
-on('logout', 'click', () => { token = ''; state = null; selected = null; $('workspace').hidden = true; $('logout').hidden = true; $('mode').hidden = true; $('login').hidden = false; });
+on('logout', 'click', () => { token = ''; state = null; selected = null; lastDetail = ''; $('detail').replaceChildren(); $('workspace').hidden = true; $('logout').hidden = true; $('open-settings').hidden = true; $('mode').hidden = true; $('login').hidden = false; document.body.classList.remove('signed-in'); });
+on('open-settings', 'click', () => open(''));
 on('refresh', 'click', refresh);
 on('more', 'click', () => { showAll = true; renderHistory(); });
-on('consent', 'click', async () => { await api('/consent', 'POST', { version: state.configuration.consentVersion }); await refresh(); $('s-consent').open = false; notice('同意を保存しました。'); });
+on('consent', 'click', async () => { await api('/consent', 'POST', { version: state.configuration.consentVersion }); await refresh(); $('settings').close(); notice('同意を保存しました。'); });
 on('product-form', 'submit', async e => {
   await api('/products', 'POST', { name: $('product-name').value, facts: $('facts').value, source: $('product-url').value, reviewed: $('facts-reviewed').checked });
-  e.target.reset(); await refresh(); $('s-product').open = false; notice('商品を保存しました。');
+  e.target.reset(); await refresh(); $('settings').close(); notice('商品を保存しました。');
 });
 on('import-form', 'submit', async () => { const r = await api('/products/import', 'POST', { url: $('product-url').value }); $('facts').value = r.content; $('facts-reviewed').checked = false; notice('取り込みました。内容を確かめて、必要なら直してください。まだ電話には使われません。'); });
 on('contact-form', 'submit', async e => {
   const saved = await api('/contacts', 'POST', { name: $('contact-name').value, phone: $('contact-phone').value, email: $('contact-email').value, relationship: $('relationship').value, basis: $('contact-basis').value, crmId: $('crm-id').value });
-  e.target.reset(); await refresh(); $('contact').value = saved.id; $('s-contact').open = false; suggestRequest(); notice(`${saved.name} を登録しました。`);
+  e.target.reset(); await refresh(); $('contact').value = saved.id; $('settings').close(); suggestRequest(); notice(`${saved.name} を登録しました。`);
 });
 on('phone-form', 'submit', async () => { const r = await api('/phone/verify', 'POST', { phone: $('my-phone').value, code: $('phone-code').value, acknowledged: $('verify-ack').checked }); await refresh(); notice(r.verified ? '電話番号を確認しました。' : '確認用のSMSを送りました。届いたコードを入力して、もう一度押してください。'); });
 on('link', 'click', async () => { const r = await api('/links', 'POST', {}); $('link-code').textContent = r.message; });

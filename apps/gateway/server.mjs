@@ -101,6 +101,8 @@ export async function createGateway(config,options={}){
       }
       if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},account:service.account(u),integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).map(({transcript,runtimeResult,...m})=>m),
         ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
+        // Lets the page hide what cannot work here instead of offering it and failing.
+        available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl}});
       if(method==='GET'&&path==='/v1/audit'){
         assert(u.role==='admin','administrator_required',403);
