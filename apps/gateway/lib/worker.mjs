@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
-import { evaluateSales, stopContact, refusal } from './sales.mjs';
+import { evaluateSales, wantsNoContact } from './sales.mjs';
 import { terminal } from './service.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
@@ -34,13 +34,17 @@ export class Worker {
       const m=this.store.list('mission',undefined,'QUEUED').reverse()[0]; if(!m) return;
       const u=this.service.user(m.owner);
       try { this.service.checkPolicy(u,m); assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409); }
-      catch(e) { m.status='FAILED'; m.finishedAt=this.store.now(); m.error=e.code??'policy_rejected'; this.store.put('mission',m); this.service.notify(m,'result'); return; }
+      catch(e) { m.status='FAILED'; m.finishedAt=this.store.now(); m.error=e.code??'policy_rejected'; this.store.put('mission',m); this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error}); this.service.notify(m,'result'); return; }
       m.status='DIALING'; m.executionId=randomUUID(); this.store.put('mission',m); this.store.event(m,{type:'status',status:'DIALING'});
+      this.store.audit(m.owner,'call.dialing',m.id,{mission:m.id,execution:m.executionId,target:this.store.phoneRef(m.target.phone),mode:m.mode,approvedAt:m.approvedAt});
       this.service.notify(m,'発信しています。');
       const active={ id:m.id,abort:new AbortController(),control:{} }; this.active=active;
       active.promise=this.run(m,active).finally(()=>{ if(this.active===active) this.active=null; });
     } finally { this.busy=false; }
   }
+  /** Suppress and leave a trace of why: a number that silently stops being callable is as hard to explain as one that does not. */
+  suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
+  finished(current,connected) { this.store.audit(current.owner,'call.result',current.id,{mission:current.id,status:current.status,connected,carrierSid:current.carrierSid??null,doNotContact:current.result?.doNotContact===true,verified:Object.keys(current.result?.verified??{}),error:current.error??null}); }
   async run(m,active) {
     const turns=[]; let connected=false;
     const watchdog=setTimeout(()=>active.abort.abort(),(m.maxSeconds+30)*1000);
@@ -49,10 +53,10 @@ export class Worker {
       if(e.type==='call.connected') { connected=true; if(current.status==='DIALING') current.status='ACTIVE'; }
       if(e.type==='carrier.sid') current.carrierSid=e.sid;
       if(e.type==='callee.consent') current.calleeConsented=true;
-      if(e.type==='contact.opt_out') { current.optOut=true; this.store.suppress(m.team,m.target.phone); active.abort.abort(); }
+      if(e.type==='contact.opt_out') { current.optOut=true; this.suppress(m,'dtmf'); active.abort.abort(); }
       if(e.type==='transcript.final') {
         turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t});
-        if(e.source==='callee' && (stopContact(e.text) || refusal.test(e.text))) { this.store.suppress(m.team,m.target.phone); active.abort.abort(); }
+        if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); active.abort.abort(); }
       }
       if(['call.connected','carrier.sid','callee.consent','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff'].includes(e.type)) {
         this.store.event(current,e); this.store.put('mission',current);
@@ -63,23 +67,23 @@ export class Worker {
       if(!turns.length && outcome.transcript) turns.push(...outcome.transcript);
       const result=evaluateSales(turns,m,connected,this.store.now());
       if(this.store.get('mission',m.id)?.optOut) { result.status='DECLINED'; result.doNotContact=true; result.verified={}; result.evidence.push({field:'do_not_contact',source:'dtmf',value:true,quote:'電話の連絡停止操作（2）'}); }
-      if(result.doNotContact) this.store.suppress(m.team,m.target.phone);
+      if(result.doNotContact && !this.store.suppressed(m.team,m.target.phone)) this.suppress(m,'verdict');
       const current=this.store.get('mission',m.id);
       current.result=result; current.transcript=turns; current.runtimeResult=outcome.result??null;
       current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':active.abort.signal.aborted?'INCOMPLETE':result.status;
       if(current.handoff?.status && current.handoff.status!=='COMPLETED') current.status=current.handoff.status==='UNKNOWN'?'UNKNOWN':current.handoff.status==='CONNECTED'?'HANDOFF_ACTIVE':'HANDOFF_PENDING';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       if(terminal(current.status)) current.finishedAt=this.store.now();
-      this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status,result}); this.service.notify(current,'result');
+      this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status,result}); this.finished(current,connected); this.service.notify(current,'result');
     } catch(e) {
       const current=this.store.get('mission',m.id); if(!current) return;
       const result=evaluateSales(turns,m,connected,this.store.now());
       if(this.store.get('mission',m.id)?.optOut) { result.status='DECLINED'; result.doNotContact=true; result.verified={}; result.evidence.push({field:'do_not_contact',source:'dtmf',value:true,quote:'電話の連絡停止操作（2）'}); }
-      if(result.doNotContact) this.store.suppress(m.team,m.target.phone);
+      if(result.doNotContact && !this.store.suppressed(m.team,m.target.phone)) this.suppress(m,'verdict');
       current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':e.uncertain?'UNKNOWN':'FAILED';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       current.error=e.code??'execution_failed'; current.result=result; current.transcript=turns; current.finishedAt=this.store.now();
-      this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.service.notify(current,'result');
+      this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.finished(current,connected); this.service.notify(current,'result');
     } finally { clearTimeout(watchdog); }
   }
   async stop() {

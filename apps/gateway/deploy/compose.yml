@@ -6,6 +6,8 @@ services:
     env_file: ../../../.env.gateway
     environment:
       HOST: 0.0.0.0
+      # The gateway is only reachable through Caddy here (port 4244 is exposed, not published).
+      OATHRA_TRUST_PROXY: "true"
       OATHRA_DB: /data/gateway.sqlite
     volumes:
       - gateway-data:/data

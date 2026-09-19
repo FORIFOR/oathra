@@ -9,7 +9,7 @@ export class Service {
   write(u) { assert(['admin','operator'].includes(u.role), 'read_only_account', 403); }
   own(kind, id, u) { const r = this.store.get(kind, id); assert(r && r.owner === u.id, 'not_found', 404); return r; }
   account(u) { return this.store.get('account', u.id) ?? { id: u.id, owner: u.id, consentVersion: null, verifiedPhone: null }; }
-  saveConsent(u, version) { this.write(u); assert(version === this.config.consentVersion, 'review_current_privacy_notice'); return this.store.put('account', { ...this.account(u), consentVersion: version, consentAt: this.store.now() }); }
+  saveConsent(u, version) { this.write(u); assert(version === this.config.consentVersion, 'review_current_privacy_notice'); this.store.audit(u.id, 'consent.saved', u.id, { version }); return this.store.put('account', { ...this.account(u), consentVersion: version, consentAt: this.store.now() }); }
   product(u, input) {
     this.write(u); assert(input.reviewed === true, 'product_facts_require_review');
     const old = input.id ? this.own('product', input.id, u) : null;
@@ -27,7 +27,7 @@ export class Service {
     assert(!record.email || /^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/.test(record.email), 'invalid_email');
     this.store.audit(u.id, 'contact.saved', record.id); return this.store.put('contact', record);
   }
-  prepare(u, input, origin = null, sourceKey = null) {
+  prepare(u, input, origin = null, sourceKey = null, record = true) {
     assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);
     if (sourceKey) { const found = this.store.key(`draft:${u.id}`, sourceKey); if (found) return this.own('mission', found, u); }
     const request = text(input.request, 2000), products = this.store.list('product', u.id), contacts = this.store.list('contact', u.id);
@@ -54,16 +54,17 @@ export class Service {
     const m = { id: randomUUID(), owner: u.id, team: u.team, revision: 1, status: 'DRAFT', product, target, request, goal,
       candidateSlots: slots, testOnMe: self, mode: this.config.mode, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
       callerId: this.config.callerId ?? 'simulator', callPluginIdentity: this.config.callPluginIdentity ?? null, createdAt: this.store.now(), origin, sourceKey, result: null };
-    this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); this.store.audit(u.id, 'mission.drafted', m.id); });
+    this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); });
     return m;
   }
   edit(u, id, input) {
     const m = this.own('mission', id, u); this.write(u); assert(m.status === 'DRAFT', 'mission_already_started', 409);
     const replacement = this.prepare(u, { request: input.request ?? m.request, productId: m.product.id, ...(m.testOnMe ? { testOnMe: true } : { contactId: m.target.id }),
-      goal: input.goal ?? m.goal, maxSeconds: input.maxSeconds ?? m.maxSeconds, maxUsd: input.maxUsd ?? m.maxUsd, candidateSlots: input.candidateSlots ?? m.candidateSlots });
-    this.store.removeMission(replacement);
+      goal: input.goal ?? m.goal, maxSeconds: input.maxSeconds ?? m.maxSeconds, maxUsd: input.maxUsd ?? m.maxUsd, candidateSlots: input.candidateSlots ?? m.candidateSlots }, null, null, false);
+    // The replacement only exists to reuse prepare()'s validation; it is not a mission anyone drafted or deleted.
+    this.store.removeMission(replacement, false);
     const changed = { ...replacement, id: m.id, createdAt: m.createdAt, origin: m.origin, sourceKey: m.sourceKey, revision: m.revision + 1 };
-    this.store.put('mission', changed); return changed;
+    this.store.put('mission', changed); this.store.audit(u.id, 'mission.edited', m.id, { mission: m.id, revision: changed.revision, goal: changed.goal }); return changed;
   }
   fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode,m.callPluginIdentity??null])); }
   grant(u, m, action = 'start', extra = {}) {
@@ -104,7 +105,8 @@ export class Service {
       assert(!this.store.list('mission',u.id).some(x => x.id!==m.id && x.target.phone === m.target.phone && ((x.status!=='DRAFT' && !terminal(x.status)) || x.status==='UNKNOWN')), 'recipient_has_active_call', 409);
       m.status = 'QUEUED'; m.approvedAt = this.store.now(); m.approvalExpiresAt = this.store.now() + 300_000;
       this.store.put('mission', m); this.store.put('reservation',{id:m.id,owner:u.id,approvedAt:m.approvedAt,estimatedMaximumUsd:m.estimatedMaximumUsd}); this.store.delKey('approval', tokenHash);
-      this.store.setKey(`start:${u.id}`, key, JSON.stringify({ id: m.id, tokenHash })); this.store.audit(u.id, 'call.approved', m.id);
+      this.store.setKey(`start:${u.id}`, key, JSON.stringify({ id: m.id, tokenHash }));
+      this.store.audit(u.id, 'call.approved', m.id, { mission: m.id, revision: m.revision, fingerprint: this.fingerprint(m), target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, callerId: m.callerId, via: key.startsWith('channel:') ? (m.origin?.channel ?? 'channel') : 'api', actor: key.startsWith('channel:') ? hash(m.origin?.actor ?? '') : null });
       this.store.event(m, { type: 'status', status: m.status }); return m;
     });
   }
@@ -113,7 +115,7 @@ export class Service {
     if (terminal(m.status)) return m;
     m.status = ['DRAFT','QUEUED'].includes(m.status) ? 'CANCELLED' : 'CANCEL_REQUESTED';
     if (m.status === 'CANCELLED') m.finishedAt = this.store.now();
-    this.store.put('mission', m); this.store.audit(u.id, 'call.cancel_requested', m.id); return m;
+    this.store.put('mission', m); this.store.audit(u.id, 'call.cancel_requested', m.id, { mission: m.id, status: m.status }); return m;
   }
   linkCode(u) { this.write(u); const code = random(); this.store.setKey('link', hash(code), u.id, 300_000); return code; }
   link(channel, actor, code) {

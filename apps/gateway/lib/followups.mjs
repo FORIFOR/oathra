@@ -79,7 +79,8 @@ export class Followups {
       action.delivery='Provider accepted the request; recipient receipt, reading, and acceptance are not established.';
       if(action.effect==='calendar')action.attendeeResponse='needsAction';
     } catch(error) { action.status=error.definitive?'REJECTED':'UNKNOWN';action.error='delivery_requires_provider_reconciliation'; }
-    this.store.put('followup',action);return action;
+    this.store.put('followup',action);
+    this.store.audit(u.id,'followup.result',id,{followup:id,mission:action.missionId,kind:action.kind,effect:action.effect,status:action.status,providerId:action.providerId??null});return action;
   }
   async send(a,bearer,beforeSend) {
     const p=this.plugin(a.kind),abort=new AbortController();let timer;

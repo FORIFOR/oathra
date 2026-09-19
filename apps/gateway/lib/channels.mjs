@@ -43,7 +43,7 @@ export class Channels {
     const binding=message.trim().match(/^(?:連携|link)\s+([\w-]{40,100})$/i);
     if(binding){this.registry.demand(kind,'mission:draft');const u=this.service.link(kind,actor,binding[1]);this.reply(job,u,origin,'連携しました。登録済みの相手と商品を指定して依頼してください。メッセージだけでは発信しません。',[],'linked');return;}
     let u;try{u=this.service.channelUser(kind,actor);}catch{return;}
-    if(e.type==='unlink'){this.store.delKey(`identity:${kind}`,actor);return;}
+    if(e.type==='unlink'){this.store.delKey(`identity:${kind}`,actor);this.store.audit(u.id,'channel.unlinked',kind,{channel:kind});return;}
     if(e.type==='unsend'){
       for(const m of this.store.list('mission',u.id))if(m.origin?.channel===kind&&m.origin?.actor===actor&&m.sourceMessageId===e.sourceMessageId){
         this.service.cancel(u,m.id);if(['CANCELLED','DRAFT'].includes(this.store.get('mission',m.id)?.status))this.store.removeMission(m);

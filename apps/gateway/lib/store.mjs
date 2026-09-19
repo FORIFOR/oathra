@@ -18,6 +18,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,mission TEXT NOT NULL,owner TEXT NOT NULL,body TEXT NOT NULL,created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,owner TEXT NOT NULL,action TEXT NOT NULL,subject TEXT NOT NULL,created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS lease(id INTEGER PRIMARY KEY CHECK(id=1),holder TEXT NOT NULL,expires INTEGER NOT NULL);`);
+    // Databases created before audit details existed gain the column in place.
+    if (!this.db.prepare('PRAGMA table_info(audit)').all().some(c => c.name === 'detail')) this.db.exec("ALTER TABLE audit ADD COLUMN detail TEXT NOT NULL DEFAULT ''");
     if (path !== ':memory:') chmodSync(path, 0o600);
   }
   seal(value) {
@@ -52,7 +54,16 @@ export class Store {
     return Number(r.lastInsertRowid);
   }
   events(mission, owner, after = 0) { return this.db.prepare('SELECT seq,body FROM events WHERE mission=? AND owner=? AND seq>? ORDER BY seq LIMIT 500').all(mission, owner, after).map(r => ({ seq: r.seq, ...this.open(r.body) })); }
-  audit(owner, action, subject) { this.db.prepare('INSERT INTO audit(owner,action,subject,created) VALUES(?,?,?,?)').run(owner, action, hash(subject), this.now()); }
+  /** A keyed hash of a phone number: lets audit rows about the same person be correlated without storing the number. */
+  phoneRef(phone) { return mac(this.cipherKey, phone).slice(0, 32); }
+  /** `subject` stays a hash; `detail` is sealed like every other payload and must not carry raw phone numbers or transcripts. */
+  audit(owner, action, subject, detail) {
+    this.db.prepare('INSERT INTO audit(owner,action,subject,created,detail) VALUES(?,?,?,?,?)').run(owner, action, hash(subject), this.now(), detail ? this.seal(detail) : '');
+  }
+  audits({ after = 0, limit = 200 } = {}) {
+    return this.db.prepare('SELECT seq,owner,action,subject,created,detail FROM audit WHERE seq>? ORDER BY seq LIMIT ?').all(after, Math.min(500, Math.max(1, limit)))
+      .map(r => ({ seq: r.seq, owner: r.owner, action: r.action, subject: r.subject, created: r.created, detail: r.detail ? this.open(r.detail) : null }));
+  }
   lease(holder) {
     return this.tx(() => {
       const r = this.db.prepare('SELECT * FROM lease WHERE id=1').get();
@@ -62,12 +73,14 @@ export class Store {
   }
   enqueue(kind, id, owner, payload) { if (this.get(kind, id)) return; this.put(kind, { id, owner, status: 'pending', attempts: 0, available: this.now(), payload }); }
   next(kind) { return this.list(kind, undefined, 'pending').reverse().find(r => r.available <= this.now()); }
-  removeMission(m) {
+  removeMission(m, record = true) {
     this.tx(() => { for (const kind of ['followup','inbox','outbox']) for (const r of this.list(kind,m.owner)) {
       if (r.missionId===m.id || r.payload?.missionId===m.id || (kind==='inbox' && r.id===m.sourceKey)) this.db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind,r.id);
     }
     if(m.sourceKey) this.db.prepare("DELETE FROM records WHERE kind='inbox' AND id=?").run(m.sourceKey);
-    this.db.prepare('DELETE FROM events WHERE mission=?').run(m.id); this.db.prepare("DELETE FROM records WHERE kind='mission' AND id=?").run(m.id); this.audit(m.owner, 'mission.deleted', m.id); });
+    this.db.prepare('DELETE FROM events WHERE mission=?').run(m.id); this.db.prepare("DELETE FROM records WHERE kind='mission' AND id=?").run(m.id);
+    // The record is gone; what stays for the audit window is enough to answer "was this person called, when, on whose approval".
+    if (record) this.audit(m.owner, 'mission.deleted', m.id, { mission: m.id, status: m.status, mode: m.mode, goal: m.goal, target: m.target?.phone ? this.phoneRef(m.target.phone) : null, carrierSid: m.carrierSid ?? null, approvedAt: m.approvedAt ?? null, finishedAt: m.finishedAt ?? null, doNotContact: m.result?.doNotContact === true }); });
   }
   prune(retentionDays = 30) {
     const cutoff = this.now() - retentionDays * 86400_000;

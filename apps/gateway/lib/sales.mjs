@@ -16,9 +16,16 @@ try {
 }
 const MEETING = defineCall({ goal: 'sales.meeting', language: 'ja', require: { date: true, time: true, confirmed: true }, confirmation: 'callee_acceptance' });
 
-export const stopContact = t => /(?:今後|二度と|もう).{0,12}(?:電話|連絡).{0,8}(?:しない|しなくて|不要|やめ)|(?:電話|連絡).{0,8}(?:しないで|不要|やめて)|do not (?:call|contact)|don't (?:call|contact)|remove me|stop calling/i.test(t);
+// Stop-contact and refusal are deliberately broad: a false positive only suppresses a number, a false
+// negative lets a person who said no be called again. Both are matched on NFKC-normalised text.
+const STOP_CONTACT = /(?:今後|二度と|もう|一切).{0,12}(?:電話|連絡|営業).{0,10}(?:しない|しなくて|不要|やめ|こない|いりません|結構)|(?:電話|連絡|営業|勧誘).{0,10}(?:しないで|してこないで|こないで|不要|やめて|お断り|遠慮)|(?:かけて|掛けて|して)こないで|(?<!ご)迷惑|(?:リスト|名簿|登録).{0,8}(?:削除|外して|消して|抹消)|(?:もう|二度と)(?:いい|結構)です|do not (?:call|contact)|don't (?:call|contact)|never call|remove me|take me off|stop calling|unsubscribe/i;
+const REFUSAL = /不要です|お断り|興味(?:が|は)?(?:ない|ありません|ございません)|(?<![でて])結構です|(?:いり|要り)ません|必要(?:ない|ありません|ございません)|間に合って(?:い?ます|おります)|(?:今|うち)はいいです|やめてください|not interested|no,? thank|we(?:'re| are) (?:all set|fine)/i;
+const normal = t => String(t ?? '').normalize('NFKC');
+export const stopContact = t => STOP_CONTACT.test(normal(t));
 // 「それで結構です」 accepts; only a free-standing 「結構です」 declines.
-export const refusal = /(?:不要です|お断り|興味(?:が)?(?:ない|ありません)|(?<![でて])結構です|not interested)/i;
+export const refusal = { test: t => REFUSAL.test(normal(t)) };
+/** The callee asked not to be called again, or declined. Either way: stop this call and suppress the number. */
+export const wantsNoContact = t => stopContact(t) || refusal.test(t);
 const uncertain = /仮(?:予約|押さえ)?|未確定|承認待ち|多分|たぶん|かもしれ|確認してから|検討|maybe|perhaps|tentative|not sure|pending/i;
 const negative = /キャンセル|取り消|無理|できません|難しい|だめ|ダメ|変更|cancel|cannot|can't|not available/i;
 const question = /[?？]|ですか|でしょうか|ませんか/;
