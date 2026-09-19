@@ -67,7 +67,7 @@
     en: {
       skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Simulator", realPhone: "Real Phone", local: "Local",
       popTitle: "Running locally.", popSub: "Everything is yours.", popNeed: "Need:", popNumbers: "phone numbers", popSip: "managed SIP", popTeam: "team deployment", popHosted: "hosted inference",
-      startTitle: "Give your agent<br />a mission.", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
+      startTitle: "Pick a call. It starts right below.", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
       agentSelect: "Agent", missions: "Missions", loadingMissions: "Loading missions…", noMissions: "No missions found in scenarios/.", loadMissionsFailed: "Could not load missions: {msg}",
       replays: "Past calls", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
       connectProvider: "Connect a phone provider", provider: "Phone provider", customSip: "Custom SIP", v02: "v0.2",
@@ -97,7 +97,7 @@
     ja: {
       skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "シミュレータ", realPhone: "実電話", local: "ローカル実行",
       popTitle: "この Mac の中だけで動いています。", popSub: "データも通話記録も、あなたの手元にあります。", popNeed: "次が必要になったら Oathra Cloud:", popNumbers: "電話番号", popSip: "マネージド SIP", popTeam: "チームでの運用", popHosted: "推論のホスティング",
-      startTitle: "AIに、ミッションを。", mode: "モード", watch: "AI同士を見る", watchSub: "AI が店に電話する", play: "自分が電話に出る", playSub: "あなたが店員役",
+      startTitle: "電話を選ぶと、この下で始まります。", mode: "モード", watch: "AI同士を見る", watchSub: "AI が店に電話する", play: "自分が電話に出る", playSub: "あなたが店員役",
       agentSelect: "エージェント", missions: "ミッション", loadingMissions: "ミッションを読み込んでいます…", noMissions: "scenarios/ にミッションがありません。", loadMissionsFailed: "ミッションを読み込めませんでした: {msg}",
       replays: "過去の通話", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
       connectProvider: "電話会社をつなぐ", provider: "電話会社", customSip: "自前の SIP", v02: "v0.2 で対応",
@@ -132,7 +132,7 @@
   };
   const TITLE_JA = {
     "restaurant-reservation": "レストラン予約", "impossible-hotel": "無理難題ホテル", "bulk-buy": "まとめ買い交渉",
-    "serial-number": "シリアル番号の復唱", "false-completion-trap": "満席の罠", "friend-chat": "友達と雑談",
+    "serial-number": "シリアル番号の復唱", "false-completion-trap": "満席の罠", "friend-chat": "友達と雑談", "friend-hype": "友達とテンション高めの電話",
     "restaurant-reservation-intake": "レストラン予約・追加の聞き取り",
   };
   const scenarioTitle = (s) => (s && LANG === "ja" && TITLE_JA[s.id]) ? TITLE_JA[s.id] : (s && s.title) || (s && s.id) || "";
@@ -219,9 +219,23 @@
 
   // ------------------------------------------------------------------ screens
   const screens = { start: $("#screen-start"), real: $("#screen-real"), call: $("#screen-call") };
+  // One page: the mission picker never goes away; the call (and then its result) opens right below it.
+  // Presentation mode keeps the old one-screen-at-a-time behaviour for recordings.
   function show(name) {
-    for (const k of Object.keys(screens)) screens[k].hidden = k !== name;
-    window.scrollTo({ top: 0 });
+    if (document.body.classList.contains("present")) {
+      for (const k of Object.keys(screens)) screens[k].hidden = k !== name;
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    screens.start.hidden = false;
+    screens.real.hidden = name !== "real";
+    screens.call.hidden = name !== "call";
+    document.body.classList.toggle("has-call", name === "call");
+    if (name !== "call") $$(".scenario-btn.is-current").forEach((b) => b.classList.remove("is-current"));
+    const target = name === "start" ? null : screens[name];
+    const smooth = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    if (target) requestAnimationFrame(() => target.scrollIntoView({ behavior: smooth, block: "start" }));
+    else window.scrollTo({ top: 0, behavior: smooth });
   }
 
   // ------------------------------------------------------------------ start screen
@@ -259,6 +273,7 @@
           ]),
           el("div", { class: `s-diff ${s.difficulty}`, text: diffLabel(s.difficulty) }),
         ]);
+        btn.dataset.scenario = s.id;
         btn.addEventListener("click", () => startCall(s));
         return btn;
       }),
@@ -332,6 +347,7 @@
     app.call.brain = created.brain || app.brain;
     renderCallShell();
     show("call");
+    $$(".scenario-btn").forEach((b) => b.classList.toggle("is-current", b.dataset.scenario === scenario.id));
     openStream(app.call.id);
   }
 
