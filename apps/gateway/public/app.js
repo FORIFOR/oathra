@@ -44,6 +44,74 @@ const ERRORS = {
   read_only_account: 'このアカウントは見るだけの権限です。',
   unauthorized: 'トークンが違うようです。もう一度貼り付けてください。',
   rate_limited: '操作が多すぎます。少し待ってからお試しください。',
+  // Filling in forms
+  invalid_text: '入力が空か、長すぎます。内容を確かめてください。',
+  invalid_email: 'メールアドレスの形を確かめてください。',
+  invalid_crm_contact_id: 'HubSpot Contact ID は数字だけで入力してください。',
+  contact_relationship_required: '連絡する理由を選んでください。',
+  product_facts_require_review: '「内容が正しいことを確認しました」にチェックを入れてください。',
+  invalid_duration: '通話の上限（秒）が範囲の外です。「くわしい設定」で見直してください。',
+  invalid_budget: '費用の上限が範囲の外です。「くわしい設定」で見直してください。',
+  invalid_slots: '候補日時は8つまでです。',
+  slot_requires_future_time_and_timezone: '候補日時は「2026-10-03T15:00:00+09:00」のように、これから先の日時を時差つきで入力してください。',
+  invalid_goal: '電話の目的を選んでください。',
+  review_current_privacy_notice: '会話データの取り扱いが更新されています。ページを読み込み直して、もう一度同意してください。',
+  // Importing a product page
+  unsafe_product_url: 'このURLは取り込めません。https:// で始まる公開ページを指定してください。',
+  private_address_blocked: 'このURLは取り込めません。社内ネットワークなど、外から見えないページは対象外です。',
+  product_page_unavailable: 'ページを開けませんでした。URLを確かめるか、内容を手で入力してください。',
+  product_page_too_large: 'ページが大きすぎて取り込めません。内容を手で入力してください。',
+  product_page_timeout: 'ページの応答が遅く、取り込めませんでした。内容を手で入力してください。',
+  // Things that changed between confirming and calling
+  mission_already_started: 'この電話はすでに始まっています。',
+  mission_changed_review_again: '内容が変わったので、もう一度「内容を確認する」から進めてください。',
+  product_changed_review_again: '商品の内容が変わったので、もう一度確認してください。',
+  contact_changed_review_again: '相手の情報が変わったので、もう一度確認してください。',
+  recipient_changed_review_again: '送り先が変わったので、もう一度確認してください。',
+  plugin_changed_review_again: '接続先のサービスが更新されたので、もう一度確認してください。',
+  call_plugin_changed_review_again: '電話の接続方法が更新されたので、もう一度確認してください。',
+  configuration_changed: 'サーバーの設定が変わりました。もう一度「内容を確認する」から進めてください。',
+  verified_phone_changed: '確認済みの自分の番号が変わりました。もう一度確認してください。',
+  idempotency_conflict: '同じ操作が重なりました。ページを読み込み直してください。',
+  explicit_call_approval_required: 'チェックを入れて、この1件の発信を承認してください。',
+  // Own number and live calls
+  phone_verification_not_configured: 'このサーバーでは、SMSで番号を確認する設定がまだ済んでいません。練習モードでは確認は不要です。',
+  verification_sms_approval_required: 'チェックを入れて、確認用SMSの送信に同意してください。',
+  invalid_verification_code: '確認コードは数字で入力してください。',
+  verification_not_approved: '確認コードが違うようです。もう一度入力してください。',
+  verification_expired: '確認コードの有効期限が切れました。もう一度SMSを送ってください。',
+  verification_daily_limit: '今日はこれ以上SMSを送れません。明日お試しください。',
+  verification_check_limit: 'コードの入力回数が上限に達しました。1時間ほど待ってからお試しください。',
+  real_phone_verification_required: '実電話で自分にかけるには、SMSで確認した自分の番号が必要です。',
+  simulator_contact_not_valid_for_live: 'この相手は練習用です。実電話では使えません。',
+  // During and after a call
+  handoff_not_available: 'いまは自分に代われません。通話中にだけ使えます。',
+  call_not_ready_for_handoff: '相手がまだ続行を了承していないため、代われません。',
+  insufficient_time_for_handoff: '通話の残り時間が少なく、代われません。',
+  handoff_requires_real_verified_operator_number: '代わるには、SMSで確認した自分の番号が必要です（相手と同じ番号は使えません）。',
+  handoff_outcome_unknown: '交代できたか確認できませんでした。「回線の状態を確認する」を押してください。',
+  carrier_sid_unknown_check_provider_console: '回線の情報が残っていません。電話会社の管理画面で状態を確認してください。',
+  stop_and_reconcile_call_before_deletion: 'この電話は状態がはっきりしていません。先に「回線の状態を確認する」を押してください。',
+  // Follow-ups
+  finished_real_call_required: 'メールや予定を送れるのは、実電話が終わったあとだけです（練習では送れません）。',
+  integration_not_configured_for_this_account: 'このアカウントでは、その送り先のサービスが設定されていません。',
+  followup_requires_business_contact: '自分へのテスト電話には送れません。',
+  followup_attempt_limit: 'この電話について送れる回数の上限に達しました。',
+  contact_permission_not_in_call_evidence: '相手が「送ってよい」と言った記録がないため、送れません。',
+  future_meeting_agreement_required: '相手と決まった、これから先の商談日時がないため、予定を送れません。',
+  calendar_time_must_match_evidence: '予定の日時は、電話で決まった日時と同じにしてください。',
+  registered_crm_contact_id_required: 'この相手に HubSpot Contact ID が登録されていません。',
+  contact_email_required: 'この相手にメールアドレスが登録されていません。',
+  followup_expired_or_used: '確認から時間がたったか、すでに送りました。もう一度「送る内容を確認」から進めてください。',
+  explicit_followup_approval_required: 'チェックを入れて、送る内容を承認してください。',
+  google_authorization_failed: 'Googleへの接続に失敗しました。管理者に確認してください。',
+  // Chat link, permissions, misc
+  link_code_expired: '連携用メッセージの有効期限が切れました。もう一度作ってください。',
+  channel_already_linked: 'このチャットは、別のアカウントとつながっています。',
+  administrator_required: 'この操作は管理者だけができます。',
+  not_found: '見つかりませんでした。ページを読み込み直してください。',
+  request_too_large: '入力が大きすぎます。短くしてください。',
+  cross_origin_request_denied: 'このページのアドレスが、サーバーの設定と違います。設定されたアドレスで開き直してください。',
 };
 
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = String(text); if (cls) n.className = cls; return n; };
@@ -61,7 +129,8 @@ async function api(path, method = 'GET', data, headers = {}) {
     ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
   });
   const value = await r.json();
-  if (!r.ok) throw Error(ERRORS[value.error] ?? `うまくいきませんでした（${value.error ?? r.status}）`);
+  // A code the page has no words for still gets a sentence; the code stays for whoever is asked to help.
+  if (!r.ok) throw Error(ERRORS[value.error] ?? `うまくいきませんでした。少し待ってもう一度お試しください。（問い合わせ用コード：${value.error ?? r.status}）`);
   return value;
 }
 /** Wire a form or button: disable while running, show failures as a message instead of throwing. */
@@ -100,6 +169,12 @@ function renderSetup() {
   $('consent-state').textContent = consented ? '同意済み' : '未同意';
   $('consent').hidden = consented;
   $('phone-state').textContent = state.account.verifiedPhone ? '確認済み' : '未確認';
+  // Verifying a number sends a real SMS through the carrier. Where that is not set up, say so instead of offering a form that fails.
+  const canVerify = state.available?.phoneVerification === true;
+  $('phone-form').hidden = !canVerify; $('phone-unavailable').hidden = canVerify;
+  $('phone-unavailable').textContent = state.configuration.mode === 'simulator'
+    ? '練習モードでは番号の確認は必要ありません。練習用の番号が最初から入っているので、「まず自分の番号にかけて試す」もそのまま試せます（実際の電話はかかりません）。'
+    : 'このサーバーでは、SMSで番号を確認する設定（Twilio Verify）がまだ済んでいません。管理者に確認してください。';
 }
 
 // ---------------------------------------------------------------------------------------------- page
