@@ -1,0 +1,31 @@
+/* One page: the picker stays, the call opens below it. Loaded last so it only adjusts layout. */
+body:not(.present) .screen { min-height: 0; }
+body:not(.present) #screen-start { padding-block: clamp(20px, 4vw, 44px) 12px; }
+body:not(.present) .start-title { font-size: clamp(24px, 3.6vw, 40px); line-height: 1.3; margin-bottom: 18px; max-width: none; }
+body:not(.present) #screen-call, body:not(.present) #screen-real { scroll-margin-top: 72px; padding-top: 8px; }
+body:not(.present) #screen-call { border-top: 1px solid var(--line, #d9d6cc); }
+
+/* Missions as a grid of large cards instead of a long single column. */
+body:not(.present) .scenario-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+body:not(.present) .scenario-btn { min-height: 72px; height: 100%; }
+.scenario-btn.is-current { outline: 3px solid var(--accent, #b53b22); outline-offset: 2px; }
+
+/* While a call is on screen the picker folds down to one row of names, so the call is what you see. */
+body.has-call:not(.present) .start-inner { padding-top: 18px; padding-bottom: 14px; }
+body.has-call:not(.present) .start-title { font-size: 17px; max-width: none; margin-bottom: 10px; letter-spacing: 0; }
+body.has-call:not(.present) .scenario-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+body.has-call:not(.present) .scenario-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 8px 14px; }
+body.has-call:not(.present) .scenario-btn > div:nth-child(2) { min-width: 0; flex: 1; }
+body.has-call:not(.present) .scenario-btn .s-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+body.has-call:not(.present) .scenario-btn .s-diff { align-self: center; flex: none; }
+body.has-call:not(.present) .scenario-btn .s-brief,
+body.has-call:not(.present) .scenario-btn .s-meta,
+body.has-call:not(.present) .scenario-btn .s-title-en,
+body.has-call:not(.present) .scenario-btn .face { display: none; }
+body.has-call:not(.present) .mode-toggle, body.has-call:not(.present) .brain-row { display: none; }
+body.has-call:not(.present) .start-foot, body.has-call:not(.present) .replays-panel { display: none; }
+
+@media (max-width: 600px) {
+  body.has-call:not(.present) .scenario-list { grid-template-columns: 1fr 1fr; }
+  body.has-call:not(.present) .scenario-btn .s-diff { display: none; }
+}
