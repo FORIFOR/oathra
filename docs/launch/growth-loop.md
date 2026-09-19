@@ -8,6 +8,10 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
+### X distribution checkpoint — 2026-09-19 18:12 JST
+
+The account-wide spacing check was eligible and the active draft was duplicate-free. The first media upload attempt failed because the 6.8 MB MP4 exceeded the simple upload path (`media type unrecognized`). The publication helper now uses X's chunked INIT/APPEND/FINALIZE flow, and the retry published one English Oathra v0.1.18 intake announcement with the Arena simulator video: [status 2101237907260674392](https://x.com/forifori_dev/status/2101237907260674392). This is a distribution event, not evidence of an external trial or phone-call success. Raw read-only snapshot: [metrics/2026-09-19-1812-jst.json](metrics/2026-09-19-1812-jst.json).
+
 ### Measurement checkpoint — 2026-09-15 19:06 JST
 
 The fresh read-only snapshot reports **0 stars / 0 forks**, 11 repository views / 11 unique visitors and 2,015 clones / 357 unique cloners in the available 14-day window. The daily buckets and clone totals include maintainer or automation activity and are not confirmed external users. No external issue or business inquiry is observed; Zenn remains 1 like for `oathra-launch` and 0 for `oathra-evidence-rules`. v0.1.16 assets remain at 2 downloads each, matching maintainer verification. No new social post was sent. Raw snapshot: [metrics/2026-09-15-1905-jst.json](metrics/2026-09-15-1905-jst.json).

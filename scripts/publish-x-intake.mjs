@@ -6,7 +6,7 @@
  * uploading media.
  */
 import { createHmac, randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -14,6 +14,8 @@ const DRAFT = resolve(ROOT, "docs/launch/x-transcript-check.txt");
 const MEDIA = resolve(ROOT, "docs/media/oathra-intake.mp4");
 const STATE = resolve(ROOT, "docs/launch/metrics/x-intake-publication.json");
 const MIN_GAP_MS = 24 * 60 * 60 * 1000;
+const MEDIA_UPLOAD_URL = "https://upload.twitter.com/1.1/media/upload.json";
+const MEDIA_CHUNK_BYTES = 4 * 1024 * 1024;
 
 const args = new Set(process.argv.slice(2));
 const publish = args.has("--publish");
@@ -115,12 +117,16 @@ async function accountAndTweets() {
 
 function publicationCheck(tweets, text) {
   const now = Date.now();
+  const state = existsSync(STATE) ? JSON.parse(readFileSync(STATE, "utf8")) : null;
   const latest = tweets
     .filter((tweet) => tweet.created_at)
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
   const latestAt = latest ? Date.parse(latest.created_at) : 0;
   const eligibleAt = latestAt ? latestAt + MIN_GAP_MS : now;
-  const duplicate = tweets.some((tweet) => tweet.text?.trim() === text.trim());
+  // X v2 expands links to t.co; use the local publication state as a second
+  // duplicate guard when the API text no longer matches the draft verbatim.
+  const duplicate = state?.text?.trim() === text.trim()
+    || tweets.some((tweet) => tweet.text?.trim() === text.trim());
   return {
     eligible: !latest || now >= eligibleAt,
     duplicate,
@@ -131,26 +137,46 @@ function publicationCheck(tweets, text) {
 
 async function uploadVideo() {
   const bytes = readFileSync(MEDIA);
-  const form = new FormData();
-  form.append("media", new Blob([bytes], { type: "video/mp4" }), "oathra-intake.mp4");
-  form.append("media_category", "tweet_video");
-  const uploaded = await request("POST", "https://upload.twitter.com/1.1/media/upload.json", { body: form });
-  if (!uploaded.media_id_string) throw new Error("X media upload returned no media id");
-  let info = uploaded;
+  // X's simple upload rejects videos above its small single-request limit.
+  // Always use the documented INIT/APPEND/FINALIZE flow so the same draft
+  // works after the recording grows beyond 5 MB.
+  const initialized = await request("POST", MEDIA_UPLOAD_URL, {
+    query: {
+      command: "INIT",
+      total_bytes: bytes.length,
+      media_type: "video/mp4",
+      media_category: "tweet_video",
+    },
+  });
+  const mediaId = initialized.media_id_string;
+  if (!mediaId) throw new Error("X media INIT returned no media id");
+  let segmentIndex = 0;
+  for (let offset = 0; offset < bytes.length; offset += MEDIA_CHUNK_BYTES) {
+    const chunk = bytes.subarray(offset, Math.min(offset + MEDIA_CHUNK_BYTES, bytes.length));
+    const form = new FormData();
+    form.append("media", new Blob([chunk], { type: "application/octet-stream" }), "oathra-intake.mp4");
+    await request("POST", MEDIA_UPLOAD_URL, {
+      query: { command: "APPEND", media_id: mediaId, segment_index: segmentIndex++ },
+      body: form,
+    });
+  }
+  let info = await request("POST", MEDIA_UPLOAD_URL, {
+    query: { command: "FINALIZE", media_id: mediaId },
+  });
   for (let attempt = 0; info.processing_info && attempt < 12; attempt++) {
     const state = info.processing_info.state;
     if (state === "succeeded") break;
     if (state === "failed") throw new Error(`X media processing failed: ${JSON.stringify(info.processing_info)}`);
     const waitMs = Math.max(2, Number(info.processing_info.check_after_secs ?? 2)) * 1000;
     await new Promise((resolveWait) => setTimeout(resolveWait, waitMs));
-    info = await requestRead("https://upload.twitter.com/1.1/media/upload.json", {
-      query: { command: "STATUS", media_id: uploaded.media_id_string },
+    info = await requestRead(MEDIA_UPLOAD_URL, {
+      query: { command: "STATUS", media_id: mediaId },
     });
   }
   if (info.processing_info?.state && info.processing_info.state !== "succeeded") {
     throw new Error(`X media processing did not finish: ${JSON.stringify(info.processing_info)}`);
   }
-  return uploaded.media_id_string;
+  return mediaId;
 }
 
 const text = draftText();

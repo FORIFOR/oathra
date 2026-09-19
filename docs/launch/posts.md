@@ -1,5 +1,13 @@
 # Launch posts and publication record
 
+## X Oathra v0.1.18 intake demo — 2026-09-19 18:12 JST
+
+- Published one English announcement from `@forifori_dev` with `docs/media/oathra-intake.mp4`, an Arena simulator recording rather than a PSTN call.
+- Post: https://x.com/forifori_dev/status/2101237907260674392
+- X media ID: `2101237881553801216`. The post states the narrow value (`ActionProof` links conversation → confirmation → system → outcome) and the consent/stop rules, then links the repository. No adoption or phone-success claim was made.
+- The first upload attempt failed because the 6.8 MB MP4 exceeded the simple upload path and returned `media type unrecognized`. `scripts/publish-x-intake.mjs` now uses X's chunked INIT/APPEND/FINALIZE upload flow. The retry succeeded; no duplicate tweet was created.
+- Read-only snapshot immediately after publication: stars and forks remain 0; external issue/business inquiry remains unobserved. Raw snapshot: [metrics/2026-09-19-1812-jst.json](metrics/2026-09-19-1812-jst.json).
+
 ## Awesome-AI-Agents #486 review response — 2026-09-15 18:06 JST
 
 - The curation review requested removal of no-API-key and cost/access language from the Oathra entry. The existing PR branch already contains commits `4f00df5` and `26025b9`, which shorten the entry to neutral technical capabilities and explicitly describe the standalone OSS evidence-verification engine.
