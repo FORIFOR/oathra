@@ -102,7 +102,8 @@ export class Service {
       this.checkPolicy(u, m);
       const recent = this.store.list('reservation', u.id).filter(x => x.approvedAt > this.store.now() - 86400_000);
       assert(recent.length < this.config.dailyCalls && recent.reduce((n,x) => n + x.estimatedMaximumUsd, 0) + m.estimatedMaximumUsd <= this.config.dailyUsd, 'daily_limit_reached', 429);
-      assert(!this.store.list('mission',u.id).some(x => x.id!==m.id && x.target.phone === m.target.phone && ((x.status!=='DRAFT' && !terminal(x.status)) || x.status==='UNKNOWN')), 'recipient_has_active_call', 409);
+      // Across every owner: two colleagues must not ring the same person at once from the same caller id.
+      assert(![...this.store.list('mission',undefined,'QUEUED'),...this.store.list('mission',undefined,'DIALING'),...this.store.list('mission',undefined,'ACTIVE'),...this.store.list('mission',u.id)].some(x => x.id!==m.id && x.target.phone === m.target.phone && ((x.status!=='DRAFT' && !terminal(x.status)) || x.status==='UNKNOWN')), 'recipient_has_active_call', 409);
       m.status = 'QUEUED'; m.approvedAt = this.store.now(); m.approvalExpiresAt = this.store.now() + 300_000;
       this.store.put('mission', m); this.store.put('reservation',{id:m.id,owner:u.id,approvedAt:m.approvedAt,estimatedMaximumUsd:m.estimatedMaximumUsd}); this.store.delKey('approval', tokenHash);
       this.store.setKey(`start:${u.id}`, key, JSON.stringify({ id: m.id, tokenHash }));

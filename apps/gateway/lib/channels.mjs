@@ -28,8 +28,11 @@ export class Channels {
     assert(adapter.verify(raw,headers)===true,'invalid_webhook_signature',401);
     let decoded;try{decoded=adapter.decode(raw,headers);}catch(error){if(error.code)throw error;assert(false,'invalid_webhook_json');}
     assert(decoded&&Array.isArray(decoded.events)&&decoded.events.length<=100,'invalid_webhook_events');
-    const events=decoded.events.map(e=>this.event(e));
-    this.store.tx(()=>{for(const event of events)this.store.enqueue('inbox',`${kind}:${event.eventId}`,'_channel',{kind,normalized:event,pluginIdentity:this.registry.identity(kind)});});
+    // Validate each event on its own: one oversized message must not discard someone else's approval in the same delivery.
+    const events=decoded.events.flatMap(e=>{try{return [this.event(e)];}catch{return [];}})
+      // Anyone can message the bot. Until an account is linked, the only thing worth queueing is a link code.
+      .filter(e=>this.store.key(`identity:${kind}`,e.actor)||/^(?:連携|link)\s+[\w-]{40,100}$/i.test((e.text??'').trim()));
+    this.store.tx(()=>{for(const event of events)this.store.enqueue('inbox',`${kind}:${event.eventId}`,'_channel',{kind,normalized:event,pluginIdentity:this.registry.identity(kind)},{priority:event.type==='action'});});
     return decoded.response?jsonData(decoded.response,4000):{ok:true};
   }
   async process(job) {

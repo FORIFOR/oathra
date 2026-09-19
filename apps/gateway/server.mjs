@@ -100,6 +100,7 @@ export async function createGateway(config,options={}){
         assert(data&&typeof data==='object'&&!Array.isArray(data),'json_object_required');
       }
       if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},account:service.account(u),integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).map(({transcript,runtimeResult,...m})=>m),
+        ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl}});
       if(method==='GET'&&path==='/v1/audit'){
         assert(u.role==='admin','administrator_required',403);
@@ -117,7 +118,8 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/missions/draft')return send(res,201,service.prepare(u,data));
       if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone);store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
       if(method==='POST'&&path==='/v1/followups/preview')return send(res,201,followups.preview(u,data.missionId,data));
-      const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh)$/);
+      const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh|not-delivered)$/);
+      if(method==='POST'&&follow&&follow[2]==='not-delivered')return send(res,200,followups.markNotDelivered(u,follow[1],data.acknowledged));
       if(method==='POST'&&follow)return send(res,200,follow[2]==='execute'?await followups.execute(u,follow[1],data,req.headers['idempotency-key']):await followups.refreshCalendar(u,follow[1]));
       const match=path.match(/^\/v1\/missions\/([a-f0-9-]{36})(?:\/(review|start|cancel|events|handoff|reconcile))?$/);
       if(match){
@@ -143,7 +145,11 @@ export async function createGateway(config,options={}){
         }
       }
       throw new Fault(404,'not_found');
-    }catch(error){if(!res.headersSent)send(res,error.status??500,{error:error.code??'internal_error',requestId});else res.end();}
+    }catch(error){
+      // 4xx are the caller's problem and would be noise; an unexplained 500 used to leave no trace at all.
+      if((error.status??500)>=500)console.error(JSON.stringify({level:'error',event:'request.failed',requestId,code:error.code??error.name??'internal_error',status:error.status??500,at:new Date().toISOString()}));
+      if(!res.headersSent)send(res,error.status??500,{error:error.code??'internal_error',requestId});else res.end();
+    }
   });
   server.requestTimeout=15000;server.headersTimeout=10000;server.maxHeadersCount=64;
   if(config.liveReady&&!options.execute)await phone.attach(server);
@@ -152,6 +158,7 @@ export async function createGateway(config,options={}){
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const config=configuration(),app=await createGateway(config);
   app.worker.start();app.server.listen(config.port,config.host,()=>console.log(`Oathra Gateway (${config.mode}) listening; use ${config.publicUrl}`));
-  const retention=setInterval(()=>app.store.prune(),3600_000);retention.unref();
+  const retentionDays=number(process.env,'OATHRA_RETENTION_DAYS',30,1,3650);
+  const retention=setInterval(()=>{try{app.store.prune(retentionDays);}catch(e){console.error(JSON.stringify({level:'error',event:'retention.failed',code:e.code??e.name,at:new Date().toISOString()}));}},3600_000);retention.unref();
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{clearInterval(retention);void app.close().then(()=>process.exit(0));});
 }

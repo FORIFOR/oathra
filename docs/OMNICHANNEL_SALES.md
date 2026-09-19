@@ -79,7 +79,7 @@ Whether a meeting was agreed is decided by `packages/evidence` (`evaluate()` wit
 - Sensitive product claims and unsupported facts are not inferred from a URL.
 - Follow-up actions have independent permission/proof state.
 - Webhook signatures, replay protection, nonce/timestamp checks and idempotency are mandatory.
-- Retention is configurable; transcript/audio access is least-privilege and auditable.
+- Retention is configurable (`OATHRA_RETENTION_DAYS`); transcript access is owner-scoped. Approvals, dialing, results, suppressions and deletions are audited with sealed details and a keyed phone reference (`GET /v1/audit`, admin); a deleted mission leaves a tombstone for the audit window.
 
 ## LINE UX
 

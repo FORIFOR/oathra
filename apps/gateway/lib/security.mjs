@@ -16,8 +16,12 @@ export function text(value, max = 2000) {
   return value.trim();
 }
 export function phone(value) {
-  const p = text(value, 30).replace(/[ ()-]/g, '');
-  assert(/^\+[1-9]\d{7,14}$/.test(p), 'phone_must_be_e164'); return p;
+  // "(0)" is the domestic trunk prefix written for humans; it is not part of the E.164 number.
+  const p = text(value, 30).replace(/\(0\)/g, '').replace(/[ ()-]/g, '');
+  assert(/^\+[1-9]\d{7,14}$/.test(p), 'phone_must_be_e164');
+  // A trunk "0" left after the country code (+81090…) would be a different suppression key for the same person.
+  assert(!/^\+(?:81|44|49|33|39|61|82|86|91)0/.test(p), 'phone_has_trunk_prefix_after_country_code');
+  return p;
 }
 export function signature(kind, raw, headers, secret, now = Date.now()) {
   if (!secret) return false;

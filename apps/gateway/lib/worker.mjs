@@ -16,13 +16,15 @@ export class Worker {
     for(const kind of ['inbox','outbox']) for(const j of this.store.list(kind,undefined,'processing')) { j.status='pending'; this.store.put(kind,j); }
     this.leaseTimer=setInterval(() => { if(!this.store.lease(this.holder)) { this.active?.abort.abort(); clearInterval(this.timer); } },5000);
     this.controlTimer=setInterval(()=>{if(this.active && this.store.get('mission',this.active.id)?.status==='CANCEL_REQUESTED')this.active.abort.abort();},200);
-    this.timer=setInterval(() => { void this.tick().catch(() => {}); },300);
+    this.timer=setInterval(() => { void this.tick().catch(e => this.log('worker.tick_failed',e)); },300);
   }
+  /** Codes only: never message text, names or numbers. */
+  log(event,error,extra={}) { console.error(JSON.stringify({level:'error',event,code:error?.code??error?.name??'error',...extra,at:new Date(this.store.now()).toISOString()})); }
   async processQueue(kind, handler) {
     const job=this.store.next(kind); if(!job) return;
     job.status='processing'; this.store.put(kind,job);
     try { await handler(job); job.status='done'; }
-    catch { job.attempts++; job.status=job.attempts>=5?'failed':'pending'; job.available=this.store.now()+Math.min(60_000,1000*2**job.attempts); }
+    catch(e) { job.attempts++; job.status=job.attempts>=5?'failed':'pending'; job.available=this.store.now()+Math.min(60_000,1000*2**job.attempts); if(job.status==='failed') this.log(`${kind}.gave_up`,e,{job:job.id.slice(0,80),attempts:job.attempts}); }
     this.store.put(kind,job);
   }
   async tick() {
@@ -32,8 +34,8 @@ export class Worker {
       await this.processQueue('outbox',j=>this.channels.send(j));
       if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
       const m=this.store.list('mission',undefined,'QUEUED').reverse()[0]; if(!m) return;
-      const u=this.service.user(m.owner);
-      try { this.service.checkPolicy(u,m); assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409); }
+      // A queued mission whose owner was removed from the configuration must fail, not block everyone behind it forever.
+      try { const u=this.service.user(m.owner); this.service.checkPolicy(u,m); assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409); }
       catch(e) { m.status='FAILED'; m.finishedAt=this.store.now(); m.error=e.code??'policy_rejected'; this.store.put('mission',m); this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error}); this.service.notify(m,'result'); return; }
       m.status='DIALING'; m.executionId=randomUUID(); this.store.put('mission',m); this.store.event(m,{type:'status',status:'DIALING'});
       this.store.audit(m.owner,'call.dialing',m.id,{mission:m.id,execution:m.executionId,target:this.store.phoneRef(m.target.phone),mode:m.mode,approvedAt:m.approvedAt});

@@ -17,12 +17,16 @@ export class Phone {
     const m=this.service.own('mission',id,u); this.service.write(u); assert(m.carrierSid,'carrier_sid_unknown_check_provider_console',409);
     if(stop) await this.update(m.carrierSid,{Status:'completed'});
     const data=await jsonFetch(this.callURL(m.carrierSid),{headers:{authorization:this.auth()}});
-    m.carrierStatus=data.status; m.actualCarrierCharge=data.price===null?null:{amount:data.price,currency:data.price_unit};
-    if(['completed','failed','busy','no-answer','canceled'].includes(data.status) && ['UNKNOWN','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(m.status)) {
-      m.status=stop?'CANCELLED':'INCOMPLETE'; m.finishedAt=this.store.now();
-      m.stopNeedsReconciliation=false;
-    }
-    this.store.put('mission',m); this.store.audit(u.id,'carrier.reconciled',id); return m;
+    // The worker or a carrier callback may have written the result while we were waiting. Re-read and touch carrier fields only.
+    return this.store.tx(()=>{
+      const current=this.store.get('mission',id); assert(current && current.owner===u.id,'not_found',404);
+      current.carrierStatus=data.status; current.actualCarrierCharge=data.price===null?null:{amount:data.price,currency:data.price_unit};
+      if(['completed','failed','busy','no-answer','canceled'].includes(data.status) && ['UNKNOWN','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(current.status)) {
+        current.status=stop?'CANCELLED':'INCOMPLETE'; current.finishedAt=this.store.now();
+        current.stopNeedsReconciliation=false;
+      }
+      this.store.put('mission',current); this.store.audit(u.id,'carrier.reconciled',id,{mission:id,carrierStatus:data.status,stop,status:current.status}); return current;
+    });
   }
   async verifyNumber(u,input) {
     this.service.write(u); const account=this.service.account(u);
@@ -37,13 +41,14 @@ export class Phone {
       const tries=Number(this.store.key('verify-tries',u.id)??0);assert(tries<10,'verification_check_limit',429);this.store.setKey('verify-tries',u.id,String(tries+1),3600000);
       const data=await jsonFetch(url+'/VerificationCheck',{method:'POST',headers:{authorization:this.auth(),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({To:number,Code:input.code})});
       assert(data.status==='approved','verification_not_approved',403);
-      account.verifiedPhone=number; account.phoneVerificationProvider='twilio-verify'; delete account.pendingPhone; delete account.verificationExpires;
-      this.store.put('account',account); this.store.audit(u.id,'phone.verified',u.id,{provider:'twilio-verify',number:this.store.phoneRef(number)}); return {verified:true};
+      const fresh=this.service.account(u); // consent may have been saved while the provider was answering
+      fresh.verifiedPhone=number; fresh.phoneVerificationProvider='twilio-verify'; delete fresh.pendingPhone; delete fresh.verificationExpires;
+      this.store.put('account',fresh); this.store.audit(u.id,'phone.verified',u.id,{provider:'twilio-verify',number:this.store.phoneRef(number)}); return {verified:true};
     }
     const count=Number(this.store.key('verify-count',u.id)??0); assert(count<3,'verification_daily_limit',429);
     this.store.setKey('verify-count',u.id,String(count+1),86400_000);
     await jsonFetch(url+'/Verifications',{method:'POST',headers:{authorization:this.auth(),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({To:number,Channel:'sms'})});
-    account.pendingPhone=number; account.verificationExpires=this.store.now()+600_000; this.store.put('account',account); return {sent:true};
+    const pending=this.service.account(u); pending.pendingPhone=number; pending.verificationExpires=this.store.now()+600_000; this.store.put('account',pending); return {sent:true};
   }
   async attach(server) {
     const require=createRequire(new URL('../../../providers/phone-twilio/package.json',import.meta.url));

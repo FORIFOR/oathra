@@ -26,6 +26,11 @@ export class Followups {
   preview(u, missionId, input) {
     const m=this.service.own('mission',missionId,u),kind=input.kind,p=this.plugin(kind),effect=p.manifest.effect;
     const c=this.policy(u,m,kind),id=randomUUID();
+    // One delivery per mission and kind. UNKNOWN means "it may have been sent": a second preview would be a second email or SMS.
+    const earlier=this.store.list('followup',u.id).filter(a=>a.missionId===m.id&&a.kind===kind);
+    assert(!earlier.some(a=>['EXECUTING','SUBMITTED'].includes(a.status)),'followup_already_sent',409);
+    assert(!earlier.some(a=>a.status==='UNKNOWN'&&a.reconciledNotDelivered!==true),'followup_outcome_unknown_reconcile_before_retry',409);
+    assert(earlier.filter(a=>a.status!=='PREVIEW').length<3,'followup_attempt_limit',429);
     if(effect==='email'||effect==='sms') {
       assert(m.result?.verified?.material_send_allowed===true || !!m.result?.verified?.meeting_agreed_on_call,'contact_permission_not_in_call_evidence',403);
       text(input.contactPermissionBasis,1000);
@@ -44,6 +49,12 @@ export class Followups {
     const action={id,owner:u.id,missionId:m.id,kind,effect,pluginIdentity,details,status:'PREVIEW',createdAt:this.store.now(),missionFingerprint:this.service.fingerprint(m),expiresAt:this.store.now()+300000};
     action.approvalToken=this.service.grant(u,m,'followup',{followupId:id,payloadHash:hash(JSON.stringify(details)),pluginIdentity});
     const {approvalToken,...stored}=action; this.store.put('followup',stored); return action;
+  }
+  /** An operator who checked the provider and found nothing was delivered may clear an UNKNOWN so one more attempt is possible. */
+  markNotDelivered(u,id,acknowledged) {
+    this.service.write(u);assert(acknowledged===true,'reconciliation_confirmation_required',403);
+    const a=this.service.own('followup',id,u);assert(a.status==='UNKNOWN','followup_not_unknown',409);
+    a.reconciledNotDelivered=true;this.store.put('followup',a);this.store.audit(u.id,'followup.reconciled_not_delivered',id,{followup:id,mission:a.missionId,kind:a.kind});return a;
   }
   async googleToken() {
     const r=await jsonFetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:this.env.GOOGLE_REFRESH_TOKEN,client_id:this.env.GOOGLE_CLIENT_ID,client_secret:this.env.GOOGLE_CLIENT_SECRET})});
@@ -79,7 +90,8 @@ export class Followups {
       action.delivery='Provider accepted the request; recipient receipt, reading, and acceptance are not established.';
       if(action.effect==='calendar')action.attendeeResponse='needsAction';
     } catch(error) { action.status=error.definitive?'REJECTED':'UNKNOWN';action.error='delivery_requires_provider_reconciliation'; }
-    this.store.put('followup',action);
+    // The mission may have been deleted while the provider was answering; do not resurrect a record that holds the recipient.
+    if(this.store.get('mission',action.missionId)) this.store.put('followup',action);
     this.store.audit(u.id,'followup.result',id,{followup:id,mission:action.missionId,kind:action.kind,effect:action.effect,status:action.status,providerId:action.providerId??null});return action;
   }
   async send(a,bearer,beforeSend) {
@@ -96,7 +108,8 @@ export class Followups {
     const bearer=await this.googleToken();const event=await jsonFetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.env.GOOGLE_CALENDAR_ID??'primary')}/events/${encodeURIComponent(a.providerId)}`,{headers:{authorization:`Bearer ${bearer}`}});
     assert(event.extendedProperties?.private?.oathraMission===a.missionId,'external_record_mismatch',409);
     assert(Date.parse(event.start?.dateTime)===Date.parse(a.details.start)&&Date.parse(event.end?.dateTime)===Date.parse(a.details.end),'calendar_time_changed_not_same_agreement',409);
-    a.attendeeResponse=event.attendees?.find(x=>x.email?.toLowerCase()===a.details.recipient.toLowerCase())?.responseStatus??'unknown';a.checkedAt=this.store.now();
-    a.eventStatus=event.status;this.store.put('followup',a);return a;
+    const fresh=this.service.own('followup',id,u); // re-read after the provider call
+    fresh.attendeeResponse=event.attendees?.find(x=>x.email?.toLowerCase()===fresh.details.recipient.toLowerCase())?.responseStatus??'unknown';fresh.checkedAt=this.store.now();
+    fresh.eventStatus=event.status;this.store.put('followup',fresh);return fresh;
   }
 }
