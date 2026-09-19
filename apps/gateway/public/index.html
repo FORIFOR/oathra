@@ -1,27 +1,214 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f8f7f4"><title>Oathra — 電話の、その先まで。</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f7f4">
+  <title>Oathra — 電話を、任せる。</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
 <body>
-<header><a class="brand" href="/">oathra<span class="brand-dot">.</span></a><span id="mode" class="badge">PRIVATE WORKSPACE</span><button id="logout" class="quiet" hidden>ログアウト</button></header>
+<header>
+  <a class="brand" href="/">oathra<span class="brand-dot">.</span></a>
+  <span id="mode" class="badge" hidden></span>
+  <button id="logout" class="quiet small" hidden>ログアウト</button>
+</header>
+
 <main>
-<section id="login" class="welcome"><p class="eyebrow">YOUR WORDS. REAL ACTION.</p><h1>電話の、<br>その先まで。</h1><p class="lead">お願いを伝える。内容を確かめる。<br>決まったことを、相手の言葉で受け取る。</p><form id="login-form"><label>ワークスペースのアクセストークン<input id="token" type="password" autocomplete="off" required placeholder="管理者から受け取ったトークン"></label><button type="submit">ワークスペースを開く <span>↗</span></button></form><p class="hint">トークンはこのページを開いている間だけ保持します。<br>電話会社やAIのAPIキーをここに入力する必要はありません。</p></section>
-<section id="workspace" hidden>
-<nav aria-label="ワークスペース"><button data-tab="ask" aria-selected="true">お願いする</button><button data-tab="results">履歴</button><button data-tab="settings">準備・設定</button></nav>
-<section id="ask" class="tab">
-<div class="section-head"><div><p class="eyebrow">MAKE ROOM FOR WHAT MATTERS</p><h1>次の電話を、任せる。</h1></div><p class="muted">発信前に、必ず内容を確認します。</p></div>
-<div id="readiness" class="notice"></div>
-<form id="mission-form" class="panel composer"><label for="request">どんな電話を任せますか？</label><textarea id="request" rows="4" required placeholder="田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。"></textarea><div class="columns"><label>紹介する商品<select id="product" required></select></label><label>相手<select id="contact"></select></label></div><label class="check"><input id="test-me" type="checkbox">まず自分に電話して試す（番号の確認が必要です）</label><details><summary>目的・上限・候補日時</summary><div class="columns"><label>今回の目的<select id="goal"><option value="meeting">商談日程の合意</option><option value="materials">資料送付の了承</option><option value="introduce">商品説明</option></select></label><label>通話上限（秒）<input id="seconds" type="number" min="30" max="600" value="180" required></label><label>費用上限（USD）<input id="budget" type="number" min="0.01" step="0.01" value="10" required></label></div><label>候補日時（任意・1行1件・時差必須）<textarea id="slots" rows="2" placeholder="2026-10-01T15:00:00+09:00"></textarea></label></details><button type="submit" class="primary">電話の内容を確認する <span>→</span></button><p class="hint">このボタンでは、まだ電話はかかりません。</p></form>
-<div class="section-head compact"><h2>最近の依頼</h2></div><div id="recent" class="cards"></div>
-</section>
-<section id="results" class="tab" hidden><div class="section-head"><div><p class="eyebrow">A CLEAR RECORD</p><h1>約束を、置き去りにしない。</h1></div><button id="refresh" class="quiet">更新</button></div><div id="history" class="cards"></div><article id="detail" class="panel" hidden></article></section>
-<section id="settings" class="tab" hidden><div class="section-head"><div><p class="eyebrow">BEFORE THE FIRST CALL</p><h1>最初の準備。</h1></div></div>
-<article class="panel"><h2>接続プラグイン</h2><p class="hint">登録・設定状態です。実アカウントの疎通や実電話の成功を示すものではありません。</p><div id="plugin-list"></div></article><div class="settings-grid"><article class="panel"><h2>会話データの取り扱い</h2><p>実電話では電話会社（Twilio）と設定された音声AI（OpenAI）に音声・文字起こしが渡ります。LINE音声メッセージの文字起こしにもOpenAIを利用します。結果はこのサーバーと、依頼したLINE・Slackに保存・通知されます。</p><p>生音声の録音保存は行いません。会話の文字起こし・結果は標準で30日保存されます。相手にはAIであることと文字起こしを案内し、続行の操作を求めます。</p><button id="consent">内容を確認して同意する</button><p id="consent-state" class="hint"></p></article>
-<article class="panel"><h2>自分の番号を確認</h2><form id="phone-form"><label>電話番号（国番号から）<input id="my-phone" type="tel" placeholder="+8190…" required></label><label>SMSで届いた確認コード<input id="phone-code" inputmode="numeric" autocomplete="one-time-code" placeholder="初回は空欄のまま送信"></label><label class="check"><input id="verify-ack" type="checkbox" required>自分の番号です。確認用SMSの送信と料金に同意します。</label><button type="submit">SMS送信 / コードを確認</button></form><p id="phone-state" class="hint"></p></article>
-<article class="panel wide"><h2>紹介する商品</h2><form id="import-form" class="inline"><label>商品サイトのURL<input id="product-url" type="url" placeholder="https://…"></label><button type="submit" class="quiet">内容を取り込む</button></form><form id="product-form"><label>商品名<input id="product-name" required maxlength="100"></label><label>説明してよい事実<textarea id="facts" rows="6" required placeholder="提供している機能、確認済みの価格、利用条件など。"></textarea></label><label class="check"><input id="facts-reviewed" type="checkbox" required>記載内容が正しく、AIが説明してよいことを確認しました。</label><button type="submit">確認済みの商品として保存</button></form></article>
-<article class="panel"><h2>連絡先を登録</h2><form id="contact-form"><label>名前<input id="contact-name" required></label><label>電話番号<input id="contact-phone" type="tel" placeholder="+81…" required></label><label>メール（任意）<input id="contact-email" type="email"></label><label>連絡する理由<select id="relationship"><option value="inquiry">問い合わせの折り返し</option><option value="customer">既存のお客様</option><option value="consented">連絡の了承がある相手</option></select></label><label>その根拠<input id="contact-basis" required placeholder="例：9月19日の問い合わせで電話希望"></label><label>HubSpot Contact ID（任意）<input id="crm-id" inputmode="numeric"></label><button type="submit">連絡先を保存</button></form></article>
-<article class="panel"><h2>チャットサービスとつなぐ</h2><p>連携コードを作り、管理者が設定したOathra Botとの個別チャットに送ってください。有効期限は5分です。</p><button id="link">連携用メッセージを作る</button><pre id="link-code"></pre><p class="hint">グループチャットからは発信しません。Botの接続設定は管理者がサーバー側で行います。</p><h2>連絡停止</h2><label>対象<select id="suppress-contact"></select></label><button id="suppress" class="danger">選択した相手への再発信を停止</button></article></div>
-</section></section>
-<div id="notice" role="status" aria-live="polite" hidden></div>
-<dialog id="review"><form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form><p class="eyebrow">ONE CALL. YOUR APPROVAL.</p><h2>この内容で、電話します。</h2><div id="review-content"></div><label class="check"><input id="call-ack" type="checkbox">相手・内容・費用・データの送信先を確認し、この1件の発信を承認します。</label><button id="start-call" class="primary">承認して電話する</button><p class="hint">承認はこの内容だけに有効です。内容が変わると確認し直します。</p></dialog>
-<dialog id="followup"><form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form><h2>次のアクションを確認</h2><form id="followup-form"><label>種類<select id="followup-kind"><option value="email">メール送信</option><option value="calendar">カレンダー招待</option><option value="sms">SMS送信</option><option value="crm">HubSpot記録</option></select></label><label>件名 / 招待タイトル<input id="followup-title" value="お電話の内容について"></label><label>本文 / 記録<textarea id="followup-body" rows="5"></textarea></label><label>この連絡方法が了承されている根拠<input id="followup-basis" placeholder="メール・SMSを送る場合に必要"></label><label>招待の所要時間（分）<input id="followup-minutes" type="number" min="5" max="120" value="15"></label><details><summary>プラグイン固有の項目（任意）</summary><label>追加項目（JSON）<textarea id="followup-extra" rows="3" placeholder="{}"></textarea></label><p class="hint">管理者・プラグイン開発者向けです。送信先と種類は置き換えられません。</p></details><button type="submit">送信内容を確認</button></form><pre id="followup-preview"></pre><label class="check"><input id="followup-ack" type="checkbox">送信先・内容を確認しました。SMS等の別途料金も承認します。</label><button id="followup-send" disabled>この内容を送信・登録する</button></dialog>
-</main><footer><span>oathra.</span><span>話したことと、決まったことを、分けて残す。</span></footer>
-</body></html>
+  <!-- Signed out -->
+  <section id="login" class="card welcome">
+    <h1>電話を、任せる。</h1>
+    <p class="lead">お願いを書く。内容を確かめる。<br>決まったことを、相手の言葉で受け取る。</p>
+    <form id="login-form">
+      <label for="token">アクセストークン</label>
+      <input id="token" type="password" autocomplete="off" required placeholder="管理者から受け取ったトークンを貼り付け">
+      <button type="submit" class="primary">はじめる</button>
+    </form>
+    <p class="hint">トークンはこのページを開いている間だけ保持します。電話会社やAIのAPIキーを入力する必要はありません。</p>
+  </section>
+
+  <!-- Signed in: one page, top to bottom -->
+  <div id="workspace" hidden>
+
+    <section id="setup" class="card" hidden>
+      <h2>はじめに <span id="setup-count" class="pill"></span></h2>
+      <p class="muted">電話を任せる前に、次の準備が必要です。終わったものから消えていきます。</p>
+      <ol id="setup-steps" class="steps"></ol>
+    </section>
+
+    <section id="ask" class="card">
+      <h1>だれに、なにを電話しますか？</h1>
+      <p id="readiness" class="notice"></p>
+      <form id="mission-form">
+        <div class="columns">
+          <label>電話する相手
+            <select id="contact"></select>
+          </label>
+          <label>紹介する商品
+            <select id="product" required></select>
+          </label>
+        </div>
+        <label class="check"><input id="test-me" type="checkbox">まず自分の番号にかけて試す</label>
+
+        <fieldset class="choices">
+          <legend>この電話の目的</legend>
+          <label class="choice"><input type="radio" name="goal" value="meeting" checked><span><b>商談の日時を決める</b><small>相手が日時をはっきり了承したときだけ「決まった」になります</small></span></label>
+          <label class="choice"><input type="radio" name="goal" value="materials"><span><b>資料を送ってよいか聞く</b><small>了承があれば、あとでメールやSMSを送れます</small></span></label>
+          <label class="choice"><input type="radio" name="goal" value="introduce"><span><b>商品を説明する</b><small>説明を聞いてもらえたかを確認します</small></span></label>
+        </fieldset>
+
+        <label for="request">伝えたいこと（そのままの言葉で）</label>
+        <textarea id="request" rows="3" required placeholder="例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。"></textarea>
+
+        <details>
+          <summary>くわしい設定（通話の上限・候補日時）</summary>
+          <div class="columns">
+            <label>通話の上限（秒）<input id="seconds" type="number" min="30" max="600" value="180"></label>
+            <label>費用の上限（USD）<input id="budget" type="number" min="0.01" step="0.01" value="1"></label>
+          </div>
+          <label>候補日時（1行に1つ。例：2026-10-03T15:00:00+09:00）<textarea id="slots" rows="2"></textarea></label>
+        </details>
+
+        <button type="submit" class="primary wide">内容を確認する</button>
+        <p class="hint center">まだ電話はかかりません。次の画面で内容を確かめて、承認したときだけ発信します。</p>
+      </form>
+    </section>
+
+    <section id="current" class="card" hidden>
+      <div id="detail"></div>
+    </section>
+
+    <section id="history-section" class="card">
+      <div class="row">
+        <h2>これまでの電話</h2>
+        <button id="refresh" class="quiet small">更新</button>
+      </div>
+      <div id="history" class="list"></div>
+      <button id="more" class="quiet small" hidden>もっと見る</button>
+    </section>
+
+    <section id="settings" class="card">
+      <h2>設定</h2>
+      <p class="muted">必要なときだけ開いてください。</p>
+
+      <details id="s-consent">
+        <summary>会話データの取り扱い <span id="consent-state" class="pill"></span></summary>
+        <p>実電話では電話会社（Twilio）と音声AI（OpenAI）に音声・文字起こしが渡ります。LINEの音声メッセージの文字起こしにもOpenAIを使います。結果はこのサーバーと、依頼したチャットに保存・通知されます。</p>
+        <p>生の音声は保存しません。会話の文字起こしと結果は標準で30日保存します。相手には最初に、記録していることとAIであることを伝え、続けてよいかを確認します。</p>
+        <button id="consent" class="primary">内容を確認して同意する</button>
+      </details>
+
+      <details id="s-contact">
+        <summary>電話する相手を登録する</summary>
+        <form id="contact-form">
+          <div class="columns">
+            <label>名前<input id="contact-name" required placeholder="田中さん"></label>
+            <label>電話番号（国番号から）<input id="contact-phone" type="tel" required placeholder="+81 90 1234 5678"></label>
+          </div>
+          <div class="columns">
+            <label>連絡する理由
+              <select id="relationship">
+                <option value="inquiry">問い合わせへの折り返し</option>
+                <option value="customer">すでにお客様</option>
+                <option value="consented">連絡してよいと言われている</option>
+              </select>
+            </label>
+            <label>その根拠<input id="contact-basis" required placeholder="例：9月19日の問い合わせで電話希望"></label>
+          </div>
+          <details>
+            <summary>メール・CRM（任意）</summary>
+            <div class="columns">
+              <label>メール<input id="contact-email" type="email"></label>
+              <label>HubSpot Contact ID<input id="crm-id" inputmode="numeric"></label>
+            </div>
+          </details>
+          <button type="submit">相手を保存</button>
+        </form>
+      </details>
+
+      <details id="s-product">
+        <summary>紹介する商品を登録する</summary>
+        <form id="import-form" class="inline">
+          <label>商品サイトのURL（任意）<input id="product-url" type="url" placeholder="https://…"></label>
+          <button type="submit" class="quiet">内容を取り込む</button>
+        </form>
+        <form id="product-form">
+          <label>商品名<input id="product-name" required maxlength="100"></label>
+          <label>AIが説明してよい事実<textarea id="facts" rows="5" required placeholder="機能、確認済みの価格、利用条件など。ここに書いたことだけを説明します。"></textarea></label>
+          <label class="check"><input id="facts-reviewed" type="checkbox" required>内容が正しく、AIが説明してよいことを確認しました。</label>
+          <button type="submit">商品を保存</button>
+        </form>
+      </details>
+
+      <details id="s-phone">
+        <summary>自分の電話番号を確認する <span id="phone-state" class="pill"></span></summary>
+        <p class="muted">「自分の番号にかけて試す」と、通話中に自分へ交代するときに使います。</p>
+        <form id="phone-form">
+          <div class="columns">
+            <label>電話番号（国番号から）<input id="my-phone" type="tel" placeholder="+81 90…" required></label>
+            <label>SMSで届いたコード<input id="phone-code" inputmode="numeric" autocomplete="one-time-code" placeholder="最初は空欄のまま"></label>
+          </div>
+          <label class="check"><input id="verify-ack" type="checkbox" required>自分の番号です。確認用SMSの送信と料金に同意します。</label>
+          <button type="submit">SMSを送る / コードを確認</button>
+        </form>
+      </details>
+
+      <details id="s-link">
+        <summary>LINE・Slack などのチャットから依頼する</summary>
+        <p>下のボタンで連携用のメッセージを作り、管理者が用意したOathraのBotとの個別チャットに送ってください。5分間だけ有効です。グループチャットからは発信しません。</p>
+        <button id="link">連携用メッセージを作る</button>
+        <pre id="link-code"></pre>
+      </details>
+
+      <details id="s-stop">
+        <summary>この相手には、もう電話しない</summary>
+        <label>対象<select id="suppress-contact"></select></label>
+        <button id="suppress" class="danger">再発信を停止する</button>
+        <p class="hint">通話中に相手が「もうかけないで」と言った場合や、案内に「2」を押した場合は、自動で停止されます。</p>
+      </details>
+
+      <details id="s-plugins">
+        <summary>接続されているサービス</summary>
+        <p class="hint">登録と設定の状態です。実アカウントでの疎通や実電話の成功を示すものではありません。</p>
+        <div id="plugin-list"></div>
+      </details>
+    </section>
+  </div>
+
+  <div id="notice" role="status" aria-live="polite" hidden></div>
+
+  <dialog id="review">
+    <form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form>
+    <h2>この内容で、電話します。</h2>
+    <div id="review-content"></div>
+    <label class="check"><input id="call-ack" type="checkbox">相手・内容・費用・データの送り先を確認しました。この1件の発信を承認します。</label>
+    <button id="start-call" class="primary wide">承認して電話する</button>
+    <p class="hint center">承認はこの内容だけに有効です。内容を変えたら、もう一度確認します。</p>
+  </dialog>
+
+  <dialog id="followup">
+    <form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form>
+    <h2>電話のあとにすること</h2>
+    <form id="followup-form">
+      <label>種類<select id="followup-kind"></select></label>
+      <label>件名 / 招待のタイトル<input id="followup-title" value="お電話の内容について"></label>
+      <label>本文 / 記録する内容<textarea id="followup-body" rows="5"></textarea></label>
+      <label>この方法で連絡してよい根拠<input id="followup-basis" placeholder="メール・SMSを送る場合に必要"></label>
+      <label>招待の長さ（分）<input id="followup-minutes" type="number" min="5" max="120" value="15"></label>
+      <details>
+        <summary>プラグイン固有の項目（管理者向け）</summary>
+        <label>追加項目（JSON）<textarea id="followup-extra" rows="3" placeholder="{}"></textarea></label>
+        <p class="hint">送り先と種類は置き換えられません。</p>
+      </details>
+      <button type="submit">送る内容を確認</button>
+    </form>
+    <pre id="followup-preview"></pre>
+    <label class="check"><input id="followup-ack" type="checkbox">送り先と内容を確認しました。SMSなどの料金も承認します。</label>
+    <button id="followup-send" class="primary wide" disabled>この内容で送る</button>
+  </dialog>
+</main>
+
+<footer><span>oathra.</span><span>話したことと、決まったことを、分けて残す。</span></footer>
+</body>
+</html>
