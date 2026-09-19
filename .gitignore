@@ -31,3 +31,7 @@ site/playground.js
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# UI quality workflow: session receipts and captured screens (approved visual baselines, if any, belong in Git)
+.ui-quality/
+artifacts/ui/

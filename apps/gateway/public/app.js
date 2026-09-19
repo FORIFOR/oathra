@@ -118,6 +118,13 @@ const el = (tag, text, cls) => { const n = document.createElement(tag); if (text
 const when = iso => new Date(iso).toLocaleString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 const goal = () => document.querySelector('input[name="goal"]:checked').value;
 
+// Buttons are disabled while their action runs, which defeats the browser's own "return focus to the opener" when a
+// dialog closes: a keyboard user was dropped at the top of the page. Put focus back where they were.
+let lastTrigger = null;
+for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => {
+  const back = lastTrigger?.isConnected && !lastTrigger.disabled && lastTrigger.offsetParent ? lastTrigger : $('open-settings').hidden ? null : $('open-settings');
+  back?.focus();
+});
 function notice(message) {
   $('notice').textContent = message; $('notice').hidden = false;
   clearTimeout(notice.timer); notice.timer = setTimeout(() => { $('notice').hidden = true; }, 9000);
@@ -137,14 +144,16 @@ async function api(path, method = 'GET', data, headers = {}) {
 function on(id, event, handler) {
   $(id).addEventListener(event, async e => {
     e.preventDefault();
-    const b = e.submitter ?? (e.currentTarget.tagName === 'BUTTON' ? e.currentTarget : null);
-    if (b) b.disabled = true;
+    // Enter in a field submits with no submitter: the form's own submit button still stands for the action.
+    const b = e.submitter ?? (e.currentTarget.tagName === 'BUTTON' ? e.currentTarget : e.currentTarget.querySelector?.('button[type="submit"]') ?? null);
+    if (b) { lastTrigger = b; b.disabled = true; }
+    $('notice').hidden = true; // a message about the previous attempt must not sit on top of the next one's result
     try { await handler(e); } catch (error) { notice(error.message); } finally { if (b) b.disabled = false; }
   });
 }
 function button(label, fn, cls = 'quiet') {
   const b = el('button', label, cls);
-  b.addEventListener('click', async () => { b.disabled = true; try { await fn(); } catch (e) { notice(e.message); } finally { b.disabled = false; } });
+  b.addEventListener('click', async () => { lastTrigger = b; b.disabled = true; $('notice').hidden = true; try { await fn(); } catch (e) { notice(e.message); } finally { b.disabled = false; } });
   return b;
 }
 function options(id, values, placeholder) {
@@ -178,7 +187,8 @@ function renderSetup() {
   $('setup-steps').replaceChildren(...steps.map(s => { const li = el('li'); li.append(el('span', s.text), button(s.label, s.go, 'small')); return li; }));
   $('consent-state').textContent = consented ? '同意済み' : '未同意';
   $('consent').hidden = consented;
-  $('phone-state').textContent = state.account.verifiedPhone ? '確認済み' : '未確認';
+  // A practice number nobody verified must not read as 「確認済み」.
+  $('phone-state').textContent = state.account.phoneVerificationProvider === 'simulator' ? '練習では不要' : state.account.verifiedPhone ? '確認済み' : '未確認';
   // Verifying a number sends a real SMS through the carrier. Where that is not set up, say so instead of offering a form that fails.
   const canVerify = state.available?.phoneVerification === true;
   $('phone-form').hidden = !canVerify; $('phone-unavailable').hidden = canVerify;
@@ -279,6 +289,8 @@ function renderDetail(m) {
 
   if (m.transcript?.length) {
     const details = el('details'); details.append(el('summary', '会話の文字起こしを見る'));
+    // The card scrolls inside itself on a laptop: bring what was just opened into view instead of leaving it below the fold.
+    details.addEventListener('toggle', () => { if (details.open) details.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
     for (const t of m.transcript) { const row = el('div', undefined, 'turn'); row.append(el('small', t.source === 'callee' ? '相手' : 'AI'), el('span', t.text)); details.append(row); }
     d.append(details);
   }
@@ -307,14 +319,22 @@ function renderDetail(m) {
 async function showReview(id) {
   review = await api('/missions/' + id + '/review', 'POST', {}); review.key = crypto.randomUUID();
   const m = review.mission, list = el('dl', undefined, 'review-list');
+  const practice = m.mode === 'simulator';
+  const length = m.maxSeconds % 60 ? `${Math.floor(m.maxSeconds / 60)}分${m.maxSeconds % 60}秒` : `${m.maxSeconds / 60}分`;
+  // Every value a person is asked to confirm must be readable without knowing the API: no "simulator", no bare "$1".
   const rows = {
-    '電話のかけ方': m.mode === 'simulator' ? '練習（実際の電話はかかりません）' : '実際に電話をかけます',
-    '相手': `${m.target.name}　${m.target.phone}`,
-    'こちらの番号': m.callerId,
+    '電話のかけ方': practice ? '練習（実際の電話はかかりません）' : '実際に電話をかけます',
+    '相手': `${m.target.name}　${m.target.phone}${practice ? '（練習用の番号。実際にはかけません）' : ''}`,
+    'こちらの番号': practice ? '練習用（実際の番号は使いません）' : m.callerId,
     '伝えること': m.request,
     'AIが説明してよいこと': m.product.facts,
     'AIが約束しないこと': m.product.forbidden,
-    '上限': `${m.maxSeconds}秒 ・ $${m.maxUsd}（見込みの最大 $${m.estimatedMaximumUsd.toFixed(2)}）`,
+    '通話の長さと費用': practice
+      ? `最長${length}。練習なので費用は0円です。`
+      : `最長${length}。費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`,
+    '会話データの送り先': practice
+      ? '練習ではどこにも送りません。このサーバーの中だけで動き、記録は30日で消えます。'
+      : '電話会社（Twilio）と音声AI（OpenAI）に音声と文字起こしが渡ります。記録はこのサーバーに保存し、30日で消えます。',
   };
   for (const [name, value] of Object.entries(rows)) list.append(el('dt', name), el('dd', value));
   $('review-content').replaceChildren(list, el('p', '電話の最初に、記録していることとAIであることを相手に伝えます。', 'hint'));

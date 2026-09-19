@@ -219,3 +219,13 @@ dialog.panel > details:first-of-type { border-top: 0; }
   #history-section { padding-block: 12px; }
   .banner { margin-bottom: 10px; padding-block: 8px; }
 }
+
+/* The call card scrolls inside itself; shadows at its edges say "there is more" without a permanent scrollbar. */
+#current {
+  background:
+    linear-gradient(var(--card) 35%, transparent) top / 100% 36px no-repeat local,
+    linear-gradient(transparent, var(--card) 65%) bottom / 100% 36px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgb(20 30 20 / .22), transparent) top / 100% 12px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgb(20 30 20 / .22), transparent) bottom / 100% 12px no-repeat scroll,
+    var(--card);
+}

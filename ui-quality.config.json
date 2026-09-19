@@ -1,0 +1,32 @@
+{
+  "configured": true,
+  "inputs": [
+    "apps/gateway/public",
+    "apps/gateway/server.mjs",
+    "apps/gateway/lib",
+    "apps/arena/public",
+    "apps/arena/src",
+    "docs/design/ui",
+    "scripts/ui",
+    "scripts/ui-quality.mjs",
+    "scripts/ui-stop-gate.mjs",
+    "scenarios",
+    "package.json",
+    "pnpm-lock.yaml"
+  ],
+  "checks": [
+    { "name": "build", "command": ["pnpm", "build"] },
+    { "name": "gateway-api", "command": ["pnpm", "test:gateway"] },
+    { "name": "gateway-primary-flow", "command": ["node", "scripts/ui/gateway-flow.mjs", "--no-capture"] },
+    { "name": "arena-primary-flow", "command": ["node", "scripts/ui/arena-flow.mjs", "--no-capture"] }
+  ],
+  "requiredImages": [
+    "artifacts/ui/gateway-desktop.png",
+    "artifacts/ui/gateway-mobile.png",
+    "artifacts/ui/arena-desktop.png",
+    "artifacts/ui/arena-mobile.png"
+  ],
+  "reviewFile": "artifacts/ui/review.json",
+  "timeoutSeconds": 900,
+  "maxReceiptAgeHours": 24
+}

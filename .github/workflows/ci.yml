@@ -27,6 +27,8 @@ jobs:
           test -s site/media/oathra-intake-ja.mp4
       - run: pnpm build
       - run: pnpm test
+      - name: UI evidence gate (its own tests; the gate is a local consistency check, not a design judge)
+        run: pnpm ui:gate:test
       - name: Scenarios validate
         run: pnpm oathra scenario validate scenarios/**/*.yaml
       - name: Eval (False Completion must be 0)

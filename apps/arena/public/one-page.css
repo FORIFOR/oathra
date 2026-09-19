@@ -29,3 +29,25 @@ body.has-call:not(.present) .start-foot, body.has-call:not(.present) .replays-pa
   body.has-call:not(.present) .scenario-list { grid-template-columns: 1fr 1fr; }
   body.has-call:not(.present) .scenario-btn .s-diff { display: none; }
 }
+
+/* Evidence cards: who settled it, and never wider than the column (at 390px the status used to fall off the right edge). */
+.erow { min-width: 0; max-width: 100%; }
+.erow .e-top { flex-wrap: wrap; row-gap: 4px; min-width: 0; }
+.erow .e-quote { min-width: 0; }
+.erow .e-q { white-space: normal; overflow-wrap: anywhere; }
+.erow .e-why { margin-top: 6px; font-size: 12px; color: var(--ok, #245f38); }
+.erow .e-why.pending { color: var(--muted, #6e726b); }
+#evidence-list, .panels, .panel { min-width: 0; max-width: 100%; }
+
+/* Folded mission names end with an ellipsis instead of being cut mid-character. */
+body.has-call:not(.present) .scenario-btn { overflow: hidden; }
+body.has-call:not(.present) .scenario-btn > div:nth-child(2) { overflow: hidden; }
+body.has-call:not(.present) .scenario-btn .s-title { display: block; max-width: 100%; }
+
+/* Details timeline: the event name must never run into its summary, and on a phone the summary keeps its own line. */
+.tl-row { grid-template-columns: 74px minmax(150px, max-content) minmax(0, 1fr); }
+.tl-row .tl-type { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .tl-row { grid-template-columns: 64px minmax(0, 1fr); row-gap: 2px; }
+  .tl-row .tl-sum { grid-column: 1 / -1; white-space: normal; overflow-wrap: anywhere; color: var(--muted, #6e726b); padding-left: 74px; }
+}
