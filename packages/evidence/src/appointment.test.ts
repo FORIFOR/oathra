@@ -105,6 +105,20 @@ describe("appointment confirmation (callee_acceptance)", () => {
   });
 });
 
+describe("appointment confirmation between friends", () => {
+  const ASK = "お祝いに焼肉行こ！9月25日の15時、どう！？";
+  const reply = (text: string) => run([["caller", ASK], ["callee", text]]);
+
+  it.each(["うん！9月25日の15時、絶対行く！楽しみすぎる！！", "行く行く！9月25日の15時ね！", "9月25日の15時、空けとく！", "オッケー、それでいいよ！9月25日の15時ね！"])("a casual commitment counts: %s", (text) => {
+    expect(reply(text).status).toBe("completed");
+  });
+
+  it.each(["えーっ！？まじで！？行きたい行きたい！たぶん行ける！", "行けたら行く！", "やばい！！おめでとう！！", "9月25日の15時かー、バイトあるかも。", "絶対行く！……って言いたいけど、その日は予定が入ってる！", "9月25日の15時、絶対行く？"])(
+    "excitement, hedges and conflicts do not: %s", (text) => {
+      expect(reply(text).complete).toBe(false);
+    });
+});
+
 describe("appointment confirmation: agreement words next to a spoiler never complete", () => {
   const agreements = ["承知しました", "かしこまりました", "大丈夫です", "はい、お願いします", "9月25日の15時でお願いします", "9月25日の15時で大丈夫です", "了解です", "問題ございません"];
   const spoilers = [

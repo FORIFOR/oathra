@@ -9,6 +9,7 @@ import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { defineCall, type CallContract } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
+import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
 import { OpenAITTS } from "@oathra/openai";
@@ -702,7 +703,9 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
         route.transport = route.provider.transport({ config: { ...cfg, publicWsUrl, port }, env: process.env });
       }
       const transport = new PhoneTransport(route.transport, engine, { ...(recordDir ? { recordDir } : {}) });
-      console.log(`${dim("Dialing via")} ${route.provider.label} ${dim(`(${route.transport.path})`)} ...\n`);
+      console.log(`${dim("Dialing via")} ${route.provider.label} ${dim(`(${route.transport.path})`)} ...`);
+      // Only the direct Twilio path records audio; it announces that to the callee before anything else.
+      console.log(recordDir && route.transport.path === "direct" ? dim(`The call is recorded to ${recordDir}; the callee hears "${recordingNotice(contract.language)}" first. Use --no-save to neither record nor announce.\n`) : "");
       const outcome = await runCall({
         contract,
         transport,

@@ -138,7 +138,8 @@ class Session {
     // Written before the carrier is contacted, so an opt-out can be honoured even if this process forgets the call.
     this.phone.store.setKey('optout',this.path.split('/').pop(),this.phone.store.seal({mission:this.m.id,owner:this.m.owner,team:this.m.team,phone:this.m.target.phone}),(this.m.maxSeconds+3600)*1000);
     const callback=this.phone.config.publicUrl+'/hooks/twilio/consent/'+this.path.split('/').pop();
-    const greeting=`${this.phone.env.OATHRA_BUSINESS_NAME}のAIアシスタントです。商品についてのお電話です。会話を文字起こしし、依頼者に共有します。続けてよろしければ1を、今後のお電話も不要な場合は2を押してください。`;
+    // The record-keeping notice comes first. This gateway keeps a transcript and no audio (Record=false), so it says exactly that.
+    const greeting=`この通話は、内容を文字に起こして記録しています。${this.phone.env.OATHRA_BUSINESS_NAME}のAIアシスタントです。商品についてのお電話です。記録は依頼者に共有します。続けてよろしければ1を、今後のお電話も不要な場合は2を押してください。`;
     const twiml=`<Response><Gather input="dtmf" numDigits="1" timeout="8" actionOnEmptyResult="true" action="${xml(callback)}" method="POST"><Say language="ja-JP">${xml(greeting)}</Say></Gather><Hangup/></Response>`;
     let response;
     try { response=await fetch(this.phone.callURL(),{method:'POST',headers:{authorization:this.phone.auth(),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({To:this.m.target.phone,From:this.phone.config.callerId,Twiml:twiml,Timeout:'20',TimeLimit:String(this.m.maxSeconds),Record:'false'}),signal:AbortSignal.timeout(12_000)}); }

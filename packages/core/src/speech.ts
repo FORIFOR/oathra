@@ -131,3 +131,11 @@ export function normalizeForSpeech(text: string, lang: Language = "ja"): string 
   out = out.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, (m) => normalizePhone(m, lang));
   return out;
 }
+
+/**
+ * The first thing said on a call that is recorded. The wording is fixed here: a disclosure is never
+ * left to a model's phrasing, and it must come before anything the callee might answer.
+ */
+export function recordingNotice(language: Language): string {
+  return language === "ja" ? "この通話は録音されています。" : "This call is being recorded.";
+}

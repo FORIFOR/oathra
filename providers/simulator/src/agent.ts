@@ -19,11 +19,11 @@ const TRANSFER_RE = /お電話代わり|代わりました|担当の者に代わ
 /** "Please hold": wait, do not restate. */
 const HOLD_RE = /少々お待ち|そのままお待ち|お待ちください|one moment|hold on|please hold|hold the line|bear with me/i;
 
-type Domain = "restaurant" | "hotel" | "shop" | "serial" | "generic";
+type Domain = "restaurant" | "hotel" | "shop" | "serial" | "friend" | "generic";
 
 function domainOf(contract: CallContract): Domain {
   const g = contract.goal.split(".")[0] ?? "";
-  if (g === "restaurant" || g === "hotel" || g === "shop" || g === "serial") return g;
+  if (g === "restaurant" || g === "hotel" || g === "shop" || g === "serial" || g === "friend") return g;
   return "generic";
 }
 
@@ -55,6 +55,7 @@ export class ScriptedAgent implements BrainProvider {
       this.repeats = r.text === this.lastLine ? this.repeats + 1 : 0;
       this.lastLine = r.text;
       this.lastSubstantive = r.text;
+      if (this.repeats >= 2 && domainOf(ctx.contract) === "friend") return { text: "そっかー、じゃあまた今度誘うね！またねー！", action: "hangup" };
       if (this.repeats >= 2) return { text: ctx.language === "en" ? "Understood. We'll try another day. Thank you, goodbye." : "承知しました。では今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
     }
     return r;
@@ -75,6 +76,9 @@ export class ScriptedAgent implements BrainProvider {
     const date = typeof input.date === "string" ? input.date : undefined;
     const party = typeof input.partySize === "number" ? input.partySize : undefined;
     const name = typeof input.name === "string" ? input.name : undefined;
+
+    // Friends do not talk like a reservation desk.
+    if (domain === "friend") return this.friend(ctx);
 
     // 0. Optional intake starts only after the booking terms are settled. It is
     // consent-gated, bounded and driven entirely by the contract's declared fields.
@@ -242,6 +246,33 @@ export class ScriptedAgent implements BrainProvider {
 
     // 10. Fallback: restate the request.
     return { text: this.opener(domain, contract) };
+  }
+
+  /**
+   * A call to a friend: share the news, then pin the plan down. Enthusiasm is not a promise, so a
+   * 「たぶん行ける！」 gets a cheerful push for a real answer, and an offered time is taken if it fits.
+   */
+  private friend(ctx: BrainContext): BrainResponse {
+    const { contract, mission, transcript } = ctx;
+    const input = contract.input as Record<string, unknown>;
+    const date = typeof input.date === "string" ? jaDate(input.date) : "今度の土曜";
+    const want = typeof input.time === "string" ? input.time : "19:00";
+    const news = typeof input.news === "string" ? input.news : "いいことあった";
+    const plan = typeof input.plan === "string" ? input.plan : "ごはん";
+    const lastText = [...transcript].reverse().find((t) => t.source === "callee")?.text ?? "";
+    const latest = typeof contract.constraints.time?.lte === "string" ? contract.constraints.time.lte : undefined;
+
+    if (ctx.turnIndex > 0 && mission.missing.length === 0 && mission.violations.length === 0) {
+      return { text: "やったー！！決まりね！当日めっちゃ楽しみ！じゃあまたねー！", action: "hangup" };
+    }
+    if (ctx.turnIndex === 0) return { text: `ねえ聞いて聞いて！！${news}！！お祝いに${plan}行こ！${date}の${jaTime(want)}、どう！？` };
+    const offered = typeof mission.pending.time === "string" ? mission.pending.time : undefined;
+    if (offered) {
+      if (latest && offered > latest) return { text: `${jaTime(offered)}はさすがに遅いかも〜！${jaTime(latest)}までには始めたいんだよね。もうちょい早くならない？` };
+      return { text: `ぜんっぜんオッケー！じゃあ${date}の${jaTime(offered)}ね！` };
+    }
+    if (HEDGE_RE.test(lastText)) return { text: `たぶんじゃなくて確定がいい〜！${date}の${jaTime(want)}、いける？` };
+    return { text: `${date}の${jaTime(want)}、いける？` };
   }
 
   private counterPrice(domain: Domain, contract: CallContract, budget: number): BrainResponse {

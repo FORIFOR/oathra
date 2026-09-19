@@ -67,6 +67,27 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     rmSync(recordDir, { recursive: true, force: true });
   });
 
+  it("a recorded call is announced by the carrier before the media stream; an unrecorded one is not", async () => {
+    const twiml: string[] = [];
+    const fetchImpl = (async (_url: string, init: RequestInit) => { const t = (init.body as URLSearchParams).get("Twiml"); if (t) twiml.push(t); /* hang-ups go through the same stub */ return new Response(JSON.stringify({ sid: "CA1" }), { status: 201 }); }) as unknown as typeof fetch;
+    const opts = { accountSid: "AC", authToken: "t", from: "+10000000000", publicWsUrl: "wss://example.test", fetchImpl };
+    const recordDir = mkdtempSync(join(tmpdir(), "oathra-notice-"));
+    const contract = defineCall({ goal: "chat.casual" });
+
+    const ja = await new TwilioDirectTransport({ ...opts, port: PORT + 2 }).dial({ to: "+818000000000", language: "ja", contract, recordDir });
+    await ja.hangup();
+    const en = await new TwilioDirectTransport({ ...opts, port: PORT + 3 }).dial({ to: "+14155550100", language: "en", contract, recordDir });
+    await en.hangup();
+    const unrecorded = await new TwilioDirectTransport({ ...opts, port: PORT + 4 }).dial({ to: "+818000000000", language: "ja", contract });
+    await unrecorded.hangup();
+
+    expect(twiml[0]).toBe('<Response><Say language="ja-JP">この通話は録音されています。</Say><Connect><Stream url="wss://example.test/media"/></Connect></Response>');
+    expect(twiml[1]).toContain('<Say language="en-US">This call is being recorded.</Say><Connect>');
+    expect(twiml[2]).toBe('<Response><Connect><Stream url="wss://example.test/media"/></Connect></Response>');
+    expect(JSON.parse(readFileSync(join(recordDir, "recording-notice.json"), "utf8"))).toMatchObject({ text: "This call is being recorded.", method: "carrier_tts_before_media_stream" });
+    rmSync(recordDir, { recursive: true, force: true });
+  });
+
   it("rejects when Twilio refuses the call", async () => {
     const fetchImpl = (async () => new Response(JSON.stringify({ code: 20003, message: "Authenticate" }), { status: 401 })) as unknown as typeof fetch;
     const transport = new TwilioDirectTransport({ accountSid: "AC", authToken: "bad", from: "+10000000000", publicWsUrl: "wss://example.test", port: PORT + 1, fetchImpl });

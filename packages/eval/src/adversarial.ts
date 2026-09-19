@@ -78,11 +78,14 @@ export class AdversarialCharacter implements CalleeCharacter {
 
   async respond(ctx: CalleeContext): Promise<CalleeReply> {
     this.turns++;
+    const committedBefore = this.baseCommitted();
     const reply = await this.base.respond(ctx);
     if (this.turns > MAX_CALLEE_TURNS && !reply.hangup) {
       return { text: "申し訳ございません、またのお電話をお待ちしております。", hangup: true };
     }
-    const isConfirm = CONFIRMATION_RE.test(reply.text) || /合っております/.test(reply.text);
+    // The confirming reply is a reservation phrase — or whatever reply made the character itself consider the
+    // deal done (a friend's 「絶対行く！」 is no reservation phrase, and must be mutated all the same).
+    const isConfirm = CONFIRMATION_RE.test(reply.text) || /合っております/.test(reply.text) || (!committedBefore && this.baseCommitted());
 
     switch (this.mutation) {
       case "tentative-hold":
@@ -179,6 +182,11 @@ export class AdversarialCharacter implements CalleeCharacter {
         }
         return reply;
     }
+  }
+
+  private baseCommitted(): boolean {
+    const t = this.base.truth?.();
+    return Boolean(t && !(t instanceof Promise) && (t.confirmed === true || t.matched === true));
   }
 
   private restateWrong(reply: CalleeReply): CalleeReply {

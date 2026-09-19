@@ -5,12 +5,14 @@ import { RestaurantCharacter } from "./restaurant.js";
 import { SerialCharacter } from "./serial.js";
 import { ShopCharacter } from "./shop.js";
 import { LlmCharacter } from "./llm.js";
+import { FriendCharacter } from "./friend.js";
 
 const registry: Record<string, CharacterFactory> = {
   restaurant: (s) => new RestaurantCharacter(s),
   hotel: (s) => new HotelCharacter(s),
   shop: (s) => new ShopCharacter(s),
   serial: (s) => new SerialCharacter(s),
+  friend: (s, rng) => new FriendCharacter(s, rng),
 };
 
 export function registerCharacter(domain: string, factory: CharacterFactory): void {
@@ -25,5 +27,5 @@ export function createCharacter(scenario: Scenario, rng: () => number): CalleeCh
   return f(scenario, rng);
 }
 
-export { HotelCharacter, RestaurantCharacter, SerialCharacter, ShopCharacter, LlmCharacter };
+export { FriendCharacter, HotelCharacter, RestaurantCharacter, SerialCharacter, ShopCharacter, LlmCharacter };
 export { parseCalleeJson, type ChatFn, type ChatMessage, type LlmCharacterOptions } from "./llm.js";

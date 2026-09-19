@@ -207,7 +207,7 @@ export const RETRACTION_RE =
  * reservation the same words from a shop would only be an offer.
  */
 export const CALLEE_COMMIT_RE =
-  /でお願い(?:します|いたします)|で大丈夫です|で結構です|で構いません|で問題(?:ありません|ございません)|伺います|お待ちして(?:おり)?ます|お約束(?:します|いたします)|確定です|works for me|that works|see you then|sounds good|confirmed|let's do (?:that|it)/i;
+  /でお願い(?:します|いたします)|で大丈夫です|で結構です|で構いません|で問題(?:ありません|ございません)|伺います|お待ちして(?:おり)?ます|お約束(?:します|いたします)|確定です|絶対(?:に)?行く|行く行く|行きます|空けと(?:く|きます)|空けてお(?:く|きます)|(?:それ|そこ)で(?:いい|オッケー|おっけー|OK)|I'm in|count me in|I'll be there|works for me|that works|see you then|sounds good|confirmed|let's do (?:that|it)/i;
 
 /** A clean commitment: no refusal, hedge, contrast, question or retraction anywhere in the utterance. */
 export function isCalleeCommitment(text: string, source: Speaker): boolean {

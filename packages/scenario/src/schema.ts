@@ -33,6 +33,8 @@ export const MissionSchema = z
     permissions: PermissionsSchema.default({}),
     /** Optional consent-gated, contract-declared caller information intake. */
     intake: IntakeSchema.optional(),
+    /** See CallContract.confirmation. "callee_acceptance" for plans and appointments the callee commits to. */
+    confirmation: z.enum(["callee_statement", "callee_acceptance"]).optional(),
     /** Text shown to the player describing the mission. */
     brief: z.string().optional(),
   })
@@ -59,7 +61,7 @@ export const ScenarioSchema = z
     difficulty: z.enum(["easy", "normal", "hard", "extreme"]).default("normal"),
     language: z.enum(["ja", "en"]).default("ja"),
     /** Domain the scripted callee uses: selects the built-in character logic. */
-    domain: z.enum(["restaurant", "hotel", "shop", "serial", "mystery", "generic"]).default("generic"),
+    domain: z.enum(["restaurant", "hotel", "shop", "serial", "friend", "mystery", "generic"]).default("generic"),
     tags: z.array(z.string()).default([]),
     mission: MissionSchema,
     callee: z

@@ -9,7 +9,7 @@
  */
 import { checkConstraints } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
-import { DEFAULT_LATENCY_TARGETS } from "@oathra/core";
+import { DEFAULT_LATENCY_TARGETS, recordingNotice } from "@oathra/core";
 import { runCall, type CallOutcome } from "@oathra/runtime";
 import { contractFromScenario, type Scenario } from "@oathra/scenario";
 import { SimulatorTransport, type CalleeCharacter } from "@oathra/simulator";
@@ -122,6 +122,8 @@ export async function runScenario(scenario: Scenario, opts: RunScenarioOptions):
     now,
     scenarioId: scenario.id,
     openingTimeoutMs: opts.openingTimeoutMs ?? (opts.pace === "realtime" ? 1500 : 50),
+    // Every saved call is a recording; the simulator opens the way a recorded real call does.
+    openingNotice: recordingNotice(contract.language),
     ...(opts.onEvent ? { onEvent: opts.onEvent } : {}),
     ...(opts.callId ? { callId: opts.callId } : {}),
   });
