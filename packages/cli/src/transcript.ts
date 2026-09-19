@@ -39,7 +39,11 @@ export type TranscriptCheckInput = z.input<typeof TranscriptCheckSchema>;
 export function verifyTranscript(input: unknown): VerifiedResult {
   const check = TranscriptCheckSchema.parse(input);
   const [year, month, day] = check.referenceDate.split("-").map(Number) as [number, number, number];
-  const engine = new EvidenceEngine({ language: check.contract.language, now: new Date(year, month - 1, day, 12) });
+  const engine = new EvidenceEngine({
+    language: check.contract.language,
+    now: new Date(year, month - 1, day, 12),
+    ...(check.contract.confirmation ? { confirmation: check.contract.confirmation } : {}),
+  });
   for (const u of check.utterances) engine.ingest({
     id: u.id, source: u.source, text: u.text, t: u.t,
     ...(u.language ? { language: u.language } : {}),

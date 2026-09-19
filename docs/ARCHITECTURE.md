@@ -26,6 +26,7 @@ contract → evidence → core → scenario → runtime → providers → replay
 - A newer claim on a field supersedes a pending one (`supersedes`).
 - `confirmed` is verified only by explicit callee confirmation phrases.
 - The MissionView shown to brains exposes only *callee* pending offers so an agent cannot accept its own proposal.
+- `confirmation: "callee_acceptance"` (contract option, off by default) is for appointment-style calls where the caller proposes a slot: the callee's clean commitment (「はい、9月25日の15時でお願いします」) verifies `confirmed` once date and time are stated or settled. Hedges, deferrals (「上司に聞いてから」), scheduling conflicts (「別の会議が入っています」), contrasts and questions never do. Reservation contracts keep the default and still require an explicit confirmation phrase.
 
 ## Closed-loop action proof
 

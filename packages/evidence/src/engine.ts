@@ -14,13 +14,25 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE , RETRACTION_RE } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE , RETRACTION_RE } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
+
+/**
+ * Who settles `confirmed`.
+ *  - "callee_statement" (default): only an explicit confirmation phrase from the callee
+ *    (a shop saying 「ご予約承りました」).
+ *  - "callee_acceptance": appointment-style calls where the caller proposes a slot and the
+ *    callee commits to it (「はい、9月25日の15時でお願いします」). The commitment counts only when
+ *    it is clean (no hedge, refusal, contrast or question) and the whole slot (date and time)
+ *    is stated in that utterance or already settled.
+ */
+export type ConfirmationMode = "callee_statement" | "callee_acceptance";
 
 export type EngineOptions = {
   now?: Date;
   language?: Language;
   idFactory?: () => string;
+  confirmation?: ConfirmationMode;
 };
 
 export type IngestResult = {
@@ -44,12 +56,16 @@ export class EvidenceEngine {
   private readonly now: Date;
   private readonly language: Language;
   private readonly idFactory: () => string;
+  private readonly confirmation: ConfirmationMode;
+  /** The caller utterance immediately before the current one (appointment mode: a bare 「はい」 answers only that). */
+  private lastCallerUtteranceId: string | undefined;
   private seq = 0;
 
   constructor(opts: EngineOptions = {}) {
     this.now = opts.now ?? new Date();
     this.language = opts.language ?? "ja";
     this.idFactory = opts.idFactory ?? (() => `ev_${++this.seq}`);
+    this.confirmation = opts.confirmation ?? "callee_statement";
   }
 
   /** Time of the latest callee retraction (「やはりお取りできませんでした」); a confirmation before it no longer counts. */
@@ -67,7 +83,9 @@ export class EvidenceEngine {
     // 1. Resolve pending claims from the other side.
     const counterpart: Map<string, Evidence> =
       u.source === "caller" ? this.pendingOffers : this.pendingProposals;
-    const resolves = u.source === "caller" ? acceptance : agreement;
+    const appointment = this.confirmation === "callee_acceptance";
+    const commitment = appointment && isCalleeCommitment(u.text, u.source);
+    const resolves = u.source === "caller" ? acceptance : agreement || commitment;
     const restated = new Map(positive.map((c) => [c.field, c] as const));
 
     if (resolves) {
@@ -79,6 +97,9 @@ export class EvidenceEngine {
         // "ご予算について承知いたしました。…ですが" acknowledges the request; it settles the value
         // only when the callee restates it or answers without a contrast.
         if (!r && u.source === "callee" && CONTRAST_RE.test(u.text)) continue;
+        // Appointment mode: a commitment that is not an agreement phrase (「はい。」, 「お待ちしております」)
+        // settles only what the caller proposed in the turn it answers, or what the callee restates.
+        if (commitment && !agreement && !r && pending.utteranceId !== this.lastCallerUtteranceId) continue;
         const mark = this.markVerified(pending, u, r);
         verifiedNow.push(mark);
         counterpart.delete(field);
@@ -99,6 +120,23 @@ export class EvidenceEngine {
       verifiedNow.push(ev);
     }
     this.pendingConfirmRequest = isConfirmRequest(u.text, u.source) ? u : undefined;
+
+    // 1c. Appointment mode: the callee's clean commitment to a complete slot is the confirmation.
+    if (commitment && !created.some((e) => e.field === "confirmed") && !positive.some((c) => c.field === "confirmed")) {
+      const slotKnown = ["date", "time"].every((field) => {
+        const r = restated.get(field);
+        if (r) return r.value !== null && !r.ambiguous;
+        return verifiedNow.some((v) => v.field === field) || this.latestVerified(field) !== undefined;
+      });
+      if (slotKnown) {
+        const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: u.text, semantic: 0.9, polarity: "positive" }, true);
+        ev.explicit = false;
+        ev.note = "callee committed to the slot (callee_acceptance)";
+        this.nodes.push(ev);
+        created.push(ev);
+        verifiedNow.push(ev);
+      }
+    }
 
     // 2. Record new claims from this utterance (one per field/value per utterance).
     const seen = new Set<string>();
@@ -156,6 +194,7 @@ export class EvidenceEngine {
       created.push(ev);
     }
 
+    if (u.source === "caller") this.lastCallerUtteranceId = u.id;
     return { created, verified: verifiedNow };
   }
 

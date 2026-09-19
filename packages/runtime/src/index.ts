@@ -115,6 +115,7 @@ export class CallRuntime {
     this.intakeStatus = opts.contract.intake ? "not_started" : "disabled";
     const engineOpts: ConstructorParameters<typeof EvidenceEngine>[0] = { language: opts.contract.language };
     if (opts.now) engineOpts.now = opts.now;
+    if (opts.contract.confirmation) engineOpts.confirmation = opts.contract.confirmation;
     this.engine = new EvidenceEngine(engineOpts);
     if (opts.onEvent) this.log.subscribe(opts.onEvent);
     this.state.onChange((from, to) => this.emit({ type: "state.changed", from, to, ux: this.state.ux }));

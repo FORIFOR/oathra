@@ -22,9 +22,9 @@ export type Claim = {
 };
 
 const NEGATIVE_JA =
-  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|ございません|ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可/;
+  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|ございません|ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|できまへん|でけへん|あきまへん|あかん/;
 const NEGATIVE_EN =
-  /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have)\b/i;
+  /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work)\b/i;
 
 export const REFUSAL_RE = new RegExp(`${NEGATIVE_JA.source}|${NEGATIVE_EN.source}`, "i");
 
@@ -44,7 +44,7 @@ export const AGREEMENT_RE =
   /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly/i;
 
 /** "承知しました、ですが…": an agreement followed by a contrast is not a clean yes. */
-export const CONTRAST_RE = /ですが|ますが|けど|けれど|しかし|ただし|ただ、|とはいえ|\bbut\b|however|although/i;
+export const CONTRAST_RE = /ですが|ますが|けど|けれど|しかし|ただし|ただ(?!いま|今|ちに)|とはいえ|と言いたいところ|\bbut\b|however|although/i;
 
 /** Caller accepts a value the callee offered. */
 export const ACCEPTANCE_RE =
@@ -55,7 +55,7 @@ export const ACCEPTANCE_RE =
  * "予約を取れると思います" / "たぶん大丈夫です" must never settle a field.
  */
 export const HEDGE_RE =
-  /と思います|と思う|たぶん|多分|おそらく|恐らく|かもしれません|かもしれない|確認してみ|確認いたします|確認します|調べてみ|仮(?:の)?(?:押さえ|予約|受付|確保)|未確定|正式な確定ではありません|本予約では(?:ありません|ない)|承認待ち|確認待ち|確認が必要|確約(?:は)?(?:できません|できない)|保留扱い|調整中|確認中|確認してから|キャンセル待ち|確定前|見込み|probably|maybe|perhaps|I think|let me check|not sure|I'll check|might be/i;
+  /と思います|と思う|たぶん|多分|おそらく|恐らく|かもしれません|かもしれない|確認してみ|確認いたします|確認します|調べてみ|仮(?:の)?(?:押さえ|予約|受付|確保)|未確定|正式な確定ではありません|本予約では(?:ありません|ない)|承認待ち|確認待ち|確認が必要|確約(?:は)?(?:できません|できない)|保留扱い|調整中|確認中|確認してから|キャンセル待ち|確定前|見込み|(?:聞いて|相談して|確認して|検討して)から|折り返し|持ち帰|検討(?:し|させ|いたし)ます|それから(?:判断|決め|お返事)|判断(?:し|いたし)ます|と言いたいところ|約束(?:は)?でき|get back to you|need to (?:ask|check with)|check with my|run it by|probably|maybe|perhaps|I think|let me check|not sure|I'll check|might be/i;
 
 /** Split text into clauses with a polarity. */
 export function splitClauses(text: string): Clause[] {
@@ -199,7 +199,24 @@ export function isConfirmRequest(text: string, source: Speaker): boolean {
  * A confirmation followed by this (same utterance or later) is not a confirmation.
  */
 export const RETRACTION_RE =
-  /やはり[^。]*?(?:できません|できかね|無理)|(?:予約|ご予約|注文|ご注文)(?:は|を)?(?:お受けでき(?:ません|かねます)|お取りでき(?:ません|かねます)|承れません|お受けいたしかねます|お取りいたしかねます|キャンセル|取り消し)|取り消させていただき|(?:can't|cannot|unable to|won't be able to) (?:take|honou?r|hold|keep|confirm) (?:the|that|your|this) (?:reservation|booking|order)|(?:reservation|booking|order) (?:is|has been|was) (?:cancelled|canceled|off|withdrawn)|after all,? (?:we|I) can't/i;
+  /やはり[^。]*?(?:できません|できかね|無理|キャンセル|やめ)|キャンセル(?:して|させて|でお願い)|取り消して|(?:please )?cancel (?:it|that|the (?:meeting|appointment))|(?:予約|ご予約|注文|ご注文)(?:は|を)?(?:お受けでき(?:ません|かねます)|お取りでき(?:ません|かねます)|承れません|お受けいたしかねます|お取りいたしかねます|キャンセル|取り消し)|取り消させていただき|(?:can't|cannot|unable to|won't be able to) (?:take|honou?r|hold|keep|confirm) (?:the|that|your|this) (?:reservation|booking|order)|(?:reservation|booking|order) (?:is|has been|was) (?:cancelled|canceled|off|withdrawn)|after all,? (?:we|I) can't/i;
+
+/**
+ * Appointment-style contracts (`confirmation: "callee_acceptance"`): the caller proposes a slot and
+ * the callee commits to it. 「9月25日の15時でお願いします」 from the callee is that commitment; in a
+ * reservation the same words from a shop would only be an offer.
+ */
+export const CALLEE_COMMIT_RE =
+  /でお願い(?:します|いたします)|で大丈夫です|で結構です|で構いません|で問題(?:ありません|ございません)|伺います|お待ちして(?:おり)?ます|お約束(?:します|いたします)|確定です|works for me|that works|see you then|sounds good|confirmed|let's do (?:that|it)/i;
+
+/** A clean commitment: no refusal, hedge, contrast, question or retraction anywhere in the utterance. */
+export function isCalleeCommitment(text: string, source: Speaker): boolean {
+  if (source !== "callee") return false;
+  const t = text.trim();
+  if (REFUSAL_RE.test(t) || HEDGE_RE.test(t) || CONTRAST_RE.test(t) || RETRACTION_RE.test(t)) return false;
+  if (/[?？]|でしょうか|ですか|ますか|ませんか/.test(t)) return false;
+  return CALLEE_COMMIT_RE.test(t) || AGREEMENT_RE.test(t) || AFFIRMATIVE_RE.test(t);
+}
 
 /** "…で合っておりますでしょうか？" is the callee asking back, not agreeing. */
 export const QUESTION_RE = /[?？]\s*$|でしょうか|ですか[?？]?\s*$|ますか[?？]?\s*$/;

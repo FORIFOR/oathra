@@ -217,6 +217,12 @@ export const CallContractSchema = z
     budget: BudgetSchema.default({}),
     /** Optional consent-gated, contract-declared caller information intake. */
     intake: IntakeSchema.optional(),
+    /**
+     * Who settles `confirmed`. Default "callee_statement": only an explicit confirmation phrase from
+     * the callee (reservations, orders). "callee_acceptance" is for appointment-style calls where the
+     * caller proposes a slot and the callee commits to it; hedges, deferrals and refusals still never count.
+     */
+    confirmation: z.enum(["callee_statement", "callee_acceptance"]).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
