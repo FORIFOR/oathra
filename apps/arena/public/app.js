@@ -78,13 +78,13 @@
       dialing: "Dialing…", replaying: "Replaying…", noTranscript: "No transcript.",
       yourMission: "YOUR MISSION", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up",
       foolTitle: "TRY TO FOOL IT", foolHint: "Say one of these as the shop. None of them should count as booked.",
-      mission: "MISSION", evidence: "EVIDENCE", intake: "OPTIONAL INTAKE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool",
+      mission: "MISSION", evidence: "EVIDENCE", intake: "OPTIONAL INTAKE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool", saidBy: "said by {who}", whyAgreed: "the agent proposed it; the callee agreed", whyAccepted: "the callee offered it; the agent accepted", whyCallee: "settled by the callee's own words", waitCallee: "waiting for the callee to agree", waitCaller: "the agent has not accepted this yet", sameSettled: "the same value was settled through another utterance", evidenceCount: "{v} verified / {n}",
       intakeNoAnswers: "No explicit answers recorded.", intakePurpose: "Purpose: {purpose}", intakeQuestions: "Questions: {asked} / {max}", intakeConsent: "Consent: {status}", intakeStopped: "Stopped without inferring a profile.", intakeAnswer: "explicit answer", intakeDeclined: "declined", intakeSkipped: "skipped (dependency not met)",
       latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
       yes: "yes", no: "no",
       stCompleted: "MISSION COMPLETE", stIncomplete: "INCOMPLETE", stViolation: "CONSTRAINT VIOLATION", stFailed: "FAILED", stFalse: "FALSE COMPLETION", stUnknown: "UNKNOWN",
       badgeOk: "VERIFIED", badgeNo: "NOT VERIFIED", missing: "(missing)",
-      evidenceN: "Evidence: {n}", confidence: "Confidence: {v}", latencyP50: "Latency p50: {v}", last: "{v} ms (last)", turns: "Turns: {n}", endedReason: "Ended: {r}",
+      evidenceN: "Verified evidence: {n}", confidence: "Confidence: {v}", latencyP50: "Latency p50: {v}", last: "{v} ms (last)", turns: "Turns: {n}", endedReason: "Ended: {r}",
       scOutcome: "Outcome", scEvidence: "Evidence", scConversation: "Conversation", scLatency: "Latency", scEfficiency: "Efficiency", scOverall: "Overall",
       fc0: "False Completion: 0", fc1: "False Completion: 1 — reported fields disagree with the callee ({f})",
       runAgain: "Run again", newMission: "New mission", copyMd: "Copy result as Markdown", copied: "Copied", copyPrompt: "Copy:",
@@ -108,13 +108,13 @@
       dialing: "発信中…", replaying: "再生中…", noTranscript: "会話はありません。",
       yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る",
       foolTitle: "誤完了を誘ってみる", foolHint: "店側としてこの中のどれかを言ってみてください。どれも「予約できた」にはならないはずです。",
-      mission: "ミッション", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール",
+      mission: "ミッション", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール", saidBy: "{who}の発言", whyAgreed: "AIの提案を、相手が了承して確定", whyAccepted: "相手の提示を、AIが受けて確定", whyCallee: "相手自身の言葉で確定", waitCallee: "相手の了承待ち", waitCaller: "AIはまだ受けていません", sameSettled: "同じ内容が、別の発言で確定しています", evidenceCount: "検証済み {v} / 全 {n}",
       intakeNoAnswers: "明示回答はまだありません。", intakePurpose: "目的: {purpose}", intakeQuestions: "質問数: {asked} / {max}", intakeConsent: "同意: {status}", intakeStopped: "推測によるプロファイル化はせず終了しました。", intakeAnswer: "明示回答", intakeDeclined: "回答なし", intakeSkipped: "省略（前提未成立）",
       latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
       yes: "はい", no: "いいえ",
       stCompleted: "ミッション完了", stIncomplete: "未完了", stViolation: "制約違反", stFailed: "失敗", stFalse: "誤った完了", stUnknown: "不明",
       badgeOk: "検証済み", badgeNo: "未検証", missing: "（未取得）",
-      evidenceN: "証拠 {n} 件", confidence: "信頼度 {v}", latencyP50: "応答 p50 {v}", last: "{v} ms（直近）", turns: "ターン数 {n}", endedReason: "終了理由 {r}",
+      evidenceN: "検証済みの証拠 {n} 件", confidence: "信頼度 {v}", latencyP50: "応答 p50 {v}", last: "{v} ms（直近）", turns: "ターン数 {n}", endedReason: "終了理由 {r}",
       scOutcome: "結果", scEvidence: "証拠", scConversation: "会話", scLatency: "応答速度", scEfficiency: "効率", scOverall: "総合",
       fc0: "誤った完了: 0", fc1: "誤った完了: 1 — 報告した内容が相手の発言と食い違っています（{f}）",
       runAgain: "もう一度", newMission: "別のミッション", copyMd: "結果をコピー", copied: "コピーしました", copyPrompt: "コピー:",
@@ -674,6 +674,8 @@
       const sym = { eq: "=", ne: "≠", lte: "≤", gte: "≥", lt: "<", gt: ">", oneOf: "∈" }[k] || k;
       parts.push(`${sym} ${Array.isArray(v) ? v.join("|") : fmtVal(v)}`);
     }
+    // A range reads as a range: 「19:00〜21:00」, not 「≤ 21:00 ≥ 19:00」.
+    if (rule.gte !== undefined && rule.lte !== undefined && Object.keys(rule).length === 2) return `${fmtVal(rule.gte)}〜${fmtVal(rule.lte)}`;
     return parts.join(" ");
   }
   function violates(rule, v) {
@@ -760,14 +762,21 @@
       el("div", { class: "e-top" }, [
         el("span", { class: "e-field", text: e.field }),
         el("span", { class: "e-val", text: `= ${fmtVal(e.value)}` }),
-        el("span", { class: `e-src ${e.source}`, text: srcLabel(e.source) }),
+        el("span", { class: `e-src ${e.source}`, text: t("saidBy", { who: srcLabel(e.source) }) }),
         el("span", { class: `e-ok ${e.verified ? "" : "pending"}`, text: `${e.verified ? "✓" : "○"} ${t(e.verified ? "verified" : "pending")}` }),
       ]),
       el("div", { class: "e-quote", title: e.transcript || "" }, [
         el("span", { class: "e-t", text: mmss(e.t) }),
         el("span", { class: "e-q", text: `“${e.span || e.transcript || ""}”` }),
       ]),
+      // The tag above says who spoke. This line says whose words settled it — the point of the whole screen.
+      el("div", { class: `e-why ${e.verified ? "" : "pending"}`, text: whySettled(e) }),
     ]);
+  }
+  function whySettled(e) {
+    const note = String(e.note || "");
+    if (e.verified) return t(e.source === "caller" ? "whyAgreed" : /^accepted|restates/.test(note) ? "whyAccepted" : "whyCallee");
+    return t(e.source === "caller" ? "waitCallee" : "waitCaller");
   }
   // The agent restating its request ("9月12日の19時以降で2名") would otherwise add a second
   // pending row for the same field/value/speaker; keep one row per distinct claim (latest time,
@@ -804,7 +813,14 @@
         }
       }
     }
-    $("#evidence-count").textContent = items.length ? `${items.filter((e) => e.verified).length} / ${items.length}` : "0";
+    // The "why" line of a pending card depends on the others (the same value may have been settled through
+    // another utterance), so refresh every line once the list is current.
+    const settled = new Set(items.filter((e) => e.verified).map((e) => `${e.field}|${fmtVal(e.value)}`));
+    for (const e of items) {
+      const line = ul.querySelector(`[data-eid="${CSS.escape(String(e.id))}"] .e-why`);
+      if (line) line.textContent = !e.verified && settled.has(`${e.field}|${fmtVal(e.value)}`) ? t("sameSettled") : whySettled(e);
+    }
+    $("#evidence-count").textContent = items.length ? t("evidenceCount", { v: items.filter((e) => e.verified).length, n: items.length }) : "0";
   }
 
   function renderMetrics() {
@@ -824,7 +840,8 @@
     const req = missionFields(c);
     const lines = [`**${c.scenario ? scenarioTitle(c.scenario) : c.id}** — ${statusTitle(r.status)}`, ""];
     for (const f of req) lines.push(`- ${r.fields && r.fields[f] !== undefined ? "✓" : "·"} ${f}: ${fmtVal(r.fields ? r.fields[f] : undefined)}`);
-    const verifiedN = (r.evidence || []).filter((e) => e.verified).length;
+    // Count what the evidence panel shows. (result.evidence also holds the acknowledging utterances as separate nodes.)
+    const verifiedN = foldEvidence(app.call && app.call.evidence && app.call.evidence.length ? app.call.evidence : r.evidence || []).filter((e) => e.verified).length;
     lines.push("", `${t(r.complete ? "mdVerified" : "mdNotVerified")} · ${t("evidenceN", { n: verifiedN })} · ${t("confidence", { v: typeof r.confidence === "number" ? r.confidence.toFixed(3) : "—" })}`);
     if (c.metrics && c.metrics.latency) lines.push(`${t("latencyP50", { v: `${c.metrics.latency.ttfaP50Ms ?? "—"} ms` })} · ${t("turns", { n: c.metrics.turns ?? c.transcript.length })}`);
     if (c.score) {
@@ -847,7 +864,8 @@
     const wrap = $("#result-wrap");
     if (!r) return;
     const req = missionFields(c);
-    const verifiedN = (r.evidence || []).filter((e) => e.verified).length;
+    // Count what the evidence panel shows. (result.evidence also holds the acknowledging utterances as separate nodes.)
+    const verifiedN = foldEvidence(app.call && app.call.evidence && app.call.evidence.length ? app.call.evidence : r.evidence || []).filter((e) => e.verified).length;
     const fc = c.score && c.score.falseCompletion;
     const cls = fc || r.status === "failed" || r.status === "constraint_violation" ? "bad" : r.status === "completed" ? "" : "warn";
     const missing = new Set(r.missing || []);
