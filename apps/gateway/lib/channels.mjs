@@ -28,8 +28,11 @@ export class Channels {
     assert(adapter.verify(raw,headers)===true,'invalid_webhook_signature',401);
     let decoded;try{decoded=adapter.decode(raw,headers);}catch(error){if(error.code)throw error;assert(false,'invalid_webhook_json');}
     assert(decoded&&Array.isArray(decoded.events)&&decoded.events.length<=100,'invalid_webhook_events');
-    const events=decoded.events.map(e=>this.event(e));
-    this.store.tx(()=>{for(const event of events)this.store.enqueue('inbox',`${kind}:${event.eventId}`,'_channel',{kind,normalized:event,pluginIdentity:this.registry.identity(kind)});});
+    // Validate each event on its own: one oversized message must not discard someone else's approval in the same delivery.
+    const events=decoded.events.flatMap(e=>{try{return [this.event(e)];}catch{return [];}})
+      // Anyone can message the bot. Until an account is linked, the only thing worth queueing is a link code.
+      .filter(e=>this.store.key(`identity:${kind}`,e.actor)||/^(?:連携|link)\s+[\w-]{40,100}$/i.test((e.text??'').trim()));
+    this.store.tx(()=>{for(const event of events)this.store.enqueue('inbox',`${kind}:${event.eventId}`,'_channel',{kind,normalized:event,pluginIdentity:this.registry.identity(kind)},{priority:event.type==='action'});});
     return decoded.response?jsonData(decoded.response,4000):{ok:true};
   }
   async process(job) {
@@ -43,7 +46,7 @@ export class Channels {
     const binding=message.trim().match(/^(?:連携|link)\s+([\w-]{40,100})$/i);
     if(binding){this.registry.demand(kind,'mission:draft');const u=this.service.link(kind,actor,binding[1]);this.reply(job,u,origin,'連携しました。登録済みの相手と商品を指定して依頼してください。メッセージだけでは発信しません。',[],'linked');return;}
     let u;try{u=this.service.channelUser(kind,actor);}catch{return;}
-    if(e.type==='unlink'){this.store.delKey(`identity:${kind}`,actor);return;}
+    if(e.type==='unlink'){this.store.delKey(`identity:${kind}`,actor);this.store.audit(u.id,'channel.unlinked',kind,{channel:kind});return;}
     if(e.type==='unsend'){
       for(const m of this.store.list('mission',u.id))if(m.origin?.channel===kind&&m.origin?.actor===actor&&m.sourceMessageId===e.sourceMessageId){
         this.service.cancel(u,m.id);if(['CANCELLED','DRAFT'].includes(this.store.get('mission',m.id)?.status))this.store.removeMission(m);

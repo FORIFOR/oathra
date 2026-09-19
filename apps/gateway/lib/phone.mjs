@@ -17,12 +17,16 @@ export class Phone {
     const m=this.service.own('mission',id,u); this.service.write(u); assert(m.carrierSid,'carrier_sid_unknown_check_provider_console',409);
     if(stop) await this.update(m.carrierSid,{Status:'completed'});
     const data=await jsonFetch(this.callURL(m.carrierSid),{headers:{authorization:this.auth()}});
-    m.carrierStatus=data.status; m.actualCarrierCharge=data.price===null?null:{amount:data.price,currency:data.price_unit};
-    if(['completed','failed','busy','no-answer','canceled'].includes(data.status) && ['UNKNOWN','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(m.status)) {
-      m.status=stop?'CANCELLED':'INCOMPLETE'; m.finishedAt=this.store.now();
-      m.stopNeedsReconciliation=false;
-    }
-    this.store.put('mission',m); this.store.audit(u.id,'carrier.reconciled',id); return m;
+    // The worker or a carrier callback may have written the result while we were waiting. Re-read and touch carrier fields only.
+    return this.store.tx(()=>{
+      const current=this.store.get('mission',id); assert(current && current.owner===u.id,'not_found',404);
+      current.carrierStatus=data.status; current.actualCarrierCharge=data.price===null?null:{amount:data.price,currency:data.price_unit};
+      if(['completed','failed','busy','no-answer','canceled'].includes(data.status) && ['UNKNOWN','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(current.status)) {
+        current.status=stop?'CANCELLED':'INCOMPLETE'; current.finishedAt=this.store.now();
+        current.stopNeedsReconciliation=false;
+      }
+      this.store.put('mission',current); this.store.audit(u.id,'carrier.reconciled',id,{mission:id,carrierStatus:data.status,stop,status:current.status}); return current;
+    });
   }
   async verifyNumber(u,input) {
     this.service.write(u); const account=this.service.account(u);
@@ -37,13 +41,14 @@ export class Phone {
       const tries=Number(this.store.key('verify-tries',u.id)??0);assert(tries<10,'verification_check_limit',429);this.store.setKey('verify-tries',u.id,String(tries+1),3600000);
       const data=await jsonFetch(url+'/VerificationCheck',{method:'POST',headers:{authorization:this.auth(),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({To:number,Code:input.code})});
       assert(data.status==='approved','verification_not_approved',403);
-      account.verifiedPhone=number; account.phoneVerificationProvider='twilio-verify'; delete account.pendingPhone; delete account.verificationExpires;
-      this.store.put('account',account); return {verified:true};
+      const fresh=this.service.account(u); // consent may have been saved while the provider was answering
+      fresh.verifiedPhone=number; fresh.phoneVerificationProvider='twilio-verify'; delete fresh.pendingPhone; delete fresh.verificationExpires;
+      this.store.put('account',fresh); this.store.audit(u.id,'phone.verified',u.id,{provider:'twilio-verify',number:this.store.phoneRef(number)}); return {verified:true};
     }
     const count=Number(this.store.key('verify-count',u.id)??0); assert(count<3,'verification_daily_limit',429);
     this.store.setKey('verify-count',u.id,String(count+1),86400_000);
     await jsonFetch(url+'/Verifications',{method:'POST',headers:{authorization:this.auth(),'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({To:number,Channel:'sms'})});
-    account.pendingPhone=number; account.verificationExpires=this.store.now()+600_000; this.store.put('account',account); return {sent:true};
+    const pending=this.service.account(u); pending.pendingPhone=number; pending.verificationExpires=this.store.now()+600_000; this.store.put('account',pending); return {sent:true};
   }
   async attach(server) {
     const require=createRequire(new URL('../../../providers/phone-twilio/package.json',import.meta.url));
@@ -60,7 +65,14 @@ export class Phone {
     assert(params.AccountSid===this.env.TWILIO_ACCOUNT_SID,'wrong_twilio_account',403);
     const token=path.split('/').pop(), session=this.sessions.get('/media/'+token);
     if(path.startsWith('/hooks/twilio/consent/')) {
-      assert(session && params.CallSid===session.sid,'unknown_call',404);
+      if(!session) {
+        // The in-memory session is gone (dial request timed out, or the process restarted) but the person is still on the line.
+        // Their "2" must not be lost: the opt-out record was written before dialing.
+        const saved=this.store.key('optout',token); assert(saved,'unknown_call',404);
+        if(params.Digits==='2') this.optOut(this.store.open(saved),params.CallSid);
+        return '<Response><Hangup/></Response>';
+      }
+      assert(params.CallSid===session.sid,'unknown_call',404);
       if(params.Digits==='1') { session.consent=true; session.hooks.onEvent({type:'callee.consent',method:'dtmf',digit:'1'}); return `<Response><Connect><Stream url="${xml(this.config.publicUrl.replace(/^https:/,'wss:')+'/media/'+token)}"/></Connect><Hangup/></Response>`; }
       if(params.Digits==='2') session.hooks.onEvent({type:'contact.opt_out',method:'dtmf',digit:'2'});
       void session.hangup(); return '<Response><Hangup/></Response>';
@@ -74,6 +86,12 @@ export class Phone {
     if(m.status==='INCOMPLETE') { m.finishedAt=this.store.now(); m.result={...(m.result??{}),status:'INCOMPLETE',caveat:'人への引き継ぎ後の会話はOathraでは検証していません。'}; }
     this.store.put('mission',m); this.store.event(m,{type:'handoff',...m.handoff}); this.service.notify(m,m.status==='HANDOFF_ACTIVE'?'人への接続を確認しました。':'result');
     return '<Response/>';
+  }
+  optOut(saved,callSid) {
+    this.store.suppress(saved.team,saved.phone);
+    const m=this.store.get('mission',saved.mission);
+    if(m) { m.optOut=true; if(/^CA[a-f0-9]{32}$/i.test(callSid??'') && !m.carrierSid) m.carrierSid=callSid; this.store.put('mission',m); this.store.event(m,{type:'contact.opt_out',method:'dtmf',digit:'2',recovered:true}); }
+    this.store.audit(saved.owner,'contact.suppressed',saved.mission,{mission:saved.mission,target:this.store.phoneRef(saved.phone),source:'dtmf_without_session'});
   }
   async execute(m,hooks) {
     const [{CallRuntime},{PhoneTransport},{defineCall},{realtimeEngine,gptLiveEngine},voice]=await Promise.all([
@@ -103,7 +121,7 @@ export class Phone {
       carrier.clear(); carrier.transferring=true;
       try { await this.update(carrier.sid,{Twiml:`<Response><Say language="ja-JP">担当者におつなぎします。</Say><Dial timeout="15" timeLimit="${remaining}" callerId="${xml(this.config.callerId)}"><Number statusCallback="${xml(callback)}" statusCallbackEvent="answered completed" statusCallbackMethod="POST">${xml(account.verifiedPhone)}</Number></Dial><Hangup/></Response>`});
       } catch(error) { carrier.transferring=false; carrier.closing=null; await carrier.hangup(); const failed=this.store.get('mission',m.id); failed.handoff={status:'UNKNOWN'}; failed.status='UNKNOWN'; this.store.put('mission',failed); throw new Fault(502,'handoff_outcome_unknown'); }
-      carrier.transferring=false; carrier.transferred=true; carrier.finish(); return {requested:true,connected:false};
+      carrier.transferring=false; carrier.transferred=true; carrier.finish(); this.store.audit(u.id,'call.handoff_requested',m.id,{mission:m.id,carrierSid:carrier.sid}); return {requested:true,connected:false};
     };
     try { const outcome=await runtime.run(); if(carrier.uncertain){const e=new Fault(502,'dial_request_outcome_unknown');e.uncertain=true;throw e;} if(outcome.endReason==='error')throw new Fault(502,'runtime_error'); return outcome; }
     finally { hooks.signal.removeEventListener('abort',abort); await carrier.hangup(); }
@@ -117,6 +135,8 @@ class Session {
   now(){return Date.now()-this.started;}
   async dial(){
     this.phone.sessions.set(this.path,this);
+    // Written before the carrier is contacted, so an opt-out can be honoured even if this process forgets the call.
+    this.phone.store.setKey('optout',this.path.split('/').pop(),this.phone.store.seal({mission:this.m.id,owner:this.m.owner,team:this.m.team,phone:this.m.target.phone}),(this.m.maxSeconds+3600)*1000);
     const callback=this.phone.config.publicUrl+'/hooks/twilio/consent/'+this.path.split('/').pop();
     const greeting=`${this.phone.env.OATHRA_BUSINESS_NAME}のAIアシスタントです。商品についてのお電話です。会話を文字起こしし、依頼者に共有します。続けてよろしければ1を、今後のお電話も不要な場合は2を押してください。`;
     const twiml=`<Response><Gather input="dtmf" numDigits="1" timeout="8" actionOnEmptyResult="true" action="${xml(callback)}" method="POST"><Say language="ja-JP">${xml(greeting)}</Say></Gather><Hangup/></Response>`;

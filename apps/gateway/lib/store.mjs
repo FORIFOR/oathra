@@ -18,6 +18,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,mission TEXT NOT NULL,owner TEXT NOT NULL,body TEXT NOT NULL,created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,owner TEXT NOT NULL,action TEXT NOT NULL,subject TEXT NOT NULL,created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS lease(id INTEGER PRIMARY KEY CHECK(id=1),holder TEXT NOT NULL,expires INTEGER NOT NULL);`);
+    // Databases created before audit details existed gain the column in place.
+    if (!this.db.prepare('PRAGMA table_info(audit)').all().some(c => c.name === 'detail')) this.db.exec("ALTER TABLE audit ADD COLUMN detail TEXT NOT NULL DEFAULT ''");
     if (path !== ':memory:') chmodSync(path, 0o600);
   }
   seal(value) {
@@ -45,14 +47,24 @@ export class Store {
     this.db.prepare('INSERT INTO keys VALUES(?,?,?,?) ON CONFLICT(scope,key) DO UPDATE SET value=excluded.value,expires=excluded.expires').run(scope, key, value, this.now() + ttl);
   }
   delKey(scope, key) { this.db.prepare('DELETE FROM keys WHERE scope=? AND key=?').run(scope, key); }
-  suppress(team, phone) { this.setKey(`suppress:${team}`, mac(this.cipherKey, phone), 'true'); }
-  suppressed(team, phone) { return !!this.key(`suppress:${team}`, mac(this.cipherKey, phone)); }
+  // The caller id and business name are the gateway's, not a team's: a person who said no to one team has said no to the number.
+  suppress(team, phone) { const k = mac(this.cipherKey, phone); this.setKey(`suppress:${team}`, k, 'true'); this.setKey('suppress:*', k, 'true'); }
+  suppressed(team, phone) { const k = mac(this.cipherKey, phone); return !!this.key(`suppress:${team}`, k) || !!this.key('suppress:*', k); }
   event(mission, event) {
     const r = this.db.prepare('INSERT INTO events(mission,owner,body,created) VALUES(?,?,?,?)').run(mission.id, mission.owner, this.seal(event), this.now());
     return Number(r.lastInsertRowid);
   }
   events(mission, owner, after = 0) { return this.db.prepare('SELECT seq,body FROM events WHERE mission=? AND owner=? AND seq>? ORDER BY seq LIMIT 500').all(mission, owner, after).map(r => ({ seq: r.seq, ...this.open(r.body) })); }
-  audit(owner, action, subject) { this.db.prepare('INSERT INTO audit(owner,action,subject,created) VALUES(?,?,?,?)').run(owner, action, hash(subject), this.now()); }
+  /** A keyed hash of a phone number: lets audit rows about the same person be correlated without storing the number. */
+  phoneRef(phone) { return mac(this.cipherKey, phone).slice(0, 32); }
+  /** `subject` stays a hash; `detail` is sealed like every other payload and must not carry raw phone numbers or transcripts. */
+  audit(owner, action, subject, detail) {
+    this.db.prepare('INSERT INTO audit(owner,action,subject,created,detail) VALUES(?,?,?,?,?)').run(owner, action, hash(subject), this.now(), detail ? this.seal(detail) : '');
+  }
+  audits({ after = 0, limit = 200 } = {}) {
+    return this.db.prepare('SELECT seq,owner,action,subject,created,detail FROM audit WHERE seq>? ORDER BY seq LIMIT ?').all(after, Math.min(500, Math.max(1, limit)))
+      .map(r => ({ seq: r.seq, owner: r.owner, action: r.action, subject: r.subject, created: r.created, detail: r.detail ? this.open(r.detail) : null }));
+  }
   lease(holder) {
     return this.tx(() => {
       const r = this.db.prepare('SELECT * FROM lease WHERE id=1').get();
@@ -60,14 +72,25 @@ export class Store {
       this.db.prepare('INSERT INTO lease VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET holder=excluded.holder,expires=excluded.expires').run(holder, this.now() + 30_000); return true;
     });
   }
-  enqueue(kind, id, owner, payload) { if (this.get(kind, id)) return; this.put(kind, { id, owner, status: 'pending', attempts: 0, available: this.now(), payload }); }
-  next(kind) { return this.list(kind, undefined, 'pending').reverse().find(r => r.available <= this.now()); }
-  removeMission(m) {
+  enqueue(kind, id, owner, payload, { priority = false } = {}) {
+    if (this.get(kind, id)) return; this.put(kind, { id, owner, status: 'pending', attempts: 0, available: this.now(), payload });
+    // Approvals and cancellations expire in five minutes; they go to the front of the queue however long it is.
+    if (priority) this.db.prepare('UPDATE records SET updated=0 WHERE kind=? AND id=?').run(kind, id);
+  }
+  /** Oldest first over the whole queue. (It used to be the oldest of the newest 1000, so a long queue starved its head.) */
+  next(kind) {
+    return this.db.prepare("SELECT body FROM records WHERE kind=? AND status='pending' ORDER BY updated ASC LIMIT 500").all(kind).map(r => this.open(r.body)).find(r => r.available <= this.now());
+  }
+  /** Jobs that gave up. They used to disappear without a trace. */
+  failedJobs() { return Object.fromEntries(['inbox','outbox'].map(kind => [kind, this.db.prepare("SELECT COUNT(*) AS n FROM records WHERE kind=? AND status='failed'").get(kind).n])); }
+  removeMission(m, record = true) {
     this.tx(() => { for (const kind of ['followup','inbox','outbox']) for (const r of this.list(kind,m.owner)) {
       if (r.missionId===m.id || r.payload?.missionId===m.id || (kind==='inbox' && r.id===m.sourceKey)) this.db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind,r.id);
     }
     if(m.sourceKey) this.db.prepare("DELETE FROM records WHERE kind='inbox' AND id=?").run(m.sourceKey);
-    this.db.prepare('DELETE FROM events WHERE mission=?').run(m.id); this.db.prepare("DELETE FROM records WHERE kind='mission' AND id=?").run(m.id); this.audit(m.owner, 'mission.deleted', m.id); });
+    this.db.prepare('DELETE FROM events WHERE mission=?').run(m.id); this.db.prepare("DELETE FROM records WHERE kind='mission' AND id=?").run(m.id);
+    // The record is gone; what stays for the audit window is enough to answer "was this person called, when, on whose approval".
+    if (record) this.audit(m.owner, 'mission.deleted', m.id, { mission: m.id, status: m.status, mode: m.mode, goal: m.goal, target: m.target?.phone ? this.phoneRef(m.target.phone) : null, carrierSid: m.carrierSid ?? null, approvedAt: m.approvedAt ?? null, finishedAt: m.finishedAt ?? null, doNotContact: m.result?.doNotContact === true }); });
   }
   prune(retentionDays = 30) {
     const cutoff = this.now() - retentionDays * 86400_000;
@@ -75,7 +98,19 @@ export class Store {
     this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox') AND status IN ('done','failed') AND updated<?").run(cutoff);
     this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-48*3600000);
     this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);
-    for (const m of this.list('mission')) if (m.status !== 'UNKNOWN' && !m.stopNeedsReconciliation && m.finishedAt && m.finishedAt < cutoff) this.removeMission(m);
+    // Walk every old mission, not the newest 1000. A mission untouched since the cutoff finished before it;
+    // an abandoned draft holds a name and a number and expires on the same schedule.
+    for (let last = 0;;) {
+      const rows = this.db.prepare("SELECT body,updated FROM records WHERE kind='mission' AND updated<? AND updated>=? ORDER BY updated ASC LIMIT 200").all(cutoff, last);
+      let removed = 0;
+      for (const r of rows) {
+        const m = this.open(r.body); last = Math.max(last, r.updated);
+        const finished = m.status !== 'UNKNOWN' && !m.stopNeedsReconciliation && m.finishedAt && m.finishedAt < cutoff;
+        if (finished || m.status === 'DRAFT') { this.removeMission(m); removed++; }
+      }
+      if (rows.length < 200) break;
+      if (removed === 0) last++; // everything in this page must be kept (UNKNOWN): step past it
+    }
   }
   close() { this.db.close(); }
 }

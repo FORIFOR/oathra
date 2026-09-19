@@ -101,7 +101,10 @@ test('CLI generates safe skeleton, requires exact reviewed pin, supports disabli
 }));
 
 test('signature failure never calls plugin decode or persists inbox',withFixture(f=>{let called=false;const r=new PluginRegistry();r.register(basic(),{verify:()=>false,decode:()=>{called=true;return {events:[]};},send:async()=>({status:'accepted'})});const c=new Channels(f.service,{},r);assert.throws(()=>c.receive('custom',Buffer.from('{}'),{}),/signature/);assert(!called);assert.equal(f.store.list('inbox').length,0);}));
-test('normalised plugin events have bounded identity and body fields',withFixture(f=>{const r=new PluginRegistry();r.register(basic(),fakeChannel());const c=new Channels(f.service,{},r);assert.throws(()=>c.receive('custom',Buffer.from(JSON.stringify({events:[{eventId:'e',type:'message',actor:'a',destination:'d',text:'x'.repeat(2001)}]})),{}));assert.equal(f.store.list('inbox').length,0);}));
+test('normalised plugin events have bounded identity and body fields',withFixture(f=>{const r=new PluginRegistry();r.register(basic(),fakeChannel());const c=new Channels(f.service,{},r);f.service.link('custom','a',f.service.linkCode(f.u));
+  // An out-of-bounds event is dropped on its own; the valid one delivered with it is kept.
+  c.receive('custom',Buffer.from(JSON.stringify({events:[{eventId:'big',type:'message',actor:'a',destination:'d',text:'x'.repeat(2001)},{eventId:'ok',type:'message',actor:'a',destination:'d',text:'hello'}]})),{});
+  assert.deepEqual(f.store.list('inbox').map(j=>j.id),['custom:ok']);}));
 test('unrecognised channel fails closed instead of silently reporting sent',withFixture(async f=>{const c=new Channels(f.service,{});await assert.rejects(c.send({owner:f.u.id,payload:{channel:'not-installed'}}),/not_enabled/);}));
 test('LINE review creates a draft and replayed approval enqueues only once',withFixture(async f=>{
  const c=new Channels(f.service,{});f.service.link('line','U1',f.service.linkCode(f.u));await c.process(lineJob('draft','U1','田中さんに資料を案内'));

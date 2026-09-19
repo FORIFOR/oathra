@@ -27,9 +27,28 @@ export function configuration(env=process.env){
   return {mode,users,publicUrl,liveReady,missing,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
     dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,1,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0.01,1000),
-    rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10)};
+    rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),
+    // Only set this when the gateway is reachable exclusively through a reverse proxy that overwrites X-Forwarded-For.
+    trustProxy:env.OATHRA_TRUST_PROXY==='true'};
 }
 const assets=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']]]);
+/** Behind a reverse proxy every socket belongs to the proxy; without this all clients would share one bucket. */
+export function clientIp(req,trustProxy){
+  const direct=req.socket?.remoteAddress??'local';if(!trustProxy)return direct;
+  const forwarded=String(req.headers['x-forwarded-for']??'').split(',').map(s=>s.trim()).filter(Boolean).pop();
+  return forwarded&&forwarded.length<=64?forwarded:direct;
+}
+/**
+ * Separate budgets per client and per kind of request. A flood of page loads or API calls must never make the
+ * carrier's opt-out callback, or an operator's "stop this call", answer 429.
+ */
+export const RATE_LIMITS={hook:6000,control:600,public:600,api:1200};
+export function limitClass(method,path){
+  if(path.startsWith('/hooks/twilio/'))return 'hook';
+  if(method==='POST'&&(/^\/v1\/missions\/[a-f0-9-]{36}\/(?:cancel|reconcile)$/.test(path)||path==='/v1/suppressions'))return 'control';
+  if(method==='GET'&&(path==='/healthz'||assets.has(path)))return 'public';
+  return 'api';
+}
 async function body(req){
   const parts=[];let size=0;
   for await(const part of req){size+=part.length;assert(size<=262144,'request_too_large',413);parts.push(part);}
@@ -55,9 +74,11 @@ export async function createGateway(config,options={}){
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
     try{
-      const ip=req.socket.remoteAddress??'local',minute=Math.floor(Date.now()/60000),key=hash(ip)+':'+minute;
-      if(limits.size>5000)limits.clear();const count=(limits.get(key)??0)+1;limits.set(key,count);assert(count<=1200,'rate_limited',429);
       const url=new URL(req.url,'http://gateway.local'),path=url.pathname,method=req.method;
+      const minute=Math.floor(Date.now()/60000),kind=limitClass(method,path),key=`${minute}:${kind}:${hash(clientIp(req,config.trustProxy))}`;
+      // Drop finished minutes only: clearing everything would hand every client a fresh budget.
+      if(limits.size>5000)for(const k of limits.keys())if(!k.startsWith(minute+':'))limits.delete(k);
+      const count=(limits.get(key)??0)+1;limits.set(key,count);assert(count<=RATE_LIMITS[kind],'rate_limited',429);
       if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return send(res,200,readFileSync(new URL('./public/'+file,import.meta.url)),type);}
       if(method==='GET'&&path==='/healthz')return send(res,200,{ok:true,mode:config.mode});
       const channelHook=path.match(/^\/hooks\/(?:channels\/)?([a-z][a-z0-9-]{0,47})$/);
@@ -79,7 +100,14 @@ export async function createGateway(config,options={}){
         assert(data&&typeof data==='object'&&!Array.isArray(data),'json_object_required');
       }
       if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},account:service.account(u),integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).map(({transcript,runtimeResult,...m})=>m),
+        ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl}});
+      if(method==='GET'&&path==='/v1/audit'){
+        assert(u.role==='admin','administrator_required',403);
+        const after=Number(url.searchParams.get('after')??0),limit=Number(url.searchParams.get('limit')??200);
+        assert(Number.isSafeInteger(after)&&after>=0&&Number.isSafeInteger(limit)&&limit>=1&&limit<=500,'invalid_audit_cursor');
+        return send(res,200,{entries:store.audits({after,limit})});
+      }
       if(method==='GET'&&path==='/v1/plugins'){assert(u.role==='admin','administrator_required',403);return send(res,200,{apiVersion:1,plugins:registry.list()});}
       if(method==='POST'&&path==='/v1/consent')return send(res,200,service.saveConsent(u,data.version));
       if(method==='POST'&&path==='/v1/products/import'){service.write(u);return send(res,200,await importProduct(data.url));}
@@ -90,7 +118,8 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/missions/draft')return send(res,201,service.prepare(u,data));
       if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone);store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
       if(method==='POST'&&path==='/v1/followups/preview')return send(res,201,followups.preview(u,data.missionId,data));
-      const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh)$/);
+      const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh|not-delivered)$/);
+      if(method==='POST'&&follow&&follow[2]==='not-delivered')return send(res,200,followups.markNotDelivered(u,follow[1],data.acknowledged));
       if(method==='POST'&&follow)return send(res,200,follow[2]==='execute'?await followups.execute(u,follow[1],data,req.headers['idempotency-key']):await followups.refreshCalendar(u,follow[1]));
       const match=path.match(/^\/v1\/missions\/([a-f0-9-]{36})(?:\/(review|start|cancel|events|handoff|reconcile))?$/);
       if(match){
@@ -116,7 +145,11 @@ export async function createGateway(config,options={}){
         }
       }
       throw new Fault(404,'not_found');
-    }catch(error){if(!res.headersSent)send(res,error.status??500,{error:error.code??'internal_error',requestId});else res.end();}
+    }catch(error){
+      // 4xx are the caller's problem and would be noise; an unexplained 500 used to leave no trace at all.
+      if((error.status??500)>=500)console.error(JSON.stringify({level:'error',event:'request.failed',requestId,code:error.code??error.name??'internal_error',status:error.status??500,at:new Date().toISOString()}));
+      if(!res.headersSent)send(res,error.status??500,{error:error.code??'internal_error',requestId});else res.end();
+    }
   });
   server.requestTimeout=15000;server.headersTimeout=10000;server.maxHeadersCount=64;
   if(config.liveReady&&!options.execute)await phone.attach(server);
@@ -125,6 +158,7 @@ export async function createGateway(config,options={}){
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const config=configuration(),app=await createGateway(config);
   app.worker.start();app.server.listen(config.port,config.host,()=>console.log(`Oathra Gateway (${config.mode}) listening; use ${config.publicUrl}`));
-  const retention=setInterval(()=>app.store.prune(),3600_000);retention.unref();
+  const retentionDays=number(process.env,'OATHRA_RETENTION_DAYS',30,1,3650);
+  const retention=setInterval(()=>{try{app.store.prune(retentionDays);}catch(e){console.error(JSON.stringify({level:'error',event:'retention.failed',code:e.code??e.name,at:new Date().toISOString()}));}},3600_000);retention.unref();
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{clearInterval(retention);void app.close().then(()=>process.exit(0));});
 }
