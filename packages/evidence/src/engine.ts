@@ -14,7 +14,7 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE , RETRACTION_RE } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE, HEDGE_RE, REFUSAL_RE, RETRACTION_RE } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 /**
@@ -73,6 +73,10 @@ export class EvidenceEngine {
 
   ingest(u: Utterance): IngestResult {
     if (u.source === "callee" && RETRACTION_RE.test(u.text)) this.retractedAt = u.t;
+    // Appointment mode: 「はい。」 followed by 「あ、その日は出張でした」 or 「上司に聞いてからでないと…」.
+    // A commitment is a person's word, so a later refusal or hedge from the same person takes it back;
+    // the agent has to ask again. (A shop's 「ご予約承りました」 is a record and keeps the stricter rule above.)
+    if (this.confirmation === "callee_acceptance" && u.source === "callee" && (REFUSAL_RE.test(u.text) || HEDGE_RE.test(u.text))) this.retractedAt = u.t;
     const created: Evidence[] = [];
     const verifiedNow: Evidence[] = [];
     const claims = extractClaims(u, { now: this.now, language: this.language });
