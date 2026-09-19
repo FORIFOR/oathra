@@ -5,6 +5,12 @@
 - The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) was merged at `2026-09-18T05:04:23Z` (merge commit `7cb5da0ea95d95d80d4239aa8178648dfa7f42ae`). The public entry describes Oathra's standalone evidence-verification engine, simulator/Arena evaluation surface, phone-agent adapters and consented follow-up boundary.
 - This is a confirmed third-party listing/distribution result. It is not a star, external trial, phone-call success, or business inquiry. The other open listing PRs remain pending maintainer review.
 
+## Measurement checkpoint — 2026-09-19 22:14 JST
+
+- The read-only snapshot remains at 0 stars / 0 forks, 14 repository views / 14 unique visitors in the available 14-day window and no external issue or business inquiry.
+- The v0.1.18 tarball count is 2 and its checksum count is 1. GitHub does not expose the asset fetcher, so the additional tarball download is recorded as an unclassified signal rather than external adoption.
+- Raw snapshot: [metrics/2026-09-19-2214-jst.json](metrics/2026-09-19-2214-jst.json).
+
 ## X Oathra v0.1.18 intake demo — 2026-09-19 18:12 JST
 
 - Published one English announcement from `@forifori_dev` with `docs/media/oathra-intake.mp4`, an Arena simulator recording rather than a PSTN call.
