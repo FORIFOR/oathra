@@ -45,6 +45,11 @@ export type RunOptions = {
   onEvent?: (e: CallEvent) => void;
   /** If the callee has not spoken this long after connect, the agent opens. */
   openingTimeoutMs?: number;
+  /**
+   * Spoken at the start of the agent's first turn (see `recordingNotice`). Carriers that play the notice
+   * themselves before the media stream starts must leave this unset, or the callee hears it twice.
+   */
+  openingNotice?: string;
 };
 
 export type CallMetrics = {
@@ -109,6 +114,7 @@ export class CallRuntime {
   private intakeConsent: IntakeConsent | undefined;
   private readonly intakeAnswers: IntakeAnswer[] = [];
   private readonly intakeDeclined = new Set<string>();
+  private noticeSpoken = false;
 
   constructor(private readonly opts: RunOptions) {
     this.callId = opts.callId ?? newId("call");
@@ -647,7 +653,9 @@ export class CallRuntime {
     let response = await brain.respond(ctx, hooks);
     // Never say the exact same line twice in a row: the callee did not get it — unless the brain repeats
     // on purpose because the callee asked to hear it again (response.verbatim).
-    const lastAgent = [...this.transcript].reverse().find((t) => t.source === "caller");
+    const lastAgentTurn = [...this.transcript].reverse().find((t) => t.source === "caller");
+    // The notice is ours, not the brain's: compare what the brain said, without it.
+    const lastAgent = lastAgentTurn && this.opts.openingNotice ? { ...lastAgentTurn, text: lastAgentTurn.text.replace(this.opts.openingNotice, "") } : lastAgentTurn;
     if (!response.verbatim && lastAgent && normalizeLine(lastAgent.text) === normalizeLine(response.text)) {
       response = await brain.respond(
         { ...ctx, hints: ["The callee did not respond to your previous line. Do NOT repeat it. Say something different, much shorter, or ask one simple question."] },
@@ -677,6 +685,10 @@ export class CallRuntime {
     // Permission check: deterministic, outside the LLM.
     let text = response.text;
     if (!text.trim()) text = contract.language === "ja" ? "少々お待ちください。" : "One moment, please.";
+    if (this.opts.openingNotice && !this.noticeSpoken) {
+      this.noticeSpoken = true;
+      text = `${this.opts.openingNotice}${contract.language === "ja" ? "" : " "}${text}`;
+    }
     if (response.requestedAction) {
       const { action, detail } = response.requestedAction;
       this.state.transition("VERIFYING");

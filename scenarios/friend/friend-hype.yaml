@@ -1,0 +1,54 @@
+version: 1
+id: friend-hype
+title: Hyped Call With a Friend
+description: Big news, a friend who is thrilled and says yes to everything. Excitement is not a promise — the plan only counts once they have checked their schedule and commit to a time.
+difficulty: easy
+language: ja
+domain: friend
+tags: [casual, friend, appointment, evidence]
+
+mission:
+  objective: friend.hangout
+  brief: 推しのライブに当選！友達に報告して、お祝いの焼肉の日時を約束しよう。盛り上がっているだけでは約束になりません。
+  input:
+    news: 推しのライブのチケット当たった
+    plan: 焼肉
+    date: "2026-10-03"
+    time: "19:00"
+  require:
+    date: true
+    time: true
+    confirmed: true
+  constraints:
+    date: { eq: "2026-10-03" }
+    time: { gte: "19:00", lte: "21:00" }
+  permissions:
+    ask: true
+  # The friend is the one who commits to the plan: 「10月3日の20時半、絶対行く！」
+  confirmation: callee_acceptance
+
+callee:
+  persona:
+    name: ミカ
+    patience: 0.9
+    flexibility: 0.8
+    friendliness: 1.0
+    avatar: "≧▽≦"
+  greeting: "もしもしー！どしたのー？"
+  knowledge:
+    now: "2026-09-19T12:00:00+09:00"
+    date: "2026-10-03"
+    free_from: "20:30"
+  rules:
+    - react with excitement first, but never promise before checking the schedule
+    - the shift ends at 20:00, so nothing earlier than 20:30 works
+
+win:
+  confirmed: true
+  date: { eq: "2026-10-03" }
+  time: { gte: "19:00" }
+
+score:
+  success: 3000
+  latency: 0.1
+  turns: 0.1

@@ -69,6 +69,7 @@ pnpm demo                                      # http://localhost:4242 で AI �
 pnpm oathra play restaurant-reservation        # 同じ通話をターミナルで
 pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # 同意付き追加聞き取り
 pnpm oathra play impossible-hotel --fast       # 仮想時計で一瞬
+pnpm oathra play friend-hype --fast            # 友達と大盛り上がり。でも「たぶん行ける！」は約束になりません
 pnpm oathra eval                               # 全シナリオと誤完了の数
 pnpm oathra eval --adversarial 10000           # 意地悪な店員1万通り（14 種の変異: 仮押さえ、聞き返し、確定後の取り消し、留守電、転送、方言 …）
 pnpm oathra eval --callee openai               # 店員役を GPT-4o mini に任せ、台本にない言い回しで証拠エンジンを試す（数円）

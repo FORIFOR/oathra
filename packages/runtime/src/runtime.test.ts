@@ -327,6 +327,44 @@ describe("CallRuntime: turn handling", () => {
   });
 });
 
+describe("CallRuntime: opening notice", () => {
+  const NOTICE = "この通話は録音されています。";
+
+  it("is the first thing the agent says, once, whatever the brain returns", async () => {
+    const session = new FakeSession(["はい、どうぞ。", "hangup"]);
+    const out = await runCall({ contract: reservation(), transport: fakeTransport(session, "はい、テスト店です。"), brain: new ScriptBrain(["予約をお願いします。", "2名です。"]), now: NOW, openingNotice: NOTICE });
+    expect(session.spoken).toEqual([`${NOTICE}予約をお願いします。`, "2名です。"]);
+    expect(out.transcript.find((t) => t.source === "caller")!.text.startsWith(NOTICE)).toBe(true);
+  });
+
+  it("also comes first when the callee is silent and the agent opens, and with an empty brain reply", async () => {
+    const session = new FakeSession(["hangup"]);
+    await runCall({ contract: reservation(), transport: fakeTransport(session, undefined), brain: new ScriptBrain(["  "]), now: NOW, openingTimeoutMs: 10, openingNotice: NOTICE });
+    expect(session.spoken).toEqual([`${NOTICE}少々お待ちください。`]);
+  });
+
+  it("does not hide a repeated line from the repeat guard", async () => {
+    const session = new FakeSession(["はい？", "hangup"]);
+    const brain = new ScriptBrain(["2名で予約をお願いします。", "2名で予約をお願いします。", "2名です。"]);
+    await runCall({ contract: reservation(), transport: fakeTransport(session, "はい、テスト店です。"), brain, now: NOW, openingNotice: NOTICE });
+    expect(session.spoken).toEqual([`${NOTICE}2名で予約をお願いします。`, "2名です。"]);
+  });
+
+  it("is never treated as evidence, and English gets a space after it", async () => {
+    const session = new FakeSession(["hangup"]);
+    const en = defineCall({ goal: "restaurant.reservation", language: "en", require: { confirmed: true } });
+    const out = await runCall({ contract: en, transport: fakeTransport(session, "Hello?"), brain: new ScriptBrain(["Hi, a table for two please."]), now: NOW, openingNotice: "This call is being recorded." });
+    expect(session.spoken).toEqual(["This call is being recorded. Hi, a table for two please."]);
+    expect(out.result.fields).toEqual({});
+  });
+
+  it("is absent unless asked for (carriers that announce it themselves)", async () => {
+    const session = new FakeSession(["hangup"]);
+    await runCall({ contract: reservation(), transport: fakeTransport(session, "はい、テスト店です。"), brain: new ScriptBrain(["予約をお願いします。"]), now: NOW });
+    expect(session.spoken).toEqual(["予約をお願いします。"]);
+  });
+});
+
 describe("CallRuntime: permissions are decided outside the model", () => {
   const payment = { text: "カード番号をお伝えします。", requestedAction: { action: "payment" as const, detail: "deposit ¥5,000" } };
 

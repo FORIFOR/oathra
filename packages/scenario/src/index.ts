@@ -100,6 +100,7 @@ export function contractFromScenario(s: Scenario): CallContract {
     permissions: s.mission.permissions,
     language: s.language,
     ...(s.mission.intake ? { intake: s.mission.intake } : {}),
+    ...(s.mission.confirmation ? { confirmation: s.mission.confirmation } : {}),
   });
 }
 

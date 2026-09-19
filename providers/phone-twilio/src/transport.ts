@@ -10,6 +10,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { WebSocketServer, type WebSocket as WsSocket } from "ws";
 import { concatBytes, frameMulaw, mulawDecode, mulawDurationMs, mulawSilence, wavFromInt16, MULAW_SAMPLE_RATE } from "@oathra/audio-kit";
+import { recordingNotice } from "@oathra/core";
 import type { CarrierEvent, CarrierMediaSession, CarrierTransport, DialOptions } from "@oathra/phone";
 import { convert, MULAW_8K, OutputQueue, type AudioChunk, type AudioSpec } from "@oathra/voice";
 
@@ -73,7 +74,7 @@ export class TwilioDirectSession implements CarrierMediaSession {
   }
 
   /** Start the media server, dial, and arm the no-stream timeout. */
-  async start(to: string): Promise<void> {
+  async start(to: string, language: "ja" | "en" = "ja"): Promise<void> {
     const port = this.opts.port ?? 4243;
     const host = this.opts.host ?? "0.0.0.0";
     this.wss = new WebSocketServer({ port, host, path: "/media" });
@@ -84,7 +85,11 @@ export class TwilioDirectSession implements CarrierMediaSession {
     this.wss.on("connection", (socket) => this.attach(socket));
 
     if (this.opts.placeCall !== false) {
-      const twiml = `<Response><Connect><Stream url="${this.opts.publicWsUrl.replace(/\/$/, "")}/media"/></Connect></Response>`;
+      // A recorded call says so first, in the carrier's own voice, before the model or the callee can say anything.
+      // (The text is fixed and XML-safe; nothing user-supplied is interpolated here.)
+      const notice = this.recordDir ? `<Say language="${language === "ja" ? "ja-JP" : "en-US"}">${recordingNotice(language)}</Say>` : "";
+      if (this.recordDir) mkdirSync(this.recordDir, { recursive: true }), writeFileSync(join(this.recordDir, "recording-notice.json"), JSON.stringify({ text: recordingNotice(language), language, method: "carrier_tts_before_media_stream" }, null, 2));
+      const twiml = `<Response>${notice}<Connect><Stream url="${this.opts.publicWsUrl.replace(/\/$/, "")}/media"/></Connect></Response>`;
       const body = new URLSearchParams({ To: to, From: this.opts.from, Twiml: twiml });
       const res = await this.fetchImpl(`https://api.twilio.com/2010-04-01/Accounts/${this.opts.accountSid}/Calls.json`, {
         method: "POST",
@@ -266,7 +271,7 @@ export class TwilioDirectTransport implements CarrierTransport {
   async dial(opts: DialOptions): Promise<CarrierMediaSession> {
     const session = new TwilioDirectSession({ ...this.opts, ...(opts.callerId ? { from: opts.callerId } : {}) }, opts.recordDir);
     this.lastSession = session;
-    await session.start(opts.to);
+    await session.start(opts.to, opts.language);
     return session;
   }
 }

@@ -126,6 +126,7 @@ pnpm oathra play restaurant-reservation        # same call in the terminal
 pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # consent-based follow-up intake
 pnpm oathra play restaurant-reservation-en     # the same call in English
 pnpm oathra play impossible-hotel --fast       # instant, virtual clock
+pnpm oathra play friend-hype --fast            # a thrilled friend says yes to everything; only 「絶対行く！」 counts
 pnpm oathra eval                               # every scenario, False Completion count
 pnpm oathra eval --adversarial 10000           # mutated callees, 14 kinds: hedges, tentative holds, asking back, confirm-then-retract, voicemail, transfer, dialect…
 npx oathra eval --callee openai               # let GPT-4o mini play the shop: phrasing nobody scripted (a few cents)
@@ -247,7 +248,7 @@ pnpm oathra scenario validate ./my-challenge.yaml
 pnpm oathra play ./my-challenge.yaml
 ```
 
-Official v0.1 challenges: `restaurant-reservation`, `restaurant-reservation-en`, `impossible-hotel`, `bulk-buy`, `serial-number`, `false-completion-trap`.
+Official v0.1 challenges: `restaurant-reservation`, `restaurant-reservation-en`, `impossible-hotel`, `bulk-buy`, `serial-number`, `false-completion-trap`, and `friend-hype` (a hyped call with a friend: excitement is not a promise).
 
 ## Eval
 
