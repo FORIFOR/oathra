@@ -8,6 +8,10 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
+### External distribution checkpoint — 2026-09-18 14:04 JST
+
+The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) was merged at `2026-09-18T05:04:23Z` (merge commit `7cb5da0ea95d95d80d4239aa8178648dfa7f42ae`). Its public entry names the standalone OSS evidence-verification engine and the simulator/Arena evidence surface, while keeping phone adapters and consented follow-up scope explicit. This is confirmed third-party distribution, not proof of stars, external trials, phone success or business demand. The current read-only snapshot is [metrics/2026-09-19-1911-jst.json](metrics/2026-09-19-1911-jst.json); it still reports 0 stars, 0 forks and no external issue or inquiry.
+
 ### X distribution checkpoint — 2026-09-19 18:12 JST
 
 The account-wide spacing check was eligible and the active draft was duplicate-free. The first media upload attempt failed because the 6.8 MB MP4 exceeded the simple upload path (`media type unrecognized`). The publication helper now uses X's chunked INIT/APPEND/FINALIZE flow, and the retry published one English Oathra v0.1.18 intake announcement with the Arena simulator video: [status 2101237907260674392](https://x.com/forifori_dev/status/2101237907260674392). This is a distribution event, not evidence of an external trial or phone-call success. Raw read-only snapshot: [metrics/2026-09-19-1812-jst.json](metrics/2026-09-19-1812-jst.json).

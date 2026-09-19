@@ -1,5 +1,10 @@
 # Launch posts and publication record
 
+## Awesome-AI-Agents listing merged — 2026-09-18 14:04 JST
+
+- The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) was merged at `2026-09-18T05:04:23Z` (merge commit `7cb5da0ea95d95d80d4239aa8178648dfa7f42ae`). The public entry describes Oathra's standalone evidence-verification engine, simulator/Arena evaluation surface, phone-agent adapters and consented follow-up boundary.
+- This is a confirmed third-party listing/distribution result. It is not a star, external trial, phone-call success, or business inquiry. The other open listing PRs remain pending maintainer review.
+
 ## X Oathra v0.1.18 intake demo — 2026-09-19 18:12 JST
 
 - Published one English announcement from `@forifori_dev` with `docs/media/oathra-intake.mp4`, an Arena simulator recording rather than a PSTN call.
