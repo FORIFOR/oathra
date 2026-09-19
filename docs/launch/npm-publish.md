@@ -4,6 +4,12 @@ The public v0.1.18 package is currently distributed from the GitHub Release beca
 
 ## One-time setup
 
+Either of these works; the workflow uses the token when the secret exists and falls back to OIDC otherwise.
+
+**A. Trusted publisher (no token).** On npmjs.com open the `oathra` package → Settings → Trusted Publisher → GitHub Actions, and enter organization `FORIFOR`, repository `oathra`, workflow filename `npm-publish.yml` (no environment). Nothing is stored in GitHub.
+
+**B. Automation token.**
+
 1. Create an npm automation token with permission to publish `oathra`.
 2. Add it to the repository as the Actions secret `NPM_TOKEN`.
 3. Open **Actions → Publish npm package → Run workflow** and enter the exact Git tag, such as `v0.1.18`.
