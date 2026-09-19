@@ -16,6 +16,10 @@ The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Age
 
 The read-only snapshot remains at 0 stars, 0 forks, 14 repository views / 14 unique visitors in the available 14-day window and no external issue or business inquiry. The v0.1.18 tarball download count moved from 1 to 2 while its checksum stayed at 1; the API does not identify who fetched an asset, so this is an unclassified distribution signal and not an external-user count. The daily view/clone buckets are unchanged and include maintainer or automation activity. Raw snapshot: [metrics/2026-09-19-2214-jst.json](metrics/2026-09-19-2214-jst.json).
 
+### X readback checkpoint — 2026-09-20 08:27 JST
+
+The existing X announcement now reports 3 impressions and no likes, replies, reposts or quotes. The account remains at 1 follower. These counts do not identify external viewers and are not adoption evidence. The publication guard kept the active draft duplicate and correctly deferred the next announcement until `2026-09-20T09:12:10Z` (`2026-09-20 18:12:10 JST`); no upload or duplicate post was attempted.
+
 ### X distribution checkpoint — 2026-09-19 18:12 JST
 
 The account-wide spacing check was eligible and the active draft was duplicate-free. The first media upload attempt failed because the 6.8 MB MP4 exceeded the simple upload path (`media type unrecognized`). The publication helper now uses X's chunked INIT/APPEND/FINALIZE flow, and the retry published one English Oathra v0.1.18 intake announcement with the Arena simulator video: [status 2101237907260674392](https://x.com/forifori_dev/status/2101237907260674392). This is a distribution event, not evidence of an external trial or phone-call success. Raw read-only snapshot: [metrics/2026-09-19-1812-jst.json](metrics/2026-09-19-1812-jst.json).

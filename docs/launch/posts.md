@@ -11,6 +11,11 @@
 - The v0.1.18 tarball count is 2 and its checksum count is 1. GitHub does not expose the asset fetcher, so the additional tarball download is recorded as an unclassified signal rather than external adoption.
 - Raw snapshot: [metrics/2026-09-19-2214-jst.json](metrics/2026-09-19-2214-jst.json).
 
+## X readback — 2026-09-20 08:27 JST
+
+- The existing post [2101237907260674392](https://x.com/forifori_dev/status/2101237907260674392) read back at 3 impressions, 0 likes, 0 replies, 0 reposts and 0 quotes. The account remained at 1 follower and 50 posts.
+- These impression counts do not identify external viewers or prove repository interest. The publication guard correctly kept the draft duplicate and blocked the next post until `2026-09-20T09:12:10Z` (`2026-09-20 18:12:10 JST`). No upload or new post was attempted.
+
 ## X Oathra v0.1.18 intake demo — 2026-09-19 18:12 JST
 
 - Published one English announcement from `@forifori_dev` with `docs/media/oathra-intake.mp4`, an Arena simulator recording rather than a PSTN call.
