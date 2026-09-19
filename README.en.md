@@ -9,17 +9,17 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-Run **v0.1.17** with the latest fixes (Node.js 22+, no API key):
+Run **v0.1.18** with the latest fixes (Node.js 22+, no API key):
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.17/oathra-0.1.17.tgz oathra demo
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra demo
 ```
 
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.17). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
+Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.18). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
 
 After trying it, [star the repository](https://github.com/FORIFOR/oathra) to follow updates. Share a real use case or an unexpected judgement in [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) or an [issue](https://github.com/FORIFOR/oathra/issues); remove personal data and private call content first.
 
-**Already building a voice agent?** v0.1.17 includes scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a unified `ActionProof` model for conversation, confirmation, system and outcome evidence. It keeps provisional reservation confirmations from being treated as completed and stops immediately when consent is unclear or the callee signals time pressure. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
+**Already building a voice agent?** v0.1.18 includes scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a unified `ActionProof` model for conversation, confirmation, system and outcome evidence. It keeps provisional reservation confirmations from being treated as completed and stops immediately when consent is unclear or the callee signals time pressure. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
 
 For closed-loop booking or ordering, `oathra/evidence` also exposes `ActionProof`. It compares one expected action across V0 (claimed), V1 (conversation), V2 (authenticated email/SMS/webhook), V3 (authenticated business system) and V4 (reported outcome). Your `VerificationProvider` / `VerificationAdapter` owns provider authentication and connectivity; Oathra deterministically checks freshness, reference IDs and exact fields. No OpenTable, TableCheck or Google Reserve adapter or credential is bundled. [ActionProof integration guide](docs/INTEGRATION.md#verify-an-action-through-external-records-actionproof).
 
@@ -64,8 +64,8 @@ Telnyx · Wavix · Sinch  v0.2  Local             experimental
 
 ```bash
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
-# from the public v0.1.17 asset:
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.17/oathra-0.1.17.tgz oathra setup phone
+# from the public v0.1.18 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra setup phone
 npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
 npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
 npx oathra call --to +81… --scenario restaurant-reservation
@@ -268,12 +268,12 @@ Adversarial runs wrap every scripted callee with a mutation that tries to fool t
 
 Bugs this harness caught before it went green: thousands separators splitting `21,100円` into `100円`; a confirmation staying valid after the price was re-negotiated without a new confirmation; a callee "confirming" a different value than the one accepted. Each has a regression test.
 
-## Use it over MCP (new in v0.1.17)
+## Use it over MCP (since v0.1.17)
 
 `oathra mcp` is an MCP server over stdio. From Claude Code, Claude Desktop or any MCP client, one tool call runs a simulated phone call and returns a result backed by evidence from the callee's own words.
 
 ```json
-{ "mcpServers": { "oathra": { "command": "npx", "args": ["--yes", "--package=https://github.com/FORIFOR/oathra/releases/download/v0.1.17/oathra-0.1.17.tgz", "oathra", "mcp"] } } }
+{ "mcpServers": { "oathra": { "command": "npx", "args": ["--yes", "--package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz", "oathra", "mcp"] } } }
 ```
 
 | Tool | What it does |
@@ -287,7 +287,7 @@ Everything runs locally with no API key and no cost. There is deliberately no to
 
 ## Status
 
-v0.1.17 (released 2026-09-18):
+v0.1.18 (released 2026-09-19):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent
@@ -302,6 +302,8 @@ v0.1.17 (released 2026-09-18):
 - [ ] Telnyx, Wavix, Sinch, didlogic providers; ElevenLabs TTS; self-hosted SIP gateways beyond LiveKit
 - [ ] Dual-ASR safe path for dates / amounts / numbers, preemptive generation
 - [x] MCP server `oathra mcp` (`simulate_call`, `verify_transcript`, `inspect_call`, `list_calls`, `list_scenarios`). Local only; it never dials
+- [x] Omnichannel gateway (`apps/gateway`): request and approve calls from LINE, Slack, Telegram, Web or iOS; separately approved Gmail / Calendar / SMS / HubSpot follow-ups. Implemented and tested offline only; no real account or live line has been verified, and the default mode is the simulator
+- [x] Appointment-style completion (`confirmation: "callee_acceptance"`) for meetings; 0 false completions over 10,000 adversarial sales dialogues
 - [ ] Real calls over MCP (`call`, `intervene`, `cancel_call`) — after real-call re-verification
 - [ ] Provider benchmarks
 
