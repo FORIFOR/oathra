@@ -9,7 +9,7 @@ tags: [reservation, intake, consent]
 
 mission:
   objective: restaurant.reservation
-  brief: 明日19時以降で2名の予約を取った後、同意を得て案内に必要な情報を2点だけ伺ってください。
+  brief: 2026年9月12日の19時以降で2名の予約を取った後、同意を得て案内に必要な情報を2点だけ伺ってください。
   input:
     date: "2026-09-12"
     partySize: 2

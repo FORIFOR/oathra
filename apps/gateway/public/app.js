@@ -46,8 +46,15 @@ const ERRORS = {
   rate_limited: '操作が多すぎます。少し待ってからお試しください。',
   // Filling in forms
   invalid_text: '入力が空か、長すぎます。内容を確かめてください。',
+  insufficient_credits: 'クレジットが不足しています。残高を確認してください。',
+  credit_price_changed_review_again: '利用料金が変わりました。依頼を作成し直してください。',
+  credits_not_enabled: 'この環境ではクレジットを使用しません。',
+  invalid_credit_amount: 'クレジット数は正の整数で指定してください。',
   invalid_email: 'メールアドレスの形を確かめてください。',
   invalid_crm_contact_id: 'HubSpot Contact ID は数字だけで入力してください。',
+  contact_phone_required: 'この連絡先には電話番号がありません。設定で連絡先を編集して番号を追加してください。',
+  contact_name_or_company_required: '名前か会社名を入力してください。',
+  contact_basis_required: '営業電話をする根拠を連絡先に入力してください。',
   contact_relationship_required: '連絡する理由を選んでください。',
   product_facts_require_review: '「内容が正しいことを確認しました」にチェックを入れてください。',
   invalid_duration: '通話の上限（秒）が範囲の外です。「くわしい設定」で見直してください。',
@@ -202,6 +209,9 @@ function renderSetup() {
 async function refresh() {
   state = await api('/bootstrap');
   const c = state.configuration;
+  $('credit-balance').hidden = !state.credits?.enabled;
+  $('budget').closest('label').hidden = Boolean(state.credits?.enabled);
+  $('credit-balance').textContent = `${state.credits?.available ?? 0} クレジット${state.credits?.held ? `（確保中 ${state.credits.held}）` : ''}`;
   $('mode').hidden = false;
   $('mode').textContent = c.mode === 'simulator' ? '練習モード（電話はかかりません）' : '実電話モード';
   $('mode').className = 'badge ' + (c.mode === 'simulator' ? 'practice' : 'live');
@@ -211,11 +221,21 @@ async function refresh() {
   $('goal-help').textContent = GOAL_HELP[goal()];
   $('detail-empty').hidden = selected !== null;
   options('product', state.products, '（設定で商品を登録してください）');
-  options('contact', state.contacts, '（設定で相手を登録してください）');
-  options('suppress-contact', state.contacts, '（登録された相手がいません）');
+  options('contact', state.contacts.map(c => ({...c, name: [c.name, c.company].filter(Boolean).join(' / ') + (c.phone ? '' : '（電話番号未登録）')})), '（設定で相手を登録してください）');
+  options('suppress-contact', state.contacts.filter(c => c.phone).map(c => ({...c, name: c.name || c.company})), '（登録された相手がいません）');
   $('seconds').max = c.maxSeconds; $('budget').max = c.maxCallUsd;
   options('followup-kind', (state.plugins ?? []).filter(p => (state.integrations ?? []).includes(p.id)), '（使えるサービスがありません）');
   $('plugin-list').replaceChildren(...(state.plugins ?? []).map(p => el('p', `${p.name} — ${!p.enabled ? '無効' : p.configured ? '設定済み' : '設定待ち'}`)));
+  $('contact-list').replaceChildren(...state.contacts.map(c => {
+    const row = el('div');
+    row.append(button([c.name, c.company].filter(Boolean).join(' / ') + ' — 編集', () => {
+      for (const [field, id] of Object.entries({id:'contact-id',name:'contact-name',company:'contact-company',phone:'contact-phone',email:'contact-email',notes:'contact-notes',lastCallNotes:'contact-last-call',relationship:'relationship',basis:'contact-basis',crmId:'crm-id'})) $(id).value = c[field] ?? '';
+      $('contact-name').focus();
+    }));
+    row.append(el('p', c.phone || '電話番号未登録'));
+    if (c.lastCallNotes) row.append(el('p', '前回の電話内容: ' + c.lastCallNotes));
+    return row;
+  }));
   renderSetup();
   renderHistory();
   if (!$('request').value.trim()) suggestRequest();
@@ -287,6 +307,9 @@ function renderDetail(m) {
     if (m.result.caveat) d.append(el('p', m.result.caveat, 'hint'));
   }
 
+  if(m.creditUsage?.cost?.basis==='usage-rate-v1'){const c=m.creditUsage.cost;d.append(el('p',`通話 ${c.durationSeconds}秒 · Twilio $${((c.carrierNanoUsd+c.mediaNanoUsd)/1e9).toFixed(5)} · ${c.voiceModel} $${(c.aiNanoUsd/1e9).toFixed(5)} · 検索 ${c.searchCalls}回 $${(c.searchNanoUsd/1e9).toFixed(5)}`,'hint'));}
+  if(m.creditQuote?.mode==='credits') {const u=m.creditUsage;d.append(el('p',u?(u.status==='pending'?`精算待ち · ${u.held} クレジット確保中`:`消費 ${u.consumed} クレジット · 確保 ${u.held} · 返却 ${u.released}`):'消費クレジット：未確認','hint'));}
+
   if (m.transcript?.length) {
     const details = el('details'); details.append(el('summary', '会話の文字起こしを見る'));
     // The card scrolls inside itself on a laptop: bring what was just opened into view instead of leaving it below the fold.
@@ -331,13 +354,21 @@ async function showReview(id) {
     'AIが約束しないこと': m.product.forbidden,
     '通話の長さと費用': practice
       ? `最長${length}。練習なので費用は0円です。`
-      : `最長${length}。費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`,
+      : m.creditQuote?.mode==='credits' ? `最長${length}。利用料金は下記のクレジットで精算します。` : `最長${length}。費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`,
     '会話データの送り先': practice
       ? '練習ではどこにも送りません。このサーバーの中だけで動き、記録は30日で消えます。'
       : '電話会社（Twilio）と音声AI（OpenAI）に音声と文字起こしが渡ります。記録はこのサーバーに保存し、30日で消えます。',
   };
+  if (m.creditQuote?.mode === 'credits') {
+    const metered=m.creditQuote.policy==='provider-cost-v1';
+    rows[metered?'最大確保':'利用クレジット'] = `${m.creditQuote.amount} クレジット（残高 ${state.credits?.available ?? 0}）${metered?`。1クレジット=$${m.creditQuote.creditUsd}`:''}`;
+    rows['消費のタイミング'] = m.creditQuote.tariff?.settlement==='usage-rate-v1'?'終了時に回線時間・音声AI・検索の使用量と単価で精算、余剰返却します。後日の追加徴収なし。文字起こし・税・欠測費用は運営者負担。':metered?'承認時に上限分を確保し、終了後に回線料金と音声AI使用量で精算・差額返却します。文字起こし・中継費等は運営者負担。料金未取得時は精算待ちです。':'承認時に確保し、発信処理の実行確定時に消費します。接続前の障害・不応答も対象です。実行前の取消は返却します。';
+    if(m.creditQuote.tariff?.carrierFx){const fx=m.creditQuote.tariff.carrierFx;rows['円建て回線の換算']=`1 USD = ${fx.unitsPerUsdNano/1e9}円（${fx.date} 基準）`;}
+  }
   for (const [name, value] of Object.entries(rows)) list.append(el('dt', name), el('dd', value));
   $('review-content').replaceChildren(list, el('p', '電話の最初に、記録していることとAIであることを相手に伝えます。', 'hint'));
+  $('start-call').disabled = m.creditQuote?.amount > (state.credits?.available ?? 0);
+  if ($('start-call').disabled) $('review-content').append(el('p','クレジットが不足しています。残高を追加後、もう一度内容を確認してください。','hint'));
   $('call-ack').checked = false; $('review').showModal();
 }
 
@@ -349,7 +380,16 @@ on('login-form', 'submit', async () => {
   const running = state.missions.find(m => !FINISHED.includes(m.status) && m.status !== 'DRAFT');
   if (running) await openMission(running.id, false);
 });
-on('logout', 'click', () => { token = ''; state = null; selected = null; lastDetail = ''; $('detail').replaceChildren(); $('workspace').hidden = true; $('logout').hidden = true; $('open-settings').hidden = true; $('mode').hidden = true; $('login').hidden = false; document.body.classList.remove('signed-in'); });
+on('logout', 'click', () => { token = ''; state = null; selected = null; lastDetail = ''; $('detail').replaceChildren(); $('workspace').hidden = true; $('logout').hidden = true; $('open-settings').hidden = true; $('mode').hidden = true; $('credit-balance').hidden=true; $('credits').close();$('credit-ledger').replaceChildren(); $('login').hidden = false; document.body.classList.remove('signed-in'); });
+let creditCursor=0;
+async function loadCreditLedger() {
+  const {entries}=await api('/credits/ledger?after='+creditCursor);
+  for(const e of entries) {const labels={grant:'追加',reserve:'確保',consume:'消費',release:'返却'};$('credit-ledger').append(el('p',`${new Date(e.created).toLocaleString('ja')} · ${labels[e.kind]??e.kind} ${e.amount} クレジット`));creditCursor=e.seq;}
+  $('credits-more').hidden=entries.length<100;
+}
+on('credit-balance','click',async()=>{const b=await api('/credits');$('credits-summary').textContent=`残高 ${b.available} / 確保中 ${b.held} クレジット`;$('credit-ledger').replaceChildren();creditCursor=0;await loadCreditLedger();$('credits').showModal();});
+on('credits-more','click',loadCreditLedger);
+on('credits-close','click',()=> $('credits').close());
 on('open-settings', 'click', () => open(''));
 on('refresh', 'click', refresh);
 on('more', 'click', () => { showAll = true; renderHistory(); });
@@ -360,8 +400,8 @@ on('product-form', 'submit', async e => {
 });
 on('import-form', 'submit', async () => { const r = await api('/products/import', 'POST', { url: $('product-url').value }); $('facts').value = r.content; $('facts-reviewed').checked = false; notice('取り込みました。内容を確かめて、必要なら直してください。まだ電話には使われません。'); });
 on('contact-form', 'submit', async e => {
-  const saved = await api('/contacts', 'POST', { name: $('contact-name').value, phone: $('contact-phone').value, email: $('contact-email').value, relationship: $('relationship').value, basis: $('contact-basis').value, crmId: $('crm-id').value });
-  e.target.reset(); await refresh(); $('contact').value = saved.id; $('settings').close(); suggestRequest(); notice(`${saved.name} を登録しました。`);
+  const saved = await api('/contacts', 'POST', { id: $('contact-id').value || undefined, name: $('contact-name').value, company: $('contact-company').value, notes: $('contact-notes').value, lastCallNotes: $('contact-last-call').value, phone: $('contact-phone').value, email: $('contact-email').value, relationship: $('relationship').value, basis: $('contact-basis').value, crmId: $('crm-id').value });
+  e.target.reset(); await refresh(); $('contact').value = saved.id; $('settings').close(); suggestRequest(); notice(`${saved.name || saved.company} を保存しました。`);
 });
 on('phone-form', 'submit', async () => { const r = await api('/phone/verify', 'POST', { phone: $('my-phone').value, code: $('phone-code').value, acknowledged: $('verify-ack').checked }); await refresh(); notice(r.verified ? '電話番号を確認しました。' : '確認用のSMSを送りました。届いたコードを入力して、もう一度押してください。'); });
 on('link', 'click', async () => { const r = await api('/links', 'POST', {}); $('link-code').textContent = r.message; });

@@ -31,7 +31,7 @@ export type SessionEvent =
   | { type: "action.requested"; action: Action; detail: string }
   | { type: "hangup"; reason?: string }
   /** `fatal: false` reports a recoverable provider error without ending the call. */
-  | { type: "error"; message: string; fatal?: boolean };
+  | { type: "error"; message: string; fatal?: boolean; code?: string };
 
 export type SpeakInput = {
   text: string;
@@ -121,7 +121,7 @@ export interface TurnEngine {
 // Brain
 // ---------------------------------------------------------------------------
 
-export type Turn = { id: string; source: Speaker; text: string; t: number };
+export type Turn = { id: string; source: Speaker; text: string; t: number; interrupted?: boolean };
 
 export type MissionView = {
   /** Verified field values so far. */

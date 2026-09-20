@@ -13,6 +13,10 @@ import type { Action, CallContract } from "@oathra/contract";
 import { ActionSchema, renderIntakeConsentPrompt, requiredFields } from "@oathra/contract";
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
+import { phoneMessageInstructions } from "./phone-message.js";
+import { RealtimeUsage, type RealtimeUsageEvent } from "./usage.js";
+import { createNewsSearch, NEWS_TOPICS, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
+export { createNewsSearch, NEWS_TOPICS, type NewsSearch, type NewsResult, type NewsLookupEvent } from "./news.js";
 
 export type RealtimeBridge = {
   /** Send μ-law bytes to the far end (Twilio). */
@@ -34,6 +38,10 @@ export type RealtimeAgentOptions = {
   instructions?: string;
   calleeName?: string;
   url?: string;
+  onUsage?: (event: RealtimeUsageEvent) => void;
+  /** Only enabled by an explicit chat contract; false disables public news lookup. */
+  newsSearch?: NewsSearch | false;
+  onNews?: (event: NewsLookupEvent) => void;
 };
 
 type Json = Record<string, unknown>;
@@ -52,9 +60,25 @@ export class OpenAIRealtimeAgent {
   // Response bookkeeping for timing + barge-in.
   private speechStoppedMs: number | undefined;
   private current: { itemId: string; responseId: string; startMs: number; bytes: number; transcript: string } | undefined;
+  private activeResponseId: string | undefined;
+  private readonly interruptedResponses = new Set<string>();
+  private drainTimer: NodeJS.Timeout | undefined;
+  private endTimer: NodeJS.Timeout | undefined;
   private pendingActions = new Map<string, { callId: string; action: Action }>();
   private endRequested: string | undefined;
-  private readonly pendingSend: string[] = [];
+  private readonly usage: RealtimeUsage;
+  private closing: Promise<void> | undefined;
+  private readonly newsSearch: NewsSearch | undefined;
+  private newsCalls = new Set<string>();
+  private newsControllers = new Set<AbortController>();
+  private newsCount = 0;
+  private newsGeneration = 0;
+  private newsResponsePending = false;
+  private newsResponseCreating: number | undefined;
+  private calleeSpeaking = false;
+  private openingRequested = false;
+  private farewellRequested = false;
+  private speechGeneration = 0;
 
   constructor(private readonly opts: RealtimeAgentOptions) {
     this.model = opts.model ?? "gpt-live-1";
@@ -62,12 +86,17 @@ export class OpenAIRealtimeAgent {
     this.voice = opts.voice ?? "marin";
     this.transcriptionModel = opts.transcriptionModel ?? "gpt-4o-mini-transcribe";
     this.language = opts.contract.language;
+    this.usage = new RealtimeUsage(this.model,opts.onUsage);
+    if (opts.contract.goal === "phone.message" && opts.contract.input.conversationMode === "chat" && opts.newsSearch !== false) {
+      this.newsSearch = opts.newsSearch ?? createNewsSearch({ apiKey: this.apiKey });
+    }
   }
 
   /** Open the Realtime session. Resolves once `session.updated` is received. */
   async connect(bridge: RealtimeBridge): Promise<void> {
     if (!this.apiKey) throw new Error("OPENAI_API_KEY is not set. Get one at https://platform.openai.com/api-keys");
     this.bridge = bridge;
+    this.usage.start();
     const url = this.opts.url ?? `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(this.model)}`;
     const ws = new WebSocket(url, { headers: { Authorization: `Bearer ${this.apiKey}` } });
     this.ws = ws;
@@ -85,6 +114,8 @@ export class OpenAIRealtimeAgent {
     ws.on("message", (data) => this.onMessage(JSON.parse(data.toString()) as Json));
     ws.on("close", () => {
       if (!this.closed) {
+        this.cancelNews();
+        this.usage.close(false);
         this.closed = true;
         this.bridge?.emit({ type: "hangup", reason: "realtime_closed" });
       }
@@ -107,6 +138,11 @@ export class OpenAIRealtimeAgent {
           output: { format: { type: "audio/pcmu" }, voice: this.voice },
         },
         tools: [
+          ...(this.newsSearch ? [{
+            type: "function", name: "lookup_news",
+            description: "Check recent public headlines when asked about news. Use tokyo_events for current or upcoming events and outings in Tokyo. Only these categories are supported. Say you are checking first. Never send private information. At most twice per call.",
+            parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS } }, required: ["topic"], additionalProperties: false },
+          }] : []),
           {
             type: "function",
             name: "end_call",
@@ -146,7 +182,12 @@ export class OpenAIRealtimeAgent {
 
   /** Inbound μ-law from the far end. */
   pushAudio(mulaw: Uint8Array): void {
-    if (!this.ready) return;
+    if (!this.ready || this.closed) return;
+    // The first media packet proves the carrier is connected; even silence starts the greeting.
+    if (!this.openingRequested && this.opts.contract.goal === "phone.message" && mulaw.length) {
+      this.openingRequested = true;
+      this.send({ type: "response.create", response: { metadata: { oathra_speech_generation: String(this.speechGeneration) }, instructions: this.instructions() + "\nStart now with one short greeting in the requested language and tone. Identify yourself as an AI and ask if now is a good time. Do not wait for the recipient to speak first." } });
+    }
     this.send({ type: "input_audio_buffer.append", audio: Buffer.from(mulaw).toString("base64") });
   }
 
@@ -168,23 +209,51 @@ export class OpenAIRealtimeAgent {
     }
   }
 
-  close(): void {
+  close(): Promise<void> {
+    if(this.closing)return this.closing;
     this.closed = true;
-    try {
-      this.ws?.close();
-    } catch {
-      /* ignore */
-    }
+    this.cancelNews();
+    clearTimeout(this.drainTimer);
+    clearTimeout(this.endTimer);
+    this.current = undefined;
+    this.closing=(async()=>{
+      // Allow the server to report charges for an interrupted response before closing.
+      if(this.usage.enabled&&this.usage.waiting){
+        if(this.activeResponseId)this.send({type:"response.cancel",response_id:this.activeResponseId});
+        const until=Date.now()+1500;
+        while(this.usage.waiting&&Date.now()<until)await new Promise(r=>setTimeout(r,25));
+      }
+      this.usage.close(true);
+      try{this.ws?.close()}catch{/* ignore */}
+    })();return this.closing;
   }
 
   /** Stop the model's current response and drop far-end playback (runtime-initiated barge-in). */
   interrupt(): void {
+    this.interruptPlayback(true);
+  }
+
+  private interruptPlayback(cancelGeneration: boolean): void {
     const b = this.bridge;
-    if (!b || !this.current) return;
+    if (!b || this.closed) return;
+    this.speechGeneration++;
+    if (cancelGeneration) this.cancelNews();
+    else { this.newsGeneration++; this.newsResponsePending = false; }
+    clearTimeout(this.endTimer);
+    this.endRequested = undefined;
+    this.farewellRequested = false;
+    const responseId = this.activeResponseId;
+    this.activeResponseId = undefined;
+    if (responseId) {
+      this.interruptedResponses.add(responseId);
+      if (cancelGeneration) this.send({ type: "response.cancel", response_id: responseId });
+    }
+    if (!this.current) return;
+    this.interruptedResponses.add(this.current.responseId);
+    clearTimeout(this.drainTimer);
     const at = b.now();
     b.clearAudio();
     const heardMs = Math.min(this.current.bytes / 8, at - this.current.startMs);
-    this.send({ type: "response.cancel" });
     this.send({ type: "conversation.item.truncate", item_id: this.current.itemId, content_index: 0, audio_end_ms: Math.max(0, Math.round(heardMs)) });
     this.finishAgentTurn(at, true);
   }
@@ -196,8 +265,9 @@ export class OpenAIRealtimeAgent {
   }
 
   private onMessage(msg: Json): void {
+    this.usage.message(msg);
     const b = this.bridge;
-    if (!b) return;
+    if (!b || this.closed) return;
     const type = msg.type as string;
     switch (type) {
       case "session.updated":
@@ -205,24 +275,40 @@ export class OpenAIRealtimeAgent {
         break;
       case "error": {
         const err = msg.error as Json | undefined;
-        b.emit({ type: "error", message: `Realtime: ${String(err?.message ?? JSON.stringify(msg))}` });
+        this.providerError(err);
+        break;
+      }
+      case "response.created": {
+        const response = msg.response as Json | undefined;
+        const speechGeneration = (response?.metadata as Json | undefined)?.oathra_speech_generation;
+        if (typeof speechGeneration === "string" && /^\d+$/.test(speechGeneration) && Number(speechGeneration) !== this.speechGeneration && typeof response?.id === "string") {
+          this.interruptedResponses.add(response.id);
+          this.send({ type: "response.cancel", response_id: response.id });
+          break;
+        }
+        const generation = (response?.metadata as Json | undefined)?.oathra_news_generation;
+        if (typeof generation === "string" && /^\d+$/.test(generation)) {
+          if (this.newsResponseCreating === Number(generation)) this.newsResponseCreating = undefined;
+          if (Number(generation) !== this.newsGeneration && typeof response?.id === "string") {
+            this.interruptedResponses.add(response.id);
+            this.send({ type: "response.cancel", response_id: response.id });
+            break;
+          }
+        }
+        if (typeof response?.id === "string") this.activeResponseId = response.id;
         break;
       }
       case "input_audio_buffer.speech_started": {
+        this.calleeSpeaking = true;
         const at = b.now();
         b.emit({ type: "speech.started", startMs: at });
-        if (this.current) {
-          // Barge-in: stop the far-end playback and let the model know how much was heard.
-          b.clearAudio();
-          const heardMs = Math.min(this.current.bytes / 8, at - this.current.startMs);
-          this.send({ type: "response.cancel" });
-          this.send({ type: "conversation.item.truncate", item_id: this.current.itemId, content_index: 0, audio_end_ms: Math.max(0, Math.round(heardMs)) });
-          this.finishAgentTurn(at, true);
-          b.emit({ type: "interruption", atMs: at });
-        }
+        // interrupt_response=true already cancels generation on the server.
+        // Clear/truncate playback here; do not ask the runtime to interrupt a later response again.
+        this.interruptPlayback(false);
         break;
       }
       case "input_audio_buffer.speech_stopped":
+        this.calleeSpeaking = false;
         this.speechStoppedMs = b.now();
         break;
       case "conversation.item.input_audio_transcription.completed": {
@@ -232,23 +318,27 @@ export class OpenAIRealtimeAgent {
         break;
       }
       case "response.output_audio.delta": {
+        const responseId = String(msg.response_id ?? "");
+        if (this.interruptedResponses.has(responseId)) break;
         const delta = String(msg.delta ?? "");
         if (!delta) break;
         const bytes = new Uint8Array(Buffer.from(delta, "base64"));
+        if (this.current && this.current.responseId !== responseId) this.finishAgentTurn(b.now(), false);
         if (!this.current) {
-          this.current = { itemId: String(msg.item_id ?? ""), responseId: String(msg.response_id ?? ""), startMs: b.now(), bytes: 0, transcript: "" };
+          this.current = { itemId: String(msg.item_id ?? ""), responseId, startMs: b.now(), bytes: 0, transcript: "" };
         }
         this.current.bytes += bytes.length;
         b.sendAudio(bytes);
         break;
       }
       case "response.output_audio_transcript.delta":
-        if (this.current) this.current.transcript += String(msg.delta ?? "");
+        if (this.matchesCurrent(msg)) this.current!.transcript += String(msg.delta ?? "");
         break;
       case "response.output_audio_transcript.done":
-        if (this.current) this.current.transcript = String(msg.transcript ?? this.current.transcript);
+        if (this.matchesCurrent(msg)) this.current!.transcript = String(msg.transcript ?? this.current!.transcript);
         break;
       case "response.function_call_arguments.done": {
+        if (this.interruptedResponses.has(String(msg.response_id ?? ""))) break;
         const name = String(msg.name ?? "");
         const callId = String(msg.call_id ?? "");
         let args: Json = {};
@@ -257,7 +347,10 @@ export class OpenAIRealtimeAgent {
         } catch {
           /* ignore */
         }
-        if (name === "end_call") {
+        if (name === "lookup_news") {
+          void this.lookupNews(callId, args);
+        } else if (name === "end_call") {
+          this.cancelNews();
           this.endRequested = String(args.reason ?? "agent_hangup");
           this.send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: callId, output: JSON.stringify({ ok: true }) } });
         } else if (name === "request_action") {
@@ -273,20 +366,48 @@ export class OpenAIRealtimeAgent {
         break;
       }
       case "response.done": {
+        const response = msg.response as Json | undefined;
+        const id = typeof response?.id === "string" ? response.id : this.current?.responseId;
+        if (id === this.activeResponseId) this.activeResponseId = undefined;
+        if (response?.status === "failed") {
+          this.providerError((response.status_details as Json | undefined)?.error as Json | undefined);
+          break;
+        }
+        if (id && this.interruptedResponses.has(id)) break;
+        const turn = this.current?.responseId === id ? this.current : undefined;
         // Audio may still be draining at the far end; report the turn when the model is done producing it.
-        if (this.current) {
-          const drainMs = Math.max(0, this.current.bytes / 8 - (b.now() - this.current.startMs));
+        if (turn) {
+          const drainMs = Math.max(0, turn.bytes / 8 - (b.now() - turn.startMs));
           const end = b.now() + drainMs;
-          setTimeout(() => this.finishAgentTurn(end, false), drainMs);
+          clearTimeout(this.drainTimer);
+          this.drainTimer = setTimeout(() => {
+            if (!this.closed && this.current === turn) this.finishAgentTurn(end, false);
+          }, drainMs);
         }
         if (this.endRequested) {
           const reason = this.endRequested;
+          const hasGoodbye = turn && /バイバイ|またね|さようなら|失礼|おやすみ|goodbye|bye|take care/i.test(turn.transcript);
+          if (this.opts.contract.goal === "phone.message" && !hasGoodbye && !this.farewellRequested) {
+            this.farewellRequested = true;
+            const generation = this.speechGeneration;
+            const remaining = turn ? Math.max(0, turn.bytes / 8 - (b.now() - turn.startMs)) : 0;
+            clearTimeout(this.endTimer);
+            this.endTimer = setTimeout(() => {
+              if (this.closed || !this.endRequested || generation !== this.speechGeneration) return;
+            this.send({ type: "response.create", response: { metadata: { oathra_speech_generation: String(this.speechGeneration) }, tool_choice: "none", instructions: this.language === "ja" ? "通話を終了します。新しい質問や話題は出さず、相手の口調に合わせて短い終了の挨拶だけを声で伝えてください。雑談なら『うん、話してくれてありがとう。またね、バイバイ！』。" : "End with one brief warm spoken goodbye. No new questions or topics." } });
+              // Bound provider silence after the previous utterance has drained.
+              this.endTimer = setTimeout(() => { if (!this.closed && this.endRequested) b.emit({ type: "hangup", reason: "farewell_timeout" }); }, 10000);
+            }, remaining);
+            break;
+          }
           this.endRequested = undefined;
-          const drainMs = this.current ? Math.max(0, this.current.bytes / 8 - (b.now() - this.current.startMs)) : 0;
-          setTimeout(() => {
-            if (!this.closed) b.emit({ type: "hangup", reason });
+          const drainMs = turn ? Math.max(0, turn.bytes / 8 - (b.now() - turn.startMs)) : 0;
+          clearTimeout(this.endTimer);
+          this.endTimer = setTimeout(() => {
+            if (!this.closed && (!id || !this.interruptedResponses.has(id))) b.emit({ type: "hangup", reason });
           }, drainMs + 300);
         }
+        this.resumeAfterNews();
         break;
       }
       default:
@@ -294,9 +415,62 @@ export class OpenAIRealtimeAgent {
     }
   }
 
+  private cancelNews(): void {
+    this.newsGeneration++;
+    this.newsResponsePending = false;
+    for (const controller of this.newsControllers) controller.abort();
+  }
+
+  private resumeAfterNews(): void {
+    if (this.newsResponsePending && this.newsResponseCreating === undefined && !this.closed && !this.calleeSpeaking && !this.activeResponseId && !this.endRequested) {
+      this.newsResponsePending = false;
+      this.newsResponseCreating = this.newsGeneration;
+      this.send({ type: "response.create", response: { metadata: { oathra_news_generation: String(this.newsGeneration) } } });
+    }
+  }
+
+  private async lookupNews(callId: string, args: Json): Promise<void> {
+    if (!callId || this.newsCalls.has(callId)) return;
+    this.newsCalls.add(callId);
+    const generation = this.newsGeneration;
+    const topic = args?.topic as NewsTopic;
+    const permitted = !!this.newsSearch && NEWS_TOPICS.includes(topic) && Object.keys(args).length === 1;
+    let result: NewsResult;
+    if (!permitted || this.newsCount >= 2) {
+      result = { status: "unavailable", topic: NEWS_TOPICS.includes(topic) ? topic : "general", checkedAt: new Date().toISOString(), reason: permitted ? "limit" : "unverified" };
+    } else {
+      this.newsCount++;
+      const controller = new AbortController();
+      this.newsControllers.add(controller);
+      try { result = await this.newsSearch!(topic, controller.signal); }
+      catch { result = { status: "unavailable", topic, checkedAt: new Date().toISOString(), reason: controller.signal.aborted ? "cancelled" : "provider_error" }; }
+      finally { this.newsControllers.delete(controller); }
+      if (controller.signal.aborted) result = { status: "unavailable", topic, checkedAt: new Date().toISOString(), reason: "cancelled" };
+    }
+    try { this.opts.onNews?.({ type: "news.lookup", result }); } catch { /* Observers cannot cause an unhandled async rejection. */ }
+    if (this.closed) return;
+    this.send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: callId, output: JSON.stringify(result) } });
+    if (generation === this.newsGeneration || result.reason !== "cancelled") {
+      this.newsResponsePending = true;
+      this.resumeAfterNews();
+    }
+  }
+
+  private matchesCurrent(msg: Json): boolean {
+    return !!this.current && (msg.response_id === undefined || msg.response_id === this.current.responseId)
+      && (msg.item_id === undefined || msg.item_id === this.current.itemId);
+  }
+
+  private providerError(error: Json | undefined): void {
+    // Codes only: provider messages can echo prompts, credentials or other private data.
+    const code = typeof error?.code === "string" && /^[a-z][a-z0-9_]{0,79}$/.test(error.code) ? error.code : "provider_error";
+    this.bridge?.emit({ type: "error", code: `realtime_${code}`, message: `Realtime: ${code}`, fatal: code !== "response_cancel_not_active" });
+  }
+
   private finishAgentTurn(endMs: number, interrupted: boolean): void {
     const c = this.current;
     if (!c || !this.bridge) return;
+    clearTimeout(this.drainTimer);
     this.current = undefined;
     const text = c.transcript.trim();
     if (!text) return;
@@ -309,6 +483,7 @@ export class OpenAIRealtimeAgent {
   instructions(): string {
     if (this.opts.instructions) return this.opts.instructions;
     const c = this.opts.contract;
+    if (c.goal === "phone.message") return phoneMessageInstructions(c, !!this.newsSearch) + (this.view ? `\n会話から抽出した現在の状態（予約成立そのものではありません）。変更提案があれば未確認として復唱し、元の希望と違う条件を勝手に承諾しないでください。\n${JSON.stringify({ verified: this.view.verified, pending: this.view.pending, missing: this.view.missing })}` : "");
     const ja = this.language === "ja";
     const permitted = (Object.keys(c.permissions) as Action[]).filter((a) => c.permissions[a]);
     const v = this.view;

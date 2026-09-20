@@ -10,10 +10,13 @@ import { fileURLToPath } from "node:url";
 import { checklist, freePort, launch, serve, sleep } from "./cdp.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const out = join(root, "artifacts/ui");
+const out = process.env.OATHRA_UI_ARTIFACTS ? resolve(process.env.OATHRA_UI_ARTIFACTS) : join(root, "artifacts/ui");
 const work = mkdtempSync(join(tmpdir(), "oathra-gateway-ui-"));
 const port = await freePort(), base = `http://localhost:${port}`;
 let server, page;
+// --size=1920x1080 checks one extra window size without touching the reviewed images (implies --no-capture in practice: pass both).
+const extra = process.argv.find((a) => a.startsWith("--size="))?.slice(7).split("x").map(Number);
+const SIZES = extra ? [[`${extra[0]}x${extra[1]}`, extra[0], extra[1]]] : [["desktop", 1440, 900], ["mobile", 390, 844]];
 const c = checklist("gateway primary flow");
 try {
   // A throwaway workspace: own database, own token, never the developer's .oathra/.
@@ -23,7 +26,7 @@ try {
   const token = readFileSync(join(work, ".oathra/operator-token.txt"), "utf8").trim();
   server = await serve("node", [`--env-file=${envFile}`, join(root, "apps/gateway/server.mjs")], { cwd: work, url: `${base}/healthz` });
 
-  for (const [name, width, height] of [["desktop", 1440, 900], ["mobile", 390, 844]]) {
+  for (const [name, width, height] of SIZES) {
     console.log(`\n${name} ${width}x${height}`);
     page = await launch({ width, height });
     await page.goto(base + "/");
@@ -99,6 +102,9 @@ try {
       const reachable = await page.js("(()=>{const card=document.querySelector('#current'),b=[...card.querySelectorAll('.actions button')].pop();card.scrollTop=card.scrollHeight;const r=b.getBoundingClientRect(),k=card.getBoundingClientRect();return r.bottom<=k.bottom+1&&r.top>=k.top})()");
       c.ok(reachable, "the last action of a long result can be scrolled into view inside the card");
       await page.js("document.querySelector('#current').scrollTop=0");
+      // ...and with the card scrolled back to the top, the actions are still on screen (pinned to the card's bottom edge).
+      const pinned = await page.js("(()=>{const card=document.querySelector('#current'),k=card.getBoundingClientRect();return card.scrollHeight>card.clientHeight+1&&[...card.querySelectorAll('.actions button')].every(b=>{const r=b.getBoundingClientRect();return r.top>=k.top&&r.bottom<=k.bottom+1})})()");
+      c.ok(pinned, "with a long transcript open, every action stays visible at the bottom of the card");
     }
     c.ok(await page.js("document.querySelector('#detail details').open"), "an open transcript survives polling");
     if (width >= 1000) c.ok(await page.noPageScroll(), "the board still fits with a result open");
@@ -111,6 +117,24 @@ try {
       c.ok(await page.js("document.querySelector('#phone-form').hidden") && /練習モード/.test(await page.text("#phone-unavailable") ?? ""), "phone verification explains itself instead of failing in practice mode");
       c.ok((await page.text("#phone-state")) === "練習では不要", "a practice number is not labelled as verified", await page.text("#phone-state"));
       await page.screenshot(join(out, "gateway-settings.png"));
+      // Edit the existing simulator contact using the actual completed transcript; no extra sample identity.
+      const originalContact = await page.js("state.contacts[0]");
+      const lastCall = await page.text('#detail blockquote');
+      await page.js("document.querySelector('#s-phone').open=false;document.querySelector('#s-contact').open=true");
+      await page.click('#contact-list button');
+      await page.js(`document.querySelector('#contact-name').value='';document.querySelector('#contact-company').value=${JSON.stringify(originalContact.name)};document.querySelector('#contact-phone').value='';document.querySelector('#contact-last-call').value=${JSON.stringify(lastCall)};document.querySelector('#contact-form').requestSubmit()`);
+      await page.until("!document.querySelector('#settings').open", {label:'contact saved without telephone'});
+      await page.js('refresh()');
+      c.ok(await page.js(`state.contacts[0].phone === '' && state.contacts[0].name === '' && state.contacts[0].company === ${JSON.stringify(originalContact.name)} && state.contacts[0].lastCallNotes === ${JSON.stringify(lastCall)}`), 'company-only contact and actual call notes survive a fresh server read');
+      await page.click('#open-settings');
+      await page.js("document.querySelector('#s-contact').open=true");
+      await page.click('#contact-list button');
+      c.ok(await page.js(`document.querySelector('#contact-last-call').value === ${JSON.stringify(lastCall)}`), 'saved call notes can be reopened for editing');
+      await page.screenshot(join(out, 'gateway-general-contact.png'));
+      await page.js(`(()=>{const original=${JSON.stringify(originalContact)}; for(const [field,id] of Object.entries({name:'contact-name',company:'contact-company',phone:'contact-phone',email:'contact-email',notes:'contact-notes',lastCallNotes:'contact-last-call',relationship:'relationship',basis:'contact-basis',crmId:'crm-id'}))document.getElementById(id).value=original[field]??'';document.querySelector('#contact-form').requestSubmit()})()`);
+      await page.until("!document.querySelector('#settings').open", {label:'phone restored through edit form'});
+      c.ok(await page.js(`state.contacts[0].phone === ${JSON.stringify(originalContact.phone)} && state.contacts[0].simulationOnly === true`), 'phone can be added later without losing simulator safety marker');
+
     }
     c.ok(page.pageErrors.length === 0, "no page errors", page.pageErrors.join(" || "));
     await page.close(); page = undefined;

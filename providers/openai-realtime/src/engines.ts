@@ -9,12 +9,14 @@ import type { MissionView } from "@oathra/core";
 import { convert, MULAW_8K, OutputQueue, type AudioChunk, type VoiceEngine, type VoiceOutput, type VoiceSession, type VoiceSessionContext } from "@oathra/voice";
 import { OpenAIRealtimeAgent } from "./index.js";
 import { OpenAILiveAgent } from "./live.js";
+import type { RealtimeUsageEvent } from "./usage.js";
+import type { NewsSearch, NewsLookupEvent } from "./news.js";
 
 type AgentLike = {
   pushAudio(mulaw: Uint8Array): void;
   updateContext(view: MissionView): void;
   resolveAction(action: Action, approved: boolean): void;
-  close(): void;
+  close(): void | Promise<void>;
   interrupt?(): void;
   connect(bridge: { sendAudio(mulaw: Uint8Array): void; clearAudio(): void; emit(event: VoiceOutput extends { type: "event"; event: infer E } ? E : never): void; now(): number }): Promise<void>;
 };
@@ -60,7 +62,7 @@ class S2SVoiceSession implements VoiceSession {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
-    this.agent.close();
+    await this.agent.close();
     this.queue.close();
   }
 
@@ -97,7 +99,7 @@ export function gptLiveEngine(opts: GptLiveEngineOptions = {}): VoiceEngine {
   };
 }
 
-export type RealtimeEngineOptions = { model?: string; voice?: string; apiKey?: string; url?: string };
+export type RealtimeEngineOptions = { model?: string; voice?: string; apiKey?: string; url?: string; onUsage?: (event: RealtimeUsageEvent) => void; newsSearch?: NewsSearch | false; onNews?: (event: NewsLookupEvent) => void };
 
 export function realtimeEngine(opts: RealtimeEngineOptions = {}): VoiceEngine {
   const model = opts.model ?? "gpt-realtime-2.1";
@@ -111,6 +113,9 @@ export function realtimeEngine(opts: RealtimeEngineOptions = {}): VoiceEngine {
       const agent = new OpenAIRealtimeAgent({
         contract: ctx.contract,
         model,
+        ...(opts.onUsage ? { onUsage: opts.onUsage } : {}),
+        ...(opts.newsSearch !== undefined ? { newsSearch: opts.newsSearch } : {}),
+        ...(opts.onNews ? { onNews: opts.onNews } : {}),
         ...(opts.voice ? { voice: opts.voice } : {}),
         ...(opts.apiKey ? { apiKey: opts.apiKey } : {}),
         ...(opts.url ? { url: opts.url } : {}),

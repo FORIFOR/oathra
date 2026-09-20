@@ -1,15 +1,27 @@
+import { phoneMemory } from '../../../packages/core/dist/index.js';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
 import { evaluateSales, wantsNoContact } from './sales.mjs';
 import { terminal } from './service.mjs';
+import { spendingProgress } from './credit-guard.mjs';
+import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
   constructor(service, channels, execute) { this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.holder=randomUUID(); this.active=null; this.busy=false; }
   start() {
     assert(this.store.lease(this.holder),'another_gateway_worker_is_active',409);
-    for(const m of this.store.list('mission')) if(['DIALING','ACTIVE','VERIFYING','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(m.status)) {
+    const recovery=new Map([...this.store.list('mission'),...this.service.credits.pendingMissions()].map(m=>[m.id,m]));
+    // A crash can also land after the terminal result write but before run.finally.
+    for(const m of recovery.values())if(m.billing?.state==='pending'&&m.executionId&&!['DRAFT','QUEUED'].includes(m.status)){
+      finishBilling(m);if(!m.billing.ai.closed){m.billing.ai.closed=true;m.billing.ai.complete=false;}this.store.put('mission',m);
+    }
+    for(const m of recovery.values()) if(['DIALING','ACTIVE','VERIFYING','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(m.status)) {
+      if(m.billing){m.billing.executionFinished=true;if(!m.billing.ai.closed){m.billing.ai.closed=true;m.billing.ai.complete=false;}}
       m.status='UNKNOWN'; m.finishedAt=this.store.now(); m.error='worker_interrupted_reconcile_carrier_before_retry'; this.store.put('mission',m); this.service.notify(m,'result');
+    }
+    for(const m of recovery.values())if(m.billing?.state==='pending'&&m.creditQuote?.tariff?.settlement==='usage-rate-v1'){
+      this.store.tx(()=>this.service.credits.settleTx(this.store.get('mission',m.id)));
     }
     // Inbox and notifications can be retried; telephone attempts cannot.
     for(const f of this.store.list('followup',undefined,'EXECUTING')) { f.status='UNKNOWN'; f.error='process_interrupted_do_not_resend_without_reconciliation'; this.store.put('followup',f); }
@@ -33,16 +45,28 @@ export class Worker {
       await this.processQueue('inbox',j=>this.channels.process(j));
       await this.processQueue('outbox',j=>this.channels.send(j));
       if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
-      const m=this.store.list('mission',undefined,'QUEUED').reverse()[0]; if(!m) return;
-      // A queued mission whose owner was removed from the configuration must fail, not block everyone behind it forever.
-      try { const u=this.service.user(m.owner); this.service.checkPolicy(u,m); assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409); }
-      catch(e) { m.status='FAILED'; m.finishedAt=this.store.now(); m.error=e.code??'policy_rejected'; this.store.put('mission',m); this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error}); this.service.notify(m,'result'); return; }
-      m.status='DIALING'; m.executionId=randomUUID(); this.store.put('mission',m); this.store.event(m,{type:'status',status:'DIALING'});
-      this.store.audit(m.owner,'call.dialing',m.id,{mission:m.id,execution:m.executionId,target:this.store.phoneRef(m.target.phone),mode:m.mode,approvedAt:m.approvedAt});
+      const m=this.claimNext();
+      if(!m)return;
       this.service.notify(m,'発信しています。');
       const active={ id:m.id,abort:new AbortController(),control:{} }; this.active=active;
       active.promise=this.run(m,active).finally(()=>{ if(this.active===active) this.active=null; });
     } finally { this.busy=false; }
+  }
+  /** Atomically commits an execution claim and its credits; does not contact a carrier. */
+  claimNext() {
+    return this.store.tx(()=>{
+        const m=this.store.list('mission',undefined,'QUEUED').reverse()[0];if(!m)return null;
+        const lease=this.store.db.prepare('SELECT * FROM lease WHERE id=1').get();
+        assert(!lease||lease.holder===this.holder,'worker_lease_lost',409);
+        this.store.db.prepare('INSERT INTO lease VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires').run(this.holder,this.store.now()+30000);
+        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);}
+        catch(e){m.status='FAILED';m.finishedAt=this.store.now();m.error=e.code??'policy_rejected';this.service.credits.releaseTx(m);this.store.put('mission',m);this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error});this.service.notify(m,'result');return null;}
+        this.service.credits.captureTx(m);
+        if(m.creditQuote?.policy===METERED)m.billing={state:'pending',ai:{started:false,closed:false,complete:false,pending:[],responses:[]}};
+        m.status='DIALING';m.executionId=randomUUID();this.store.put('mission',m);this.store.event(m,{type:'status',status:'DIALING'});
+        this.store.audit(m.owner,'call.dialing',m.id,{mission:m.id,execution:m.executionId,target:this.store.phoneRef(m.target.phone),mode:m.mode,approvedAt:m.approvedAt});
+        return m;
+      });
   }
   /** Suppress and leave a trace of why: a number that silently stops being callable is as hard to explain as one that does not. */
   suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
@@ -50,19 +74,46 @@ export class Worker {
   async run(m,active) {
     const turns=[]; let connected=false;
     const watchdog=setTimeout(()=>active.abort.abort(),(m.maxSeconds+30)*1000);
+    let creditStopping=false;
+    const checkCredits=()=>{
+      const current=this.store.get('mission',m.id);
+      if(!current||creditStopping||active.abort.signal.aborted||current.status==='CANCEL_REQUESTED'||current.billing?.timing||current.carrierStatus==='completed'||current.billing?.executionFinished||terminal(current.status))return;
+      const progress=spendingProgress(current,this.store.now());
+      if(!progress)return;
+      current.billing.spending=progress;
+      if(progress.stop){
+        creditStopping=true;current.stopReason='credit_limit';current.status='CANCEL_REQUESTED';
+        this.store.event(current,{type:'credit.limit',limit:progress.limit});
+      }
+      this.store.put('mission',current);
+      if(progress.stop)active.abort.abort();
+    };
+    const creditTimer=setInterval(()=>{try{checkCredits()}catch(error){this.log('credit.monitor_failed',error,{mission:m.id});creditStopping=true;active.abort.abort();}},250);
     const onEvent=e=>{
       const current=this.store.get('mission',m.id); if(!current) return;
-      if(e.type==='call.connected') { connected=true; if(current.status==='DIALING') current.status='ACTIVE'; }
+      let shouldAbort=false;
+      if(['billing.ai','billing.search','billing.timing'].includes(e.type)){applyBillingEvent(current,e);this.store.put('mission',current);checkCredits();return;}
+      if(e.type==='error') {
+        const diagnostic={type:'runtime.error',code:/^[a-z][a-z0-9_]{0,99}$/.test(e.code??'')?e.code:'runtime_error',fatal:e.fatal!==false,...(Number.isFinite(e.t)?{t:e.t}:{})};
+        this.store.event(current,diagnostic);
+        if(diagnostic.fatal){current.runtimeError=diagnostic;this.store.put('mission',current);this.log('call.runtime_failed',diagnostic,{mission:m.id});}
+        return;
+      }
+      if(e.type==='call.connected') { if(current.billing)current.billing.connectedAt=this.store.now();connected=true; if(current.status==='DIALING') current.status='ACTIVE'; }
       if(e.type==='carrier.sid') current.carrierSid=e.sid;
       if(e.type==='callee.consent') current.calleeConsented=true;
-      if(e.type==='contact.opt_out') { current.optOut=true; this.suppress(m,'dtmf'); active.abort.abort(); }
+      if(e.type==='recording.notice') current.recordingNotice={method:e.method,text:e.text};
+      if(e.type==='contact.opt_out') { current.optOut=true; this.suppress(m,'dtmf'); shouldAbort=true; }
       if(e.type==='transcript.final') {
-        turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t});
-        if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); active.abort.abort(); }
+        turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(e.interrupted?{interrupted:true}:{})});
+        if(current.kind==='phone-request')current.memory=phoneMemory(current.phoneRequest,turns,current.approvedAt??current.createdAt);
+        if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
       }
-      if(['call.connected','carrier.sid','callee.consent','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff'].includes(e.type)) {
+      if(['call.connected','carrier.sid','callee.consent','recording.notice','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff','news.lookup'].includes(e.type)) {
         this.store.event(current,e); this.store.put('mission',current);
       }
+      checkCredits();
+      if(shouldAbort)active.abort.abort(); // Closing the voice engine may synchronously persist usage.
     };
     try {
       const outcome=await this.execute(m,{signal:active.abort.signal,onEvent,control:active.control,service:this.service});
@@ -82,11 +133,17 @@ export class Worker {
       const result=evaluateSales(turns,m,connected,this.store.now());
       if(this.store.get('mission',m.id)?.optOut) { result.status='DECLINED'; result.doNotContact=true; result.verified={}; result.evidence.push({field:'do_not_contact',source:'dtmf',value:true,quote:'電話の連絡停止操作（2）'}); }
       if(result.doNotContact && !this.store.suppressed(m.team,m.target.phone)) this.suppress(m,'verdict');
-      current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':e.uncertain?'UNKNOWN':'FAILED';
+      // A cancellation request cannot prove a timed-out carrier request never connected.
+      current.status=e.uncertain?'UNKNOWN':result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':'FAILED';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       current.error=e.code??'execution_failed'; current.result=result; current.transcript=turns; current.finishedAt=this.store.now();
       this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.finished(current,connected); this.service.notify(current,'result');
-    } finally { clearTimeout(watchdog); }
+    } finally {
+      clearTimeout(watchdog);clearInterval(creditTimer);
+      this.store.tx(()=>{const current=this.store.get('mission',m.id);if(current?.billing){finishBilling(current);
+        this.store.put('mission',current);this.service.credits.settleTx(current);
+      }});
+    }
   }
   async stop() {
     clearInterval(this.timer); clearInterval(this.leaseTimer); clearInterval(this.controlTimer); this.active?.abort.abort();

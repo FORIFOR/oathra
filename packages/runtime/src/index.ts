@@ -9,6 +9,7 @@ import { checkConstraints, isPermitted, renderIntakeConsentPrompt, requiredField
 import { EvidenceEngine, evaluate, type ConnectionState, type Utterance, type VerifiedResult } from "@oathra/evidence";
 import {
   denyAll,
+  phoneReferenceDate,
   EventLog,
   StateMachine,
   summarizeLatency,
@@ -121,6 +122,7 @@ export class CallRuntime {
     this.intakeStatus = opts.contract.intake ? "not_started" : "disabled";
     const engineOpts: ConstructorParameters<typeof EvidenceEngine>[0] = { language: opts.contract.language };
     if (opts.now) engineOpts.now = opts.now;
+    else if(opts.contract.goal==='phone.message'&&opts.contract.language==='ja')engineOpts.now=phoneReferenceDate(Date.now());
     if (opts.contract.confirmation) engineOpts.confirmation = opts.contract.confirmation;
     this.engine = new EvidenceEngine(engineOpts);
     if (opts.onEvent) this.log.subscribe(opts.onEvent);
@@ -226,7 +228,7 @@ export class CallRuntime {
         }
         if (ev.type === "error") {
           const fatal = ev.fatal !== false;
-          this.emit({ type: "error", message: ev.message, fatal });
+          this.emit({ type: "error", message: ev.message, fatal, ...(ev.code ? { code: ev.code } : {}) });
           if (!fatal) continue;
           endReason = "error";
           this.connection = "failed";
@@ -241,10 +243,10 @@ export class CallRuntime {
           const turnId = newId("turn");
           this.emit({ type: "agent.speech.started", turnId, text: ev.text, t: ev.startMs });
           this.emit({ type: "agent.speech.ended", turnId, startMs: ev.startMs, endMs: ev.endMs, interrupted: ev.interrupted ?? false, t: ev.endMs });
-          this.emit({ type: "transcript.final", turnId, source: "caller", text: ev.text, startMs: ev.startMs, endMs: ev.endMs, t: ev.endMs });
-          this.transcript.push({ id: turnId, source: "caller", text: ev.text, t: ev.endMs });
+          this.emit({ type: "transcript.final", turnId, source: "caller", text: ev.text, interrupted: ev.interrupted ?? false, startMs: ev.startMs, endMs: ev.endMs, t: ev.endMs });
+          this.transcript.push({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, ...(ev.interrupted ? { interrupted: true } : {}) });
           this.observeIntakeQuestion(ev.text);
-          this.ingest({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, audio: { startMs: ev.startMs, endMs: ev.endMs } });
+          if (!ev.interrupted) this.ingest({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, audio: { startMs: ev.startMs, endMs: ev.endMs } });
           const trace: TurnTrace = { turnId, speechEndMs: ev.startMs - (ev.ttfaMs ?? 0), playbackStartMs: ev.startMs };
           if (ev.ttfaMs !== undefined) trace.ttfaMs = ev.ttfaMs;
           this.traces.push(trace);
@@ -404,6 +406,7 @@ export class CallRuntime {
     for (const ev of r.created) this.emit({ type: "evidence.created", evidence: { ...ev } });
     for (const ev of r.verified) this.emit({ type: "evidence.verified", evidence: { ...ev } });
     const view = this.missionView();
+    if (this.opts.transport.speaksItself) this.session?.updateContext?.(view);
     this.emit({ type: "mission.progress", verified: Object.keys(view.verified), missing: view.missing, pending: Object.keys(view.pending) });
   }
 
@@ -413,7 +416,7 @@ export class CallRuntime {
     const pending: Record<string, unknown> = {};
     // Only the callee's pending offers are surfaced: the agent must never
     // "accept" its own unverified proposals.
-    for (const f of new Set([...required, ...Object.keys(this.opts.contract.constraints)])) {
+    for (const f of new Set([...required, ...Object.keys(this.opts.contract.constraints), ...(this.opts.contract.goal === "phone.message" ? ["date", "time", "partySize", "price", "confirmed"] : [])])) {
       const p = this.engine.pendingOffer(f);
       if (p) pending[f] = p.value;
     }
@@ -715,12 +718,12 @@ export class CallRuntime {
     trace.playbackStartMs = spoke.startMs;
     trace.ttfaMs = Math.max(0, Math.round(spoke.startMs - speechEndMs));
     this.emit({ type: "agent.speech.ended", turnId, startMs: spoke.startMs, endMs: spoke.endMs, interrupted: spoke.interrupted, t: spoke.endMs });
-    this.emit({ type: "transcript.final", turnId, source: "caller", text, startMs: spoke.startMs, endMs: spoke.endMs, t: spoke.endMs });
+    this.emit({ type: "transcript.final", turnId, source: "caller", text, interrupted: spoke.interrupted, startMs: spoke.startMs, endMs: spoke.endMs, t: spoke.endMs });
     this.traces.push(trace);
     this.emit({ type: "turn.trace", trace });
 
-    this.transcript.push({ id: turnId, source: "caller", text, t: spoke.endMs });
-    this.ingest({ id: turnId, source: "caller", text, t: spoke.endMs, audio: { startMs: spoke.startMs, endMs: spoke.endMs } });
+    this.transcript.push({ id: turnId, source: "caller", text, t: spoke.endMs, ...(spoke.interrupted ? { interrupted: true } : {}) });
+    if (!spoke.interrupted) this.ingest({ id: turnId, source: "caller", text, t: spoke.endMs, audio: { startMs: spoke.startMs, endMs: spoke.endMs } });
     this.turnIndex++;
 
     if (response.action === "hangup") {

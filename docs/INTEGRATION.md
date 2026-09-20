@@ -1,5 +1,7 @@
 # Check an existing voice agent's transcripts
 
+Source checkout updates (not yet released): [Arena compatibility, local permissions and recovery](quality/arena-contract.md), [first local outcome](FIRST_PROOF.md). Default demo is offline-only; external models require `demo --allow-models`.
+
 [Check your own transcript in the browser](https://forifor.github.io/oathra/en/check.html). No installation or API key. Load the existing model/simulator negotiation or paste your own check JSON. Input stays in the tab; no upload or automatic storage.
 
 Oathra v0.1.18 can check reservation evidence without replacing your carrier, voice model or agent framework. It also exposes `ActionProof`, a single typed model for conversation, authenticated confirmation, system records and outcomes, while guarding against provisional, pending-approval and confirmation-needed phrases being treated as completed reservations. Consent-based follow-up intake stops when the callee signals time pressure. It runs locally. Verification makes no API calls and needs no API key. [日本語](INTEGRATION.ja.md)

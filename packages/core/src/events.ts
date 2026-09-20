@@ -14,7 +14,7 @@ export type CallEvent = Base &
     | { type: "callee.speech.started"; turnId: string }
     | { type: "callee.speech.ended"; turnId: string; startMs: number; endMs: number }
     | { type: "transcript.partial"; turnId: string; source: "caller" | "callee"; text: string }
-    | { type: "transcript.final"; turnId: string; source: "caller" | "callee"; text: string; startMs: number; endMs: number; asr?: { primary: number; secondary?: number } }
+    | { type: "transcript.final"; turnId: string; source: "caller" | "callee"; text: string; interrupted?: boolean; startMs: number; endMs: number; asr?: { primary: number; secondary?: number } }
     | { type: "evidence.created"; evidence: Evidence }
     | { type: "evidence.verified"; evidence: Evidence }
     | { type: "brain.request"; turnId: string; brain: string }
@@ -30,7 +30,7 @@ export type CallEvent = Base &
     | { type: "intake.answer"; field: string; value?: string; declined: boolean; utteranceId: string }
     | { type: "call.ended"; reason: EndReason; durationMs: number }
     | { type: "result"; result: VerifiedResult }
-    | { type: "error"; message: string; fatal: boolean }
+    | { type: "error"; message: string; fatal: boolean; code?: string }
   );
 
 export type EndReason =

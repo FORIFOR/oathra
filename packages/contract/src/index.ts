@@ -6,6 +6,20 @@
  * and what counts as done. It is deliberately separate from any LLM prompt.
  */
 import { z } from "zod";
+import { parsePhoneRequest, type PhoneRequest } from "./phone-input.js";
+export { ContactInputSchema, ContactUpdateSchema, ContactRecordSchema, type ContactInput, type ContactRecord } from "./contact.js";
+
+export {
+  PhoneInputError,
+  normalizePhoneNumber,
+  extractPhoneNumber,
+  PhoneRequestSchema,
+  preparePhoneRequest,
+  parsePhoneRequest,
+  type PhoneInputErrorCode,
+  type PhoneRequest,
+  type PhoneRequestInput,
+} from "./phone-input.js";
 
 // ---------------------------------------------------------------------------
 // Constraints
@@ -330,4 +344,15 @@ export function checkConstraints(
   }
 
   return { satisfied: violations.length === 0, violations, unknown };
+}
+export { PHONE_PURPOSE_TEMPLATES } from "./phone-templates.js";
+
+/** Shared ask-only policy for personal phone requests across CLI, OSS Web and managed Gateway. */
+export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
+  const parsed = parsePhoneRequest(request);
+  return defineCall({ goal: "phone.message", language: "ja",
+    input: { request: parsed.instruction, ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), policy: "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
+    permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
+    target: { phone: parsed.phone, name: parsed.name },
+  });
 }

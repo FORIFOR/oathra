@@ -155,7 +155,7 @@ pre:empty { display: none; }
 .board label { margin-bottom: 14px; }
 .board textarea#request { min-height: 0; }
 /* header 76 + gaps + the history card ≈ 330px; the call card takes what is left of the window. */
-#current { min-height: 250px; max-height: max(250px, calc(100vh - 362px)); overflow: auto; overscroll-behavior: contain; }
+#current { min-height: 250px; max-height: max(250px, calc(100vh - 300px)); overflow: auto; overscroll-behavior: contain; }
 #history-section .list { max-height: 84px; overflow: auto; overscroll-behavior: contain; margin: 4px 0 0; }
 #history-section { padding-block: 18px; }
 body.signed-in footer { display: none; }
@@ -218,6 +218,14 @@ dialog.panel > details:first-of-type { border-top: 0; }
   #readiness { margin: 8px 0 0; font-size: 13px; }
   #history-section { padding-block: 12px; }
   .banner { margin-bottom: 10px; padding-block: 8px; }
+}
+
+/* On the board the card's actions stay at its bottom edge while the transcript scrolls above them. */
+@media (min-width: 1000px) {
+  #current .actions { position: sticky; bottom: -24px; z-index: 1; margin: 16px -24px -24px; padding: 14px 24px 18px; background: var(--card); border-radius: 0 0 18px 18px; }
+}
+@media (min-width: 1000px) and (max-height: 960px) {
+  #current .actions { bottom: -16px; margin: 12px -20px -16px; padding: 10px 20px 14px; }
 }
 
 /* The call card scrolls inside itself; shadows at its edges say "there is more" without a permanent scrollbar. */

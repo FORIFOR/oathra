@@ -13,6 +13,7 @@
     "build": "tsc -b tsconfig.build.json && node scripts/bundle-cli.mjs",
     "typecheck": "tsc -b tsconfig.build.json",
     "test": "vitest run",
+    "test:arena-outcome": "pnpm build && node scripts/verify-arena-outcome.mjs && node scripts/ui/arena-recovery.mjs && node scripts/ui/arena-zoom.mjs",
     "test:ui": "tsc -b tsconfig.build.json && node scripts/bundle-cli.mjs && node scripts/ui/gateway-flow.mjs && node scripts/ui/arena-flow.mjs",
     "ui:gate:test": "node --test tests/ui-gate.test.mjs",
     "test:gateway": "tsc -b tsconfig.build.json && node --test apps/gateway/test/*.node.mjs",

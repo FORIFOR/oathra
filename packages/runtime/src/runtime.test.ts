@@ -1,5 +1,6 @@
+import { phoneMemory } from "@oathra/core";
 import { describe, expect, it } from "vitest";
-import { defineCall, renderIntakeConsentPrompt, type CallContract } from "@oathra/contract";
+import { defineCall, preparePhoneRequest, renderIntakeConsentPrompt, type CallContract } from "@oathra/contract";
 import type { BrainContext, BrainProvider, BrainResponse, CallSession, MissionView, PermissionGate, SessionEvent, SpeakInput, SpeakResult, TransportProvider } from "@oathra/core";
 import { CallRuntime, runCall, VOICEMAIL_RE } from "./index.js";
 
@@ -239,14 +240,15 @@ describe("CallRuntime: how calls end", () => {
   });
 
   it("ends on a fatal transport error and keeps going after a recoverable one", async () => {
-    const recoverable = new FakeSession([[{ type: "error", message: "stt hiccup", fatal: false }, { type: "hangup" }]]);
+    const recoverable = new FakeSession([[{ type: "error", message: "stt hiccup", code: "stt_hiccup", fatal: false }, { type: "hangup" }]]);
     const a = await runCall({ contract: reservation(), transport: fakeTransport(recoverable, "はい、テスト店です。"), brain: new ScriptBrain(["予約をお願いします。"]), now: NOW });
     expect(a.endReason).toBe("callee_hangup");
-    expect(a.events.find((e) => e.type === "error")).toMatchObject({ fatal: false });
+    expect(a.events.find((e) => e.type === "error")).toMatchObject({ fatal: false, code: "stt_hiccup" });
 
-    const fatal = new FakeSession([{ type: "error", message: "media stream lost" }]);
+    const fatal = new FakeSession([{ type: "error", message: "media stream lost", code: "media_stream_lost" }]);
     const b = await runCall({ contract: reservation(), transport: fakeTransport(fatal, "はい、テスト店です。"), brain: new ScriptBrain(["予約をお願いします。"]), now: NOW });
     expect(b.endReason).toBe("error");
+    expect(b.events.find((e) => e.type === "error")).toMatchObject({ fatal: true, code: "media_stream_lost" });
     expect(b.result.status).not.toBe("completed");
   });
 
@@ -475,4 +477,17 @@ describe("CallRuntime: consent-gated intake", () => {
     expect(out.intake.status).toBe("not_started");
     expect(out.intake.askedQuestions).toBe(0);
   });
+});
+
+// Bounded interruption fixture: test returned transcripts, not an external phone service.
+it.each([true,false])('preserves interrupted readbacks through RunResult and note reconstruction (self-speaking=%s)',async speaksItself=>{
+ const session=new FakeSession(['hangup']);
+ const speak=session.speak.bind(session);session.speak=async input=>({...await speak(input),interrupted:true});
+ const first:SessionEvent[]=[{type:'speech',text:'19時半でしたら空いております。',startMs:0,endMs:100}];
+ if(speaksItself)first.push({type:'agent.speech',text:'では、19時半でお願いします。',startMs:120,endMs:200,interrupted:true},{type:'hangup'});
+ const out=await runCall({contract:defineCall({goal:'phone.message'}),transport:fakeTransport(session,first,{speaksItself}),brain:new ScriptBrain(['では、19時半でお願いします。']),now:NOW});
+ const caller=out.transcript.find(t=>t.source==='caller');expect(caller?.interrupted).toBe(true);
+ expect(out.events.find(e=>e.type==='transcript.final'&&e.source==='caller')).toMatchObject({interrupted:true});
+ const request=preparePhoneRequest({phone:'+819000000000',name:'条件確認',instruction:'19時の空席を確認'});
+ expect(phoneMemory(request,out.transcript,NOW.getTime()).notes.find(n=>n.field==='time')).toMatchObject({value:'19:30',status:'proposed'});
 });

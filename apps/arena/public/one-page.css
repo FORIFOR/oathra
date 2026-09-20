@@ -10,6 +10,8 @@ body:not(.present) .scenario-list { display: grid; grid-template-columns: repeat
 body:not(.present) .scenario-btn { min-height: 72px; height: 100%; }
 .scenario-btn.is-current { outline: 3px solid var(--accent, #b53b22); outline-offset: 2px; }
 
+/* Narrow or short windows only; wide windows use the board (board.css), where the picker is a fixed rail. */
+@media (max-width: 1099px), (max-height: 599px) {
 /* While a call is on screen the picker folds down to one row of names, so the call is what you see. */
 body.has-call:not(.present) .start-inner { padding-top: 18px; padding-bottom: 14px; }
 body.has-call:not(.present) .start-title { font-size: 17px; max-width: none; margin-bottom: 10px; letter-spacing: 0; }
@@ -29,6 +31,7 @@ body.has-call:not(.present) .start-foot, body.has-call:not(.present) .replays-pa
   body.has-call:not(.present) .scenario-list { grid-template-columns: 1fr 1fr; }
   body.has-call:not(.present) .scenario-btn .s-diff { display: none; }
 }
+}
 
 /* Evidence cards: who settled it, and never wider than the column (at 390px the status used to fall off the right edge). */
 .erow { min-width: 0; max-width: 100%; }
@@ -39,10 +42,12 @@ body.has-call:not(.present) .start-foot, body.has-call:not(.present) .replays-pa
 .erow .e-why.pending { color: var(--muted, #6e726b); }
 #evidence-list, .panels, .panel { min-width: 0; max-width: 100%; }
 
+@media (max-width: 1099px), (max-height: 599px) {
 /* Folded mission names end with an ellipsis instead of being cut mid-character. */
 body.has-call:not(.present) .scenario-btn { overflow: hidden; }
 body.has-call:not(.present) .scenario-btn > div:nth-child(2) { overflow: hidden; }
 body.has-call:not(.present) .scenario-btn .s-title { display: block; max-width: 100%; }
+}
 
 /* Details timeline: the event name must never run into its summary, and on a phone the summary keeps its own line. */
 .tl-row { grid-template-columns: 74px minmax(150px, max-content) minmax(0, 1fr); }

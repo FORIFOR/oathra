@@ -1,0 +1,50 @@
+/* The managed service uses the same Arena layout. Only service controls are added. */
+.managed-phone:not(.managed-signed-in) .screen:not(#managed-login),
+.managed-phone:not(.managed-signed-in) .topbar-right,
+.managed-phone:not(.managed-signed-in) #navigation-back { display: none; }
+.managed-phone .local-wrap, .managed-phone [data-transport="simulator"],
+.managed-phone #home-practice, .managed-phone #home-choices-practice,
+.managed-phone .phone-developer, .managed-phone #phone-download { display: none; }
+.managed-phone #managed-login .narrow { width: min(440px,100%); margin: 40px auto; }
+.managed-phone #managed-login-form { display:grid; gap:12px; }
+.managed-phone #managed-login-form input { width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--line,#d3cec3); border-radius:6px; background:var(--panel,#fffefa); color:inherit; font:inherit; }
+.managed-phone #managed-login-form input:focus-visible { outline:2px solid #a95d35; outline-offset:3px; }
+.managed-phone #phone-setup { width:100%; }
+.managed-phone #managed-credits { max-width:min(520px,calc(100vw - 32px)); max-height:80vh; overflow:auto; background:var(--bg,#faf9f6); color:inherit; border:1px solid var(--line,#ccc); padding:24px; border-radius:12px; }
+.managed-phone #managed-credits::backdrop { background:rgb(0 0 0 / .25); }
+.managed-phone #phone-review { width:min(600px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; padding:24px; background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:12px; text-align:left; }
+.managed-phone #phone-review::backdrop { background:rgb(0 0 0 / .3); }
+.managed-phone #phone-review button { width:100%; margin-top:8px; }
+.managed-phone #phone-review-fields dd { overflow-wrap:anywhere; white-space:pre-wrap; }
+.managed-phone #phone-disclosure { font-size:14px; line-height:1.7; }
+.managed-phone #phone-clear { justify-self:end; min-width:100px; }
+.managed-phone #phone-live-credits { font-weight:600; font-size:18px; }
+.managed-phone .phone-history-credits { font-weight:600; }
+.managed-phone #managed-login-error, .managed-phone #phone-error { color:#a13b25; }
+.managed-phone #contact-form .contact-back { display:inline-flex; }
+@media(max-width:640px) { body.managed-phone .topbar-right { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+
+.managed-phone #managed-login-title { margin-bottom:24px; }
+.managed-phone #managed-login-form label, .managed-phone #managed-password-form label { font-weight:600; }
+.managed-phone #managed-login-form .note, .managed-phone #managed-password-form .note { margin:0; }
+.managed-phone #managed-login-help { margin-top:24px; font-size:14px; line-height:1.7; }
+.managed-phone #managed-login-help summary { min-height:44px; cursor:pointer; }
+.managed-phone #managed-login-back, .managed-phone #managed-account-close { margin-top:16px; width:100%; }
+.managed-phone #managed-account { width:min(440px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; padding:24px; border:1px solid var(--line); border-radius:12px; background:var(--panel); color:var(--ink); }
+.managed-phone #managed-account::backdrop { background:rgb(0 0 0 / .3); }
+.managed-phone #managed-password-form { display:grid; gap:12px; }
+.managed-phone #managed-password-form[hidden] { display:none; }
+.managed-phone #managed-password-form input:not([hidden]) { width:100%; min-height:46px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:inherit; font:inherit; padding:10px 12px; }
+.managed-phone #managed-password-form input:focus-visible { outline:2px solid #a95d35; outline-offset:3px; }
+.managed-phone #managed-account-email { overflow-wrap:anywhere; }
+.managed-phone #managed-account-error { color:#a13b25; }
+
+/* Public source titles and URLs must also fit the narrow call history. */
+#phone-news { margin-top: 1rem; }
+#phone-news p, #phone-news a { overflow-wrap: anywhere; }
+/* Billing remains readable at narrow widths and can be opened with the keyboard. */
+.phone-cost-details { margin: .65rem 0; overflow-wrap: anywhere; }
+.phone-cost-details summary { cursor: pointer; padding: .5rem 0; font-weight: 600; }
+.phone-cost-details dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem 1rem; }
+.phone-cost-details dd { margin: 0; font-variant-numeric: tabular-nums; }
+.phone-cost-details p { font-size: .85rem; color: var(--text-muted, #555); }

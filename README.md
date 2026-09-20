@@ -1,5 +1,7 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
+> ソース版の初回成功と復帰手順: [docs/FIRST_PROOF.md](docs/FIRST_PROOF.md)。既定のArenaは外部送信・API費用のない練習です。結果の判定と保存状態を分け、証拠JSONを保存できます。外部モデルは `demo --allow-models` で明示的に有効化します。これらは未公開のソース変更で、v0.1.18配布物にはまだ含まれません。
+
 <p align="center">
   <a href="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/FORIFOR/oathra/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FORIFOR/oathra?display_name=tag&sort=semver"></a>
@@ -299,3 +301,23 @@ Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や
 ## 改善に参加する
 
 [判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [質問と導入相談の案内](SUPPORT.md) · [参加ガイド](CONTRIBUTING.md)。日本語・英語どちらでもどうぞ。
+
+Arena keeps the current practice call available when returning to the mission list. Finish it or use Hang up before starting another; restaurant exercises use the fixed date 2026-09-12 for reproducibility.
+
+Arena の「電話をかける」で、電話番号・相手・目的を入力し、送信先と費用の説明を確認してから発信できます。目的は「雑談」を含む13種類の編集可能なテンプレート、または保存済み履歴から再利用できます。Web発信は experimental（Twilio + gpt-live / realtime、設定済み公開WSSが必要）。未設定では発信できず、不足設定を表示します。JSON保存とCLI引き継ぎも利用できます。LINE/Slackの汎用依頼は引き続き下書き受付までです。[Web発信の設定と契約](docs/quality/web-phone.md)、[Gatewayで実行した電話の記録](docs/quality/user-ui-call.md)。
+
+「雑談」は近況・趣味・日常の会話を続けるテンプレートです。Realtime接続ではニュースを聞かれた際にOpenAIのWeb検索で確認し、報道日と出典を添えます（1通話2回まで）。確認できない内容は未確認と伝えます。サービス版の `usage-rate-v1` では検索の回数・token使用量も精算（旧契約は運営者負担）し、参照したニュースを履歴から確認できます。OSS版では自身のOpenAI APIに検索料金が発生します。GPT-Live接続でのニュース検索は未対応。[設定・互換性と検証範囲](docs/quality/chat-news.md)。
+
+### General contacts / 一般連絡先
+
+Arena の「連絡先」から名前または会社名で登録できます。電話番号とメールは任意。会社名、前回の電話内容（手入力）、その他メモを保存・編集し、同じ電話番号の保存済み通話も確認できます。電話番号を後から追加すると「電話の依頼を作成」へ進めます。登録自体で発信や外部送信は行いません。
+
+Contacts are stored locally in `.oathra/contacts` as plaintext JSON with owner-only file permissions. Gateway contacts are a separate store; there is no automatic synchronization. See [contact contract and verification](docs/quality/general-contacts.md).
+
+Arena now opens with three tasks: prepare a call draft, manage contacts, or practice a conversation. Browser dialing is not connected: the call preparation screen saves a draft and shows this limitation before entry. Use `?practice=1` to open the simulator directly; existing `call`, `replay`, and `autostart` URLs remain available.
+
+### OSSとサービス運営
+
+OSS版は利用者自身が電話会社・AIのAPIを設定します。サービス版は認証付きGatewayの `managed` モードで、運営者のAPIを使い、利用者のクレジットを確保・消費・返却できます（experimental）。元のArenaと共通の電話画面で、番号・相手・目的、テンプレート・履歴を使えます。メールとパスワードのログイン（初回は管理者の設定リンク）、残高・台帳・管理者付与APIを実装。通話時間と回線・音声AI・検索の使用量から、終了時のクレジット消費・余剰返却・内訳表示に対応（`usage-rate-v1`、旧契約も互換維持）。販売価格・購入決済・サービス公開・実回線での会計検証は未設定/未実施です。[導入とAPI](apps/gateway/README.md#ossとサービス版のクレジットexperimental)。
+
+サービス版の電話入力は同じタブで再読込して復元でき、未完了通話へ再発信せず戻れます。連絡先の保存・履歴・料金表示とサーバーの認可/会計処理を分離しています。[構造と復帰・互換性の検証](docs/quality/implementation-review.md)。

@@ -27,6 +27,18 @@ jobs:
           test -s site/media/oathra-intake-ja.mp4
       - run: pnpm build
       - run: pnpm test
+      - name: Gateway authentication, owner data and email login regression (local only)
+        run: |
+          pnpm test:gateway
+          node scripts/ui/email-login.mjs
+      - name: Arena real HTTP, persistence and browser recovery regression
+        run: pnpm test:arena-outcome
+      - name: Keep Arena failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-quality-evidence
+          path: artifacts/quality/
       - name: UI evidence gate (its own tests; the gate is a local consistency check, not a design judge)
         run: pnpm ui:gate:test
       - name: Scenarios validate

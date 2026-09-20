@@ -1,3 +1,4 @@
+import { buildWebPhoneDialer } from "./web-phone.js";
 import { execSync, spawn } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -65,8 +66,9 @@ export async function cmdDemo(flags: Flags): Promise<void> {
   const scenarios = loadScenarioDir(scenariosDir());
   console.log(ok(`Scenarios      ${scenarios.length}`));
   const port = num(flags.port, 4242);
-  const arena = await startArena({ scenariosDir: scenariosDir(), publicDir: arenaPublicDir(), brains, port, host: str(flags.host, "127.0.0.1") ?? "127.0.0.1" });
+  const arena = await startArena({ phoneDialer: buildWebPhoneDialer(), scenariosDir: scenariosDir(), publicDir: arenaPublicDir(), brains: flags["allow-models"] ? brains : { scripted: brains.scripted! }, port, host: str(flags.host, "127.0.0.1") ?? "127.0.0.1" });
   console.log(ok(`Arena          ${arena.url}`));
+  if (flags["allow-models"]) console.log(warn("External models enabled: selecting a provider sends conversation data and may incur API charges."));
   console.log(`\nOpening Arena...\n\n  ${cyan(arena.url)}\n`);
   if (!flags["no-open"]) openBrowser(arena.url);
   console.log(dim("Watch two agents on a call, or choose Play and answer the phone yourself. Ctrl+C stops the server.\n"));
@@ -108,6 +110,9 @@ export async function cmdPlay(positional: string[], flags: Flags): Promise<void>
 
 export async function cmdCall(_positional: string[], flags: Flags): Promise<void> {
   await runPhoneCall({
+    ...(str(flags["request-file"]) ? { requestFile: str(flags["request-file"])! } : {}),
+    ...(flags["dry-run"] ? { dryRun: true } : {}),
+    ...(flags["approve-request"] ? { approveRequest: true } : {}),
     ...(str(flags.to) ? { to: str(flags.to)! } : {}),
     ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}),
     ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}),
@@ -461,6 +466,8 @@ ${bold("Real phone")}
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
+  oathra call --request-file <json> --dry-run  review a saved phone request without dialing
+  oathra call --request-file <json> --approve-request  explicitly place the reviewed call
   oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|realtime|pipeline  --provider <id>")}
 
 ${bold("Trust")}

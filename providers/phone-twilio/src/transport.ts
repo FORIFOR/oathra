@@ -6,6 +6,8 @@
  * barge-in, hang up, record. No STT, TTS or model logic lives here; the
  * Phone Layer bridge plugs any VoiceEngine on top.
  */
+import type { IncomingMessage } from "node:http";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { WebSocketServer, type WebSocket as WsSocket } from "ws";
@@ -33,7 +35,7 @@ export type TwilioDirectOptions = {
 
 type TwilioMessage =
   | { event: "connected"; protocol?: string }
-  | { event: "start"; streamSid: string; start?: { callSid?: string; streamSid?: string } }
+  | { event: "start"; streamSid: string; start?: { callSid?: string; streamSid?: string; accountSid?: string } }
   | { event: "media"; media: { payload: string; track?: string; timestamp?: string } }
   | { event: "mark"; mark: { name: string } }
   | { event: "stop" }
@@ -52,6 +54,8 @@ export class TwilioDirectSession implements CarrierMediaSession {
   private firstMediaMs: number | undefined;
   private readonly calleeChunks: Uint8Array[] = [];
   private readonly callerChunks: Array<{ atMs: number; bytes: Uint8Array }> = [];
+  private readonly streamToken = randomBytes(32).toString("hex");
+  private pendingStart: TwilioMessage | undefined;
   private hangupPromise: Promise<void> | undefined;
 
   constructor(
@@ -77,7 +81,11 @@ export class TwilioDirectSession implements CarrierMediaSession {
   async start(to: string, language: "ja" | "en" = "ja"): Promise<void> {
     const port = this.opts.port ?? 4243;
     const host = this.opts.host ?? "0.0.0.0";
-    this.wss = new WebSocketServer({ port, host, path: "/media" });
+    const publicUrl = new URL(this.mediaUrl);
+    if (publicUrl.protocol !== "wss:" || publicUrl.search || publicUrl.hash || publicUrl.username || publicUrl.password) throw new Error("Twilio media URL must be a public wss URL without query or credentials");
+    this.wss = new WebSocketServer({ port, host, path: publicUrl.pathname, maxPayload: 65536,
+      verifyClient: ({ req }: { req: IncomingMessage }) => !this.ended && req.url === publicUrl.pathname && this.validSignature(req.headers["x-twilio-signature"]),
+    });
     await new Promise<void>((res, rej) => {
       this.wss!.once("listening", () => res());
       this.wss!.once("error", rej);
@@ -89,66 +97,88 @@ export class TwilioDirectSession implements CarrierMediaSession {
       // (The text is fixed and XML-safe; nothing user-supplied is interpolated here.)
       const notice = this.recordDir ? `<Say language="${language === "ja" ? "ja-JP" : "en-US"}">${recordingNotice(language)}</Say>` : "";
       if (this.recordDir) mkdirSync(this.recordDir, { recursive: true }), writeFileSync(join(this.recordDir, "recording-notice.json"), JSON.stringify({ text: recordingNotice(language), language, method: "carrier_tts_before_media_stream" }, null, 2));
-      const twiml = `<Response>${notice}<Connect><Stream url="${this.opts.publicWsUrl.replace(/\/$/, "")}/media"/></Connect></Response>`;
+      const twiml = `<Response>${notice}<Connect><Stream url="${this.mediaUrl}"/></Connect></Response>`;
       const body = new URLSearchParams({ To: to, From: this.opts.from, Twiml: twiml });
-      const res = await this.fetchImpl(`https://api.twilio.com/2010-04-01/Accounts/${this.opts.accountSid}/Calls.json`, {
-        method: "POST",
-        headers: { authorization: this.authHeader, "content-type": "application/x-www-form-urlencoded" },
-        body,
-      });
-      if (!res.ok) {
-        const text = await res.text();
+      try {
+        const res = await this.fetchImpl(`https://api.twilio.com/2010-04-01/Accounts/${this.opts.accountSid}/Calls.json`, {
+          method: "POST",
+          headers: { authorization: this.authHeader, "content-type": "application/x-www-form-urlencoded" },
+          body,
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Twilio ${res.status}: ${text.slice(0, 300)}`);
+        }
+        const data = (await res.json()) as { sid?: string };
+        if (!data.sid) throw new Error("Twilio call result unconfirmed: missing call identifier");
+        this.callSid = data.sid;
+        if (this.pendingStart) { const pending = this.pendingStart; this.pendingStart = undefined; this.onTwilio(pending); }
+      } catch (error) {
         await this.teardown();
-        throw new Error(`Twilio ${res.status}: ${text.slice(0, 300)}`);
+        throw error;
       }
-      const data = (await res.json()) as { sid?: string };
-      this.callSid = data.sid;
     }
 
     const timeout = this.opts.connectTimeoutMs ?? 60_000;
     const timer = setTimeout(() => {
       if (!this.streamSid && !this.ended) {
         this.queue.push({ type: "error", message: `Twilio did not connect a media stream within ${timeout} ms (is ${this.opts.publicWsUrl} reachable?)`, fatal: true });
-        void this.hangup("no_media_stream");
+        void this.hangup("no_media_stream").catch(() => undefined);
       }
     }, timeout);
     timer.unref();
   }
 
   private attach(socket: WsSocket): void {
-    if (this.socket) {
+    if (this.socket || this.ended) {
       socket.close();
       return;
     }
     this.socket = socket;
+    socket.on("error", () => socket.terminate());
     socket.on("message", (raw) => {
       let msg: TwilioMessage;
       try {
         msg = JSON.parse(raw.toString()) as TwilioMessage;
+        if (!msg || typeof msg !== "object" || typeof msg.event !== "string") return;
       } catch {
         return;
       }
       this.onTwilio(msg);
     });
     socket.on("close", () => {
-      if (!this.ended) {
+      if (this.socket === socket && !this.streamSid) { this.socket = undefined; this.pendingStart = undefined; }
+      if (!this.ended && this.socket === socket && this.streamSid) {
         this.queue.push({ type: "hangup", reason: "stream_closed" });
-        void this.hangup("stream_closed");
+        void this.hangup("stream_closed").catch(() => undefined);
       }
     });
   }
 
   private onTwilio(msg: TwilioMessage): void {
+    if (this.ended || (msg.event !== "start" && !this.streamSid)) return;
     switch (msg.event) {
       case "start": {
         const m = msg as Extract<TwilioMessage, { event: "start" }>;
-        this.streamSid = m.streamSid ?? m.start?.streamSid;
-        if (m.start?.callSid) this.callSid = m.start.callSid;
+        if (this.streamSid) return;
+        if (!this.callSid && this.opts.placeCall !== false) { this.pendingStart = m; return; }
+        const streamSid = m.streamSid ?? m.start?.streamSid;
+        if (typeof streamSid !== "string" || !streamSid || !m.start?.callSid || m.start.accountSid !== this.opts.accountSid || (this.callSid && m.start.callSid !== this.callSid)) {
+          const rejected = this.socket;
+          this.socket = undefined;
+          rejected?.terminate();
+          return;
+        }
+        this.streamSid = streamSid;
+        // Only the explicitly local/inbound path may adopt its first authenticated SID.
+        if (this.opts.placeCall === false) this.callSid = m.start.callSid;
         this.queue.push({ type: "connected", ...(this.callSid ? { callId: this.callSid } : {}) });
         break;
       }
       case "media": {
         const m = msg as Extract<TwilioMessage, { event: "media" }>;
+        if (!m.media || typeof m.media.payload !== "string") return;
         if (m.media.track && m.media.track !== "inbound") break;
         const bytes = new Uint8Array(Buffer.from(m.media.payload, "base64"));
         if (this.firstMediaMs === undefined) this.firstMediaMs = this.now();
@@ -158,13 +188,14 @@ export class TwilioDirectSession implements CarrierMediaSession {
       }
       case "mark": {
         const m = msg as Extract<TwilioMessage, { event: "mark" }>;
+        if (!m.mark || typeof m.mark.name !== "string") return;
         this.queue.push({ type: "mark", name: m.mark.name });
         break;
       }
       case "stop":
         if (!this.ended) {
           this.queue.push({ type: "hangup", reason: "callee_hangup" });
-          void this.hangup("stop");
+          void this.hangup("stop").catch(() => undefined);
         }
         break;
       default:
@@ -208,24 +239,28 @@ export class TwilioDirectSession implements CarrierMediaSession {
 
   private async finishHangup(reason?: string): Promise<void> {
     void reason;
+    let terminationError: Error | undefined;
     if (this.callSid && this.opts.placeCall !== false) {
       try {
-        await this.fetchImpl(`https://api.twilio.com/2010-04-01/Accounts/${this.opts.accountSid}/Calls/${this.callSid}.json`, {
+        const response = await this.fetchImpl(`https://api.twilio.com/2010-04-01/Accounts/${this.opts.accountSid}/Calls/${this.callSid}.json`, {
           method: "POST",
           headers: { authorization: this.authHeader, "content-type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({ Status: "completed" }),
+          signal: AbortSignal.timeout(15000),
         });
+        if (!response.ok) terminationError = new Error(`Twilio termination unconfirmed: HTTP ${response.status}`);
       } catch {
-        /* best effort */
+        terminationError = new Error("Twilio termination unconfirmed: network error");
       }
     }
     this.writeRecordings();
     await this.teardown();
     this.queue.close();
+    if (terminationError) throw terminationError;
   }
 
   private async teardown(): Promise<void> {
-    this.socket?.close();
+    this.socket?.terminate();
     await new Promise<void>((res) => (this.wss ? this.wss.close(() => res()) : res()));
   }
 
@@ -249,6 +284,21 @@ export class TwilioDirectSession implements CarrierMediaSession {
     } catch {
       /* recordings are best effort */
     }
+  }
+
+  /** Per-session unguessable URL supplied to Twilio; never put in public logs. */
+  get mediaUrl(): string { return `${this.opts.publicWsUrl.replace(/\/$/, "")}/media/${this.streamToken}`; }
+
+  private validSignature(signature: string | string[] | undefined): boolean {
+    if (typeof signature !== "string") return false;
+    const supplied = Buffer.from(signature, "base64");
+    // WebSocket upgrade is an HTTPS GET (no form fields). Twilio documents a
+    // trailing-slash variant for WSS handshakes. Never trust proxy Host headers.
+    const urls = [this.mediaUrl, this.mediaUrl.replace(/^wss:/, "https:")];
+    return urls.some(url => [url, `${url}/`].some(value => {
+      const expected = createHmac("sha1", this.opts.authToken).update(value).digest();
+      return supplied.length === expected.length && timingSafeEqual(supplied, expected);
+    }));
   }
 
   /** Twilio identifiers, once known. */

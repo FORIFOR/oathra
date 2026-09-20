@@ -42,6 +42,13 @@ export class Store {
     if (status !== undefined) { sql += ' AND status=?'; args.push(status); }
     return this.db.prepare(sql + ' ORDER BY updated DESC LIMIT 1000').all(...args).map(r => this.open(r.body));
   }
+  /** Safety checks must consider every record, including those outside a UI listing page. */
+  some(kind, predicate) {
+    for (const row of this.db.prepare('SELECT body FROM records WHERE kind=?').iterate(kind)) {
+      if (predicate(this.open(row.body))) return true;
+    }
+    return false;
+  }
   key(scope, key) { const r = this.db.prepare('SELECT value FROM keys WHERE scope=? AND key=? AND expires>?').get(scope, key, this.now()); return r?.value; }
   setKey(scope, key, value, ttl = 3650 * 86400_000) {
     this.db.prepare('INSERT INTO keys VALUES(?,?,?,?) ON CONFLICT(scope,key) DO UPDATE SET value=excluded.value,expires=excluded.expires').run(scope, key, value, this.now() + ttl);
@@ -54,7 +61,7 @@ export class Store {
     const r = this.db.prepare('INSERT INTO events(mission,owner,body,created) VALUES(?,?,?,?)').run(mission.id, mission.owner, this.seal(event), this.now());
     return Number(r.lastInsertRowid);
   }
-  events(mission, owner, after = 0) { return this.db.prepare('SELECT seq,body FROM events WHERE mission=? AND owner=? AND seq>? ORDER BY seq LIMIT 500').all(mission, owner, after).map(r => ({ seq: r.seq, ...this.open(r.body) })); }
+  events(mission, owner, after = 0) { return this.db.prepare('SELECT seq,body FROM events WHERE mission=? AND owner=? AND seq>? ORDER BY seq LIMIT 500').all(mission, owner, after).map(r => ({ ...this.open(r.body), seq: r.seq })); }
   /** A keyed hash of a phone number: lets audit rows about the same person be correlated without storing the number. */
   phoneRef(phone) { return mac(this.cipherKey, phone).slice(0, 32); }
   /** `subject` stays a hash; `detail` is sealed like every other payload and must not carry raw phone numbers or transcripts. */
@@ -105,6 +112,7 @@ export class Store {
       let removed = 0;
       for (const r of rows) {
         const m = this.open(r.body); last = Math.max(last, r.updated);
+        if(m.billing?.state==='pending')continue;
         const finished = m.status !== 'UNKNOWN' && !m.stopNeedsReconciliation && m.finishedAt && m.finishedAt < cutoff;
         if (finished || m.status === 'DRAFT') { this.removeMission(m); removed++; }
       }

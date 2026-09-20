@@ -1,0 +1,23 @@
+// Creates an empty, local managed-service workspace. No demo contacts, credit grants or network calls.
+import { randomBytes } from 'node:crypto';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { hash } from './lib/security.mjs';
+import { configuration } from './server.mjs';
+import { Store } from './lib/store.mjs';
+import { Credits } from './lib/credits.mjs';
+import { PasswordAccounts } from './lib/password-accounts.mjs';
+const path=resolve(process.argv[2]??'.env.managed'),price=process.argv[3];
+if(!price)throw Error('Usage: node apps/gateway/setup-managed.mjs <env-file> <credits-per-call>');
+const dir=resolve(dirname(path),'.oathra-managed'),tokenFile=resolve(dir,'admin-token.txt'),db=resolve(dir,'gateway.sqlite');
+if([path,tokenFile,db].some(existsSync))throw Error('Refusing to replace existing credentials/database. Choose a new workspace.');
+const token=randomBytes(32).toString('base64url');
+const env={OATHRA_DEPLOYMENT:'managed',OATHRA_CREDITS_PER_CALL:price,OATHRA_MODE:'simulator',OATHRA_PUBLIC_URL:'http://localhost:4245',PORT:'4245',HOST:'127.0.0.1',OATHRA_DATA_KEY:randomBytes(32).toString('hex'),OATHRA_DB:db,OATHRA_USERS_JSON:JSON.stringify([{id:'operator',team:'service',role:'admin',tokenHash:hash(token)}])};
+const config=configuration(env);mkdirSync(dir,{recursive:true,mode:0o700});
+writeFileSync(path,Object.entries(env).map(([k,v])=>`${k}='${v}'`).join('\n')+'\n',{mode:0o600,flag:'wx'});
+writeFileSync(tokenFile,token+'\n',{mode:0o600,flag:'wx'});
+const store=new Store(db,config.dataKey);new Credits(store,config);
+const setupFile=resolve(dir,'login-setup-url.txt');
+writeFileSync(setupFile,new PasswordAccounts(store,config).issue('operator').url+'\n',{mode:0o600,flag:'wx'});store.close();
+const quote = value => "'" + value.replaceAll("'", "'\\''") + "'";
+console.log(`Empty managed workspace created. Simulator mode; no calls, grants or purchases.\nEnvironment: ${path}\nLogin setup link (one use, one hour): ${setupFile}\nAPI token (SDK/administration only): ${tokenFile}\nRun: node --env-file=${quote(path)} apps/gateway/server.mjs`);

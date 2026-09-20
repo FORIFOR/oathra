@@ -42,6 +42,45 @@ const quiet = { process: async () => {}, send: async () => {} };
 const actions = f => f.store.audits({ limit: 500 }).map(a => a.action);
 const entry = (f, action) => f.store.audits({ limit: 500 }).filter(a => a.action === action).pop();
 
+test('a recording notice is saved without claiming affirmative callee consent', withFixture(async f=>{
+  const m=f.approve(f.draft()),worker=new Worker(f.service,quiet,async(_m,hooks)=>{
+    hooks.onEvent({type:'recording.notice',method:'twiml-say',text:'この通話は記録されています。'});
+    hooks.onEvent({type:'call.connected'});return {};
+  });
+  await worker.tick();await worker.active?.promise;
+  const saved=f.store.get('mission',m.id);assert.equal(saved.calleeConsented,undefined);
+  assert.deepEqual(saved.recordingNotice,{method:'twiml-say',text:'この通話は記録されています。'});
+  assert.equal(f.store.events(m.id,m.owner).filter(e=>e.type==='recording.notice').length,1);
+}));
+
+test('runtime failure diagnostics persist codes without provider messages or nested runtime sequence numbers', withFixture(async f => {
+  const m=f.approve(f.draft());
+  const worker=new Worker(f.service,quiet,async (_m,hooks)=>{
+    hooks.onEvent({type:'error',code:'realtime_response_cancel_not_active',message:'private-provider-payload',fatal:false,seq:800,t:10});
+    hooks.onEvent({type:'error',code:'realtime_invalid_api_key',message:'private-provider-payload',fatal:true,seq:1,t:11});
+    throw Object.assign(new Error('private-provider-payload'),{code:'realtime_invalid_api_key'});
+  });
+  await worker.tick();await worker.active?.promise;
+  const saved=f.store.get('mission',m.id),events=f.store.events(m.id,m.owner);
+  assert.equal(saved.status,'FAILED');assert.equal(saved.error,'realtime_invalid_api_key');
+  assert.deepEqual(saved.runtimeError,{type:'runtime.error',code:'realtime_invalid_api_key',fatal:true,t:11});
+  assert.equal(events.filter(e=>e.type==='runtime.error').length,2);
+  assert.ok(!JSON.stringify({saved,events,audit:f.store.audits({})}).includes('private-provider-payload'));
+}));
+
+test('event cursors use database order and resume without dropping or repeating runtime events', withFixture(async f => {
+  const m=f.draft(),other=f.draft();
+  const first=f.store.event(m,{type:'call.connected',seq:900});
+  f.store.event(other,{type:'call.connected',seq:700});
+  const second=f.store.event(m,{type:'transcript.final',seq:1,source:'callee',text:'接続確認'});
+  const third=f.store.event(m,{type:'result',seq:1000,status:'FAILED'});
+  assert.deepEqual(f.store.events(m.id,m.owner).map(e=>e.seq),[first,second,third]);
+  assert.deepEqual(f.store.events(m.id,m.owner,first).map(e=>e.seq),[second,third]);
+  assert.deepEqual(f.store.events(m.id,m.owner,second).map(e=>e.seq),[third]);
+  assert.deepEqual(f.store.events(m.id,m.owner,third),[]);
+  assert.deepEqual(f.store.events(m.id,'bob'),[]);
+}));
+
 // ---------------------------------------------------------------------------------------------- H1
 
 const STOP = ['もうかけてこないでください', '二度とかけてこないで', 'もう電話してこないでください', '今後一切連絡してこないでください', 'いりません', '必要ありません',

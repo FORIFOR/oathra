@@ -81,6 +81,20 @@ test('materials permission is not a meeting',()=>{const r=evaluate(['資料を�
 test('worker executes a queued call once and records INCOMPLETE honestly',withFixture(async f=>{let calls=0;const c={process:async()=>{},send:async()=>{}},w=new Worker(f.service,c,async(m,h)=>{calls++;return simulate(m,h);});approve(f,f.draft());await w.tick();await w.active.promise;await w.tick();assert.equal(calls,1);assert.equal(f.store.list('mission')[0].status,'INCOMPLETE');}));
 test('worker re-checks suppression immediately before dialing',withFixture(async f=>{let calls=0;const w=new Worker(f.service,{process:async()=>{},send:async()=>{}},async()=>{calls++;return {};});approve(f,f.draft());f.store.suppress('one',f.contact.phone);await w.tick();assert.equal(calls,0);assert.equal(f.store.list('mission')[0].status,'FAILED');}));
 test('worker restart never requeues an uncertain phone attempt',withFixture(async f=>{const m=f.draft();m.status='ACTIVE';f.store.put('mission',m);const w=new Worker(f.service,{process:async()=>{},send:async()=>{}},simulate);w.start();assert.equal(f.store.get('mission',m.id).status,'UNKNOWN');await w.stop();}));
+
+// Bounded fault injection: no carrier request or fabricated success. Remove the synthetic
+// error when an approved carrier timeout/cancel integration environment is available.
+test('cancel request cannot turn an uncertain carrier submission into a confirmed cancellation',withFixture(async f=>{
+ const m=approve(f,f.draft());m.status='DIALING';f.store.put('mission',m);
+ const w=new Worker(f.service,null,async()=>{
+  f.service.cancel(f.u,m.id);
+  throw Object.assign(new Error('dial outcome unknown'),{code:'dial_request_outcome_unknown',uncertain:true});
+ });
+ await w.run(m,{abort:new AbortController(),control:{}});
+ const result=f.store.get('mission',m.id);
+ assert.equal(result.status,'UNKNOWN');assert.equal(result.carrierSid,undefined);
+ assert.throws(()=>approve(f,f.draft(),'retry'),/active_call/);
+}));
 test('HTTP auth, review and start work without carrier or model credentials',withFixture(async f=>{const app=await createGateway(f.config,{store:f.store,execute:simulate,channels:{process:async()=>{},send:async()=>{}}});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+app.server.address().port;const headers={authorization:'Bearer '+token,'content-type':'application/json'};try{assert.equal((await fetch(base+'/v1/bootstrap')).status,401);const draft=await fetch(base+'/v1/missions/draft',{method:'POST',headers,body:JSON.stringify({request:'田中さんに商談を提案'})}).then(r=>r.json());const review=await fetch(base+'/v1/missions/'+draft.id+'/review',{method:'POST',headers,body:'{}'}).then(r=>r.json());const started=await fetch(base+'/v1/missions/'+draft.id+'/start',{method:'POST',headers:{...headers,'idempotency-key':'http-test'},body:JSON.stringify({approvalToken:review.approvalToken,acknowledged:true})});assert.equal(started.status,202);assert.equal((await started.json()).status,'QUEUED');assert.equal((await fetch(base+'/v1/missions/'+draft.id,{headers:{authorization:'Bearer bob'}})).status,404);}finally{await app.close();}}));
 test('configuration has no insecure hard-coded authentication fallback',()=>assert.throws(()=>configuration({}),/configure_operator_accounts/));
 
@@ -104,3 +118,75 @@ test('calendar request serializes only needsAction and exact evidence time',with
 test('CRM notes escape markup instead of inserting active HTML',withFixture(async f=>{const {a}=followFixture(f);a.fetchImpl=async(_,init)=>{const b=JSON.parse(init.body);assert.equal(b.properties.hs_note_body,'&lt;script&gt;evil&lt;/script&gt;');return {ok:true,json:async()=>({id:'n'})};};await a.send({kind:'crm',details:{recipient:'123',body:'<script>evil</script>'}},null);}));
 test('deleting a cancelled mission cannot erase daily spending reservations',withFixture(f=>{f.config.dailyCalls=1;const m=approve(f,f.draft());f.service.cancel(f.u,m.id);f.store.removeMission(m);assert.throws(()=>approve(f,f.draft(),'again'),/daily_limit/);}));
 test('unknown carrier outcome blocks another call to the same recipient',withFixture(f=>{const m=approve(f,f.draft());m.status='UNKNOWN';f.store.put('mission',m);assert.throws(()=>approve(f,f.draft(),'again'),/active_call/);}));
+
+// Reuse the existing simulator-only fixture; exercise real Service/Store/Channels, without a carrier or adapter mock.
+test('phone input selects a registered contact and refuses conflicting or repeated recipients',withFixture(f=>{
+  const domestic='0'+f.contact.phone.slice(3);
+  const m=f.service.prepare(f.u,{request:`${domestic}に資料を案内`,productId:f.product.id});
+  assert.equal(m.target.id,f.contact.id);assert.equal(m.target.phone,f.contact.phone);assert.equal(m.status,'DRAFT');
+  assert.throws(()=>f.service.prepare(f.u,{request:`${f.contact.name}に案内`,phone:f.service.account(f.u).verifiedPhone}),/phone_target_conflict/);
+  assert.throws(()=>f.service.prepare(f.u,{request:`${f.contact.phone}と${f.contact.phone}に案内`}),/multiple_phone_numbers/);
+}));
+test('unregistered phone draft never creates a consented contact or a start grant',withFixture(f=>{
+  const count=f.store.list('contact',f.u.id).length;
+  const m=f.service.prepare(f.u,{request:'資料を案内',phone:f.service.account(f.u).verifiedPhone});
+  assert.equal(m.target.registrationRequired,true);assert.equal(f.store.list('contact',f.u.id).length,count);
+  assert.throws(()=>f.service.review(f.u,m.id),/contact_registration_required/);
+  assert.throws(()=>f.service.checkPolicy(f.u,m),/contact_registration_required/);
+  assert.equal(f.service.edit(f.u,m.id,{request:'商品を案内'}).target.phone,m.target.phone);
+  assert.equal(f.store.list('mission',undefined,'QUEUED').length,0);
+}));
+for(const kind of ['line','slack'])test(`${kind} accepts a phone request without a product and cannot approve a call`,withFixture(async f=>{
+  f.store.db.prepare("DELETE FROM records WHERE kind='product'").run();
+  f.service.link(kind,'U1',f.service.linkCode(f.u));
+  const c=new Channels(f.service,{}),e={eventId:'evt1',actor:'U1',destination:'U1',sourceMessageId:'123',type:'message',text:`${f.contact.phone}に電話して`};
+  const job={id:`${kind}:evt1`,payload:{kind,normalized:e}};
+  await c.process(job);await c.process(job);
+  const out=f.store.list('outbox');assert.equal(out.length,1);assert.deepEqual(out[0].payload.buttons,[]);
+  assert.match(out[0].payload.text,/未発信/);assert.match(out[0].payload.text,/未接続|接続していません/);
+  assert.equal(f.store.list('mission').length,0);assert.equal(f.store.list('reservation').length,0);
+  const saved=f.store.open(f.store.key(`phone-request:${f.u.id}`,`${kind}:U1:123`));
+  assert.equal(saved.request.kind,'oathra.phone-request');assert.equal(saved.request.phone,f.contact.phone);
+  await c.process({id:`${kind}:unsend`,payload:{kind,normalized:{...e,type:'unsend'}}});
+  assert.equal(f.store.key(`phone-request:${f.u.id}`,`${kind}:U1:123`),undefined);assert.equal(f.store.list('outbox').length,0);
+}));
+
+test('number-only channel request does not become a sales call when a product exists',withFixture(async f=>{
+  f.service.link('line','U1',f.service.linkCode(f.u));const c=new Channels(f.service,{});
+  await c.process({id:'line:evt1',payload:{kind:'line',normalized:{eventId:'evt1',actor:'U1',destination:'U1',type:'message',text:`${f.contact.phone}に電話して`}}});
+  assert.equal(f.store.list('mission').length,0);assert.deepEqual(f.store.list('outbox')[0].payload.buttons,[]);
+}));
+
+test('generic channel draft refuses a registered name paired with a different phone',withFixture(f=>{
+  assert.throws(()=>f.service.phoneRequest(f.u,{phone:f.service.account(f.u).verifiedPhone,name:f.contact.name,instruction:`${f.contact.name}に電話して`},{channel:'line'},'evt1'),/phone_target_conflict/);
+  assert.equal(f.store.key(`phone-request:${f.u.id}`,'evt1'),undefined);
+}));
+
+// General contacts reuse the existing store/records; no provider or adapter substitute.
+test('general contacts retain company and call notes without a phone or permission',withFixture(f=>{
+  const c=f.service.contact(f.u,{id:f.contact.id,name:f.contact.name,company:f.product.name,notes:f.product.facts,lastCallNotes:f.contact.basis,phone:'',relationship:'',basis:''});
+  assert.equal(c.phone,'');assert.equal(c.relationship,'');assert.equal(c.basis,'');
+  assert.equal(f.service.own('contact',c.id,f.u).lastCallNotes,f.contact.basis);
+  assert.throws(()=>f.draft(),/contact_phone_required/);
+  assert.throws(()=>f.service.contact(f.u,{name:'',company:''}),/contact_name_or_company_required/);
+  const company=f.service.contact(f.u,{id:c.id,name:'',company:c.company});
+  assert.equal(company.name,'');assert.equal(company.company,f.product.name);
+  assert.throws(()=>f.service.prepare(f.u,{request:f.product.name,productId:f.product.id}),/contact_phone_required/);
+}));
+test('general contact permissions are required at review and rechecked before execution',withFixture(f=>{
+  f.service.contact(f.u,{...f.contact,relationship:'',basis:''});
+  const m=f.draft();assert.throws(()=>f.service.review(f.u,m.id),/contact_relationship_required/);
+  f.service.contact(f.u,{...f.contact,basis:''});
+  assert.throws(()=>f.service.review(f.u,f.draft().id),/contact_basis_required/);
+  f.service.contact(f.u,f.contact);const valid=f.draft(),r=f.service.review(f.u,valid.id);
+  f.service.contact(f.u,{...f.contact,basis:''});
+  assert.throws(()=>f.service.start(f.u,r.approvalToken,'one',true),/contact_basis_required/);
+  assert.equal(f.store.list('mission',undefined,'QUEUED').length,0);
+}));
+test('LINE refuses a registered name without a phone and returns an actionable message',withFixture(async f=>{
+  f.service.contact(f.u,{...f.contact,phone:''});
+  f.service.link('line','U1',f.service.linkCode(f.u));const c=new Channels(f.service,{});
+  await c.process({id:'line:event1',payload:{kind:'line',event:{type:'message',source:{type:'user',userId:'U1'},message:{type:'text',text:'田中さんに商談を提案'}}}});
+  assert.equal(f.store.list('mission').length,0);
+  assert.match(f.store.list('outbox')[0].payload.text,/電話番号がありません/);
+}));

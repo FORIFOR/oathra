@@ -10,7 +10,7 @@
 import { checkConstraints } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
 import { DEFAULT_LATENCY_TARGETS, recordingNotice } from "@oathra/core";
-import { runCall, type CallOutcome } from "@oathra/runtime";
+import { CallRuntime, runCall, type CallOutcome } from "@oathra/runtime";
 import { contractFromScenario, type Scenario } from "@oathra/scenario";
 import { SimulatorTransport, type CalleeCharacter } from "@oathra/simulator";
 
@@ -101,6 +101,8 @@ export type RunScenarioOptions = {
   onEvent?: Parameters<typeof runCall>[0]["onEvent"];
   pace?: "fast" | "realtime";
   callId?: string;
+  /** Local cancellation; does not retry an external operation. */
+  signal?: AbortSignal;
   /** How long the agent waits for the callee to speak first before opening. */
   openingTimeoutMs?: number;
 };
@@ -115,7 +117,7 @@ export async function runScenario(scenario: Scenario, opts: RunScenarioOptions):
   });
   const knowledgeNow = scenario.callee.knowledge.now;
   const now = opts.now ?? (typeof knowledgeNow === "string" ? new Date(knowledgeNow) : new Date());
-  const outcome = await runCall({
+  const runtime = new CallRuntime({
     contract,
     transport,
     brain: opts.brain,
@@ -127,6 +129,12 @@ export async function runScenario(scenario: Scenario, opts: RunScenarioOptions):
     ...(opts.onEvent ? { onEvent: opts.onEvent } : {}),
     ...(opts.callId ? { callId: opts.callId } : {}),
   });
+  const cancel = () => runtime.cancel();
+  opts.signal?.addEventListener("abort", cancel, { once: true });
+  if (opts.signal?.aborted) cancel();
+  let outcome: CallOutcome;
+  try { outcome = await runtime.run(); }
+  finally { opts.signal?.removeEventListener("abort", cancel); }
   const truth = await transport.lastCharacter?.truth?.();
   return { scenario, brain: opts.brain.name, outcome, truth, score: scoreRun(scenario, outcome, truth) };
 }

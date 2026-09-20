@@ -35,3 +35,8 @@ site/playground.js
 # UI quality workflow: session receipts and captured screens (approved visual baselines, if any, belong in Git)
 .ui-quality/
 artifacts/ui/
+
+# Empty managed-service setup credentials
+.env.managed
+.env.managed.*
+.oathra-managed/

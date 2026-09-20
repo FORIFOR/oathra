@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -19,7 +20,8 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     expect(media.audio).toEqual(MULAW_8K);
 
     const received: Record<string, unknown>[] = [];
-    const client = new WebSocket(`ws://127.0.0.1:${PORT}/media`);
+    const mediaUrl = transport.lastSession!.mediaUrl;
+    const client = new WebSocket(`ws://127.0.0.1:${PORT}${new URL(mediaUrl).pathname}`, { headers: { "x-twilio-signature": createHmac("sha1", "x").update(mediaUrl.replace(/^wss:/, "https:")).digest("base64") } });
     await new Promise<void>((r) => client.once("open", () => r()));
     client.on("message", (raw) => received.push(JSON.parse(raw.toString()) as Record<string, unknown>));
     const send = (o: unknown) => client.send(JSON.stringify(o));
@@ -30,7 +32,7 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     })();
 
     send({ event: "connected", protocol: "Call" });
-    send({ event: "start", streamSid: "MZ1", start: { callSid: "CA1", streamSid: "MZ1" } });
+    send({ event: "start", streamSid: "MZ1", start: { callSid: "CA1", streamSid: "MZ1", accountSid: "AC" } });
     for (let i = 0; i < 5; i++) send({ event: "media", media: { payload: Buffer.from(mulawSilence(20)).toString("base64"), track: "inbound" } });
     await new Promise((r) => setTimeout(r, 100));
 
@@ -75,15 +77,37 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     const contract = defineCall({ goal: "chat.casual" });
 
     const ja = await new TwilioDirectTransport({ ...opts, port: PORT + 2 }).dial({ to: "+818000000000", language: "ja", contract, recordDir });
+    const mediaUrl = /url="([^"]+)"/.exec(twiml[0]!)![1]!;
+    const localUrl = `ws://127.0.0.1:${PORT + 2}${new URL(mediaUrl).pathname}`;
+    // Exercise the actual upgrade handler: no header and a guessed fixed path
+    // cannot acquire the session, even before Twilio's authenticated stream.
+    for (const url of [localUrl, `ws://127.0.0.1:${PORT + 2}/media`]) {
+      const rejected = new WebSocket(url);
+      await new Promise<void>((resolve, reject) => {
+        rejected.once("error", () => resolve());
+        rejected.once("open", () => { rejected.terminate(); reject(new Error("unauthenticated stream accepted")); });
+      });
+    }
+    const headers = { "x-twilio-signature": createHmac("sha1", "t").update(mediaUrl.replace(/^wss:/, "https:")).digest("base64") };
+    const wrong = new WebSocket(localUrl, { headers });
+    await new Promise<void>(resolve => wrong.once("open", resolve));
+    const wrongClosed = new Promise<void>(resolve => wrong.once("close", () => resolve()));
+    wrong.send(JSON.stringify({ event: "start", streamSid: "MZ1", start: { callSid: "OTHER_CALL", accountSid: "AC" } }));
+    await wrongClosed;
+    const right = new WebSocket(localUrl, { headers });
+    await new Promise<void>(resolve => right.once("open", resolve));
+    const iterator = ja.events[Symbol.asyncIterator]();
+    right.send(JSON.stringify({ event: "start", streamSid: "MZ1", start: { callSid: "CA1", accountSid: "AC" } }));
+    expect((await iterator.next()).value).toEqual({ type: "connected", callId: "CA1" });
     await ja.hangup();
     const en = await new TwilioDirectTransport({ ...opts, port: PORT + 3 }).dial({ to: "+14155550100", language: "en", contract, recordDir });
     await en.hangup();
     const unrecorded = await new TwilioDirectTransport({ ...opts, port: PORT + 4 }).dial({ to: "+818000000000", language: "ja", contract });
     await unrecorded.hangup();
 
-    expect(twiml[0]).toBe('<Response><Say language="ja-JP">この通話は録音されています。</Say><Connect><Stream url="wss://example.test/media"/></Connect></Response>');
+    expect(twiml[0]).toMatch(/^<Response><Say language="ja-JP">この通話は録音されています。<\/Say><Connect><Stream url="wss:\/\/example\.test\/media\/[a-f0-9]{64}"\/><\/Connect><\/Response>$/);
     expect(twiml[1]).toContain('<Say language="en-US">This call is being recorded.</Say><Connect>');
-    expect(twiml[2]).toBe('<Response><Connect><Stream url="wss://example.test/media"/></Connect></Response>');
+    expect(twiml[2]).toMatch(/^<Response><Connect><Stream url="wss:\/\/example\.test\/media\/[a-f0-9]{64}"\/><\/Connect><\/Response>$/);
     expect(JSON.parse(readFileSync(join(recordDir, "recording-notice.json"), "utf8"))).toMatchObject({ text: "This call is being recorded.", method: "carrier_tts_before_media_stream" });
     rmSync(recordDir, { recursive: true, force: true });
   });

@@ -80,6 +80,7 @@ export async function launch({ width = 1440, height = 900 } = {}) {
     focused: () => page.js("(()=>{const n=document.activeElement;if(!n)return null;const cs=getComputedStyle(n);return {id:n.id,tag:n.tagName,text:(n.textContent||'').trim().slice(0,20),outline:cs.outlineStyle!=='none'&&parseFloat(cs.outlineWidth)>0}})()"),
     emulateReducedMotion: () => send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }),
     viewport,
+    handleDialog: (accept) => send('Page.handleJavaScriptDialog', { accept }),
     /** Saves what is on screen. `fullPage` grows the viewport to the document first. */
     async screenshot(file, { fullPage = false } = {}) {
       if (!CAPTURE) { console.log(`  ▸ (not re-captured) ${file}`); return; }
@@ -90,7 +91,7 @@ export async function launch({ width = 1440, height = 900 } = {}) {
       if (fullPage) await viewport(width, height);
       console.log(`  ▸ ${file}`);
     },
-    async close() { try { ws.close(); } catch { /* already closed */ } chrome.kill(); await sleep(200); rmSync(profile, { recursive: true, force: true }); },
+    async close() { try { ws.close(); } catch { /* already closed */ } chrome.kill(); await sleep(200); try { rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* Chrome was still writing its profile; the OS cleans the temp dir */ } },
   };
   return page;
 }

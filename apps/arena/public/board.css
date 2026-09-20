@@ -1,0 +1,229 @@
+/* Board: on a wide window everything fits the window, nothing scrolls the page.
+   Missions on the left, the call in the middle, the result and its evidence on the right.
+   Narrow or short windows keep the stacked page (one-page.css); ?present=1 keeps the recording layout. */
+#stage-empty, .drawer-close { display: none; }
+.result-more > summary { cursor: pointer; font-size: 12px; color: var(--muted); padding-block: 12px; min-height: 44px; box-sizing: border-box; }
+.result-more[open] > summary { margin-bottom: 4px; }
+
+@media (min-width: 1100px) and (min-height: 600px) {
+  html.board, html.board body { height: 100%; overflow: hidden; }
+  html.board body { display: flex; flex-direction: column; }
+  html.board .topbar { flex: none; min-height: 52px; padding-block: 6px; }
+  html.board main { flex: 1; min-height: 0; display: grid; grid-template-columns: clamp(250px, 22vw, 320px) minmax(0, 1fr); gap: 14px; padding: 14px 16px; }
+  html.board .screen { min-height: 0; padding: 0; border: 0; }
+
+  /* Left rail: the picker, always there. */
+  html.board #screen-start { overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  html.board .start-inner { padding: 0; max-width: none; }
+  html.board .start-title { font-size: 15px; line-height: 1.5; letter-spacing: 0; font-weight: 600; max-width: none; margin: 0 0 10px; }
+  html.board .mode-toggle { margin-bottom: 10px; }
+  html.board .mode-btn { flex: 1; min-width: 0; padding: 6px 8px; }
+  html.board .mode-k { font-size: 13px; }
+  html.board .mode-d { font-size: 11px; }
+  html.board .brain-row { justify-content: flex-start; margin-bottom: 10px; }
+  html.board .brain-row label { white-space: nowrap; }
+  html.board .brain-row select { flex: 1; min-width: 0; }
+  html.board .scenario-list { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  html.board .scenario-btn { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; min-height: 52px; padding: 8px 12px; background: var(--bg); }
+  html.board .scenario-btn .face, html.board .scenario-btn .s-meta, html.board .scenario-btn .s-title-en { display: none; }
+  html.board .scenario-btn .s-title { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.board .scenario-btn .s-brief { font-size: 12px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.board .scenario-btn .s-diff { align-self: center; }
+  html.board .scenario-btn:hover { transform: none; }
+  html.board .start-foot { margin-top: 10px; text-align: left; }
+
+  /* Middle and right: one of the empty stage, the call, or the real-phone panel. */
+  html.board #stage-empty, html.board #screen-real { display: grid; place-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  html.board .empty-inner { max-width: 560px; padding: 24px; }
+  html.board .empty-inner h2 { font-size: clamp(22px, 2.2vw, 30px); line-height: 1.4; letter-spacing: -.02em; margin: 0 0 12px; text-wrap: balance; }
+  html.board .empty-inner p { font-size: 15px; line-height: 1.9; color: var(--ink-2); margin: 0 0 20px; }
+  html.board .empty-flow { list-style: none; counter-reset: step; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; font-size: 13px; color: var(--muted); }
+  html.board .empty-flow li { counter-increment: step; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 10px; }
+  html.board .empty-flow li::before { content: counter(step); display: inline-block; width: 18px; height: 18px; line-height: 18px; margin-right: 8px; border-radius: 50%; background: var(--ink); color: var(--bg); text-align: center; font-size: 11px; }
+
+  html.board #screen-call { position: relative; }
+  html.board .call-frame { width: 100%; max-width: none; height: 100%; min-height: 0; margin: 0; padding: 0 14px 8px; gap: 0 16px;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'head head' 'parties result' 'transcript result' 'transcript evidence' 'brief evidence' 'input evidence' 'metrics evidence'; }
+  html.board .call-head { margin: 0 -14px 10px; padding: 8px 14px; }
+  html.board .call-title { font-size: 19px; max-width: none; }
+  html.board .parties { max-width: 460px; padding-block: 0 8px; }
+  html.board .party-face { width: 40px; height: 40px; }
+  html.board .party-orb { max-width: 40px; max-height: 40px; }
+  html.board .party-glyph { font-size: 18px; }
+  html.board .party-label { margin-bottom: 4px; }
+  html.board .party-name { margin-top: 4px; font-size: 13px; white-space: nowrap; }
+  html.board .transcript { min-height: 0; max-height: none; height: auto; padding: 16px 18px; }
+  html.board .line { grid-template-columns: 1fr; gap: 2px; }
+  /* Answering the phone yourself: the conversation keeps most of the height, the controls stay compact. */
+  html.board .call-frame:has(#play-form:not([hidden])) .parties { display: none; }
+  html.board .play-brief { margin-top: 8px; padding: 0; }
+  html.board .play-input { margin-top: 6px; padding: 0; border: 0; }
+  html.board .fool { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+  html.board .fool-k { flex: none; margin: 0; white-space: nowrap; }
+  html.board .ux-state { grid-area: metrics; justify-self: start; align-self: center; margin: 0; }
+  html.board .metrics { border: 0; padding: 8px 0 0; align-self: center; }
+  html.board .drawer { grid-area: metrics; justify-self: end; align-self: center; border: 0; padding-top: 8px; }
+  html.board .drawer-toggle { width: auto; padding: 0 8px; }
+  /* Details open as a sheet over the call instead of growing the page. */
+  html.board .drawer-body { position: absolute; inset: 56px 14px 52px 14px; z-index: 5; overflow: auto; background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: 0 16px 48px rgba(0, 0, 0, .22); }
+
+  html.board .drawer-close { display: inline-flex; align-items: center; margin-left: auto; min-height: 44px; padding: 0 14px; background: transparent; border: 0; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+  html.board .drawer-close:hover { color: var(--ink); }
+
+  /* Right column: the result lands on top of the evidence that produced it. */
+  html.board .result-wrap { grid-area: result; border: 0; padding: 0 0 10px; max-height: 46vh; overflow: auto; }
+  html.board .result { max-width: none; margin: 0; padding: 12px 16px; }
+  html.board .result-h { margin-bottom: 8px; }
+  html.board .result-lines { display: flex; flex-wrap: wrap; gap: 2px 16px; margin-bottom: 8px; }
+  html.board .result-badge { margin: 0 10px 0 0; }
+  html.board .result-fc { display: inline-block; margin: 0; }
+  html.board .result-actions { justify-content: flex-start; margin-top: 10px; }
+  html.board .result-actions .btn { min-height: 44px; }
+  html.board .panels { grid-area: evidence; min-height: 0; overflow: auto; align-self: stretch; gap: 10px; padding-bottom: 2px;
+    background: linear-gradient(var(--panel) 30%, transparent) top / 100% 24px no-repeat local, linear-gradient(transparent, var(--panel) 70%) bottom / 100% 24px no-repeat local,
+      linear-gradient(rgba(0, 0, 0, .14), transparent) top / 100% 8px no-repeat scroll, linear-gradient(transparent, rgba(0, 0, 0, .14)) bottom / 100% 8px no-repeat scroll; }
+  html.board .panel { padding: 12px 16px; background: transparent; }
+  html.board .mission-list, html.board .evidence-list { line-height: 1.6; }
+  html.board .evidence-list li { padding-block: 8px; }
+}
+
+/* Short laptop screens (1280x800 and below): tighter still. */
+@media (min-width: 1100px) and (min-height: 600px) and (max-height: 840px) {
+  html.board .scenario-btn { min-height: 46px; padding: 5px 12px; }
+  html.board #screen-start { padding-block: 10px; }
+  html.board .start-foot { margin-top: 6px; }
+  html.board .start-title { margin-bottom: 8px; }
+  html.board .transcript .say, html.board .line .say { font-size: 15px; line-height: 1.7; }
+}
+
+/* Task guidance and persistent recovery use the existing palette. */
+.practice-note, .save-state { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 6px 0 10px; }
+#recovery:not([hidden]) { position: fixed; inset: auto 16px 16px; z-index: 20; padding: 12px; background: var(--panel); border: 2px solid var(--accent); border-radius: 12px; }
+#recovery button { min-height: 44px; }
+.result-actions a.btn { color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; }
+
+.starter-example { text-align: left; margin-bottom: 6px; font-size: 12px; }
+.starter-example summary { cursor: pointer; min-height: 44px; box-sizing: border-box; padding-block: 12px; }
+.starter-example label { display: block; margin-top: 8px; }
+.starter-example textarea { box-sizing: border-box; width: 100%; max-width: 100%; margin: 6px 0; font: inherit; }
+/* Keep the initial example and history on one line in the compact rail. */
+.start-foot { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; }
+.start-foot .starter-example { margin: 0; }
+.start-foot .starter-example[open] { flex-basis: 100%; }
+
+/* Phone intake: a form and a read-only review, never a pretend dial button. */
+#screen-real { overflow: auto; }
+#screen-real .start-inner { width: 100%; box-sizing: border-box; padding: 20px; }
+#phone-form { display: grid; gap: 8px; text-align: left; }
+#phone-form input, #phone-form textarea { box-sizing: border-box; width: 100%; min-height: 44px; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+#phone-form label { font-weight: 600; }
+#phone-review { margin-block: 20px; text-align: left; }
+#phone-review dt { font-weight: 600; margin-top: 12px; }
+#phone-review dd { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+#phone-review code { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+#phone-download { display: inline-flex; align-items: center; color: var(--ink); min-height: 44px; }
+#phone-error { color: var(--bad, #b13030); }
+
+/* General contacts: a directory and an editable record. */
+.topbar, .topbar-right { flex-wrap: wrap; }
+#contacts-open { min-height: 44px; }
+#screen-contacts { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; overflow: auto; min-width: 0; }
+.contacts-header, .contact-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.contacts-header { justify-content: space-between; }
+.contacts-header h2 { margin: 0; }
+.contacts-layout { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(0, 2fr); gap: 24px; margin-top: 16px; }
+.contacts-layout input, .contacts-layout textarea { width: 100%; box-sizing: border-box; min-height: 44px; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.contact-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+#contact-form label { display: block; margin-block: 10px 6px; }
+#contact-form label span { display: block; margin-bottom: 6px; }
+#contacts-list { padding: 0; list-style: none; }
+.contact-item { width: 100%; min-height: 44px; padding: 10px; margin-block: 4px; text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); overflow-wrap: anywhere; }
+.contact-item strong, .contact-item span { display: block; }
+.contact-item[aria-current=true] { outline: 2px solid var(--accent); }
+.contact-history { margin-top: 24px; border-top: 1px solid var(--line); }
+.contact-history pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.contact-history summary { padding-block: 12px; min-height: 44px; box-sizing: border-box; cursor: pointer; }
+#contact-save-status.bad, #contacts-error { color: var(--bad, #b13030); }
+@media(max-width: 700px) { .contacts-layout, .contact-fields { grid-template-columns: 1fr; } #screen-contacts { padding: 16px; } }
+
+/* Contacts have their own workspace, without the simulator task rail. */
+html.board body.contacts-view main { display: block; overflow: auto; }
+body.contacts-view #screen-contacts { width: 100%; max-width: 1120px; margin: 0 auto; box-sizing: border-box; padding: 24px; }
+body.contacts-view #contacts-open { background: var(--ink); color: var(--panel); }
+.contacts-layout { grid-template-columns: 260px minmax(0, 1fr); gap: 32px; }
+.contact-detail { min-width: 0; }
+#contact-editor-title { margin: 0 0 8px; font-size: 22px; }
+#contact-form > .note { margin-top: 0; }
+#contact-extra { margin-block: 16px; }
+#contact-extra summary { cursor: pointer; min-height: 44px; padding-block: 12px; box-sizing: border-box; }
+.contact-save-bar { position: sticky; bottom: 0; z-index: 2; padding: 8px 0 12px; background: var(--panel); border-top: 1px solid var(--line); }
+#contact-save-status { margin: 4px 0 8px; min-height: 20px; }
+.contact-actions .btn { min-height: 44px; }
+.contact-back { display: none; }
+@media (max-width: 700px) {
+  body.contacts-view #screen-contacts { padding: 16px; }
+  .contacts-layout { grid-template-columns: minmax(0,1fr); gap: 16px; }
+  #screen-contacts:not(.editing-contact) .contact-detail { display: none; }
+  #screen-contacts.editing-contact .contacts-directory { display: none; }
+  .contact-back { display: inline-flex; margin-bottom: 16px; }
+  .contact-actions { gap: 8px; }
+  .contact-actions .btn { flex: 1 1 150px; }
+}
+@media (max-width: 700px) {
+  body.contacts-view #screen-contacts { overflow: visible; }
+  #screen-contacts.editing-contact .contact-detail { padding-bottom: 140px; }
+  body.contacts-view #screen-contacts.editing-contact .contact-save-bar { position: fixed; left: 16px; right: 16px; bottom: 0; padding: 8px 16px max(12px,env(safe-area-inset-bottom)); border: 1px solid var(--line); border-radius: 10px 10px 0 0; }
+}
+#contacts-resume { display: none; }
+@media (max-width: 700px) {
+  #contacts-resume:not([hidden]) { display: flex; margin-bottom: 16px; }
+}
+/* A transformed animation ancestor would make the mobile fixed save bar scroll with the form. */
+#screen-contacts { animation: none; }
+.call-controls { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+#call-hangup { min-height: 44px; border-color: var(--bad, #b13030); color: var(--bad, #b13030); white-space: nowrap; }
+@media(max-width:700px) { .call-head { flex-wrap: wrap; } .call-controls { width: 100%; justify-content: space-between; } }
+/* Purpose-based entry and focused tasks: no practice controls beside a real-call draft. */
+html.board body.focused-task main { display: block; overflow: auto; }
+body.focused-task #screen-real { max-width: 840px; margin: 0 auto; display: block; }
+#screen-home { max-width: 1040px; margin: 0 auto; padding: 40px 24px; box-sizing: border-box; animation: none; }
+html.board #screen-home { padding: 40px 24px; }
+.home-kicker { color: var(--muted); margin: 0 0 12px; }
+#home-title { font-size: clamp(26px,3vw,36px); line-height: 1.35; margin: 0 0 14px; }
+.home-lead { color: var(--muted); margin-bottom: 28px; }
+.home-choices { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.home-choice { padding: 24px; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; }
+.home-choice:first-child { grid-row: span 2; }
+.home-choice h2 { font-size: 20px; margin: 0 0 12px; }
+.home-choice p { line-height: 1.8; margin: 0 0 20px; }
+.home-choice .btn { min-height: 44px; white-space: normal; }
+.availability { padding: 14px; border-left: 3px solid var(--accent); background: var(--bg); line-height: 1.7; }
+#home-open[aria-pressed=true] { background: var(--ink); color: var(--panel); }
+#home-resume { margin-bottom: 20px; }
+@media(max-width:700px) { #screen-home, html.board #screen-home { padding: 24px 0; } .home-choices { grid-template-columns: 1fr; } .home-choice { padding: 20px; } .home-choice:first-child { grid-row: auto; } }
+body.focused-task .local-wrap { display: none; }
+.phone-developer { margin-top: 20px; }
+.phone-developer summary { min-height: 44px; padding-block: 12px; cursor: pointer; }
+@media(max-width:700px) {
+  body.focused-task .topbar-right { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: 100%; gap: 6px; }
+  body.focused-task .transport-toggle { display: contents; }
+  body.focused-task .topbar-right .btn, body.focused-task .tt-btn { padding: 8px 4px; min-height: 44px; font-size: 12px; justify-content: center; }
+  body.focused-task .tt-btn .dot { display: none; }
+}
+#phone-template { width: 100%; min-height: 44px; font: inherit; padding: 10px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.phone-consent { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0; line-height: 1.7; }
+.phone-consent input { flex: none; width: 20px; height: 20px; margin-top: 4px; }
+#phone-dial { min-height: 48px; margin-bottom: 16px; }
+#phone-live, #phone-history-section { margin-block: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+#phone-live pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+#phone-live-recipient { overflow-wrap: anywhere; }
+#phone-history-section > summary, #phone-live summary { min-height: 44px; padding-block: 10px; cursor: pointer; }
+#phone-history-list { padding: 0; list-style: none; }
+.phone-history-item { border-bottom: 1px solid var(--line); padding-block: 16px; }
+.phone-history-item strong, .phone-history-item span { display: block; }
+.phone-history-item p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.phone-live-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.phone-live-actions .btn { min-height: 44px; }
+#phone-dial-error, #phone-live-error, #phone-history-error { color: var(--bad, #b13030); }

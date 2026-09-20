@@ -12,6 +12,7 @@
 <header>
   <a class="brand" href="/">oathra<span class="brand-dot">.</span></a>
   <span id="mode" class="badge" hidden></span>
+  <button id="credit-balance" class="quiet small" hidden></button>
   <button id="open-settings" class="quiet small" hidden>設定</button>
   <button id="logout" class="quiet small" hidden>ログアウト</button>
 </header>
@@ -107,6 +108,11 @@
 
   <div id="notice" role="status" aria-live="polite" hidden></div>
 
+  <dialog id="credits" class="panel" aria-labelledby="credits-title">
+    <div class="row"><h2 id="credits-title">クレジット</h2><button id="credits-close" class="quiet">閉じる</button></div>
+    <p id="credits-summary"></p><p class="hint">追加はサービス管理者へお問い合わせください。</p>
+    <div id="credit-ledger"></div><button id="credits-more" class="quiet" hidden>もっと見る</button>
+  </dialog>
   <dialog id="settings" class="panel">
     <form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form>
     <h2>設定</h2>
@@ -119,22 +125,31 @@
       </details>
 
       <details id="s-contact">
-        <summary>電話する相手を登録する</summary>
+        <summary>連絡先を登録・編集する</summary>
+        <p>名前か会社名だけで登録できます。電話番号は電話を依頼するときに必要です。</p>
+        <div id="contact-list"></div>
         <form id="contact-form">
+          <input id="contact-id" type="hidden">
           <div class="columns">
-            <label>名前<input id="contact-name" required placeholder="田中さん"></label>
-            <label>電話番号（国番号から）<input id="contact-phone" type="tel" required placeholder="+81 90 1234 5678"></label>
+            <label>名前<input id="contact-name" maxlength="100" placeholder="田中さん"></label>
+            <label>電話番号（任意・国番号から）<input id="contact-phone" type="tel" placeholder="+81 90 1234 5678"></label>
           </div>
+          <label>会社名（任意）<input id="contact-company" maxlength="200"></label>
+          <label>メモ（任意）<textarea id="contact-notes" maxlength="4000"></textarea></label>
+          <label>前回の電話内容（任意・手入力）<textarea id="contact-last-call" maxlength="4000"></textarea></label>
+          <details><summary>営業電話の許可情報（発信前に必要）</summary>
           <div class="columns">
             <label>連絡する理由
               <select id="relationship">
+                <option value="">未設定</option>
                 <option value="inquiry">問い合わせへの折り返し</option>
                 <option value="customer">すでにお客様</option>
                 <option value="consented">連絡してよいと言われている</option>
               </select>
             </label>
-            <label>その根拠<input id="contact-basis" required placeholder="例：9月19日の問い合わせで電話希望"></label>
+            <label>その根拠<input id="contact-basis" placeholder="例：9月19日の問い合わせで電話希望"></label>
           </div>
+          </details>
           <details>
             <summary>メール・CRM（任意）</summary>
             <div class="columns">
@@ -142,7 +157,8 @@
               <label>HubSpot Contact ID<input id="crm-id" inputmode="numeric"></label>
             </div>
           </details>
-          <button type="submit">相手を保存</button>
+          <button type="submit">連絡先を保存</button>
+          <button type="reset" class="quiet">新規登録に戻す</button>
         </form>
       </details>
 

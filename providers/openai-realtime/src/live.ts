@@ -14,6 +14,7 @@ import { bytesToInt16, int16ToBytes, mulawDecode, pcm24kToMulaw8k, resample } fr
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { RealtimeBridge } from "./index.js";
+import { phoneMessageInstructions } from "./phone-message.js";
 
 export type LiveAgentOptions = {
   contract: CallContract;
@@ -135,7 +136,7 @@ export class OpenAILiveAgent {
         parameters: { type: "object", properties: { action: { type: "string" }, detail: { type: "string" } }, required: ["action", "detail"] },
       });
     }
-    if (this.opts.webSearch ?? true) tools.push({ type: "web_search" });
+    if (this.opts.webSearch ?? this.opts.contract.goal !== "phone.message") tools.push({ type: "web_search" });
     this.send({
       type: "session.start",
       event_id: "oathra_start",
@@ -453,7 +454,7 @@ export class OpenAILiveAgent {
       "",
       "## Tools",
       "- end_call: call it right after a goodbye, when the other person says goodbye or asks you to hang up, on voicemail, or when the conversation is over. Never leave the line open.",
-      ...(this.opts.webSearch ?? true
+      ...(this.opts.webSearch ?? this.opts.contract.goal !== "phone.message"
         ? ["- web_search: use it for current or external facts, or whenever the callee asks you to look something up. Wait for the tool result before answering; give the concise gist in one or two spoken sentences and never read URLs. If the tool fails, say that the lookup failed and ask whether to continue."]
         : []),
       ...(!casual ? ["- request_action: required before any action outside the permitted list."] : []),
@@ -463,6 +464,7 @@ export class OpenAILiveAgent {
 
   instructions(): string {
     const c = this.opts.contract;
+    if (c.goal === "phone.message") return phoneMessageInstructions(c);
     const ja = this.language === "ja";
     const casual = c.goal.startsWith("chat.");
     const v = this.view;

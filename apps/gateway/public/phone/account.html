@@ -1,0 +1,22 @@
+
+   <section id="managed-login" class="screen"><div class="start-inner narrow">
+    <h2 id="managed-login-title">ログイン</h2>
+    <form id="managed-login-form">
+     <label for="managed-email">メールアドレス</label><input id="managed-email" name="username" type="email" required maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false">
+     <label for="managed-password">パスワード</label><input id="managed-password" name="password" type="password" required autocomplete="current-password" aria-describedby="managed-password-help">
+     <p id="managed-password-help" class="note" hidden>8文字以上。日本語やスペースも使えます。</p>
+     <button id="managed-login-submit" class="btn primary" type="submit">ログイン</button><p id="managed-login-error" role="alert" hidden></p>
+    </form>
+    <button id="managed-login-back" class="btn" type="button" hidden>ログインへ戻る</button>
+    <details id="managed-login-help"><summary>初めての方・パスワードを忘れた方</summary><p>管理者から設定リンクを受け取り、メールアドレスとパスワードを設定してください。</p></details>
+   </div></section>
+   <dialog id="managed-account" aria-labelledby="managed-account-title"><h2 id="managed-account-title">アカウント</h2>
+    <p id="managed-account-email"></p><p id="managed-account-help" hidden>管理者から初回設定リンクを受け取ってください。</p>
+    <form id="managed-password-form">
+     <input id="managed-account-username" type="text" name="username" autocomplete="username" hidden>
+     <label for="managed-current-password">現在のパスワード</label><input id="managed-current-password" type="password" name="current-password" required autocomplete="current-password">
+     <label for="managed-new-password">新しいパスワード</label><input id="managed-new-password" type="password" name="new-password" required autocomplete="new-password" aria-describedby="managed-new-password-help">
+     <p id="managed-new-password-help" class="note">8文字以上。変更すると他の端末はログアウトします。</p><button class="btn primary" type="submit">パスワードを変更</button>
+    </form><p id="managed-account-status" role="status" hidden></p><p id="managed-account-error" role="alert" hidden></p><button id="managed-account-close" class="btn" type="button">閉じる</button>
+   </dialog>
+   <dialog id="managed-credits" aria-labelledby="managed-credits-title"><h2 id="managed-credits-title">クレジット</h2><p id="managed-balance"></p><p>追加はサービス管理者へお問い合わせください。</p><div id="managed-ledger"></div><button id="managed-more" class="btn" hidden>もっと見る</button><button id="managed-credits-close" class="btn">閉じる</button></dialog>

@@ -1,13 +1,14 @@
+import { definePhoneRequest } from "@oathra/contract";
 /**
  * `oathra phone …` and `oathra setup phone`: bring your own carrier, bring
  * your own voice engine. SIP details stay behind the provider protocol; the
  * user answers a few questions and the provider automates what it can.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { defineCall, type CallContract } from "@oathra/contract";
+import { defineCall, parsePhoneRequest, type CallContract, type PhoneRequest } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
 import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
@@ -77,9 +78,9 @@ export function parseEngineSpec(engine?: string, brain?: string, configDefault =
   return { id: "pipeline", ...(brain ? { brain } : {}) };
 }
 
-export function buildEngine(spec: EngineSpec): VoiceEngine {
-  if (spec.id === "gpt-live") return gptLiveEngine(spec.model ? { model: spec.model } : {});
-  if (spec.id === "realtime") return realtimeEngine(spec.model ? { model: spec.model } : {});
+export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env): VoiceEngine {
+  if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
+  if (spec.id === "realtime") return realtimeEngine({ ...(spec.model ? { model: spec.model } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
   return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: new OpenAITTS() });
 }
@@ -605,7 +606,7 @@ async function localLoopback(spec: EngineSpec): Promise<void> {
 // call (router)
 // ---------------------------------------------------------------------------
 
-export type PhoneCallFlags = { to?: string; scenario?: string; engine?: string; brain?: string; provider?: string; name?: string; noSave?: boolean; port?: number; publicUrl?: string };
+export type PhoneCallFlags = { requestFile?: string; dryRun?: boolean; approveRequest?: boolean; to?: string; scenario?: string; engine?: string; brain?: string; provider?: string; name?: string; noSave?: boolean; port?: number; publicUrl?: string };
 
 function findScenario(idOrPath: string): Scenario {
   if (existsSync(idOrPath) && /\.ya?ml$/.test(idOrPath)) return loadScenarioFile(resolve(idOrPath));
@@ -615,16 +616,31 @@ function findScenario(idOrPath: string): Scenario {
   return s;
 }
 
+/** Shared personal-call policy for CLI handoffs and the local Web adapter. */
+export function phoneRequestContract(request: PhoneRequest): CallContract {
+  return definePhoneRequest(request);
+}
+
 export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
-  const to = flags.to ?? process.env.OATHRA_TEST_PHONE;
+  if ((flags.dryRun || flags.approveRequest) && !flags.requestFile) throw new Error("--dry-run and --approve-request require --request-file");
+  if (flags.requestFile && (flags.to || flags.scenario || flags.name)) throw new Error("--request-file cannot be combined with --to, --name or --scenario; edit and review the request file instead");
+  if (flags.requestFile && statSync(flags.requestFile).size > 16384) throw new Error("phone request file exceeds 16 KiB");
+  const request = flags.requestFile ? parsePhoneRequest(JSON.parse(readFileSync(flags.requestFile, "utf8"))) : undefined;
+  const to = request?.phone ?? flags.to ?? process.env.OATHRA_TEST_PHONE;
   if (!to || !/^\+\d{8,15}$/.test(to)) throw new Error("--to must be an E.164 number, e.g. --to +819012345678");
+  const scenario = findScenario(request ? "friend-chat" : flags.scenario ?? "restaurant-reservation");
+  const base = contractFromScenario(scenario);
+  const contract: CallContract = request ? phoneRequestContract(request) : defineCall({ ...base,
+    target: { phone: to, name: flags.name ?? scenario.callee.persona.name } });
+  if (flags.dryRun) {
+    console.log(JSON.stringify({ state: "draft", dialed: false, contract, recording: !flags.noSave, notice: "Real calls transmit to the configured carrier and voice provider and incur usage charges. The runtime budget is not a guaranteed carrier billing cap." + (request?.conversationMode === "chat" ? " Chat on Realtime enables public-category news lookup through OpenAI Responses web_search (gpt-5.4-mini), at most twice per call, with additional API charges. Other engines cannot verify current news." : "") }, null, 2));
+    return;
+  }
+  if (request && !flags.approveRequest) throw new Error("Review with --dry-run first. A saved draft is not approval; use --approve-request only to explicitly place the paid call.");
   const reg = buildRegistry();
   const config = loadPhoneConfig();
   const engineSpec = parseEngineSpec(flags.engine, flags.brain, config.voice.engine);
   const engine = buildEngine(engineSpec);
-  const scenario = findScenario(flags.scenario ?? "restaurant-reservation");
-  const base = contractFromScenario(scenario);
-  const contract: CallContract = defineCall({ ...base, target: { phone: to, name: flags.name ?? scenario.callee.persona.name } });
 
   // Direct media-stream providers need a public URL while their transport is
   // constructed. Prepare the tunnel before routing so a ready Twilio route is
@@ -727,6 +743,8 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
     } catch (e) {
       lastError = e as Error;
       console.log(warn(`${route.provider.label} failed: ${lastError.message}`));
+      // A reviewed personal request must not ring again via another carrier after an ambiguous failure.
+      if (request) break;
       if (routes.indexOf(route) < routes.length - 1) console.log(dim("Trying the next route..."));
     } finally {
       tunnel?.stop();
