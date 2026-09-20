@@ -16,6 +16,11 @@
 - The existing post [2101237907260674392](https://x.com/forifori_dev/status/2101237907260674392) read back at 3 impressions, 0 likes, 0 replies, 0 reposts and 0 quotes. The account remained at 1 follower and 50 posts.
 - These impression counts do not identify external viewers or prove repository interest. The publication guard correctly kept the draft duplicate and blocked the next post until `2026-09-20T09:12:10Z` (`2026-09-20 18:12:10 JST`). No upload or new post was attempted.
 
+## X timeline check unavailable — 2026-09-20 10:30 JST
+
+- The read-only publication check could not retrieve the latest timeline: X API returned HTTP 402 `credits depleted` for the account timeline endpoint.
+- Because the latest timeline and spacing cannot be confirmed, no upload or new post was attempted. The earlier 18:12 JST eligibility estimate remains unverified until the API is available again.
+
 ## X Oathra v0.1.18 intake demo — 2026-09-19 18:12 JST
 
 - Published one English announcement from `@forifori_dev` with `docs/media/oathra-intake.mp4`, an Arena simulator recording rather than a PSTN call.

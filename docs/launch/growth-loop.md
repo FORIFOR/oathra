@@ -20,6 +20,10 @@ The read-only snapshot remains at 0 stars, 0 forks, 14 repository views / 14 uni
 
 The existing X announcement now reports 3 impressions and no likes, replies, reposts or quotes. The account remains at 1 follower. These counts do not identify external viewers and are not adoption evidence. The publication guard kept the active draft duplicate and correctly deferred the next announcement until `2026-09-20T09:12:10Z` (`2026-09-20 18:12:10 JST`); no upload or duplicate post was attempted.
 
+### X API availability checkpoint — 2026-09-20 10:30 JST
+
+The read-only X publication check returned HTTP 402 `credits depleted` while retrieving the account timeline. The latest timeline and 24-hour spacing therefore cannot be confirmed; the earlier eligibility estimate is not treated as current. No upload or new post was attempted, and the unavailable API is recorded as unknown rather than zero.
+
 ### X distribution checkpoint — 2026-09-19 18:12 JST
 
 The account-wide spacing check was eligible and the active draft was duplicate-free. The first media upload attempt failed because the 6.8 MB MP4 exceeded the simple upload path (`media type unrecognized`). The publication helper now uses X's chunked INIT/APPEND/FINALIZE flow, and the retry published one English Oathra v0.1.18 intake announcement with the Arena simulator video: [status 2101237907260674392](https://x.com/forifori_dev/status/2101237907260674392). This is a distribution event, not evidence of an external trial or phone-call success. Raw read-only snapshot: [metrics/2026-09-19-1812-jst.json](metrics/2026-09-19-1812-jst.json).
