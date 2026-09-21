@@ -296,7 +296,8 @@ describe("OpenAILiveAgent casual intake", () => {
       vi.advanceTimersByTime(5000);
       expect(spoken(h)).toHaveLength(1);
       expect(spoken(h)[0]).toMatchObject({ delegation_id: null, content: expect.stringContaining("もしもし") });
-      expect(spoken(h)[0]!.content).toContain("AIによる代理");
+      // Whose call it is comes with the fact that an AI is calling; with no name given it says so honestly.
+      expect(spoken(h)[0]!.content).toContain("知り合いの方の代わりにお電話しているAIです");
       // An instruction is accepted but does not make Live speak; it must not be used to open.
       expect(h.sent.filter((message) => message.type === "session.instructions.append")).toEqual([]);
       expect(h.sent.filter((message) => message.type === "session.input_audio.append")).toHaveLength(61);
@@ -320,7 +321,7 @@ describe("OpenAILiveAgent casual intake", () => {
       expect(spoken(h)).toEqual([]);
       h.advance(1500);
       expect(spoken(h)).toHaveLength(1);
-      expect(spoken(h)[0]!.content).toContain("AIによる代理のお電話です");
+      expect(spoken(h)[0]!.content).toContain("代わりにお電話しているAIです");
       h.advance(10000);
       expect(spoken(h)).toHaveLength(1);
     });
@@ -394,6 +395,34 @@ describe("OpenAILiveAgent casual intake", () => {
       talking.agent.pushAudio(VOICED);
       talking.advance(400);
       expect(talking.fillers()).toHaveLength(0);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("says on whose behalf it calls, answers \"誰?\" first, and yields to that one-character question", () => {
+    vi.useFakeTimers();
+    try {
+      const named = defineCall({ goal: "phone.message", language: "ja", input: { request: "近況を聞いてください。", conversationMode: "chat", callerName: "堀尾" }, permissions: { ask: true } });
+      const agent = new OpenAILiveAgent({ contract: named, newsSearch: false });
+      expect(agent.instructions()).toContain("堀尾さんに頼まれて代わりに電話していること");
+      expect(agent.instructions()).toContain("話していた内容を止めて最優先で答えてください");
+      const anonymous = new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language: "ja", input: { request: "近況を聞いてください。" }, permissions: { ask: true } }), newsSearch: false });
+      expect(anonymous.instructions()).toContain("依頼者の名前は預かっていないと正直に伝える");
+
+      const live = agent as unknown as { started: boolean; bridge: unknown; ws: unknown; onMessage: (m: Record<string, unknown>) => void; pushAudio: (b: Uint8Array) => void };
+      const sent: Record<string, unknown>[] = [], events: Record<string, unknown>[] = [];
+      let clears = 0;
+      live.started = true;
+      live.bridge = { sendAudio: () => {}, clearAudio: () => { clears++; }, emit: (e: Record<string, unknown>) => events.push(e), now: () => 1000 };
+      live.ws = { readyState: 1, send: (raw: string) => sent.push(JSON.parse(raw) as Record<string, unknown>) };
+      live.pushAudio(SILENT);
+      vi.advanceTimersByTime(600);
+      expect((sent.find((m) => m.type === "session.commentary.append") as { content: string }).content).toBe("もしもし。堀尾さんの代わりにお電話しているAIです。今、少しお話しできますか？");
+      // The agent is mid-sentence when the callee asks who this is.
+      for (let i = 0; i < 20; i++) live.onMessage({ type: "session.output_audio.delta", delta: pcm24kSine() });
+      live.pushAudio(VOICED);
+      live.onMessage({ type: "session.input_transcript.delta", delta: "誰" });
+      expect(clears).toBe(1);
+      expect(events.some((e) => e.type === "interruption")).toBe(true);
     } finally { vi.useRealTimers(); }
   });
 

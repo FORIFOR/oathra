@@ -31,7 +31,7 @@ import { renderNews } from './news.js';
     const draftKey = () => account ? 'oathra:phone:' + account.user.id : null;
     function draftValues() {
         return {
-            phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, conversationMode, selectedTemplate, voice: $('#phone-voice')?.value ?? '', active
+            phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, conversationMode, selectedTemplate, voice: $('#phone-voice')?.value ?? '', callerName: $('#phone-caller-name')?.value ?? '', active
         };
     }
     function saveDraft() {
@@ -81,6 +81,17 @@ import { renderNews } from './news.js';
     chatNote.className = 'note';
     chatNote.hidden = true;
     $('#phone-template').after(chatNote);
+    // Whose behalf the call is on. Without it the callee only hears "an AI is calling" and asks who.
+    const callerField = element('div'), callerLabel = element('label', 'あなたの名前（相手に伝えます）'), callerInput = element('input'), callerNote = element('p', '「〇〇さんの代わりにお電話しているAIです」と最初に名乗ります。空欄なら「知り合いの方の代わり」と伝えます。');
+    callerField.id = 'phone-caller-field'; callerLabel.htmlFor = 'phone-caller-name'; callerInput.id = 'phone-caller-name'; callerInput.name = 'callerName'; callerInput.type = 'text'; callerInput.maxLength = 40; callerInput.autocomplete = 'name'; callerInput.placeholder = '例：堀尾';
+    callerNote.className = 'note'; callerNote.id = 'phone-caller-note'; callerInput.setAttribute('aria-describedby', 'phone-caller-note');
+    callerField.append(callerLabel, callerInput, callerNote);
+    // With the other optional settings, after the three required fields: number, recipient and purpose stay
+    // next to each other, on screen and in keyboard order.
+    undoTemplate.after(callerField);
+    const callerKey = () => account ? 'oathra:phone-caller:' + account.user.id : null;
+    const rememberedCaller = () => { try { return callerKey() ? localStorage.getItem(callerKey()) ?? '' : ''; } catch { return ''; } };
+    callerInput.addEventListener('change', () => { try { if (callerKey()) localStorage.setItem(callerKey(), callerInput.value.trim()); } catch { /* still used for this call */ } });
     // Which voice speaks. The list comes from the server; a voice is fixed for the whole call.
     const voiceField = element('div'), voiceLabel = element('label', 'AIの声'), voiceSelect = element('select'), voiceNote = element('p', '声は通話の途中では変えられません。選んだ声はこの端末に覚えておきます。声の高さと速さは、同じ一文の録音を測った目安です。★ 推奨は、標準の声（実際の通話で確認済み）と、電話の音質に通しても正確に聞き取れ・音量が十分で・速さがふつうの声です。実際の印象は試聴で確かめてください。'), voicePreview = element('button', 'この声を試聴');
     voiceField.id = 'phone-voice-field'; voiceLabel.htmlFor = 'phone-voice'; voiceSelect.id = 'phone-voice'; voiceSelect.name = 'voice'; voiceNote.className = 'note'; voiceNote.id = 'phone-voice-note';
@@ -102,7 +113,7 @@ import { renderNews } from './news.js';
         previewAudio.play().catch(reset);
     });
     // After the template's own undo, so that control stays beside the field it belongs to.
-    undoTemplate.after(voiceField);
+    callerField.after(voiceField);
     const voiceKey = () => account ? 'oathra:phone-voice:' + account.user.id : null;
     const voices = () => readiness?.voices ?? [], defaultVoice = () => readiness?.defaultVoice ?? voices()[0] ?? '';
     function setVoice(value) {
@@ -189,6 +200,7 @@ import { renderNews } from './news.js';
         navigation.length = 0;
         $('#phone-form').reset();
         setVoice(rememberedVoice());
+        callerInput.value = rememberedCaller();
         templateUndo = null; undoTemplate.hidden = true;
         chatMode('message');
         $('#phone-news')?.remove();
@@ -259,6 +271,7 @@ import { renderNews } from './news.js';
             setVoice(keep || rememberedVoice());
         }
         voiceField.hidden = voices().length < 2;
+        if (!callerInput.value) callerInput.value = rememberedCaller();
         $('#phone-form button[type=submit]').textContent = r.ready ? '電話する' : '下書きを保存';
         $('#phone-readiness').replaceChildren(element('strong', r.ready ? '発信設定済み' : '現在は発信できません'));
         if (r.issues.length) {
@@ -277,7 +290,7 @@ import { renderNews } from './news.js';
         purpose.className = 'phone-review-purpose';
         const fields = $('#phone-review-fields');
         fields.replaceChildren();
-        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name]])
+        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')]])
             fields.append(element('dt', label), element('dd', value));
         fields.append(element('dt', '目的'), purpose);
         if (m.request.length > 90) {
@@ -407,6 +420,7 @@ import { renderNews } from './news.js';
         $('#phone-instruction').value = r.request.instruction;
         chatMode(r.request.conversationMode, r.request.conversationMode === 'chat' ? 'chat' : '');
         if (all) setVoice(r.request.voice ?? defaultVoice());
+        if (all && r.request.callerName) callerInput.value = r.request.callerName;
         invalidate();
         saveDraft();
         show('phone');
@@ -543,6 +557,7 @@ import { renderNews } from './news.js';
                     $('#phone-' + (key === 'phone' ? 'number' : key)).value = saved[key];
             chatMode(saved.conversationMode, templates.some(t => t.id === saved.selectedTemplate) ? saved.selectedTemplate : '');
             if (typeof saved.voice === 'string' && saved.voice) setVoice(saved.voice);
+            if (typeof saved.callerName === 'string') callerInput.value = saved.callerName;
         }
         const requested = new URLSearchParams(location.search).get('call');
         const resume = requested ?? (typeof saved?.active === 'string' ? saved.active : null) ?? records.find(ongoing)?.id;
@@ -573,6 +588,7 @@ import { renderNews } from './news.js';
     on('#phone-clear', 'click', () => {
         $('#phone-form').reset();
         setVoice(rememberedVoice());
+        callerInput.value = rememberedCaller();
         templateUndo = null; undoTemplate.hidden = true;
         chatMode('message');
         invalidate();
@@ -611,7 +627,7 @@ import { renderNews } from './news.js';
         const values = {
             phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, ...(conversationMode === 'chat' ? {
                 conversationMode: 'chat'
-            } : {}), ...(voiceSelect.value && voiceSelect.value !== defaultVoice() ? { voice: voiceSelect.value } : {})
+            } : {}), ...(voiceSelect.value && voiceSelect.value !== defaultVoice() ? { voice: voiceSelect.value } : {}), ...(callerInput.value.trim() ? { callerName: callerInput.value.trim() } : {})
         }, session = generation;
         preparing = true;
         const button = $('#phone-form button[type=submit]');

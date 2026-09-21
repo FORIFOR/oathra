@@ -92,3 +92,7 @@
 .managed-phone #phone-voice { width:100%; min-height:44px; font:inherit; padding:10px; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; }
 .managed-phone #phone-voice-field .note { margin:0; font-size:13px; }
 .managed-phone #phone-voice-preview { justify-self:start; width:auto; min-height:44px; }
+.managed-phone #phone-caller-field { display:grid; gap:6px; }
+.managed-phone #phone-caller-field label { font-weight:600; }
+.managed-phone #phone-caller-name { width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:inherit; font:inherit; }
+.managed-phone #phone-caller-field .note { margin:0; font-size:13px; }

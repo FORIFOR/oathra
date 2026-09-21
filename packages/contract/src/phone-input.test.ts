@@ -73,3 +73,10 @@ it("a request may name the voice that speaks, only from the voices the engine ac
   expect(new Set(PHONE_VOICES).size).toBe(PHONE_VOICES.length);
   for (const voice of ["alloy", "", "MARIN", 3]) expect(() => preparePhoneRequest({ ...base, voice: voice as never })).toThrow();
 });
+
+it("a request may say on whose behalf the call is: a name, never contact details", () => {
+  const base = { phone: "+819000000000", name: "友人", instruction: "近況を聞いてください。" };
+  expect(preparePhoneRequest({ ...base, callerName: " 堀尾 " }).callerName).toBe("堀尾");
+  expect(preparePhoneRequest(base).callerName).toBeUndefined();
+  for (const callerName of ["", " ", "x".repeat(41), "090-1234-5678", "a@example.com", "https://example.com", "<b>名前</b>"]) expect(() => preparePhoneRequest({ ...base, callerName })).toThrow();
+});

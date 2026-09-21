@@ -99,13 +99,16 @@ export const PhoneRequestSchema = z.object({
   name: z.string().trim().min(1).max(100),
   // Optional experimental v1 extension; absent keeps the original message-only behavior.
   conversationMode: z.enum(["message", "chat"]).optional(),
+  // Optional: whose behalf the call is on, as the callee should hear it ("堀尾"). A call that cannot say who is
+  // behind it gets "誰?" and a hang-up. Letters, not contact details.
+  callerName: z.string().trim().min(1).max(40).refine(value => !/[\d@<>{}]|https?:/i.test(value), "名前だけを入力してください。").optional(),
   // Optional: which voice speaks. Absent keeps the engine's default.
   voice: z.enum(PHONE_VOICES).optional(),
   instruction: z.string().trim().min(1).max(2000).refine(value => !/\{\{[^{}]+\}\}/.test(value), "テンプレートの {{項目}} を具体的な内容に書き換えてください。"),
 }).strict();
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

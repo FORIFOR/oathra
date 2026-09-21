@@ -84,5 +84,7 @@ test('a phone request may choose the voice; unknown voices are refused and the l
   const chosen=await draft({voice:'vesper'});assert.equal(chosen.status,201);assert.equal((await chosen.json()).mission.phoneRequest.voice,'vesper');
   const plain=await draft({});assert.equal(plain.status,201);assert.equal((await plain.json()).mission.phoneRequest.voice,undefined);
   assert.equal((await draft({voice:'alloy'})).status,400);
+  // On whose behalf: kept with the request, refused when it is not a name.
+  const named=await draft({callerName:'堀尾'});assert.equal(named.status,201);assert.equal((await named.json()).mission.phoneRequest.callerName,'堀尾');assert.equal((await draft({callerName:'090-1234-5678'})).status,400);
  }finally{await app.close();rmSync(dir,{recursive:true,force:true})}
 });

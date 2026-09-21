@@ -67,6 +67,8 @@ function hasAudiblePcm(pcm: Int16Array, threshold = 256): boolean {
 const CALLEE_VOICE_THRESHOLD = 1500;
 /** Listening sounds. They never flush the reply that is already on the line. */
 const BACKCHANNEL_RE = /^(?:うん+|うんうん|はい|はいはい|ええ|へ[ーえ]+|ほう+|なるほど(?:ね)?|そう(?:なんだ|ですね|だね|ですか)?|そっか|ふーん|お[ーお]+|あ[ーあ]+|m+-?hm+|uh-?huh|yeah|yes|ok(?:ay)?|right|i see)[。、！!？?…〜ー\s]*$/i;
+/** Short, but a question: "誰?" must be yielded to like any interruption, not waved through as a listening sound. */
+const SHORT_QUESTION_RE = /^(?:誰|だれ|どなた|どちら様|どちらさま|何|なに|なんで|なぜ|え[?？っ]|は[?？]|ん[?？])/;
 const WAIT_RE = /待って|ちょっと待|少し待|少々|考え(?:ます|る|させ|中)|hold on|wait|give me a (?:sec|second|moment|minute)|let me think/i;
 
 export class OpenAILiveAgent {
@@ -290,7 +292,10 @@ export class OpenAILiveAgent {
   private greeting(): string {
     const ja = this.language === "ja";
     const goal = this.opts.contract.goal;
-    if (goal === "phone.message") return ja ? `${this.agentSpoke ? "" : "もしもし。"}AIによる代理のお電話です。今、少しお話しできますか？` : `${this.agentSpoke ? "" : "Hello. "}This is an AI calling on someone's behalf. Is now a good time to talk?`;
+    const caller = typeof this.opts.contract.input.callerName === "string" ? this.opts.contract.input.callerName : undefined;
+    if (goal === "phone.message") return ja
+      ? `${this.agentSpoke ? "" : "もしもし。"}${caller ? `${caller}さんの代わりにお電話しているAIです。` : "知り合いの方の代わりにお電話しているAIです。"}今、少しお話しできますか？`
+      : `${this.agentSpoke ? "" : "Hello. "}This is an AI calling on behalf of ${caller ?? "someone you know"}. Is now a good time to talk?`;
     if (goal.startsWith("chat.")) return ja ? "もしもし？" : "Hello?";
     return ja ? "もしもし、お忙しいところ失礼いたします。" : "Hello, sorry to bother you.";
   }
@@ -495,7 +500,7 @@ export class OpenAILiveAgent {
     const topic = args?.topic as NewsTopic;
     // Public words may be searched; the people on this call may not. Their names and number never leave it.
     const target = this.opts.contract.target;
-    const words = topic === "search" ? publicQuery(args?.query, [target?.name ?? "", this.opts.calleeName ?? "", (target?.phone ?? "").replace(/\D/g, "")].filter(Boolean)) : null;
+    const words = topic === "search" ? publicQuery(args?.query, [target?.name ?? "", this.opts.calleeName ?? "", typeof this.opts.contract.input.callerName === "string" ? this.opts.contract.input.callerName : "", (target?.phone ?? "").replace(/\D/g, "")].filter(Boolean)) : null;
     const keys = Object.keys(args ?? {});
     // Models often attach a query to a category lookup as well. It is simply not used there; only an
     // unknown argument, or a search whose words were refused, stops the lookup.
@@ -724,7 +729,7 @@ export class OpenAILiveAgent {
     const overlap = this.overlap;
     if (!overlap || overlap.interrupted || !this.bridge) return;
     const text = overlap.text.trim();
-    if (text.length < 4 || BACKCHANNEL_RE.test(text)) return;
+    if (!SHORT_QUESTION_RE.test(text) && (text.length < 4 || BACKCHANNEL_RE.test(text))) return;
     overlap.interrupted = true;
     this.outInterrupted = true;
     if (this.playbackEndMs - atMs > 250) {
