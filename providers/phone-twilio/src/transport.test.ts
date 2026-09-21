@@ -104,9 +104,13 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     await en.hangup();
     const unrecorded = await new TwilioDirectTransport({ ...opts, port: PORT + 4 }).dial({ to: "+818000000000", language: "ja", contract });
     await unrecorded.hangup();
+    // A call that keeps only the transcript says "記録", not "録音"; a recording notice is never doubled by it.
+    const transcribed = await new TwilioDirectTransport({ ...opts, port: PORT + 5 }).dial({ to: "+818000000000", language: "ja", contract, transcriptNotice: true });
+    await transcribed.hangup();
 
-    expect(twiml[0]).toMatch(/^<Response><Say language="ja-JP">この通話は録音されています。<\/Say><Connect><Stream url="wss:\/\/example\.test\/media\/[a-f0-9]{64}"\/><\/Connect><\/Response>$/);
+    expect(twiml[0]).toMatch(/^<Response><Say language="ja-JP" voice="Polly.Kazuha-Neural">この通話は録音されています。<\/Say><Connect><Stream url="wss:\/\/example\.test\/media\/[a-f0-9]{64}"\/><\/Connect><\/Response>$/);
     expect(twiml[1]).toContain('<Say language="en-US">This call is being recorded.</Say><Connect>');
+    expect(twiml[3]).toMatch(/^<Response><Say language="ja-JP" voice="Polly.Kazuha-Neural">この通話は記録されています。<\/Say><Connect><Stream /);
     expect(twiml[2]).toMatch(/^<Response><Connect><Stream url="wss:\/\/example\.test\/media\/[a-f0-9]{64}"\/><\/Connect><\/Response>$/);
     expect(JSON.parse(readFileSync(join(recordDir, "recording-notice.json"), "utf8"))).toMatchObject({ text: "This call is being recorded.", method: "carrier_tts_before_media_stream" });
     rmSync(recordDir, { recursive: true, force: true });

@@ -12,7 +12,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { WebSocketServer, type WebSocket as WsSocket } from "ws";
 import { concatBytes, frameMulaw, mulawDecode, mulawDurationMs, mulawSilence, wavFromInt16, MULAW_SAMPLE_RATE } from "@oathra/audio-kit";
-import { recordingNotice } from "@oathra/core";
+import { recordingNotice, transcriptNotice } from "@oathra/core";
 import type { CarrierEvent, CarrierMediaSession, CarrierTransport, DialOptions } from "@oathra/phone";
 import { convert, MULAW_8K, OutputQueue, type AudioChunk, type AudioSpec } from "@oathra/voice";
 
@@ -61,6 +61,7 @@ export class TwilioDirectSession implements CarrierMediaSession {
   constructor(
     private readonly opts: TwilioDirectOptions,
     private readonly recordDir: string | undefined,
+    private readonly transcriptOnly = false,
   ) {
     this.events = this.queue;
   }
@@ -95,7 +96,10 @@ export class TwilioDirectSession implements CarrierMediaSession {
     if (this.opts.placeCall !== false) {
       // A recorded call says so first, in the carrier's own voice, before the model or the callee can say anything.
       // (The text is fixed and XML-safe; nothing user-supplied is interpolated here.)
-      const notice = this.recordDir ? `<Say language="${language === "ja" ? "ja-JP" : "en-US"}">${recordingNotice(language)}</Say>` : "";
+      // A neural voice for Japanese: Twilio's default is a basic synthesizer, and this is the first thing the callee hears.
+      // A call that only keeps the words says that instead; never both, and never nothing when something is kept.
+      const spoken = this.recordDir ? recordingNotice(language) : this.transcriptOnly ? transcriptNotice(language) : "";
+      const notice = spoken ? `<Say language="${language === "ja" ? 'ja-JP" voice="Polly.Kazuha-Neural' : "en-US"}">${spoken}</Say>` : "";
       if (this.recordDir) mkdirSync(this.recordDir, { recursive: true }), writeFileSync(join(this.recordDir, "recording-notice.json"), JSON.stringify({ text: recordingNotice(language), language, method: "carrier_tts_before_media_stream" }, null, 2));
       const twiml = `<Response>${notice}<Connect><Stream url="${this.mediaUrl}"/></Connect></Response>`;
       const body = new URLSearchParams({ To: to, From: this.opts.from, Twiml: twiml });
@@ -319,7 +323,7 @@ export class TwilioDirectTransport implements CarrierTransport {
   }
 
   async dial(opts: DialOptions): Promise<CarrierMediaSession> {
-    const session = new TwilioDirectSession({ ...this.opts, ...(opts.callerId ? { from: opts.callerId } : {}) }, opts.recordDir);
+    const session = new TwilioDirectSession({ ...this.opts, ...(opts.callerId ? { from: opts.callerId } : {}) }, opts.recordDir, opts.transcriptNotice === true);
     this.lastSession = session;
     await session.start(opts.to, opts.language);
     return session;

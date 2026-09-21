@@ -149,7 +149,7 @@ export class PhoneTransport implements TransportProvider {
   constructor(
     private readonly carrier: CarrierTransport,
     private readonly engine: VoiceEngine,
-    private readonly opts: { callerId?: string; recordDir?: string } = {},
+    private readonly opts: { callerId?: string; recordDir?: string; transcriptNotice?: boolean } = {},
   ) {
     this.name = `${carrier.providerId}:${carrier.path}+${engine.id}`;
     this.speaksItself = engine.speaksItself;
@@ -163,6 +163,7 @@ export class PhoneTransport implements TransportProvider {
       contract: ctx.contract,
       ...(this.opts.callerId ? { callerId: this.opts.callerId } : {}),
       ...(this.opts.recordDir ? { recordDir: this.opts.recordDir } : {}),
+      ...(this.opts.transcriptNotice ? { transcriptNotice: true } : {}),
     };
     const media = await this.carrier.dial(dial);
     const session = new BridgedCallSession({

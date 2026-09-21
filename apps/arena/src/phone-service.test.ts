@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
@@ -85,4 +85,31 @@ it("blocks a different review until unknown termination is explicitly acknowledg
   await expect(service.start(second.id, true)).rejects.toMatchObject({ code: "PHONE_NOT_READY" });
   expect((await service.start(first.id, true)).state).toBe("unknown");
   expect(() => service.acknowledge(second.id, true)).toThrow("結果未確認の履歴のみ");
+});
+
+it("recovers from a lock left by a dead process, keeps a fresh one, and frees a finished call from memory", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "oathra-phone-lock-")), lock = join(dir, ".approval-lock");
+  const readiness = { ready: true, issues: [], provider: "local", engine: "local", recording: false, disclosure: "local boundary" };
+  let finish: (() => void) | undefined;
+  // A dialer that only waits: no carrier, no audio, no provider request.
+  const service = new PhoneService(dir, join(dir, "calls"), { inspect: () => readiness, execute: () => new Promise((_, reject) => { finish = () => reject(new Error("local boundary ended")); }) });
+  try {
+    const first = await service.prepare(preparePhoneRequest(input));
+    mkdirSync(lock);
+    // Another process is inside the short approval section right now: refuse, do not steal its lock.
+    await expect(service.start(first.id, true)).rejects.toMatchObject({ code: "PHONE_APPROVAL_BUSY" });
+    expect(service.get(first.id).state).toBe("draft");
+    // The same lock two minutes old was left by a process that died; it must not block calls forever.
+    const old = new Date(Date.now() - 120_000);
+    utimesSync(lock, old, old);
+    expect((await service.start(first.id, true)).state).toBe("starting");
+    expect(existsSync(lock)).toBe(false);
+    const internals = service as unknown as { active: Map<string, unknown> };
+    expect(internals.active.has(first.id)).toBe(true);
+    finish!();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    // The outcome is on disk, so the finished call no longer lives in memory; it still reads back.
+    expect(internals.active.has(first.id)).toBe(false);
+    expect(service.get(first.id).state).toBe("unknown");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

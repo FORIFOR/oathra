@@ -25,7 +25,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
     let spec;
     try { spec = parseEngineSpec(undefined, undefined, config.voice.engine); }
     catch { issues.push("音声AI設定を確認してください。"); }
-    if (spec?.id === "pipeline") issues.push("画面からの依頼は gpt-live または realtime を設定してください。");
+    if (spec?.id === "pipeline") issues.push("画面からの依頼は gpt-live を設定してください。");
     if (!env.OPENAI_API_KEY) issues.push("OPENAI_API_KEY が未設定です。");
     if (provider?.id === "twilio") {
       if (!/^\+[1-9]\d{7,14}$/.test(String(cfg?.from ?? env.TWILIO_PHONE_NUMBER ?? ""))) issues.push("Twilio の発信元電話番号を設定してください。");
@@ -44,7 +44,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
     const readiness: PhoneReadiness = {
       ready: issues.length === 0, issues, provider: provider?.label ?? "未設定", engine: spec ? `${spec.id}${spec.model ? `:${spec.model}` : ""}` : "未設定",
       recording: false, configurationId,
-      disclosure: "AIが代理で電話し、最初にAIであることを伝えます。電話番号はTwilioへ、名前・目的・通話音声はTwilioとOpenAIへ送信します。通信会社・AIの従量料金が発生します。音声ファイルは保存せず、会話テキストと結果をこの端末に保存します。最大3分の設定は通信会社の請求上限を保証しません。接続確認は未実施です。",
+      disclosure: "AIが代理で電話し、最初にAIであることを伝えます。電話番号はTwilioへ、名前・目的・通話音声はTwilioとOpenAIへ送信します。通信会社・AIの従量料金が発生します。音声ファイルは保存せず、会話テキストと結果をこの端末に保存します。相手には最初に「この通話は記録されています。」と案内します。最大3分の設定は通信会社の請求上限を保証しません。接続確認は未実施です。",
     };
     return { readiness, spec, route };
   }
@@ -74,7 +74,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
           return { audio: media.audio, events: media.events, send: chunk => media!.send(chunk), clear: () => media!.clear(), now: () => media!.now(), hangup: end, ...(media.mark ? { mark: (name: string) => media!.mark!(name) } : {}) };
         },
       };
-      const runtime = new CallRuntime({ contract: phoneRequestContract(request), transport: new PhoneTransport(carrier, engine), brain: { name: engine.id, respond: async () => { throw new Error("voice engine supplies responses"); } }, callId: ctx.callId, onEvent: ctx.onEvent, openingTimeoutMs: 4000 });
+      const runtime = new CallRuntime({ contract: phoneRequestContract(request), transport: new PhoneTransport(carrier, engine, { transcriptNotice: true }), brain: { name: engine.id, respond: async () => { throw new Error("voice engine supplies responses"); } }, callId: ctx.callId, onEvent: ctx.onEvent, openingTimeoutMs: 4000 });
       const abort = () => { runtime.cancel(); void end("cancelled"); };
       ctx.signal.addEventListener("abort", abort, { once: true });
       const durationLimit = setTimeout(abort, 180000);

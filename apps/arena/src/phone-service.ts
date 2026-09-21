@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PhoneRequestSchema, type PhoneRequest } from "@oathra/contract";
 import type { CallEvent } from "@oathra/core";
@@ -24,6 +24,7 @@ export class PhoneServiceError extends Error {
 }
 const idPattern = /^phone_[0-9a-f-]{36}$/;
 const activeStates: PhoneCallState[] = ["starting", "running", "stopping"];
+const STALE_LOCK_MS = 60_000;
 const unavailable: PhoneReadiness = { ready: false, issues: ["このサーバーでは実電話の接続が設定されていません。"], provider: "unconfigured", engine: "unconfigured", recording: false, disclosure: "発信は設定完了後の明示的な確認が必要です。" };
 const storageError = () => new PhoneServiceError(503, "PHONE_STORAGE_ERROR", "電話履歴を保存・読み込みできません。発信を繰り返さず保存先を確認してください。");
 
@@ -97,10 +98,18 @@ export class PhoneService {
     let record = this.get(id);
     if (record.state !== "draft") return record;
     const lock = join(this.dir, ".approval-lock");
-    try { mkdirSync(lock, { mode: 0o700 }); }
+    const acquire = (): void => { mkdirSync(lock, { mode: 0o700 }); };
+    try { acquire(); }
     catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new PhoneServiceError(409, "PHONE_APPROVAL_BUSY", "別の発信処理が進行中か、確認が必要です。履歴を確認してください。");
-      throw storageError();
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw storageError();
+      // The section below takes well under a second. A lock this old was left by a process that died
+      // inside it, and would otherwise refuse every call until someone deleted it by hand. The durable
+      // per-call claim, not this lock, is what prevents a second dial.
+      let stale = false;
+      try { stale = Date.now() - statSync(lock).mtimeMs > STALE_LOCK_MS; } catch { stale = true; }
+      if (!stale) throw new PhoneServiceError(409, "PHONE_APPROVAL_BUSY", "別の発信処理が進行中か、確認が必要です。履歴を確認してください。");
+      try { rmSync(lock, { recursive: true, force: true }); acquire(); }
+      catch { throw new PhoneServiceError(409, "PHONE_APPROVAL_BUSY", "別の発信処理が進行中か、確認が必要です。履歴を確認してください。"); }
     }
     try {
       record = this.get(id);
@@ -143,8 +152,11 @@ export class PhoneService {
       record.error = "通信処理が途絶えたため発信・終了結果を確認できません。通信事業者の履歴で確認してください。自動再発信はしません。";
     } finally {
       record.updatedAt = new Date().toISOString();
-      try { this.write(record); } catch { record.persistence = "failed"; record.error = "結果を保存できません。画面の内容を控え、通信事業者の履歴を確認してください。"; }
-      // Retain final in-memory evidence if disk persistence failed.
+      let persisted = false;
+      try { this.write(record); persisted = true; } catch { record.persistence = "failed"; record.error = "結果を保存できません。画面の内容を控え、通信事業者の履歴を確認してください。"; }
+      // Retain final in-memory evidence if disk persistence failed; otherwise the file is the record
+      // and a finished call must not stay in memory for the life of the process.
+      if (persisted) this.active.delete(record.id);
     }
   }
   acknowledge(id: string, confirmedEnded: unknown): PhoneCallRecord {
