@@ -30,7 +30,7 @@ export const REFUSAL_RE = new RegExp(`${NEGATIVE_JA.source}|${NEGATIVE_EN.source
 
 /** Explicit reservation confirmation by the callee. Only these phrases count. */
 export const CONFIRMATION_RE =
-  /ご予約(?:を)?(?:承り|お取り|お受け|確定|お受けいたし|承っ)|承りました|お取りしました|お取りいたしました|確保(?:いたし|し)ました|確定(?:いたし|し)ました|予約完了|お席をご用意|(?:ご)?予約(?:を)?(?:いたし|し|させていただき|を入れ)ました|(?:お)?押さえ(?:いたし|し|ておき)?ました|手配(?:いたし|し)ました|(?:ご)?用意(?:いたし|し)ました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|(?:reservation|booking|table|room)\s+(?:is|has been)\s+(?:confirmed|booked|reserved|set)|\b(?:confirmed|booked|reserved|all set)\b|(?:you're|you are) (?:all set|booked)|I've (?:booked|reserved|confirmed)/i;
+  /ご予約(?:を)?(?:承り|お取り|お受け|確定|お受けいたし|承っ)|承りました|お取りしました|お取りいたしました|確保(?:いたし|し)ました|確定(?:いたし|し)ました|予約完了|お席をご用意|(?:ご)?予約(?:を)?(?:いたし|し|させていただき|を入れ)ました|(?:お)?押さえ(?:いたし|し|ておき)?ました|手配(?:いたし|し)ました|(?:ご)?用意(?:いたし|し)ました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|(?:reservation|booking|table|room)\s+(?:is|has been)\s+(?:confirmed|booked|reserved|set)|\b(?:confirmed|booked|reserved|all set)\b|(?:you're|you are) (?:all set|booked)|I've (?:booked|reserved|confirmed)|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)|(?:you're|you are) down for/i;
 
 /**
  * A commitment in the present/future tense ("…でご予約いたします"). On its own it is an intention,
@@ -41,7 +41,7 @@ export const COMMIT_RE = /(?:ご)?予約(?:を)?(?:いたします|させてい�
 
 /** Callee agrees to a value the caller proposed. */
 export const AGREEMENT_RE =
-  /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly/i;
+  /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly|\ball set\b|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)/i;
 
 /** "承知しました、ですが…": an agreement followed by a contrast is not a clean yes. */
 export const CONTRAST_RE = /ですが|ますが|けど|けれど|しかし|ただし|ただ(?!いま|今|ちに)|とはいえ|と言いたいところ|\bbut\b|however|although/i;

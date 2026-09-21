@@ -456,6 +456,32 @@ describe("breakfast polarity", () => {
   });
 });
 
+describe("English confirmations a shop actually says", () => {
+  const contract = defineCall({ goal: "restaurant.reservation", language: "en", input: { date: "2026-09-25", partySize: 2 }, require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true } });
+  const after = (reply: string) => {
+    const engine = new EvidenceEngine({ now: new Date("2026-09-21T10:00:00+09:00"), language: "en" });
+    [["caller", "Could I book a table for two at 7:30 pm on September 25? The name is Tanaka."] as const, ["callee", reply] as const]
+      .forEach(([source, text], i) => engine.ingest({ id: `t${i}`, source, text, t: i + 1 }));
+    return evaluate(contract, engine, "completed");
+  };
+
+  it("reads the ways a shop says yes, not only the one in the scenario", () => {
+    for (const reply of [
+      "Yes, that is confirmed. September 25 at 7:30 pm for two under Tanaka.",
+      "Sure, I have booked September 25 at 7:30 pm for two under Tanaka.",
+      "You are all set for September 25 at 7:30 pm, party of two.",
+      "Yes, we have you down for two at 7:30 pm on September 25.",
+    ]) expect(after(reply).complete, reply).toBe(true);
+  });
+
+  it("still refuses the ones that only sound like a yes", () => {
+    for (const reply of [
+      "Sure, I will pencil you in for September 25 at 7:30 pm and call you back to confirm.",
+      "We can hold September 25 at 7:30 pm for now, but it is not confirmed yet.",
+    ]) expect(after(reply).fields.confirmed, reply).toBeUndefined();
+  });
+});
+
 describe("the slot is gone after the booking was taken", () => {
   const contract = defineCall({ goal: "restaurant.reservation", language: "ja", input: { date: "2026-09-25", partySize: 2 }, require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true } });
   const verdict = (lines: Utterance["source"] extends never ? never : [Utterance["source"], string][]) => {
