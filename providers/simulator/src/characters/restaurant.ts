@@ -13,6 +13,32 @@ type Knowledge = {
   intake_answers?: Record<string, string>;
 };
 
+export type Booking = { date: string; time: string; partySize: number; name?: string };
+
+/**
+ * The restaurant's own reservation ledger: tables per time slot, per date. One book can outlive a call, so
+ * several callers can ring the same restaurant and the last table is only ever given away once.
+ */
+export class ReservationBook {
+  readonly bookings: Booking[] = [];
+  constructor(private readonly tables: Record<string, number>) {}
+  slots(): string[] { return Object.keys(this.tables).sort(); }
+  left(date: string | undefined, time: string): number {
+    const tables = this.tables[time];
+    if (tables === undefined) return 0;
+    return tables - (date ? this.bookings.filter((b) => b.date === date && b.time === time).length : 0);
+  }
+  reserve(booking: Booking): boolean {
+    if (this.left(booking.date, booking.time) <= 0) return false;
+    this.bookings.push(booking);
+    return true;
+  }
+  release(booking: Booking): void {
+    const at = this.bookings.indexOf(booking);
+    if (at >= 0) this.bookings.splice(at, 1);
+  }
+}
+
 /**
  * Restaurant reception. Deterministic. Knows a table of availability per
  * time slot, asks for missing details in a fixed order (date, party, time),
@@ -27,7 +53,7 @@ export class RestaurantCharacter implements CalleeCharacter {
   private readonly patience: number;
   private readonly en: boolean;
   private date?: string;
-  private time?: string;
+  private time: string | undefined;
   private party?: number;
   private guestName?: string;
   private offered: string | undefined;
@@ -37,7 +63,11 @@ export class RestaurantCharacter implements CalleeCharacter {
   private intakeConsent: boolean | undefined;
   private readonly intakeAnswered = new Set<string>();
 
-  constructor(private readonly scenario: Scenario) {
+  private readonly book: ReservationBook;
+  /** What this call has booked. One call holds one booking: said again it is the same one, changed it moves. */
+  private held: Booking | undefined;
+
+  constructor(private readonly scenario: Scenario, book?: ReservationBook) {
     this.name = scenario.callee.persona.name;
     const k = scenario.callee.knowledge as Partial<Knowledge>;
     this.k = {
@@ -48,6 +78,7 @@ export class RestaurantCharacter implements CalleeCharacter {
       ...(k.intake_consent !== undefined ? { intake_consent: k.intake_consent } : {}),
       ...(k.intake_answers ? { intake_answers: k.intake_answers } : {}),
     };
+    this.book = book ?? new ReservationBook(this.k.availability);
     this.now = k.now ? new Date(k.now) : new Date();
     this.patience = scenario.callee.persona.patience;
     this.en = scenario.language === "en";
@@ -68,12 +99,12 @@ export class RestaurantCharacter implements CalleeCharacter {
   }
 
   private slots(): string[] {
-    return Object.keys(this.k.availability).sort();
+    return this.book.slots();
   }
 
   private open(time: string, party: number): boolean {
-    const n = this.k.availability[time];
-    return n !== undefined && n > 0 && party <= (this.k.max_party ?? 8);
+    const own = this.held && this.held.date === this.date && this.held.time === time ? 1 : 0;
+    return this.book.left(this.date, time) + own > 0 && party <= (this.k.max_party ?? 8);
   }
 
   private nearestOpen(after: string, party: number, exclude?: string): string | undefined {
@@ -216,6 +247,17 @@ export class RestaurantCharacter implements CalleeCharacter {
   private confirm(prefix?: string): CalleeReply {
     if (!this.date || !this.time || !this.party) {
       return { text: this.t("恐れ入ります、ご希望のお日にちとお時間、人数をお伺いできますでしょうか？", "Could I have the date, time and number of people, please?") };
+    }
+    // The ledger has the last word: a table that went to another caller in the meantime is not promised twice.
+    const wanted: Booking = { date: this.date, time: this.time, partySize: this.party, ...(this.guestName ? { name: this.guestName } : {}) };
+    const previous = this.held;
+    if (previous) this.book.release(previous);
+    if (this.book.reserve(wanted)) this.held = wanted;
+    else {
+      if (previous) this.book.reserve(previous);
+      const gone = this.time;
+      this.time = previous?.time;
+      return { text: this.t(`申し訳ございません、${jaTime(gone)}はただいま満席になってしまいました。`, `I'm sorry, ${enTime(gone)} has just been taken.`) };
     }
     this.confirmed = true;
     if (this.en) {

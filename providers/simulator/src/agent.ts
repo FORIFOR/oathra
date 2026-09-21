@@ -74,6 +74,7 @@ export class ScriptedAgent implements BrainProvider {
     const after = typeof contract.constraints.time?.gte === "string" ? contract.constraints.time.gte : undefined;
     const before = typeof contract.constraints.time?.lte === "string" ? contract.constraints.time.lte : undefined;
     const date = typeof input.date === "string" ? input.date : undefined;
+    const wantedTime = this.wantedTime(contract);
     const party = typeof input.partySize === "number" ? input.partySize : undefined;
     const name = typeof input.name === "string" ? input.name : undefined;
 
@@ -179,6 +180,8 @@ export class ScriptedAgent implements BrainProvider {
         const range = after && before ? `${jaTime(after)}から${jaTime(before)}の間` : after ? `${jaTime(after)}以降` : before ? `${jaTime(before)}まで` : "他の時間";
         return { text: `申し訳ありません、${range}で空いているお席はありますでしょうか？` };
       }
+      // The party is what it is: a cap below it ends the request; asking again for the same ten people does not.
+      if (bad.has("partySize")) return { text: en ? "Understood. That won't work for our group, so we'll leave it this time. Thank you, goodbye." : "承知しました。人数の都合がつかないため、今回は見送らせていただきます。ありがとうございました。", action: "hangup" };
       if (bad.has("price") && typeof budget === "number") return this.counterPrice(domain, contract, budget);
       if (bad.has("date") && date) return { text: en ? `Sorry, I need ${enDate(date)}. Is that available?` : `恐れ入ります、${jaDate(date)}でお願いしたいのですが、空いておりますでしょうか？` };
       if (bad.has("breakfast")) return { text: "朝食付きでお願いすることはできますでしょうか？" };
@@ -212,7 +215,7 @@ export class ScriptedAgent implements BrainProvider {
       (typeof mission.verified.time === "string" && parseTimes(lastText, en ? "en" : "ja").some((t) => t.value === mission.verified.time)) ||
       (typeof mission.verified.price === "number" && parsePrices(lastText).some((p) => p.value === mission.verified.price));
     if (REFUSAL_RE.test(lastText) && !AGREEMENT_RE.test(lastText) && pendingKeys.length === 0 && !restatesVerified) {
-      if (/満席|満室|定休|以降は満席|在庫|fully booked|sold out|closed on/i.test(lastText)) {
+      if (/満席|満室|定休|休業|お休み|以降は満席|在庫|fully booked|sold out|closed/i.test(lastText)) {
         return { text: en ? "Understood, we'll try another day. Thank you, goodbye." : "承知しました。では別の日を検討いたします。ありがとうございました。", action: "hangup" };
       }
     }
@@ -228,7 +231,7 @@ export class ScriptedAgent implements BrainProvider {
     }
     if (en ? asksEn(/what time|which time/i) : /何時|お時間|時間/.test(lastText)) {
       if (after) return { text: en ? `${enTime(after)} or later, if you have anything.` : `${jaTime(after)}以降でお願いしたいのですが、空いていますでしょうか？` };
-      if (typeof input.time === "string") return { text: en ? `${enTime(input.time)}, please.` : `${jaTime(input.time)}でお願いします。` };
+      if (wantedTime) return { text: en ? `${enTime(wantedTime)}, please.` : `${jaTime(wantedTime)}でお願いします。` };
     }
 
     // 8. Everything required is verified except the confirmation: ask to finalise.
@@ -290,16 +293,23 @@ export class ScriptedAgent implements BrainProvider {
     return { text: `${jaPrice(budget)}が上限でして、それ以上ですと難しいのですが、いかがでしょうか？` };
   }
 
+  /** The one time to ask for: a fixed time in the contract (`time: { eq }`), or the time the user gave. */
+  private wantedTime(contract: CallContract): string | undefined {
+    const fixed = contract.constraints.time?.eq, given = (contract.input as Record<string, unknown>).time;
+    return typeof fixed === "string" ? fixed : typeof given === "string" ? given : undefined;
+  }
+
   private opener(domain: Domain, contract: CallContract): string {
     const input = contract.input as Record<string, unknown>;
     if (contract.language === "en") return this.openerEn(domain, contract);
     const date = typeof input.date === "string" ? jaDate(input.date) : "近日中";
     const party = typeof input.partySize === "number" ? `${input.partySize}名` : "";
     const after = contract.constraints.time?.gte;
-    const time = typeof after === "string" ? `${jaTime(after)}以降` : typeof input.time === "string" ? jaTime(input.time) : "";
+    const wanted = this.wantedTime(contract);
+    const time = typeof after === "string" ? `${jaTime(after)}以降` : wanted ? jaTime(wanted) : "";
     switch (domain) {
       case "restaurant":
-        return `恐れ入ります、${date}の${time}で${party}、予約をお願いしたいのですが、空いていますでしょうか？`;
+        return `恐れ入ります、${date}${time ? `の${time}` : ""}で${party}、予約をお願いしたいのですが、空いていますでしょうか？`;
       case "hotel": {
         const wants: string[] = [];
         if (contract.constraints.breakfast?.eq === true) wants.push("朝食付き");
@@ -323,7 +333,8 @@ export class ScriptedAgent implements BrainProvider {
     const date = typeof input.date === "string" ? enDate(input.date) : "in the next few days";
     const party = typeof input.partySize === "number" ? `${input.partySize}` : "";
     const after = contract.constraints.time?.gte;
-    const time = typeof after === "string" ? `${enTime(after)} or later` : typeof input.time === "string" ? enTime(input.time) : "";
+    const wanted = this.wantedTime(contract);
+    const time = typeof after === "string" ? `${enTime(after)} or later` : wanted ? enTime(wanted) : "";
     switch (domain) {
       case "restaurant":
         return `Hi, I'd like to book a table for ${party || "two"} on ${date}, ${time || "in the evening"}. Do you have anything available?`;

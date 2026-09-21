@@ -22,9 +22,9 @@ export type Claim = {
 };
 
 const NEGATIVE_JA =
-  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!問題(?:は)?)ございません|(?<!問題(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|できまへん|でけへん|あきまへん|あかん/;
+  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!問題(?:は)?)ございません|(?<!問題(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|定休日|休業|お休みを?(?:いただ|頂)|できまへん|でけへん|あきまへん|あかん/;
 const NEGATIVE_EN =
-  /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work)\b/i;
+  /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work|(?:we're|we are|is|are) closed)\b/i;
 
 export const REFUSAL_RE = new RegExp(`${NEGATIVE_JA.source}|${NEGATIVE_EN.source}`, "i");
 
