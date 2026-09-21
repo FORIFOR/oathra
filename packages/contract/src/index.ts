@@ -349,6 +349,20 @@ export function checkConstraints(
 }
 export { PHONE_PURPOSE_TEMPLATES } from "./phone-templates.js";
 
+/**
+ * Someone rang the number. Nobody reviewed a request for this call, so the agent may do less than on an outbound
+ * one: it answers on the owner's behalf, takes the message, and promises nothing. `context` is what the service
+ * already knows (for example that this number was called earlier, and why); it is data, not an instruction.
+ */
+export function definePhoneInbound(call: { ownerName: string; callerPhone: string; callerName?: string; context?: string }, budget: Partial<CallContract["budget"]> = {}): CallContract {
+  const ownerName = call.ownerName.trim().slice(0, 40), context = call.context?.trim().slice(0, 600);
+  return defineCall({ goal: "phone.inbound", language: "ja",
+    input: { ownerName, ...(context ? { context } : {}), policy: "着信への応対。AIであることと誰の電話かを最初に伝える。用件・名前・折り返し先を聞き取り、依頼者へ伝えると約束するだけにする。予約・購入・支払い・契約・個人情報の提供・依頼者の予定や居場所の回答は行わない。相手が切りたければ終了する。" },
+    permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
+    target: { phone: call.callerPhone, name: call.callerName?.trim().slice(0, 100) || "着信" },
+  });
+}
+
 /** Shared ask-only policy for personal phone requests across CLI, OSS Web and managed Gateway. */
 export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
   const parsed = parsePhoneRequest(request);

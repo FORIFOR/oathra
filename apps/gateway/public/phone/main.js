@@ -374,7 +374,7 @@ import { renderNews } from './news.js';
         for (const r of records) {
             const li = element('li');
             li.className = 'phone-history-item';
-            li.append(element('strong', r.request.name), element('span', `${new Date(r.createdAt).toLocaleString()} · ${stateLabel[r.state]}`), element('p', r.request.instruction));
+            li.append(element('strong', (r.direction === 'inbound' ? '着信：' : '') + r.request.name), element('span', `${new Date(r.createdAt).toLocaleString()} · ${stateLabel[r.state]}`), element('p', r.request.instruction));
             const usage = element('p', usageText(r));
             usage.className = 'phone-history-credits';
             li.append(usage);
@@ -489,7 +489,7 @@ import { renderNews } from './news.js';
         $('#phone-live-credits').textContent = usageText(r);
         $('#phone-live-cost').textContent = costText(r);
         $('#phone-live-balance').textContent = '';
-        $('#phone-live-recipient').textContent = `${r.request.name} · ${r.request.phone}`;
+        $('#phone-live-recipient').textContent = `${r.direction === 'inbound' ? '着信 · ' : ''}${r.request.name} · ${r.request.phone}`;
         $('#phone-live-summary').textContent = r.summary ?? '';
         $('#phone-live-summary').hidden = !r.summary;
         $('#phone-live-request-text').textContent = r.request.instruction;

@@ -17,10 +17,10 @@ export class Credits {
       CREATE TABLE IF NOT EXISTS credit_settlements(mission TEXT PRIMARY KEY,owner TEXT NOT NULL,consumed INTEGER NOT NULL,released INTEGER NOT NULL,detail TEXT NOT NULL);`);
   }
   get enabled() { return this.config.deployment === 'managed'; }
-  quote(mode,phone,spendingAmount) {
+  quote(mode,phone,spendingAmount,direction='outbound') {
     if(this.enabled&&mode==='live'&&this.config.billing?.policy===METERED){
       let tariff=this.config.billing;
-      if(tariff.settlement&&phone){const carrierRate=tariff.carrier.find(r=>phone.startsWith(r.prefix));assert(carrierRate,'carrier_rate_not_configured',409);const {carrier,...rest}=tariff;tariff={...rest,carrierRate};}
+      if(tariff.settlement&&phone){const carrierRate=direction==='inbound'?tariff.inbound:tariff.carrier.find(r=>phone.startsWith(r.prefix));assert(carrierRate,direction==='inbound'?'inbound_rate_not_configured':'carrier_rate_not_configured',409);const {carrier,inbound,...rest}=tariff;tariff={...rest,carrierRate};}
       const maximum=units(Math.ceil(nanoUsd(this.config.maxCallUsd)/tariff.creditNanoUsd));
       if(spendingAmount!==undefined){
         assert(tariff.settlement==='usage-rate-v1'&&tariff.carrierRate,'invalid_spending_limit');
@@ -32,7 +32,7 @@ export class Credits {
     const amount = this.enabled && mode === 'live' ? units(this.config.creditsPerCall) : 0;
     return { mode:this.enabled?'credits':'self-hosted', amount, unit:'credit', policy:'call-attempt-v1' };
   }
-  currentQuote(m) { return this.quote(m.mode,m.target?.phone,m.creditQuote?.spendingLimit===BALANCE_LIMIT?m.creditQuote.amount:undefined); }
+  currentQuote(m) { return this.quote(m.mode,m.target?.phone,m.creditQuote?.spendingLimit===BALANCE_LIMIT?m.creditQuote.amount:undefined,m.direction==='inbound'?'inbound':'outbound'); }
   status(m) { const h=this.store.db.prepare('SELECT status FROM credit_holds WHERE mission=? AND owner=?').get(m.id,m.owner);return h?.status??'none'; }
   /** Actual recorded movement for this call, independent of the current tariff or quote. */
   usage(m) {

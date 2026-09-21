@@ -31,7 +31,14 @@ export function configuration(env=process.env){
   const required=['TWILIO_ACCOUNT_SID','TWILIO_AUTH_TOKEN','TWILIO_PHONE_NUMBER','OPENAI_API_KEY','OATHRA_VOICE_MODEL','OATHRA_BUSINESS_NAME','OATHRA_RATE_CEILING_USD','OATHRA_LIVE_POLICY_REVIEWED'];
   const missing=required.filter(k=>k==='OATHRA_LIVE_POLICY_REVIEWED'?env[k]!=='true':!env[k]);
   const liveReady=mode==='live'&&missing.length===0&&env.OATHRA_LIVE_POLICY_REVIEWED==='true'&&parsed.protocol==='https:'&&existsSync(new URL('../../packages/runtime/dist/index.js',import.meta.url));
-  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
+  // Answering incoming calls is off unless someone is named to receive them; whoever that is pays for them.
+  let inbound=null;
+  if(env.OATHRA_INBOUND_OWNER){
+    assert(users.some(u=>u.id===env.OATHRA_INBOUND_OWNER),'unknown_inbound_owner',500);
+    const name=String(env.OATHRA_INBOUND_NAME??'').trim();assert(name.length>0&&name.length<=40&&!/[\d@<>{}]/.test(name),'configure_inbound_name',500);
+    inbound={owner:env.OATHRA_INBOUND_OWNER,name,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
+  }
+  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
     dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,0,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0,1000),
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),

@@ -14,7 +14,7 @@ import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler }
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { AgentBridge } from "./index.js";
-import { conversationPolicies, phoneMessageInstructions } from "./phone-message.js";
+import { conversationPolicies, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
 import { createNewsSearch, NEWS_TOPICS, publicQuery, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
 
 export type LiveAgentOptions = {
@@ -203,7 +203,7 @@ export class OpenAILiveAgent {
         parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS }, query: { type: "string", description: "Only with topic=search: 2-60 characters of public words, e.g. \"任天堂 株価\"." } }, required: ["topic"], additionalProperties: false },
       });
     }
-    if (this.opts.webSearch ?? this.opts.contract.goal !== "phone.message") tools.push({ type: "web_search" });
+    if (this.opts.webSearch ?? !this.opts.contract.goal.startsWith("phone.")) tools.push({ type: "web_search" });
     this.send({
       type: "session.start",
       event_id: "oathra_start",
@@ -276,7 +276,7 @@ export class OpenAILiveAgent {
     }
     this.greeted = true;
     // Other kinds of call let the callee's own opening stand; Live answers it from its instructions.
-    if (this.calleeOpened && this.opts.contract.goal !== "phone.message") return;
+    if (this.calleeOpened && this.opts.contract.goal !== "phone.message" && this.opts.contract.goal !== "phone.inbound") return;
     // `instructions.append` is accepted here but does not make Live speak
     // (measured: silent for 14 s). `commentary.append` is the event for words
     // to say aloud, and starts within a second; Live may paraphrase them.
@@ -296,6 +296,8 @@ export class OpenAILiveAgent {
     if (goal === "phone.message") return ja
       ? `${this.agentSpoke ? "" : "もしもし。"}${caller ? `${caller}さんの代わりにお電話しているAIです。` : "知り合いの方の代わりにお電話しているAIです。"}今、少しお話しできますか？`
       : `${this.agentSpoke ? "" : "Hello. "}This is an AI calling on behalf of ${caller ?? "someone you know"}. Is now a good time to talk?`;
+    // They rang us: the one who picks up speaks first, and says whose phone this is and that an AI has it.
+    if (goal === "phone.inbound") { const owner = String(this.opts.contract.input.ownerName ?? ""); return ja ? `お電話ありがとうございます。${owner}さんの電話を預かっているAIアシスタントです。ご用件をお伺いします。` : `Thank you for calling. This is an AI assistant looking after ${owner}'s phone. How can I help?`; }
     if (goal.startsWith("chat.")) return ja ? "もしもし？" : "Hello?";
     return ja ? "もしもし、お忙しいところ失礼いたします。" : "Hello, sorry to bother you.";
   }
@@ -748,7 +750,7 @@ export class OpenAILiveAgent {
       "",
       "## Tools",
       "- end_call: call it right after a goodbye, when the other person says goodbye or asks you to hang up, on voicemail, or when the conversation is over. Never leave the line open.",
-      ...(this.opts.webSearch ?? this.opts.contract.goal !== "phone.message"
+      ...(this.opts.webSearch ?? !this.opts.contract.goal.startsWith("phone.")
         ? ["- web_search: use it for current or external facts, or whenever the callee asks you to look something up. Wait for the tool result before answering; give the concise gist in one or two spoken sentences and never read URLs. If the tool fails, say that the lookup failed and ask whether to continue."]
         : []),
       ...(this.newsSearch ? ["- lookup_news: the only way to check news, weather, Tokyo events or any other public information. Pass a category, or topic=search with a short query of public words; never anyone's name or number from this call. Wait for the result before answering and never invent details it does not contain."] : []),
@@ -760,6 +762,7 @@ export class OpenAILiveAgent {
   instructions(): string {
     const c = this.opts.contract;
     if (c.goal === "phone.message") return phoneMessageInstructions(c, !!this.newsSearch);
+    if (c.goal === "phone.inbound") return phoneInboundInstructions(c);
     const ja = this.language === "ja";
     const casual = c.goal.startsWith("chat.");
     const v = this.view;

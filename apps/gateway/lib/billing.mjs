@@ -37,7 +37,15 @@ export function billingConfiguration(env) {
   }).sort((a,b)=>b.prefix.length-a.prefix.length);
   const s=p.search;assert(s?.model==='gpt-5.4-mini','configure_search_model',500);
   const search={model:s.model,perCallNanoUsd:nanoUsd(s.perCall),rates:Object.fromEntries(['input','cached','output'].map(k=>{const n=nanoUsd(s[k]);assert(n%1000000===0,'invalid_token_price');return [k,n/1000000]}))};
-  Object.assign(tariff,{settlement:USAGE_RATE,usageVersion:p.version,carrier,mediaPerMinuteNanoUsd:nanoUsd(p.mediaPerMinute),search});
+  // Receiving a call is priced separately from placing one; without a reviewed price the service does not answer.
+  let inbound;
+  if(p.inbound!==undefined){
+   const c=p.inbound;assert(typeof c?.source==='string'&&c.source.length>0,'configure_inbound_rate',500);
+   const converted=carrierCost(nanoUsd(c.perMinute)?'-'+c.perMinute:'0',c.currency,tariff);assert(converted!==null&&converted>0,'configure_inbound_rate',500);
+   assert(Number.isSafeInteger(c.incrementSeconds)&&c.incrementSeconds>0&&c.incrementSeconds<=60,'invalid_billing_increment',500);
+   inbound={prefix:'inbound',currency:c.currency,perMinute:c.perMinute,incrementSeconds:c.incrementSeconds,source:c.source,perMinuteNanoUsd:converted};
+  }
+  Object.assign(tariff,{settlement:USAGE_RATE,usageVersion:p.version,carrier,...(inbound?{inbound}:{}),mediaPerMinuteNanoUsd:nanoUsd(p.mediaPerMinute),search});
  }
  return tariff;
 }
