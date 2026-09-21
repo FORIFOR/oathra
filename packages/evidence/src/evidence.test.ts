@@ -455,3 +455,33 @@ describe("breakfast polarity", () => {
     expect(claim("朝食は付いております。")).toEqual([true]);
   });
 });
+
+describe("the slot is gone after the booking was taken", () => {
+  const contract = defineCall({ goal: "restaurant.reservation", language: "ja", input: { date: "2026-09-25", partySize: 2 }, require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true } });
+  const verdict = (lines: Utterance["source"] extends never ? never : [Utterance["source"], string][]) => {
+    const engine = new EvidenceEngine({ now: new Date("2026-09-21T10:00:00+09:00"), language: "ja" });
+    lines.forEach(([source, text], i) => engine.ingest({ id: `t${i}`, source, text, t: i + 1 }));
+    return evaluate(contract, engine, "completed");
+  };
+  const booked: Utterance["source"] extends never ? never : [Utterance["source"], string][] = [["caller", "9月25日の19時半に2名でお願いします。田中と申します。"], ["callee", "9月25日19時半、2名様、田中様でご予約承りました。"]];
+
+  it("takes the booking back: the table cannot be both held and 貸切/満席", () => {
+    for (const taken of ["あ、失礼しました、その日は貸切でした。お受けできません。", "申し訳ありません、その時間は満席になってしまいました。", "すみません、その日は定休日でした。"]) {
+      const r = verdict([...booked, ["callee", taken]]);
+      expect(r.fields.confirmed, taken).toBeUndefined();
+      expect(r.complete, taken).toBe(false);
+    }
+  });
+
+  it("keeps the booking when the same words are about something else, or came before it", () => {
+    // A payment or policy remark is not a cancellation.
+    expect(verdict([...booked, ["callee", "恐れ入りますが、クレジットカードはお受けできません。"]]).fields.confirmed).toBe(true);
+    // The ordinary flow: the first choice was full, the offered one was booked.
+    expect(verdict([["caller", "9月25日の19時に2名でお願いします。田中と申します。"], ["callee", "19時は満席ですが、19時半でしたら空いております。"], ["caller", "では19時半でお願いします。"], ["callee", "9月25日19時半、2名様、田中様でご予約承りました。"]]).fields.confirmed).toBe(true);
+    // Pre-existing conservative rule, unchanged here: a confirmation sharing an utterance with a refusal
+    // clause is not counted at all, so the same sentence is incomplete with or without the availability word.
+    for (const oneBreath of ["19時は満席ですが、19時半でしたらご予約承りました。", "19時はご用意できませんが、19時半でしたらご予約承りました。"]) {
+      expect(verdict([["caller", "9月25日の19時に2名でお願いします。田中と申します。"], ["callee", oneBreath]]).fields.confirmed, oneBreath).toBeUndefined();
+    }
+  });
+});

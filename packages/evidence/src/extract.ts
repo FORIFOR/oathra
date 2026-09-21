@@ -202,6 +202,15 @@ export const RETRACTION_RE =
   /やはり[^。]*?(?:できません|できかね|無理|キャンセル|やめ)|キャンセル(?:して|させて|でお願い)|取り消して|(?:please )?cancel (?:it|that|the (?:meeting|appointment))|(?:予約|ご予約|注文|ご注文)(?:は|を)?(?:お受けでき(?:ません|かねます)|お取りでき(?:ません|かねます)|承れません|お受けいたしかねます|お取りいたしかねます|キャンセル|取り消し)|取り消させていただき|(?:can't|cannot|unable to|won't be able to) (?:take|honou?r|hold|keep|confirm) (?:the|that|your|this) (?:reservation|booking|order)|(?:reservation|booking|order) (?:is|has been|was) (?:cancelled|canceled|off|withdrawn)|after all,? (?:we|I) can't/i;
 
 /**
+ * The slot itself is gone. Said by the callee AFTER a confirmation, this takes the booking back even without
+ * the word 予約: a table that is 満席 or 貸切 cannot still be held. Said before, it is only the usual "that time
+ * is full" and never touches a later confirmation. Deliberately narrow: an availability word, not any refusal,
+ * so 「カードはお受けできません」 after a booking stays a payment remark and not a cancellation.
+ */
+export const UNAVAILABLE_RE =
+  /満席|満室|貸切|貸し切り|休業|定休|埋まって(?:しまって|おり|い)?ます|空いて(?:おりません|いません|ない)|(?:fully booked|no longer available|sold out|closed that day|closed on that day)/i;
+
+/**
  * Appointment-style contracts (`confirmation: "callee_acceptance"`): the caller proposes a slot and
  * the callee commits to it. 「9月25日の15時でお願いします」 from the callee is that commitment; in a
  * reservation the same words from a shop would only be an offer.
