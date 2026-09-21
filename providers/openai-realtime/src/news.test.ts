@@ -60,6 +60,10 @@ it("only explicit chat enables conversation and grounded news; legacy and unsupp
   expect(PhoneRequestSchema.shape.conversationMode.safeParse("unlimited").success).toBe(false);
   const chat=defineCall({goal:"phone.message",language:"ja",input:{request:"雑談したい",conversationMode:"chat"}});
   expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("近況への一回答だけで");
+  // A chat is carried by reactions to what was said, not by a question every turn.
+  const talk=new OpenAILiveAgent({contract:chat}).instructions();
+  for(const phrase of ["共感や同意","例え話","似た考え方や共通点","軽いアドバイス","質問攻め","多くても二、三回の発話に一回","実体験があるかのような作り話はしない"])expect(talk).toContain(phrase);
+  expect(talk).not.toContain("一度に一つだけ質問");
   expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("必ずlookup_news");
   expect(new OpenAILiveAgent({contract:chat}).backendInstructions()).toContain("- lookup_news:");
   expect(new OpenAILiveAgent({contract:chat,newsSearch:false}).instructions()).toContain("この接続では使えません");
