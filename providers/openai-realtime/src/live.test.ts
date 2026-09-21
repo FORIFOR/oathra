@@ -326,6 +326,17 @@ describe("OpenAILiveAgent casual intake", () => {
       expect(spoken(h)).toHaveLength(1);
     });
 
+    it("answers an incoming call at once, even while the person who rang is already saying hello", () => {
+      vi.useFakeTimers();
+      const h = harness("phone.inbound");
+      h.agent.pushAudio(SILENT);
+      for (let t = 0; t < 600; t += 200) { h.agent.pushAudio(VOICED); h.advance(200); }
+      expect(spoken(h)).toHaveLength(1);
+      expect(spoken(h)[0]!.content).toContain("電話を預かっているAIアシスタントです");
+      for (let t = 0; t < 3000; t += 250) { h.agent.pushAudio(VOICED); h.advance(250); }
+      expect(spoken(h)).toHaveLength(1);
+    });
+
     it("lets a shop's greeting or a voicemail announcement go first, and can be turned off", () => {
       vi.useFakeTimers();
       const answered = harness("restaurant.reservation");

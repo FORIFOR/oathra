@@ -270,7 +270,10 @@ export class OpenAILiveAgent {
     // is calling, so the opening waits for the first quiet moment instead of being dropped. A real call
     // that was answered into a conversation went six minutes without the agent ever saying what it was.
     const calleeBusy = this.lastCalleeVoiceMs > 0 && now - this.lastCalleeVoiceMs < 700 || this.inText !== "";
-    if (calleeBusy || now < this.audibleEndMs) {
+    // Answering a call is the other way round: whoever picks up speaks first, and the person who rang is
+    // saying "もしもし?" into the silence until we do. A real incoming call waited seven seconds for this.
+    const answering = this.opts.contract.goal === "phone.inbound";
+    if (!answering && (calleeBusy || now < this.audibleEndMs)) {
       this.calleeOpened ||= calleeBusy;
       if (attempt < 100) { setTimeout(() => this.greet(attempt + 1), 300).unref?.(); return; }
     }
