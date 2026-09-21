@@ -199,7 +199,7 @@ export class OpenAILiveAgent {
       tools.push({
         type: "function",
         name: "lookup_news",
-        description: "Check recent public headlines when asked about news. Use tokyo_events for current or upcoming events and outings in Tokyo. Use weather for typhoons, heavy rain, warnings and forecasts. For anything else that is public information (a company, a share price, a product, a public figure, a fact), use topic=search with a short query of public words only. Never put the name or number of anyone on this call, an address, or a sentence from the conversation in the query. Say you are checking first. At most eight times per call.",
+        description: "Check recent public headlines when asked about news. Use tokyo_events only for events on across Tokyo as a whole; for a specific ward, station, venue or kind of outing use topic=search with a short query instead. Use weather for typhoons, heavy rain, warnings and forecasts. For anything else that is public information (a company, a share price, a product, a public figure, a fact), use topic=search with a short query of public words only. Never put the name or number of anyone on this call, an address, or a sentence from the conversation in the query. Say you are checking first. At most eight times per call.",
         parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS }, query: { type: "string", description: "Only with topic=search: 2-60 characters of public words, e.g. \"任天堂 株価\"." } }, required: ["topic"], additionalProperties: false },
       });
     }

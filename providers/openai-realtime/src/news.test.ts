@@ -62,7 +62,7 @@ it("only explicit chat enables conversation and grounded news; legacy and unsupp
   expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("近況への一回答だけで");
   // A chat is carried by reactions to what was said, not by a question every turn.
   const talk=new OpenAILiveAgent({contract:chat}).instructions();
-  for(const phrase of ["共感や同意","例え話","似た考え方や共通点","軽いアドバイス","質問攻め","多くても二、三回の発話に一回","実体験はありません","私はAIだから実際にはないんだけど","作り話は絶対にしない","はぐらかさず","最初から言い直さず"])expect(talk).toContain(phrase);
+  for(const phrase of ["共感や同意","例え話","似た考え方や共通点","軽いアドバイス","質問攻め","実体験はありません","私はAIだから実際にはないんだけど","作り話は絶対にしない","はぐらかさず","最初から言い直さず","そこで必ず話すのをやめ、相手の返事を待ってください","過去に会話や約束があったかのような話は絶対に作らないでください","発話を質問で終えるのは三回に一回まで","別の質問を重ねてはいけません","特定の区や駅・施設","検索するふりをせず"])expect(talk).toContain(phrase);
   expect(talk).not.toContain("一度に一つだけ質問");
   expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("必ずlookup_news");
   expect(new OpenAILiveAgent({contract:chat}).backendInstructions()).toContain("- lookup_news:");
