@@ -306,7 +306,7 @@ Arena keeps the current practice call available when returning to the mission li
 
 Arena の「電話をかける」で、電話番号・相手・目的を入力し、送信先と費用の説明を確認してから発信できます。目的は「雑談」を含む13種類の編集可能なテンプレート、または保存済み履歴から再利用できます。Web発信は experimental（Twilio + gpt-live、設定済み公開WSSが必要）。未設定では発信できず、不足設定を表示します。JSON保存とCLI引き継ぎも利用できます。LINE/Slackの汎用依頼は引き続き下書き受付までです。[Web発信の設定と契約](docs/quality/web-phone.md)、[Gatewayで実行した電話の記録](docs/quality/user-ui-call.md)。
 
-「雑談」は近況・趣味・日常の会話を続けるテンプレートです。ニュースを聞かれた際にはOpenAIのWeb検索で確認し、報道日と出典を添えます（1通話8回まで）。確認できない内容は未確認と伝えます。サービス版の `usage-rate-v1` では検索の回数・token使用量も精算（旧契約は運営者負担）し、参照したニュースを履歴から確認できます。OSS版では自身のOpenAI APIに検索料金が発生します。[設定・互換性と検証範囲](docs/quality/chat-news.md)。
+「雑談」は近況・趣味・日常の会話を続けるテンプレートです。ニュースや公開情報の調べもの（会社、株価、商品など）を頼まれた際にはOpenAIのWeb検索で確認し、日付と出典を添えます。検索へ送るのは公開カテゴリか公開されている短い検索語だけで、通話の当事者の名前・電話番号・会話の文は送りません（1通話8回まで）。確認できない内容は未確認と伝えます。サービス版の `usage-rate-v1` では検索の回数・token使用量も精算（旧契約は運営者負担）し、参照したニュースを履歴から確認できます。OSS版では自身のOpenAI APIに検索料金が発生します。[設定・互換性と検証範囲](docs/quality/chat-news.md)。
 
 ### General contacts / 一般連絡先
 

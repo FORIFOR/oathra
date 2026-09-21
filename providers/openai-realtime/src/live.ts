@@ -15,7 +15,7 @@ import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { AgentBridge } from "./index.js";
 import { conversationPolicies, phoneMessageInstructions } from "./phone-message.js";
-import { createNewsSearch, NEWS_TOPICS, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
+import { createNewsSearch, NEWS_TOPICS, publicQuery, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
 
 export type LiveAgentOptions = {
   contract: CallContract;
@@ -38,6 +38,11 @@ export type LiveAgentOptions = {
   greetFirst?: boolean;
   /** Only enabled by an explicit chat contract; false disables public news lookup. */
   newsSearch?: NewsSearch | false;
+  /**
+   * Let the backend ask for several lookups at once ("events and the typhoon") instead of one after another.
+   * Measured on the Live API: both start within 0.1 s instead of 3.5 s apart. Default true; false restores one at a time.
+   */
+  parallelLookups?: boolean;
   onNews?: (event: NewsLookupEvent) => void;
 };
 
@@ -101,6 +106,7 @@ export class OpenAILiveAgent {
   private newsControllers = new Set<AbortController>();
   private newsCount = 0;
   private lastFillerMs = Number.NEGATIVE_INFINITY;
+  private pendingLookups = 0;
   private sentMission: string | undefined;
   // One filter per direction for the whole call: chunk edges stay inaudible and nothing aliases onto the line.
   private readonly toLive = new StreamResampler(8000, LIVE_RATE);
@@ -189,8 +195,8 @@ export class OpenAILiveAgent {
       tools.push({
         type: "function",
         name: "lookup_news",
-        description: "Check recent public headlines when asked about news. Use tokyo_events for current or upcoming events and outings in Tokyo. Use weather for typhoons, heavy rain, warnings and forecasts. Only these categories are supported. Say you are checking first. Never send private information. At most eight times per call.",
-        parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS } }, required: ["topic"], additionalProperties: false },
+        description: "Check recent public headlines when asked about news. Use tokyo_events for current or upcoming events and outings in Tokyo. Use weather for typhoons, heavy rain, warnings and forecasts. For anything else that is public information (a company, a share price, a product, a public figure, a fact), use topic=search with a short query of public words only. Never put the name or number of anyone on this call, an address, or a sentence from the conversation in the query. Say you are checking first. At most eight times per call.",
+        parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS }, query: { type: "string", description: "Only with topic=search: 2-60 characters of public words, e.g. \"任天堂 株価\"." } }, required: ["topic"], additionalProperties: false },
       });
     }
     if (this.opts.webSearch ?? this.opts.contract.goal !== "phone.message") tools.push({ type: "web_search" });
@@ -204,7 +210,7 @@ export class OpenAILiveAgent {
         delegation:
           delegateTo === "client"
             ? { type: "client" }
-            : { type: "responses", responses: { model: delegateTo, instructions: this.backendInstructions(), tools, tool_choice: "auto", parallel_tool_calls: false } },
+            : { type: "responses", responses: { model: delegateTo, instructions: this.backendInstructions(), tools, tool_choice: "auto", parallel_tool_calls: this.opts.parallelLookups !== false && !!this.newsSearch } },
       },
     });
     await new Promise<void>((res, rej) => {
@@ -473,9 +479,16 @@ export class OpenAILiveAgent {
   private async lookupNews(callId: string, args: Json): Promise<void> {
     if (!callId || this.newsCalls.has(callId)) return;
     this.newsCalls.add(callId);
+    this.pendingLookups++;
     const requestedAt = Date.now();
     const topic = args?.topic as NewsTopic;
-    const permitted = !!this.newsSearch && NEWS_TOPICS.includes(topic) && Object.keys(args).length === 1;
+    // Public words may be searched; the people on this call may not. Their names and number never leave it.
+    const target = this.opts.contract.target;
+    const words = topic === "search" ? publicQuery(args?.query, [target?.name ?? "", this.opts.calleeName ?? "", (target?.phone ?? "").replace(/\D/g, "")].filter(Boolean)) : null;
+    const keys = Object.keys(args ?? {});
+    // Models often attach a query to a category lookup as well. It is simply not used there; only an
+    // unknown argument, or a search whose words were refused, stops the lookup.
+    const permitted = !!this.newsSearch && NEWS_TOPICS.includes(topic) && keys.every((key) => key === "topic" || key === "query") && (topic !== "search" || !!words);
     let result: NewsResult;
     if (!permitted || this.newsCount >= MAX_NEWS_LOOKUPS) {
       result = { status: "unavailable", topic: NEWS_TOPICS.includes(topic) ? topic : "general", checkedAt: new Date().toISOString(), reason: permitted ? "limit" : "unverified" };
@@ -485,15 +498,18 @@ export class OpenAILiveAgent {
       this.newsControllers.add(controller);
       const filler = setTimeout(() => this.lookupFiller(), LOOKUP_FILLER_MS);
       filler.unref?.();
-      try { result = await this.newsSearch!(topic, controller.signal); }
+      try { result = await this.newsSearch!(topic, controller.signal, words ?? undefined); }
       catch { result = { status: "unavailable", topic, checkedAt: new Date().toISOString(), reason: controller.signal.aborted ? "cancelled" : "provider_error" }; }
       finally { clearTimeout(filler); this.newsControllers.delete(controller); }
       if (controller.signal.aborted) result = { status: "unavailable", topic, checkedAt: new Date().toISOString(), reason: "cancelled" };
     }
+    this.pendingLookups--;
     try { this.opts.onNews?.({ type: "news.lookup", result, tookMs: Date.now() - requestedAt }); } catch { /* Observers cannot cause an unhandled async rejection. */ }
     if (this.closed) return;
     this.send({ type: "response.item.create", event_id: `tool_${callId}`, item: { type: "function_call_output", call_id: callId, output: JSON.stringify(result) } });
-    this.send({ type: "response.create", event_id: `continue_${callId}` });
+    // Lookups asked for together are answered together: continue once the last of them is in.
+    // Live rejects a continue while any requested output is still missing, refused lookups included.
+    if (this.pendingLookups === 0) this.send({ type: "response.create", event_id: `continue_${callId}` });
   }
 
   close(): void {
@@ -718,7 +734,7 @@ export class OpenAILiveAgent {
       ...(this.opts.webSearch ?? this.opts.contract.goal !== "phone.message"
         ? ["- web_search: use it for current or external facts, or whenever the callee asks you to look something up. Wait for the tool result before answering; give the concise gist in one or two spoken sentences and never read URLs. If the tool fails, say that the lookup failed and ask whether to continue."]
         : []),
-      ...(this.newsSearch ? ["- lookup_news: the only way to check news or Tokyo events. Pass one public category and nothing else; wait for the result before answering and never invent details it does not contain."] : []),
+      ...(this.newsSearch ? ["- lookup_news: the only way to check news, weather, Tokyo events or any other public information. Pass a category, or topic=search with a short query of public words; never anyone's name or number from this call. Wait for the result before answering and never invent details it does not contain."] : []),
       ...(!casual ? ["- request_action: required before any action outside the permitted list."] : []),
       "Keep replies short and spoken. Never promise to do something later.",
     ].join("\n");

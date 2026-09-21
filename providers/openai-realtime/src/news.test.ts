@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 import { defineCall, PhoneRequestSchema } from "@oathra/contract";
 import { OpenAILiveAgent } from "./live.js";
-import { createNewsSearch, parseNewsResponse, type NewsSearch, type NewsLookupEvent } from "./news.js";
+import { publicQuery, createNewsSearch, parseNewsResponse, type NewsSearch, type NewsLookupEvent } from "./news.js";
 
 const date = "2026-09-20T00:00:00Z";
 const raw = () => ({ status: "completed", output: [
@@ -82,9 +82,11 @@ const tools=(c:{received:any[]})=>c.received[0].session.delegation.responses.too
 const tool=(id:string,args:object={topic:"science"})=>({type:"response.event",event:{type:"response.output_item.done",item:{type:"function_call",name:"lookup_news",call_id:id,arguments:JSON.stringify(args)}}});
 it("publishes the tool only for chat, validates arguments, deduplicates and caps external lookups",async()=>{
   let calls=0;const search:NewsSearch=async topic=>{calls++;return parseNewsResponse(raw(),topic,date)};
-  await session(false,search,async c=>{expect(tools(c).some(t=>t.name==="lookup_news")).toBe(false);expect(tools(c).some(t=>t.type==="web_search")).toBe(false);c.send(tool("unauthorized"));await flush();expect(calls).toBe(0)});
+  await session(false,search,async c=>{expect(c.received[0].session.delegation.responses.parallel_tool_calls).toBe(false);expect(tools(c).some(t=>t.name==="lookup_news")).toBe(false);expect(tools(c).some(t=>t.type==="web_search")).toBe(false);c.send(tool("unauthorized"));await flush();expect(calls).toBe(0)});
   await session(true,search,async c=>{
     expect(tools(c).some(t=>t.name==="lookup_news")).toBe(true);expect(tools(c).some(t=>t.type==="web_search")).toBe(false);
+    // Several lookups may be requested at once only where lookups exist at all.
+    expect(c.received[0].session.delegation.responses.parallel_tool_calls).toBe(true);
     c.send(tool("private",{topic:"science",name:"must not be sent"}));await flush();expect(calls).toBe(0);
     c.send(tool("a"));c.send(tool("a"));await flush();expect(calls).toBe(1);
     c.send(tool("b"));c.send(tool("c",{topic:"weather"}));c.send(tool("d",{topic:"tokyo_events"}));await flush();expect(calls).toBe(4);
@@ -139,4 +141,45 @@ it("weather is its own fixed category, so a typhoon question is not answered wit
  }finally{intercepted.mockRestore()}
  const data:any=raw();data.output[1].content[0].text="報道日: 2026-09-20、発表元: 気象庁。現在、日本に接近している台風は確認できない。";
  expect(parseNewsResponse(data,"weather",date)).toMatchObject({status:"verified",topic:"weather"});
+});
+
+it("public words may be searched; the people on the call, numbers, addresses and links may not",()=>{
+ expect(publicQuery("任天堂　株価")).toBe("任天堂 株価");expect(publicQuery(" 生成AI 最新動向 ")).toBe("生成AI 最新動向");expect(publicQuery("ＡＩ規制 ２０２６")).toBe("AI規制 2026");
+ for(const bad of [undefined,42,"","a","x".repeat(61),"090-1234-5678 だれ","０９０１２３４５６７８","foo@example.com","https://example.com/x","www.example.com","〒100-0001 の店","150-0001 近くのカフェ"])expect(publicQuery(bad)).toBeNull();
+ // Whoever is on this call is never a search term, however the name is spaced or cased.
+ expect(publicQuery("山田 太郎 評判",["山田太郎"])).toBeNull();expect(publicQuery("やまだ商店 営業時間",["やまだ商店"])).toBeNull();expect(publicQuery("任天堂 株価",["山田太郎",""])).toBe("任天堂 株価");
+});
+it("topic=search carries only an accepted query to the search, and refuses private or malformed ones without searching",async()=>{
+ const seen:(string|undefined)[]=[];const search:NewsSearch=async(topic,_s,query)=>{seen.push(query);return {status:"verified",topic,checkedAt:date,publishedOn:"2026-09-19",text:"確認日: 2026-09-19",sources:[],...(query?{query}:{})}};
+ await session(true,search,async c=>{
+  c.send(tool("ok",{topic:"search",query:"任天堂 株価"}));await flush();expect(seen).toEqual(["任天堂 株価"]);expect(c.lookups[0]?.result).toMatchObject({status:"verified",query:"任天堂 株価"});
+  for(const [id,args] of [["phone",{topic:"search",query:"090-1234-5678 だれの番号"}],["none",{topic:"search"}],["extra",{topic:"search",query:"任天堂 株価",note:"x"}]] as const){c.send(tool(id,args));}
+  await flush();expect(seen).toEqual(["任天堂 株価"]);expect(c.lookups.slice(1).every(e=>e.result.status==="unavailable"&&e.result.reason==="unverified")).toBe(true);
+  // Seen on the real API: the model attaches a query to a category lookup too. The category still works; the words are not used.
+  c.send(tool("category",{topic:"weather",query:"台風 最新"}));await flush();expect(seen).toEqual(["任天堂 株価",undefined]);expect(c.lookups.at(-1)?.result.status).toBe("verified");
+ });
+});
+it("a public search asks for a source and the date the answer is good for, and is rejected without them",async()=>{
+ const intercepted=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response("",{status:429}));
+ try{
+  await createNewsSearch({apiKey:"local-unused"})("search",new AbortController().signal,"任天堂 株価");
+  const body=JSON.parse(String(intercepted.mock.calls[0]![1]!.body));
+  expect(body.input).toContain("「任天堂 株価」");expect(body.input).toContain("確認日: YYYY-MM-DD");expect(body.input).toContain("売買の助言はしない");expect(body.max_tool_calls).toBe(3);
+  await expect(createNewsSearch({apiKey:"local-unused"})("search",new AbortController().signal,"090-1234-5678")).rejects.toThrow(/invalid_public_query/);
+  expect(intercepted).toHaveBeenCalledTimes(1);
+ }finally{intercepted.mockRestore()}
+ const data:any=raw();data.output[1].content[0].annotations[0].url="https://example.invalid/q/7974";
+ data.output[1].content[0].text="確認日: 2026-09-18、出典: 表示確認用。終値は境界確認用の値です。";expect(parseNewsResponse(data,"search",date)).toMatchObject({status:"verified",publishedOn:"2026-09-18"});
+ for(const text of ["終値は境界確認用の値です。","確認日: 2027-01-01 未来の日付","確認日: 2026-02-30"]){data.output[1].content[0].text=text;expect(parseNewsResponse(data,"search",date).status).toBe("unavailable")}
+});
+
+it("lookups asked for together continue once, after the last of them, and never while an output is missing",async()=>{
+ const release:(()=>void)[]=[];const search:NewsSearch=(topic)=>new Promise(resolve=>release.push(()=>resolve({status:"verified",topic,checkedAt:date,publishedOn:"2026-09-19",text:"報道日: 2026-09-19",sources:[]})));
+ await session(true,search,async c=>{
+  c.send(tool("events",{topic:"tokyo_events"}));c.send(tool("typhoon",{topic:"weather"}));c.send(tool("refused",{topic:"search",query:"090-1234-5678"}));await flush();
+  const outputs=()=>c.received.filter(v=>v.type==="response.item.create").map(v=>v.item.call_id),continues=()=>c.received.filter(v=>v.type==="response.create");
+  expect(outputs()).toEqual(["refused"]);expect(continues()).toHaveLength(0);
+  release[0]!();await flush();expect(outputs()).toEqual(["refused","events"]);expect(continues()).toHaveLength(0);
+  release[1]!();await flush();expect(outputs()).toEqual(["refused","events","typhoon"]);expect(continues()).toHaveLength(1);
+ });
 });

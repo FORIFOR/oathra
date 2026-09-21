@@ -556,7 +556,7 @@
       $("#phone-download").href = phoneDownloadUrl;
       const ready=data.readiness;
       renderPhoneReadiness(ready);
-      $("#phone-disclosure").replaceChildren(el("p",{text:`${ready.provider} / ${ready.engine}`}),el("p",{text:ready.disclosure+(request.conversationMode==="chat"? (LANG==="ja"?" 雑談のニュース検索では公開カテゴリをOpenAIへ送信します。検索は1通話8回までで、別途API料金が発生します。":" News search sends a public category to OpenAI, at most up to eight times per call, with additional API charges."):"")}),...(ready.issues||[]).map(issue=>el("p",{text:issue})));
+      $("#phone-disclosure").replaceChildren(el("p",{text:`${ready.provider} / ${ready.engine}`}),el("p",{text:ready.disclosure+(request.conversationMode==="chat"? (LANG==="ja"?" 雑談のニュース・調べものでは、公開カテゴリまたは公開されている短い検索語をOpenAIへ送信します。氏名・電話番号・会話の文は送りません。検索は1通話8回までで、別途API料金が発生します。":" News and look-ups send a public category or a short query of public words to OpenAI, never names, numbers or the conversation, at most up to eight times per call, with additional API charges."):"")}),...(ready.issues||[]).map(issue=>el("p",{text:issue})));
       $("#phone-review").hidden = false; $("#phone-review").focus();syncPhoneDial();
       phoneExpiryTimer=setTimeout(syncPhoneDial,Math.max(0,Date.parse(data.expiresAt)-Date.now()));
       await refreshPhoneHistory();
