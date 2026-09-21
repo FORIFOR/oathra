@@ -44,7 +44,9 @@ export type LiveAgentOptions = {
 type Json = Record<string, unknown>;
 
 /** Enough for a long chat that asks about news, events and the weather; each lookup is billed. */
-const MAX_NEWS_LOOKUPS = 4;
+const MAX_NEWS_LOOKUPS = 8;
+/** A lookup takes 5-11 s. Past this the callee hears that we are still on it instead of dead air. */
+const LOOKUP_FILLER_MS = 5000;
 /** Live speaks mono PCM16LE at 24 kHz in both directions. */
 const LIVE_RATE = 24000;
 
@@ -98,6 +100,7 @@ export class OpenAILiveAgent {
   private newsCalls = new Set<string>();
   private newsControllers = new Set<AbortController>();
   private newsCount = 0;
+  private lastFillerMs = Number.NEGATIVE_INFINITY;
   private sentMission: string | undefined;
   // One filter per direction for the whole call: chunk edges stay inaudible and nothing aliases onto the line.
   private readonly toLive = new StreamResampler(8000, LIVE_RATE);
@@ -186,7 +189,7 @@ export class OpenAILiveAgent {
       tools.push({
         type: "function",
         name: "lookup_news",
-        description: "Check recent public headlines when asked about news. Use tokyo_events for current or upcoming events and outings in Tokyo. Use weather for typhoons, heavy rain, warnings and forecasts. Only these categories are supported. Say you are checking first. Never send private information. At most four times per call.",
+        description: "Check recent public headlines when asked about news. Use tokyo_events for current or upcoming events and outings in Tokyo. Use weather for typhoons, heavy rain, warnings and forecasts. Only these categories are supported. Say you are checking first. Never send private information. At most eight times per call.",
         parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS } }, required: ["topic"], additionalProperties: false },
       });
     }
@@ -452,6 +455,20 @@ export class OpenAILiveAgent {
     }
   }
 
+  /** One short line while a lookup runs long; never over the callee, and not again within 12 s. */
+  private lookupFiller(): void {
+    const now = this.bridge?.now() ?? 0;
+    if (this.closed || this.newsControllers.size === 0 || now - this.lastFillerMs < 12000) return;
+    if (now < this.audibleEndMs || now - this.lastCalleeVoiceMs < 800 || this.inText !== "") return;
+    this.lastFillerMs = now;
+    this.send({
+      type: "session.commentary.append",
+      event_id: `lookup_wait_${Date.now().toString(36)}`,
+      delegation_id: null,
+      content: this.language === "ja" ? "いま確認しているところです。もう少しだけ待ってくださいね。" : "I'm still checking. Just a moment more.",
+    });
+  }
+
   /** Category-only public news lookup. The conversation, names and numbers never reach the search. */
   private async lookupNews(callId: string, args: Json): Promise<void> {
     if (!callId || this.newsCalls.has(callId)) return;
@@ -466,9 +483,11 @@ export class OpenAILiveAgent {
       this.newsCount++;
       const controller = new AbortController();
       this.newsControllers.add(controller);
+      const filler = setTimeout(() => this.lookupFiller(), LOOKUP_FILLER_MS);
+      filler.unref?.();
       try { result = await this.newsSearch!(topic, controller.signal); }
       catch { result = { status: "unavailable", topic, checkedAt: new Date().toISOString(), reason: controller.signal.aborted ? "cancelled" : "provider_error" }; }
-      finally { this.newsControllers.delete(controller); }
+      finally { clearTimeout(filler); this.newsControllers.delete(controller); }
       if (controller.signal.aborted) result = { status: "unavailable", topic, checkedAt: new Date().toISOString(), reason: "cancelled" };
     }
     try { this.opts.onNews?.({ type: "news.lookup", result, tookMs: Date.now() - requestedAt }); } catch { /* Observers cannot cause an unhandled async rejection. */ }
@@ -561,8 +580,7 @@ export class OpenAILiveAgent {
         this.inText += d;
         this.inLastMs = now;
         this.touch();
-        if (this.inTimer) clearTimeout(this.inTimer);
-        this.inTimer = setTimeout(() => this.flushIn(), this.gapMs);
+        this.armInputFlush();
         break;
       }
       case "session.output_transcript.delta": {
@@ -591,6 +609,21 @@ export class OpenAILiveAgent {
       default:
         break;
     }
+  }
+
+  /**
+   * Transcript deltas arrive in bursts, often more than a gap apart inside one
+   * sentence. The line itself says whether the callee is still talking: a turn
+   * ends only once their voice has also been quiet for the gap.
+   */
+  private armInputFlush(): void {
+    if (this.inTimer) clearTimeout(this.inTimer);
+    this.inTimer = setTimeout(() => {
+      const quietMs = (this.bridge?.now() ?? 0) - this.lastCalleeVoiceMs;
+      const waitedMs = (this.bridge?.now() ?? 0) - this.inLastMs;
+      if (!this.closed && quietMs < this.gapMs && waitedMs < 6000) this.armInputFlush();
+      else this.flushIn();
+    }, this.gapMs);
   }
 
   private flushIn(): void {

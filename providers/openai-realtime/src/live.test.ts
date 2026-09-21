@@ -329,6 +329,60 @@ describe("OpenAILiveAgent casual intake", () => {
     });
   });
 
+  it("keeps one halting sentence as one turn while the callee's voice is still on the line", () => {
+    vi.useFakeTimers();
+    try {
+      const h = harness("phone.message");
+      const say = (delta: string) => { h.agent.pushAudio(VOICED); h.agent.onMessage({ type: "session.input_transcript.delta", delta }); };
+      // Deltas arrive more than a gap apart, but the line is never quiet for a whole gap in between.
+      say("いや、今日");
+      for (let i = 0; i < 3; i++) { h.advance(500); h.agent.pushAudio(VOICED); }
+      say("の東京のイベント情報");
+      for (let i = 0; i < 3; i++) { h.advance(500); h.agent.pushAudio(VOICED); }
+      say("とか、台風の最新情報を教えて");
+      expect(h.events.filter((event) => event.type === "speech")).toEqual([]);
+      h.advance(1000);
+      expect(h.events.filter((event) => event.type === "speech").map((event) => event.text)).toEqual(["いや、今日の東京のイベント情報とか、台風の最新情報を教えて"]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("says it is still checking when a lookup runs long, never over the callee and not twice in a row", () => {
+    vi.useFakeTimers();
+    try {
+      const pending = () => new Promise<never>(() => {});
+      const contract = defineCall({ goal: "phone.message", language: "ja", input: { request: "雑談", conversationMode: "chat" }, permissions: { ask: true } });
+      const make = () => {
+        const agent = new OpenAILiveAgent({ contract, newsSearch: pending, greetFirst: false }) as unknown as { started: boolean; bridge: unknown; ws: unknown; onMessage: (m: Record<string, unknown>) => void; pushAudio: (b: Uint8Array) => void };
+        const sent: Record<string, unknown>[] = [];
+        const state = { now: 1000 };
+        agent.started = true;
+        agent.bridge = { sendAudio: () => {}, clearAudio: () => {}, emit: () => {}, now: () => state.now };
+        agent.ws = { readyState: 1, send: (raw: string) => sent.push(JSON.parse(raw) as Record<string, unknown>) };
+        const lookup = (id: string) => agent.onMessage({ type: "response.event", event: { type: "response.output_item.done", item: { type: "function_call", name: "lookup_news", call_id: id, arguments: JSON.stringify({ topic: "weather" }) } } });
+        const fillers = () => sent.filter((message) => String(message.event_id ?? "").startsWith("lookup_wait_"));
+        const advance = (ms: number) => { state.now += ms; vi.advanceTimersByTime(ms); };
+        return { agent, lookup, fillers, advance };
+      };
+      const quiet = make();
+      quiet.lookup("a");
+      quiet.advance(4900);
+      expect(quiet.fillers()).toHaveLength(0);
+      quiet.advance(200);
+      expect(quiet.fillers()).toHaveLength(1);
+      expect(quiet.fillers()[0]).toMatchObject({ type: "session.commentary.append", delegation_id: null, content: expect.stringContaining("確認している") });
+      quiet.lookup("b");
+      quiet.advance(5200);
+      expect(quiet.fillers()).toHaveLength(1);
+
+      const talking = make();
+      talking.lookup("a");
+      talking.advance(4800);
+      talking.agent.pushAudio(VOICED);
+      talking.advance(400);
+      expect(talking.fillers()).toHaveLength(0);
+    } finally { vi.useRealTimers(); }
+  });
+
   it("hangs up promptly when asked to, whichever side says goodbye first", () => {
     vi.useFakeTimers();
     try {

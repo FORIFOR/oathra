@@ -84,7 +84,8 @@ it("publishes the tool only for chat, validates arguments, deduplicates and caps
     c.send(tool("private",{topic:"science",name:"must not be sent"}));await flush();expect(calls).toBe(0);
     c.send(tool("a"));c.send(tool("a"));await flush();expect(calls).toBe(1);
     c.send(tool("b"));c.send(tool("c",{topic:"weather"}));c.send(tool("d",{topic:"tokyo_events"}));await flush();expect(calls).toBe(4);
-    c.send(tool("e"));await flush();expect(calls).toBe(4);
+    for(const id of ["e","f","g","h"])c.send(tool(id));await flush();expect(calls).toBe(8);
+    c.send(tool("i"));await flush();expect(calls).toBe(8);
     expect(c.lookups.filter(e=>e.result.reason==="limit")).toHaveLength(1);
     expect(c.received.filter(v=>v.item?.call_id==="a")).toHaveLength(1);
   });

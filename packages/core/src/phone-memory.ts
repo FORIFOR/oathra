@@ -16,6 +16,8 @@ export function phoneMemory(request: PhoneRequest, turns: {id?: string; source: 
   for (const claim of extractClaims(input, {now:referenceDate,language:'ja'})) {
     if (claim.field !== 'confirmed' && fields.includes(claim.field as typeof fields[number]) && claim.polarity === 'positive') requested[claim.field] = claim.value;
   }
+  // A casual chat has no conditions to keep: a date heard in a news item is not a proposed booking date.
+  if(request.conversationMode==='chat')return {version:1,timeZone:'Asia/Tokyo',referenceAt:now,turnCount:turns.length,lastTurnId:turns.at(-1)?.id??null,recipient:request.name,originalRequest:request.instruction,bookingStatus:'not_authorized' as const,notes:[],history:[]};
   turns.forEach((turn,i)=>{if(turn.interrupted)return;engine.ingest({id:turn.id??`turn-${i}`,source:turn.source,text:turn.text,t:turn.t??i+1});});
   const values=engine.values();
   const notes=fields.map(field=>{

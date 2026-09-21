@@ -28,3 +28,9 @@ it('anchors Japanese relative dates to the approval day in Tokyo across year bou
  const input={...request,instruction:'明日の19時に2名の空席を確認'};
  expect(phoneMemory(input,[],Date.parse('2026-12-31T15:30:00Z')).notes.find(n=>n.field==='date')?.requested).toBe('2027-01-02');
 });
+
+it('a casual chat keeps no booking conditions: a date heard in a news item is not an offer',()=>{
+ const chat=preparePhoneRequest({phone:'+819000000000',name:'雑談',instruction:'近況を聞いてください。',conversationMode:'chat'});
+ const m=phoneMemory(chat,[turn('caller','AP通信が9月20日付で報じてるんだけど、19時に製油所で被害が出たって。',1),turn('callee','へえ、そうなんだ。',2)],now);
+ expect(m.notes).toEqual([]);expect(m.history).toEqual([]);expect(m.turnCount).toBe(2);expect(m.bookingStatus).toBe('not_authorized');
+});

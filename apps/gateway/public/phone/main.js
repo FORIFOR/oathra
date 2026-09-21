@@ -277,7 +277,7 @@ import { renderNews } from './news.js';
         prices.append(element('summary', '料金の内訳'), list);
         // Nothing to unfold under the fixed per-call price.
         fields.after(summary, ...(rows.length ? [prices] : []));
-        const news = chat ? (review.readiness.newsAvailable === false ? ' この接続では最新ニュースの検索は使えません。' : ` 雑談でニュースを聞かれると、公開ニュースのカテゴリをOpenAIのWeb検索へ送ります。ニュース・天気・イベントの確認は1通話4回まで。${t?.settlement === 'usage-rate-v1' ? '検索回数と使用トークン数を利用額に含めます。' : '検索費用は運営者負担です。'}出典は履歴に保存します。`) : '';
+        const news = chat ? (review.readiness.newsAvailable === false ? ' この接続では最新ニュースの検索は使えません。' : ` 雑談でニュースを聞かれると、公開ニュースのカテゴリをOpenAIのWeb検索へ送ります。ニュース・天気・イベントの確認は1通話8回まで。${t?.settlement === 'usage-rate-v1' ? '検索回数と使用トークン数を利用額に含めます。' : '検索費用は運営者負担です。'}出典は履歴に保存します。`) : '';
         // The full disclosure stays in view before consent; one sentence per line instead of a single block.
         const points = element('ul');
         for (const sentence of (review.readiness.disclosure + news).split('。').map(x => x.trim()).filter(Boolean)) points.append(element('li', sentence + '。'));

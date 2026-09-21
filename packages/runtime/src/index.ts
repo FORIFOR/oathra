@@ -416,7 +416,7 @@ export class CallRuntime {
     const pending: Record<string, unknown> = {};
     // Only the callee's pending offers are surfaced: the agent must never
     // "accept" its own unverified proposals.
-    for (const f of new Set([...required, ...Object.keys(this.opts.contract.constraints), ...(this.opts.contract.goal === "phone.message" ? ["date", "time", "partySize", "price", "confirmed"] : [])])) {
+    for (const f of new Set([...required, ...Object.keys(this.opts.contract.constraints), ...(this.opts.contract.goal === "phone.message" && this.opts.contract.input.conversationMode !== "chat" ? ["date", "time", "partySize", "price", "confirmed"] : [])])) {
       const p = this.engine.pendingOffer(f);
       if (p) pending[f] = p.value;
     }
