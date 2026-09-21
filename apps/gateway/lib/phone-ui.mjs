@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 export function phonePage() {
   let html = readFileSync(new URL('../../arena/public/index.html', import.meta.url), 'utf8');
   const account = readFileSync(new URL('../public/phone/account.html', import.meta.url), 'utf8');
+  const bookings = readFileSync(new URL('../public/phone/bookings.html', import.meta.url), 'utf8');
   const patch = (slot, replacement) => {
     const updated = html.replace(slot, replacement);
     if (updated === html) throw new Error('Managed phone markup slot is missing: ' + slot);
@@ -27,8 +28,8 @@ export function phonePage() {
   patch('<pre id="phone-live-summary"></pre>', '<pre id="phone-live-summary"></pre><details id="phone-live-request"><summary>依頼内容</summary><p id="phone-live-request-text"></p></details>');
   patch('</head>', '<script src="/phone/main.js" type="module"></script></head>');
   patch('<body>', '<body class="focused-task managed-phone">');
-  patch('<main id="main">', '<main id="main">' + account);
+  patch('<main id="main">', '<main id="main">' + account + bookings);
   patch('<div class="topbar-right">',
-    '<div class="topbar-right"><button type="button" class="btn" id="managed-credit-button" hidden></button><button type="button" class="btn" id="managed-account-button" hidden>アカウント</button>');
+    '<div class="topbar-right"><button type="button" class="btn" id="managed-credit-button" hidden></button><button type="button" class="btn" id="managed-account-button" hidden>アカウント</button><button type="button" class="btn" id="bookings-open" aria-pressed="false" hidden>予約台帳</button>');
   return html;
 }

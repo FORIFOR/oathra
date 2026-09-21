@@ -1,6 +1,7 @@
 import { createAccount } from './account.js';
 import { createClient } from './client.js';
 import { createContacts } from './contacts.js';
+import { createBookings } from './bookings.js';
 import { $, $$ } from './dom.js';
 import { element, notice } from './dom.js';
 import { labels, stateLabel, errorText } from './messages.js';
@@ -22,7 +23,7 @@ import { renderNews } from './news.js';
     $('#home-practice').closest('.home-choice').hidden = true;
     $('#contacts-resume').hidden = true;
     const screens = {
-        login: $('#managed-login'), home: $('#screen-home'), phone: $('#screen-real'), contacts: $('#screen-contacts')
+        login: $('#managed-login'), home: $('#screen-home'), phone: $('#screen-real'), contacts: $('#screen-contacts'), bookings: $('#screen-bookings')
     };
     let generation = 0, account = null, review = null, active = null, templates = [], pending = false, preparing = false, readiness = null, poll, expiry, current = 'login';
     const navigation = [];
@@ -162,6 +163,7 @@ import { renderNews } from './news.js';
         $('#navigation-back').disabled = name === 'login' || (name === 'home' && !navigation.length);
         $('#home-open').setAttribute('aria-pressed', String(name === 'home'));
         $('#contacts-open').setAttribute('aria-pressed', String(name === 'contacts'));
+        $('#bookings-open').setAttribute('aria-pressed', String(name === 'bookings'));
         $('.tt-btn[data-transport=real]').classList.toggle('is-on', name === 'phone');
         window.scrollTo({
             top: 0
@@ -178,6 +180,7 @@ import { renderNews } from './news.js';
         $('#managed-password-form').reset();
         $('#managed-account-email').textContent = '';
         contactEditor.reset(forgetDraft);
+        bookingsView.reset();
         account = null;
         review = null;
         active = null;
@@ -260,6 +263,7 @@ import { renderNews } from './news.js';
     }
     function readyView(r) {
         readiness = r;
+        bookingsView.enable(r.reception);
         if (voiceSelect.options.length !== voices().length) {
             const keep = voiceSelect.value;
             const option = v => { const o = element('option', describeVoice(v) + (v === defaultVoice() ? '（標準）' : '')); o.value = v; return o; };
@@ -774,6 +778,14 @@ import { renderNews } from './news.js';
         acknowledged: true
     }));
     on('#phone-history-refresh', 'click', history);
+    const bookingsView = createBookings({
+        api, on, show, openCall(id) {
+            if (pending) return;
+            setActive(id);
+            show('phone');
+            load(id).then(() => $('#phone-live').scrollIntoView({ block: 'start' })).catch(e => { if (!e.stale && active === id) notice('#phone-error', e.status === 404 ? 'この通話の記録は保存期間を過ぎたため表示できません。' : e.message); });
+        }
+    });
     const contactEditor = createContacts({
         api, on, show, owner: () => account?.user.id, onSelect(c) {
             $('#phone-number').value = c.phone;

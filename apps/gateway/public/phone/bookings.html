@@ -1,0 +1,27 @@
+<section class="screen" id="screen-bookings" hidden aria-labelledby="bookings-title">
+  <div class="bk">
+    <div class="bk-head">
+      <p class="bk-pill"><span class="bk-dot" aria-hidden="true"></span><span id="bookings-restaurant"></span></p>
+      <h1 id="bookings-title">予約台帳</h1>
+      <p class="bk-lead" id="bookings-summary" role="status"></p>
+      <div class="bk-tools">
+        <label class="bk-search">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="bookings-search" type="search" maxlength="40" autocomplete="off" placeholder="お名前で探す" aria-label="予約のお名前で探す">
+          <kbd aria-hidden="true">/</kbd>
+        </label>
+        <button type="button" class="bk-refresh" id="bookings-refresh">最新の状態にする</button>
+        <span class="bk-checked" id="bookings-checked"></span>
+      </div>
+    </div>
+    <p id="bookings-error" class="bk-error" role="alert" hidden></p>
+    <div class="bk-days" id="bookings-days" role="group" aria-label="日付を選ぶ"></div>
+    <div class="bk-frame">
+      <div class="bk-inner">
+        <div class="bk-day-head"><h2 id="bookings-day-title"></h2><p id="bookings-day-note"></p></div>
+        <div id="bookings-board"></div>
+      </div>
+    </div>
+    <p class="bk-foot">予約はAIが電話で復唱し、相手の了承を得てから台帳に書き込んだものです。相手の電話番号はこの一覧には出しません（各通話の記録にあります）。</p>
+  </div>
+</section>

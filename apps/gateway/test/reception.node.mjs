@@ -88,3 +88,19 @@ test('a call that books nothing shows no booking, and old bookings leave with th
  f.store.prune(30);
  assert.deepEqual(f.store.all('table-booking','bistro').map(b=>b.name),['先の予約']);
 }));
+
+test('the ledger screen gets the desk\'s settings and the bookings still to come, only for the restaurant\'s own account',async()=>{
+ const {createGateway}=await import('../server.mjs'),{phoneReadiness}=await import('../lib/phone-service.mjs');
+ const f=setup(),adminToken=randomBytes(32).toString('hex'),otherToken=randomBytes(32).toString('hex');
+ f.config.users[0].tokenHash=hash(adminToken);f.config.users[1].tokenHash=hash(otherToken);
+ const app=await createGateway(f.config,{store:f.store,env:{}});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
+ try{
+  const get=token=>fetch('http://127.0.0.1:'+app.server.address().port+'/v1/phone/bookings',{headers:{authorization:'Bearer '+token}}).then(r=>r.json());
+  for(const [date,name] of [['2026-09-20','きのうまでの予約'],['2026-09-21','今日の予約'],['2026-09-25','先の予約']])f.store.put('table-booking',{id:randomUUID(),owner:'bistro',team:'bistro',status:'booked',date,time:'19:30',partySize:2,name,callId:randomUUID(),phone:'+819011112222',createdAt:NOW});
+  const mine=await get(adminToken);
+  assert.deepEqual(mine.restaurant,{name:'ビストロ灯',slots:restaurant.slots,maxParty:6,closedDates:['2026-09-23'],closedWeekdays:[]});assert.equal(mine.today,'2026-09-21');
+  assert.deepEqual(mine.bookings.map(b=>b.name),['今日の予約','先の予約']);assert.ok(mine.bookings.every(b=>!('phone' in b)&&!('owner' in b)));
+  assert.deepEqual(await get(otherToken),{restaurant:null,today:'2026-09-21',bookings:[]});
+  assert.equal(phoneReadiness(f.service,f.config,f.users[0]).reception,'ビストロ灯');assert.equal(phoneReadiness(f.service,f.config,f.users[1]).reception,null);
+ }finally{await app.close();rmSync(f.dir,{recursive:true,force:true})}
+});

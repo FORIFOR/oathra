@@ -96,3 +96,91 @@
 .managed-phone #phone-caller-field label { font-weight:600; }
 .managed-phone #phone-caller-name { width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:inherit; font:inherit; }
 .managed-phone #phone-caller-field .note { margin:0; font-size:13px; }
+
+/* 予約台帳. The idiom (pill, tight display heading, framed card, inset search with a key hint, solid primary,
+   round arrow) is taken from the reference the user named, obsidianui.dev; the colours stay this app's own. */
+.managed-phone .bk { width:min(1080px,100%); margin:0 auto; padding:16px 20px 20px; display:grid; gap:12px; text-align:left; }
+.managed-phone .bk-head { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 24px; align-items:end; }
+.managed-phone .bk-pill, .managed-phone .bk h1 { grid-column:1; }
+.managed-phone .bk-lead { grid-column:1 / -1; }
+.managed-phone .bk-tools { grid-column:2; grid-row:1 / span 2; align-self:end; justify-content:flex-end; }
+.managed-phone .bk-pill { justify-self:start; display:inline-flex; align-items:center; gap:8px; margin:0; padding:5px 14px 5px 10px; border:1px solid var(--line); border-radius:99px; background:var(--panel); font-size:13px; line-height:1.6; color:var(--muted,#5f6661); }
+.managed-phone .bk-dot { width:8px; height:8px; border-radius:50%; background:#2f6b45; box-shadow:0 0 0 3px rgb(47 107 69 / .16); }
+.managed-phone .bk h1 { margin:0; font-size:32px; line-height:1.25; font-weight:750; letter-spacing:-.04em; }
+.managed-phone .bk-lead { margin:0; font-size:15px; line-height:1.7; color:var(--muted,#5f6661); }
+.managed-phone .bk-tools { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:6px; }
+.managed-phone .bk-search { flex:1 1 260px; width:300px; max-width:420px; display:flex; align-items:center; gap:10px; min-height:48px; padding:0 8px 0 14px; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 0 0 5px rgb(0 0 0 / .035); color:var(--muted,#5f6661); }
+.managed-phone .bk-search:focus-within { outline:3px solid var(--accent-ink,#a95d35); outline-offset:3px; }
+.managed-phone .bk-search input { flex:1; min-width:0; min-height:46px; align-self:stretch; border:0; outline:0; background:none; font:inherit; font-size:15px; color:var(--ink); }
+.managed-phone .bk-search kbd { min-width:26px; padding:2px 7px; border:1px solid var(--line); border-radius:7px; font:inherit; font-size:12px; text-align:center; color:var(--muted,#5f6661); background:var(--bg,#faf9f6); }
+.managed-phone .bk-refresh { min-height:48px; padding:0 18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); color:var(--ink); font:inherit; font-size:15px; font-weight:650; cursor:pointer; transition:background .16s ease, color .16s ease, border-color .16s ease; }
+.managed-phone .bk-refresh:hover:not(:disabled) { background:#151515; border-color:#151515; color:#fff; }
+.managed-phone .bk-checked { flex-basis:100%; text-align:right; font-size:12px; line-height:1.4; color:var(--muted,#5f6661); font-variant-numeric:tabular-nums; }
+.managed-phone .bk-slots:focus-visible { outline:3px solid var(--accent-ink,#a95d35); outline-offset:3px; }
+.managed-phone .bk-refresh:focus-visible, .managed-phone .bk-daychip:focus-visible, .managed-phone .bk-booking:focus-visible { outline:3px solid var(--accent-ink,#a95d35); outline-offset:3px; }
+.managed-phone .bk-refresh:disabled { opacity:.6; cursor:progress; }
+.managed-phone .bk-error { margin:0; padding:12px 14px; border-left:4px solid #a13b25; background:var(--panel); color:#a13b25; font-weight:600; }
+.managed-phone .bk-days { display:flex; gap:8px; overflow-x:auto; padding:4px 2px 8px; scrollbar-width:thin; }
+.managed-phone .bk-daychip { flex:0 0 auto; display:grid; gap:0; min-width:84px; min-height:56px; padding:6px 14px; border:1px solid var(--line); border-radius:14px; background:var(--panel); color:var(--ink); font:inherit; text-align:left; cursor:pointer; transition:background .16s ease, color .16s ease; }
+.managed-phone .bk-daychip-day { font-size:16px; font-weight:700; letter-spacing:-.01em; line-height:1.4; }
+.managed-phone .bk-daychip-sub { font-size:12px; line-height:1.4; color:var(--muted,#5f6661); }
+.managed-phone .bk-daychip[aria-pressed=true] { background:#151515; border-color:#151515; color:#fff; }
+.managed-phone .bk-daychip[aria-pressed=true] .bk-daychip-sub { color:rgb(255 255 255 / .72); }
+.managed-phone .bk-frame { padding:8px; border:1px solid var(--line); border-radius:22px; background:var(--bg,#faf9f6); }
+.managed-phone .bk-inner { padding:16px 22px 4px; border:1px solid var(--line); border-radius:15px; background:var(--panel); }
+.managed-phone .bk-day-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.managed-phone .bk-day-head h2 { margin:0; font-size:22px; font-weight:700; letter-spacing:-.02em; }
+.managed-phone .bk-day-head p { margin:0; font-size:14px; color:var(--muted,#5f6661); }
+.managed-phone .bk-slots { list-style:none; margin:0; padding:0; }
+.managed-phone .bk-slot { display:grid; grid-template-columns:5.5em 9.5em minmax(0,1fr); gap:8px 16px; align-items:center; min-height:52px; padding:4px 0; border-bottom:1px solid var(--line); }
+.managed-phone .bk-slot:last-child { border-bottom:0; }
+.managed-phone .bk-time { font-size:20px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.managed-phone .bk-slot { grid-template-columns:5.5em 12em minmax(0,1fr); }
+.managed-phone .bk-occupancy { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted,#5f6661); }
+.managed-phone .bk-slot.full .bk-left { color:var(--ink); font-weight:700; }
+.managed-phone .bk-seats { display:inline-flex; gap:4px; }
+.managed-phone .bk-seats i { width:9px; height:9px; border-radius:50%; border:1.5px solid #151515; }
+.managed-phone .bk-seats i.on { background:#151515; }
+.managed-phone .bk-names { display:flex; flex-wrap:wrap; gap:8px; }
+.managed-phone .bk-none { font-size:14px; color:var(--muted,#5f6661); }
+.managed-phone .bk-booking { display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:0 6px 0 14px; border:1px solid var(--line); border-radius:99px; background:var(--bg,#faf9f6); color:var(--ink); font:inherit; font-size:15px; cursor:pointer; }
+.managed-phone .bk-who { font-weight:650; overflow-wrap:anywhere; text-align:left; }
+.managed-phone .bk-party { font-size:13px; color:var(--muted,#5f6661); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.managed-phone .bk-arrow { flex:0 0 30px; display:grid; place-items:center; width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--panel); font-size:14px; transition:transform .16s ease, background .16s ease, color .16s ease; }
+.managed-phone .bk-booking:hover .bk-arrow, .managed-phone .bk-booking:focus-visible .bk-arrow { transform:translateX(2px); background:#151515; border-color:#151515; color:#fff; }
+.managed-phone .bk-shut { margin:0; padding:20px 0 24px; color:var(--muted,#5f6661); }
+.managed-phone .bk-daychip.bk-dim:not([aria-pressed=true]) { background:transparent; }
+.managed-phone .bk-daychip.bk-dim:not([aria-pressed=true]) .bk-daychip-day { color:var(--muted,#5f6661); font-weight:600; }
+/* On the desktop board (the app fixes the window at 1100px and up and scrolls <main>), the ledger takes what height
+   is left: the head, an error and the footnote keep their size, and a long evening scrolls inside its frame. */
+@media(min-width:1100px) {
+  .managed-phone #screen-bookings:not([hidden]) { height:100%; }
+  .managed-phone .bk { display:flex; flex-direction:column; height:100%; }
+  .managed-phone .bk > * { flex:0 0 auto; }
+  .managed-phone .bk > .bk-frame, .managed-phone .bk-inner, .managed-phone #bookings-board { display:flex; flex-direction:column; flex:0 1 auto; min-height:0; }
+  .managed-phone #bookings-board { position:relative; }
+  .managed-phone .bk-slots { flex:0 1 auto; min-height:0; overflow-y:auto; scrollbar-width:thin; }
+  /* More below: the list fades out instead of ending in a cut row. */
+  .managed-phone #bookings-board.bk-above::before { content:""; position:absolute; z-index:1; left:0; right:0; top:0; height:32px; pointer-events:none; background:linear-gradient(var(--panel), transparent); }
+  .managed-phone #bookings-board.bk-more::after { content:""; position:absolute; left:0; right:0; bottom:0; height:56px; pointer-events:none; background:linear-gradient(transparent, var(--panel)); }
+}
+@media(min-width:641px) and (max-height:959px) { .managed-phone .bk-slot { min-height:48px; padding:2px 0; } .managed-phone .bk-daychip { min-height:50px; padding-block:4px; } }
+.managed-phone .bk-foot { margin:0; font-size:13px; line-height:1.8; color:var(--muted,#5f6661); }
+@media(max-width:640px) {
+  .managed-phone .bk { padding:20px 16px 40px; }
+  .managed-phone .bk-search kbd { display:none; }
+  .managed-phone .bk-head { grid-template-columns:minmax(0,1fr); }
+  .managed-phone .bk-tools { grid-column:1; grid-row:auto; justify-content:stretch; margin-top:6px; }
+  .managed-phone .bk-search { width:auto; }
+  .managed-phone .bk-refresh { flex:1 1 100%; }
+  .managed-phone .bk-checked { text-align:left; }
+  .managed-phone .bk-booking { border-radius:16px; min-height:44px; padding-block:6px; }
+  .managed-phone .bk-inner { padding:16px 14px 6px; }
+  .managed-phone .bk-slot { grid-template-columns:4.5em minmax(0,1fr); }
+  .managed-phone .bk-names { grid-column:1 / -1; }
+}
+@media(prefers-reduced-motion:reduce) { .managed-phone .bk-refresh, .managed-phone .bk-arrow, .managed-phone .bk-daychip { transition:none; } .managed-phone .bk-booking:hover .bk-arrow { transform:none; } }
+@media(max-width:640px) { body.managed-phone .topbar-right:has(#bookings-open:not([hidden])) #managed-credit-button { grid-column:span 2; min-height:44px; } body.managed-phone .topbar-right:has(#bookings-open:not([hidden])) .transport-toggle { grid-column:span 2; } }
+/* Where you are, in the header: the open ledger reads as selected. */
+.managed-phone #bookings-open[aria-pressed=true] { background:#151515; border-color:#151515; color:#fff; }
+@media(max-width:640px) { body.managed-phone .topbar-right:has(#bookings-open:not([hidden])) .transport-toggle { display:flex; min-height:44px; border:1px solid var(--line-2,var(--line)); border-radius:var(--radius,6px); } body.managed-phone .topbar-right:has(#bookings-open:not([hidden])) .transport-toggle .tt-btn[data-transport=real] { flex:1; justify-content:center; border:0; } }

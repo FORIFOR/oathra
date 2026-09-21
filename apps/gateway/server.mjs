@@ -1,5 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
-import { parseDeskConfig } from '../../packages/core/dist/index.js';
+import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
@@ -50,7 +50,7 @@ export function configuration(env=process.env){
     trustProxy:env.OATHRA_TRUST_PROXY==='true'};
 }
 const assets=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/managed-phone.js',['managed-phone.js','text/javascript; charset=utf-8']],['/managed-phone.css',['managed-phone.css','text/css; charset=utf-8']]]);
-for (const name of ['main','dom','messages','receipt','news','client','contacts','account']) assets.set(`/phone/${name}.js`,[`phone/${name}.js`,'text/javascript; charset=utf-8']);
+for (const name of ['main','dom','messages','receipt','news','client','contacts','account','bookings']) assets.set(`/phone/${name}.js`,[`phone/${name}.js`,'text/javascript; charset=utf-8']);
 // One short recorded sample per voice, from the fixed voice list only; never a path taken from the request.
 for (const voice of PHONE_VOICES) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
 /** Behind a reverse proxy every socket belongs to the proxy; without this all clients would share one bucket. */
@@ -150,7 +150,11 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/phone/templates')return send(res,200,PHONE_PURPOSE_TEMPLATES);
       if(method==='GET'&&path==='/v1/phone/history')return send(res,200,store.list('mission',u.id).filter(m=>m.kind==='phone-request').map(m=>phoneRecord(service,m)));
       // The restaurant's ledger, as the desk wrote it. The caller's number stays in the call record, not here.
-      if(method==='GET'&&path==='/v1/phone/bookings')return send(res,200,store.all('table-booking',u.id).map(({phone,...b})=>b).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)));
+      if(method==='GET'&&path==='/v1/phone/bookings'){
+        const desk=config.inbound?.owner===u.id?config.inbound.restaurant:null,today=tokyoDate(store.now());
+        return send(res,200,{restaurant:desk?{name:desk.name,slots:desk.slots,maxParty:desk.maxParty,closedDates:desk.closedDates??[],closedWeekdays:desk.closedWeekdays??[]}:null,today,
+          bookings:desk?store.all('table-booking',u.id).filter(b=>b.date>=today).map(({phone,owner,team,...b})=>b).sort((a,b)=>(a.date+a.time+a.createdAt).localeCompare(b.date+b.time+b.createdAt)):[]});
+      }
       if(method==='POST'&&path==='/v1/phone/draft') {
         let m;try {m=prepareManagedPhone(service,u,data);}catch(e){if(e.name==='ZodError')throw new Fault(400,'invalid_phone_request');throw e;}
         return send(res,201,{...service.review(u,m.id),readiness:phoneReadiness(service,config,u),consentVersion:config.consentVersion});
