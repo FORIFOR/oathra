@@ -1,5 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
-import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar} from './lib/phone-service.mjs';
+import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +40,8 @@ export function configuration(env=process.env){
 }
 const assets=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/managed-phone.js',['managed-phone.js','text/javascript; charset=utf-8']],['/managed-phone.css',['managed-phone.css','text/css; charset=utf-8']]]);
 for (const name of ['main','dom','messages','receipt','news','client','contacts','account']) assets.set(`/phone/${name}.js`,[`phone/${name}.js`,'text/javascript; charset=utf-8']);
+// One short recorded sample per voice, from the fixed voice list only; never a path taken from the request.
+for (const voice of PHONE_VOICES) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
 /** Behind a reverse proxy every socket belongs to the proxy; without this all clients would share one bucket. */
 export function clientIp(req,trustProxy){
   const direct=req.socket?.remoteAddress??'local';if(!trustProxy)return direct;

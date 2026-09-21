@@ -91,3 +91,4 @@
 /* Same control as the template select next to it. */
 .managed-phone #phone-voice { width:100%; min-height:44px; font:inherit; padding:10px; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; }
 .managed-phone #phone-voice-field .note { margin:0; font-size:13px; }
+.managed-phone #phone-voice-preview { justify-self:start; width:auto; min-height:44px; }

@@ -82,10 +82,25 @@ import { renderNews } from './news.js';
     chatNote.hidden = true;
     $('#phone-template').after(chatNote);
     // Which voice speaks. The list comes from the server; a voice is fixed for the whole call.
-    const voiceField = element('div'), voiceLabel = element('label', 'AIの声'), voiceSelect = element('select'), voiceNote = element('p', '声は通話の途中では変えられません。選んだ声はこの端末に覚えておきます。');
+    const voiceField = element('div'), voiceLabel = element('label', 'AIの声'), voiceSelect = element('select'), voiceNote = element('p', '声は通話の途中では変えられません。選んだ声はこの端末に覚えておきます。声の高さと速さは、同じ一文の録音を測った目安です。実際の印象は試聴で確かめてください。'), voicePreview = element('button', 'この声を試聴');
     voiceField.id = 'phone-voice-field'; voiceLabel.htmlFor = 'phone-voice'; voiceSelect.id = 'phone-voice'; voiceSelect.name = 'voice'; voiceNote.className = 'note'; voiceNote.id = 'phone-voice-note';
     voiceSelect.setAttribute('aria-describedby', 'phone-voice-note');
-    voiceField.append(voiceLabel, voiceSelect, voiceNote);
+    voicePreview.type = 'button'; voicePreview.id = 'phone-voice-preview'; voicePreview.className = $('#phone-clear').className;
+    voiceField.append(voiceLabel, voiceSelect, voicePreview, voiceNote);
+    // How high and how fast, from the measured sample. Not who: a recording cannot say that.
+    const pitchWord = { low: '低めの声（男性に多い高さ）', mid: '中くらいの高さの声', high: '高めの声（女性に多い高さ）', 'very-high': 'かなり高めの声' }, paceWord = { fast: 'やや速め', medium: 'ふつうの速さ', slow: 'ゆっくりめ' };
+    const describeVoice = v => { const d = readiness?.voiceDetails?.[v]; return d ? `${v} — ${pitchWord[d.pitch]}・${paceWord[d.pace]}` : v; };
+    let previewAudio = null;
+    voicePreview.addEventListener('click', () => {
+        const sample = readiness?.voiceDetails?.[voiceSelect.value]?.sample;
+        if (!sample) return;
+        previewAudio?.pause();
+        previewAudio = new Audio(sample);
+        voicePreview.textContent = '再生中…';
+        const reset = () => { voicePreview.textContent = 'この声を試聴'; };
+        previewAudio.addEventListener('ended', reset); previewAudio.addEventListener('error', () => { reset(); notice('#phone-error', '試聴を再生できませんでした。'); });
+        previewAudio.play().catch(reset);
+    });
     // After the template's own undo, so that control stays beside the field it belongs to.
     undoTemplate.after(voiceField);
     const voiceKey = () => account ? 'oathra:phone-voice:' + account.user.id : null;
@@ -235,7 +250,12 @@ import { renderNews } from './news.js';
         readiness = r;
         if (voiceSelect.options.length !== voices().length) {
             const keep = voiceSelect.value;
-            voiceSelect.replaceChildren(...voices().map(v => { const o = element('option', v === defaultVoice() ? `${v}（標準）` : v); o.value = v; return o; }));
+            const option = v => { const o = element('option', describeVoice(v) + (v === defaultVoice() ? '（標準）' : '')); o.value = v; return o; };
+            // Grouped by how high the voice is, lowest first inside each group, so thirteen names are not one flat list.
+            const details = r.voiceDetails ?? {}, groups = [['低めの声', ['low']], ['中くらいの高さの声', ['mid']], ['高めの声', ['high', 'very-high']]];
+            const grouped = groups.map(([label, kinds]) => { const g = element('optgroup'); g.label = label; g.append(...voices().filter(v => kinds.includes(details[v]?.pitch)).sort((a, b) => details[a].pitchHz - details[b].pitchHz).map(option)); return g; }).filter(g => g.children.length);
+            voiceSelect.replaceChildren(...grouped, ...voices().filter(v => !details[v]).map(option));
+            voicePreview.hidden = !Object.keys(r.voiceDetails ?? {}).length;
             setVoice(keep || rememberedVoice());
         }
         voiceField.hidden = voices().length < 2;

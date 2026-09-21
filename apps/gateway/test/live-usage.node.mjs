@@ -67,6 +67,12 @@ test('a phone request may choose the voice; unknown voices are refused and the l
  try{
   const base='http://127.0.0.1:'+app.server.address().port,headers={authorization:'Bearer '+token,'content-type':'application/json'};
   const status=await(await fetch(base+'/v1/phone/status',{headers})).json();assert.equal(status.defaultVoice,'marin');assert.equal(status.voices.length,13);assert.ok(status.voices.includes('vesper'));
+  // Each voice is described by what was measured on its sample, and the sample itself can be listened to.
+  assert.deepEqual(Object.keys(status.voiceDetails).sort(),[...status.voices].sort());
+  for(const [name,d] of Object.entries(status.voiceDetails)){assert.ok(d.pitchHz>60&&d.pitchHz<400,name);assert.ok(['low','mid','high','very-high'].includes(d.pitch));assert.ok(['fast','medium','slow'].includes(d.pace));assert.equal(d.sample,'/phone/voices/'+name+'.wav');}
+  assert.equal(status.voiceDetails.vesper.pitch,'low');assert.equal(status.voiceDetails.marin.pitch,'high');
+  const sample=await fetch(base+'/phone/voices/vesper.wav');assert.equal(sample.status,200);assert.equal(sample.headers.get('content-type'),'audio/wav');assert.equal(Buffer.from(await sample.arrayBuffer()).subarray(0,4).toString(),'RIFF');
+  for(const path of ['/phone/voices/alloy.wav','/phone/voices/../main.js','/phone/voices/voices.json'])assert.notEqual((await fetch(base+path)).headers.get('content-type'),'audio/wav');
   const draft=body=>fetch(base+'/v1/phone/draft',{method:'POST',headers,body:JSON.stringify({phone:'+819000000000',name:'local',instruction:'Only local validation; no phone execution.',...body})});
   const chosen=await draft({voice:'vesper'});assert.equal(chosen.status,201);assert.equal((await chosen.json()).mission.phoneRequest.voice,'vesper');
   const plain=await draft({});assert.equal(plain.status,201);assert.equal((await plain.json()).mission.phoneRequest.voice,undefined);

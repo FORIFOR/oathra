@@ -1,0 +1,59 @@
+{
+ "measuredOn": "2026-09-21",
+ "line": "もしもし。AIによる代理のお電話です。今、少しお話しできますか？",
+ "note": "pitchHz is the median fundamental frequency of one sample; labels derived from it describe pitch, not a person.",
+ "voices": {
+  "marin": {
+   "pitchHz": 224,
+   "seconds": 5.6
+  },
+  "quartz": {
+   "pitchHz": 176,
+   "seconds": 6
+  },
+  "ripple": {
+   "pitchHz": 125,
+   "seconds": 6.6
+  },
+  "vesper": {
+   "pitchHz": 108,
+   "seconds": 5.2
+  },
+  "willow": {
+   "pitchHz": 222,
+   "seconds": 6.5
+  },
+  "stone": {
+   "pitchHz": 108,
+   "seconds": 5
+  },
+  "gleam": {
+   "pitchHz": 205,
+   "seconds": 6.4
+  },
+  "meridian": {
+   "pitchHz": 101,
+   "seconds": 4.6
+  },
+  "bossa": {
+   "pitchHz": 273,
+   "seconds": 6.4
+  },
+  "tempo": {
+   "pitchHz": 122,
+   "seconds": 6.9
+  },
+  "beacon": {
+   "pitchHz": 117,
+   "seconds": 5.9
+  },
+  "delta": {
+   "pitchHz": 179,
+   "seconds": 5.3
+  },
+  "cinder": {
+   "pitchHz": 113,
+   "seconds": 6.3
+  }
+ }
+}
