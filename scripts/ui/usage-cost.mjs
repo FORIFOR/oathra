@@ -30,7 +30,9 @@ try{
  assert.equal(await page.js("(()=>{const d=document.querySelector('#phone-review').getBoundingClientRect(),b=document.querySelector('#phone-dial').getBoundingClientRect(),e=document.querySelector('#phone-edit').getBoundingClientRect();return b.top>=d.top&&e.bottom<=Math.min(d.bottom,innerHeight)+1&&b.height>=44})()"),true);
  assert.ok(await page.js("document.querySelectorAll('#phone-disclosure li').length")>=4);
  // What is being agreed to is inside the first view, above the decision, not only below the fold.
- assert.equal(await page.js("(()=>{const f=document.querySelector('.phone-review-actions').getBoundingClientRect(),li=document.querySelector('#phone-disclosure li').getBoundingClientRect();return li.bottom<=f.top+1})()"),true);assert.match(await page.text('#phone-dial-hint'),/Twilio.*OpenAI.*保存.*同意/);assert.match(await page.text('#phone-disclosure'),/終了時.*検索.*精算/);
+ assert.equal(await page.js("(()=>{const f=document.querySelector('.phone-review-actions').getBoundingClientRect(),li=document.querySelector('#phone-disclosure li').getBoundingClientRect();return li.bottom<=f.top+1})()"),true);
+ // Choosing another voice adds no row, so the same holds with a voice selected.
+ assert.equal(await page.js("document.querySelectorAll('#phone-review-fields dt').length"),5);assert.match(await page.text('#phone-dial-hint'),/Twilio.*OpenAI.*保存.*同意/);assert.match(await page.text('#phone-disclosure'),/終了時.*検索.*精算/);
  await page.js("document.querySelector('#phone-number').type='password';[...document.querySelectorAll('#phone-review-fields dt')].filter(n=>n.textContent==='電話番号').forEach(n=>n.nextElementSibling.textContent='（番号は非公開）')");await page.screenshot(join(out,'confirmation.png'));
  await page.click('#phone-dial');await page.until("document.querySelector('#phone-live-state').textContent==='発信準備中'");
  const m=app.worker.claimNext();assert.ok(m);assert.equal(app.service.credits.usage(m).consumed,0);assert.equal(app.service.credits.usage(m).held,400);

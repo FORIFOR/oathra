@@ -112,6 +112,8 @@ export class OpenAILiveAgent {
   private readonly toLive = new StreamResampler(8000, LIVE_RATE);
   private readonly toCarrier = new StreamResampler(LIVE_RATE, 8000);
   private greeted = false;
+  private calleeOpened = false;
+  private agentSpoke = false;
   /** When the audio already handed to the carrier will have finished playing. */
   private playbackEndMs = 0;
   /** Same, for the last chunk a person could actually hear. */
@@ -258,12 +260,21 @@ export class OpenAILiveAgent {
   }
 
   /** The line is up: open the call ourselves, then listen. Input audio keeps flowing throughout. */
-  private greet(): void {
+  private greet(attempt = 0): void {
     if (this.greeted || this.closed || this.opts.greetFirst === false) return;
+    const now = this.bridge?.now() ?? 0;
+    // The other side is already talking (a shop answering with its name, a voicemail announcement, a
+    // room full of people): never talk over it. But a reviewed phone request must still say that an AI
+    // is calling, so the opening waits for the first quiet moment instead of being dropped. A real call
+    // that was answered into a conversation went six minutes without the agent ever saying what it was.
+    const calleeBusy = this.lastCalleeVoiceMs > 0 && now - this.lastCalleeVoiceMs < 700 || this.inText !== "";
+    if (calleeBusy || now < this.audibleEndMs) {
+      this.calleeOpened ||= calleeBusy;
+      if (attempt < 100) { setTimeout(() => this.greet(attempt + 1), 300).unref?.(); return; }
+    }
     this.greeted = true;
-    // The other side is already talking (a shop answering with its name, a
-    // voicemail announcement): Live answers that instead of talking over it.
-    if (this.lastCalleeVoiceMs > 0 || this.inText !== "") return;
+    // Other kinds of call let the callee's own opening stand; Live answers it from its instructions.
+    if (this.calleeOpened && this.opts.contract.goal !== "phone.message") return;
     // `instructions.append` is accepted here but does not make Live speak
     // (measured: silent for 14 s). `commentary.append` is the event for words
     // to say aloud, and starts within a second; Live may paraphrase them.
@@ -279,7 +290,7 @@ export class OpenAILiveAgent {
   private greeting(): string {
     const ja = this.language === "ja";
     const goal = this.opts.contract.goal;
-    if (goal === "phone.message") return ja ? "もしもし。AIによる代理のお電話です。今、少しお話しできますか？" : "Hello. This is an AI calling on someone's behalf. Is now a good time to talk?";
+    if (goal === "phone.message") return ja ? `${this.agentSpoke ? "" : "もしもし。"}AIによる代理のお電話です。今、少しお話しできますか？` : `${this.agentSpoke ? "" : "Hello. "}This is an AI calling on someone's behalf. Is now a good time to talk?`;
     if (goal.startsWith("chat.")) return ja ? "もしもし？" : "Hello?";
     return ja ? "もしもし、お忙しいところ失礼いたします。" : "Hello, sorry to bother you.";
   }
@@ -675,6 +686,7 @@ export class OpenAILiveAgent {
     this.outInterrupted = false;
     if (this.missionDeferred && !this.closed) this.sendMission();
     if (!b || !text || startMs === undefined) return;
+    this.agentSpoke = true;
     const ev: Extract<SessionEvent, { type: "agent.speech" }> = { type: "agent.speech", text, startMs, endMs: this.outLastMs, ...(interrupted ? { interrupted: true } : {}) };
     if (this.lastCalleeEndMs !== undefined && startMs >= this.lastCalleeEndMs) ev.ttfaMs = startMs - this.lastCalleeEndMs;
     b.emit(ev);

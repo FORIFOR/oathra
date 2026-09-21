@@ -86,3 +86,8 @@
 .managed-phone #phone-calendar { display:inline-flex; align-items:center; min-height:44px; margin-top:8px; text-decoration:none; color:var(--ink); }
 .managed-phone #phone-calendar + p { font-size:14px; margin:6px 0 0; }
 .managed-phone #phone-memory > #phone-memory-verdict { border-color:var(--ink); font-weight:600; }
+.managed-phone #phone-voice-field { display:grid; gap:6px; }
+.managed-phone #phone-voice-field label { font-weight:600; }
+/* Same control as the template select next to it. */
+.managed-phone #phone-voice { width:100%; min-height:44px; font:inherit; padding:10px; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; }
+.managed-phone #phone-voice-field .note { margin:0; font-size:13px; }

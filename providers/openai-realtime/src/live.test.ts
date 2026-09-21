@@ -311,6 +311,20 @@ describe("OpenAILiveAgent casual intake", () => {
       expect(spoken(friend)[0]!.content).toBe("もしもし？");
     });
 
+    it("never drops the AI disclosure: answered into a conversation, it waits for the first quiet moment and says it once", () => {
+      vi.useFakeTimers();
+      const h = harness("phone.message");
+      h.agent.pushAudio(SILENT);
+      // People are already talking when the line connects, and keep talking for three seconds.
+      for (let t = 0; t < 3000; t += 250) { h.agent.pushAudio(VOICED); h.advance(250); }
+      expect(spoken(h)).toEqual([]);
+      h.advance(1500);
+      expect(spoken(h)).toHaveLength(1);
+      expect(spoken(h)[0]!.content).toContain("AIによる代理のお電話です");
+      h.advance(10000);
+      expect(spoken(h)).toHaveLength(1);
+    });
+
     it("lets a shop's greeting or a voicemail announcement go first, and can be turned off", () => {
       vi.useFakeTimers();
       const answered = harness("restaurant.reservation");

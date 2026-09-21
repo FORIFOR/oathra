@@ -56,7 +56,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
       if (!current.readiness.ready || !current.route || !current.spec) throw new Error("電話設定が不足しています。設定を確認してから再度内容を確認してください。");
       if (!ctx.reviewedConfigurationId || current.readiness.configurationId !== ctx.reviewedConfigurationId) throw new Error("電話設定が変更されました。発信内容をもう一度確認してください。");
       ctx.signal.throwIfAborted();
-      const engine = buildEngine(current.spec, env);
+      const engine = buildEngine(current.spec, env, request.voice);
       const original = current.route.transport;
       let media: CarrierMediaSession | undefined;
       let ending: Promise<void> | undefined;

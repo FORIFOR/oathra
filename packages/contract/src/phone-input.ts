@@ -84,6 +84,13 @@ const PhoneNumberSchema = z.string().transform((value, ctx) => {
   }
 });
 
+/**
+ * Voices the GPT-Live engine accepts (checked against the API on 2026-09-21; an unknown name is refused
+ * there with "Voice session access denied"). A voice is fixed for the whole call.
+ */
+export const PHONE_VOICES = ["marin", "quartz", "ripple", "vesper", "willow", "stone", "gleam", "meridian", "bossa", "tempo", "beacon", "delta", "cinder"] as const;
+export const DEFAULT_PHONE_VOICE = "marin";
+
 /** Experimental v1 handoff file: preparing/parsing it does not approve a call. */
 export const PhoneRequestSchema = z.object({
   schemaVersion: z.literal(1),
@@ -92,11 +99,13 @@ export const PhoneRequestSchema = z.object({
   name: z.string().trim().min(1).max(100),
   // Optional experimental v1 extension; absent keeps the original message-only behavior.
   conversationMode: z.enum(["message", "chat"]).optional(),
+  // Optional: which voice speaks. Absent keeps the engine's default.
+  voice: z.enum(PHONE_VOICES).optional(),
   instruction: z.string().trim().min(1).max(2000).refine(value => !/\{\{[^{}]+\}\}/.test(value), "テンプレートの {{項目}} を具体的な内容に書き換えてください。"),
 }).strict();
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

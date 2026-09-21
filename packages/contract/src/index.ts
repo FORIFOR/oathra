@@ -14,6 +14,8 @@ export {
   normalizePhoneNumber,
   extractPhoneNumber,
   PhoneRequestSchema,
+  PHONE_VOICES,
+  DEFAULT_PHONE_VOICE,
   preparePhoneRequest,
   parsePhoneRequest,
   type PhoneInputErrorCode,

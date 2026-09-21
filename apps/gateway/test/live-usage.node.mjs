@@ -58,3 +58,18 @@ test('the balance guard reserves the first voice minute and stops before an unfu
  // 20 credits fund one minute only: stop at the boundary instead of starting a second one.
  assert.equal(spendingProgress(m,60500).stop,true);
 },20));
+
+test('a phone request may choose the voice; unknown voices are refused and the list is published',async()=>{
+ const {createGateway,configuration}=await import('../server.mjs'),{createHash}=await import('node:crypto');
+ const dir=mkdtempSync(join(tmpdir(),'voice-choice-')),token=randomBytes(32).toString('hex');
+ const config=configuration({OATHRA_USERS_JSON:JSON.stringify([{id:'owner',team:'local',role:'admin',tokenHash:createHash('sha256').update(token).digest('hex')}]),OATHRA_DATA_KEY:randomBytes(32).toString('hex'),OATHRA_DB:join(dir,'db.sqlite'),OATHRA_DEPLOYMENT:'managed',OATHRA_CREDITS_PER_CALL:'3'});
+ const app=await createGateway(config,{env:{}});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
+ try{
+  const base='http://127.0.0.1:'+app.server.address().port,headers={authorization:'Bearer '+token,'content-type':'application/json'};
+  const status=await(await fetch(base+'/v1/phone/status',{headers})).json();assert.equal(status.defaultVoice,'marin');assert.equal(status.voices.length,13);assert.ok(status.voices.includes('vesper'));
+  const draft=body=>fetch(base+'/v1/phone/draft',{method:'POST',headers,body:JSON.stringify({phone:'+819000000000',name:'local',instruction:'Only local validation; no phone execution.',...body})});
+  const chosen=await draft({voice:'vesper'});assert.equal(chosen.status,201);assert.equal((await chosen.json()).mission.phoneRequest.voice,'vesper');
+  const plain=await draft({});assert.equal(plain.status,201);assert.equal((await plain.json()).mission.phoneRequest.voice,undefined);
+  assert.equal((await draft({voice:'alloy'})).status,400);
+ }finally{await app.close();rmSync(dir,{recursive:true,force:true})}
+});

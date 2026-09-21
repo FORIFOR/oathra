@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractPhoneNumber, normalizePhoneNumber, parsePhoneRequest, PhoneInputError, preparePhoneRequest } from "./index.js";
+import { DEFAULT_PHONE_VOICE, extractPhoneNumber, normalizePhoneNumber, parsePhoneRequest, PHONE_VOICES, PhoneInputError, preparePhoneRequest } from "./index.js";
 
 // Pure string boundary cases only: no contact records, call simulation or network.
 describe("telephone input syntax", () => {
@@ -63,4 +63,13 @@ describe("inert phone request v1 contract", () => {
   it.each([{ name: " " }, { instruction: " " }, { name: "a".repeat(101) }, { instruction: "a".repeat(2001) }, { phone: "09012345678x1" }])("rejects invalid fields", (patch) => {
     expect(() => preparePhoneRequest({ ...input, ...patch })).toThrow();
   });
+});
+
+it("a request may name the voice that speaks, only from the voices the engine accepts", () => {
+  const base = { phone: "+819000000000", name: "声の確認", instruction: "近況を聞いてください。" };
+  expect(preparePhoneRequest(base).voice).toBeUndefined();
+  expect(preparePhoneRequest({ ...base, voice: "vesper" }).voice).toBe("vesper");
+  expect(PHONE_VOICES).toContain(DEFAULT_PHONE_VOICE);
+  expect(new Set(PHONE_VOICES).size).toBe(PHONE_VOICES.length);
+  for (const voice of ["alloy", "", "MARIN", 3]) expect(() => preparePhoneRequest({ ...base, voice: voice as never })).toThrow();
 });

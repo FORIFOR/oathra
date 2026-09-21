@@ -74,8 +74,8 @@ export function parseEngineSpec(engine?: string, brain?: string, configDefault =
   return { id: "pipeline", ...(brain ? { brain } : {}) };
 }
 
-export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env): VoiceEngine {
-  if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
+export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env, voice?: string): VoiceEngine {
+  if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
   return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: new OpenAITTS() });
 }
@@ -633,7 +633,7 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
   const reg = buildRegistry();
   const config = loadPhoneConfig();
   const engineSpec = parseEngineSpec(flags.engine, flags.brain, config.voice.engine);
-  const engine = buildEngine(engineSpec);
+  const engine = buildEngine(engineSpec, process.env, request?.voice);
 
   // Direct media-stream providers need a public URL while their transport is
   // constructed. Prepare the tunnel before routing so a ready Twilio route is

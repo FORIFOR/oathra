@@ -31,7 +31,7 @@ import { renderNews } from './news.js';
     const draftKey = () => account ? 'oathra:phone:' + account.user.id : null;
     function draftValues() {
         return {
-            phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, conversationMode, selectedTemplate, active
+            phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, conversationMode, selectedTemplate, voice: $('#phone-voice')?.value ?? '', active
         };
     }
     function saveDraft() {
@@ -81,6 +81,25 @@ import { renderNews } from './news.js';
     chatNote.className = 'note';
     chatNote.hidden = true;
     $('#phone-template').after(chatNote);
+    // Which voice speaks. The list comes from the server; a voice is fixed for the whole call.
+    const voiceField = element('div'), voiceLabel = element('label', 'AIの声'), voiceSelect = element('select'), voiceNote = element('p', '声は通話の途中では変えられません。選んだ声はこの端末に覚えておきます。');
+    voiceField.id = 'phone-voice-field'; voiceLabel.htmlFor = 'phone-voice'; voiceSelect.id = 'phone-voice'; voiceSelect.name = 'voice'; voiceNote.className = 'note'; voiceNote.id = 'phone-voice-note';
+    voiceSelect.setAttribute('aria-describedby', 'phone-voice-note');
+    voiceField.append(voiceLabel, voiceSelect, voiceNote);
+    // After the template's own undo, so that control stays beside the field it belongs to.
+    undoTemplate.after(voiceField);
+    const voiceKey = () => account ? 'oathra:phone-voice:' + account.user.id : null;
+    const voices = () => readiness?.voices ?? [], defaultVoice = () => readiness?.defaultVoice ?? voices()[0] ?? '';
+    function setVoice(value) {
+        voiceSelect.value = voices().includes(value) ? value : defaultVoice();
+    }
+    function rememberedVoice() {
+        try { return voiceKey() ? localStorage.getItem(voiceKey()) : null; } catch { return null; }
+    }
+    voiceSelect.addEventListener('change', () => {
+        try { if (voiceKey()) localStorage.setItem(voiceKey(), voiceSelect.value); } catch { /* A private window still uses the choice for this call. */ }
+        invalidate(); saveDraft();
+    });
     function chatMode(mode, selection = '') {
         conversationMode = mode === 'chat' ? 'chat' : 'message';
         selectedTemplate = selection;
@@ -154,6 +173,7 @@ import { renderNews } from './news.js';
         clearTimeout(expiry);
         navigation.length = 0;
         $('#phone-form').reset();
+        setVoice(rememberedVoice());
         templateUndo = null; undoTemplate.hidden = true;
         chatMode('message');
         $('#phone-news')?.remove();
@@ -213,6 +233,12 @@ import { renderNews } from './news.js';
     }
     function readyView(r) {
         readiness = r;
+        if (voiceSelect.options.length !== voices().length) {
+            const keep = voiceSelect.value;
+            voiceSelect.replaceChildren(...voices().map(v => { const o = element('option', v === defaultVoice() ? `${v}（標準）` : v); o.value = v; return o; }));
+            setVoice(keep || rememberedVoice());
+        }
+        voiceField.hidden = voices().length < 2;
         $('#phone-form button[type=submit]').textContent = r.ready ? '電話する' : '下書きを保存';
         $('#phone-readiness').replaceChildren(element('strong', r.ready ? '発信設定済み' : '現在は発信できません'));
         if (r.issues.length) {
@@ -246,7 +272,9 @@ import { renderNews } from './news.js';
             });
             fields.append(more);
         }
-        fields.append(element('dt', '通話の長さ'), element('dd', limit));
+        // A chosen voice is confirmed on the same line as the length: one more row would push what is being agreed to out of the first view.
+        const chosenVoice = m.phoneRequest.voice && m.phoneRequest.voice !== defaultVoice() ? m.phoneRequest.voice : null;
+        fields.append(element('dt', chosenVoice ? '通話の長さ・声' : '通話の長さ'), element('dd', chosenVoice ? `${limit} · AIの声 ${chosenVoice}` : limit));
         $('#phone-cost-summary')?.remove();
         $('#phone-price-details')?.remove();
         const summary = element('p');
@@ -358,6 +386,7 @@ import { renderNews } from './news.js';
         }
         $('#phone-instruction').value = r.request.instruction;
         chatMode(r.request.conversationMode, r.request.conversationMode === 'chat' ? 'chat' : '');
+        if (all) setVoice(r.request.voice ?? defaultVoice());
         invalidate();
         saveDraft();
         show('phone');
@@ -493,6 +522,7 @@ import { renderNews } from './news.js';
                 if (typeof saved[key] === 'string')
                     $('#phone-' + (key === 'phone' ? 'number' : key)).value = saved[key];
             chatMode(saved.conversationMode, templates.some(t => t.id === saved.selectedTemplate) ? saved.selectedTemplate : '');
+            if (typeof saved.voice === 'string' && saved.voice) setVoice(saved.voice);
         }
         const requested = new URLSearchParams(location.search).get('call');
         const resume = requested ?? (typeof saved?.active === 'string' ? saved.active : null) ?? records.find(ongoing)?.id;
@@ -522,6 +552,7 @@ import { renderNews } from './news.js';
     });
     on('#phone-clear', 'click', () => {
         $('#phone-form').reset();
+        setVoice(rememberedVoice());
         templateUndo = null; undoTemplate.hidden = true;
         chatMode('message');
         invalidate();
@@ -560,7 +591,7 @@ import { renderNews } from './news.js';
         const values = {
             phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, ...(conversationMode === 'chat' ? {
                 conversationMode: 'chat'
-            } : {})
+            } : {}), ...(voiceSelect.value && voiceSelect.value !== defaultVoice() ? { voice: voiceSelect.value } : {})
         }, session = generation;
         preparing = true;
         const button = $('#phone-form button[type=submit]');

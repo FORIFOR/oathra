@@ -147,7 +147,7 @@ export class Phone {
       import('../../../providers/openai-realtime/dist/index.js'),import('../../../packages/voice/dist/index.js')]);
     assert(!hooks.signal.aborted,'cancelled_before_dial',409);
     const carrier=new PhoneSession(this,m,hooks,voice); const transport=new PhoneTransport({providerId:'twilio',path:'direct',describe:()=> 'Authenticated Twilio Media Streams',dial:async()=>{await carrier.dial();return carrier;}},
-      gptLiveEngine({model:this.env.OATHRA_VOICE_MODEL,apiKey:this.env.OPENAI_API_KEY,onNews:e=>hooks.onEvent(e),
+      gptLiveEngine({model:this.env.OATHRA_VOICE_MODEL,apiKey:this.env.OPENAI_API_KEY,...(m.phoneRequest?.voice?{voice:m.phoneRequest.voice}:{}),onNews:e=>hooks.onEvent(e),
         ...(m.creditQuote?.tariff?.settlement===USAGE_RATE?{newsSearch:createNewsSearch({apiKey:this.env.OPENAI_API_KEY,model:m.creditQuote.tariff.search.model,onUsage:e=>hooks.onEvent({type:'billing.search',...e})})}:{})}));
     const contract=m.kind==='phone-request'?definePhoneRequest(m.phoneRequest,{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd}):defineCall({goal:`sales.${m.goal}`,target:{phone:m.target.phone,name:m.target.name},language:'ja',
       input:{ request:m.request,product_name:m.product.name,reviewed_facts:m.product.facts,candidate_slots:m.candidateSlots,

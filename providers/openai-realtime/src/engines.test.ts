@@ -33,7 +33,7 @@ afterAll(() => wss.close());
 
 describe("gptLiveEngine (VoiceEngine adapter)", () => {
   it("converts carrier PCM to Live PCM appends and publishes μ-law audio, events and hangup", async () => {
-    const engine = gptLiveEngine({ model: "fake", apiKey: "test", url: `ws://127.0.0.1:${port}` });
+    const engine = gptLiveEngine({ model: "fake", voice: "vesper", apiKey: "test", url: `ws://127.0.0.1:${port}` });
     expect(engine.id).toBe("gpt-live");
     expect(engine.speaksItself).toBe(true);
     expect(engine.nativeAudio.format).toBe("mulaw");
@@ -62,6 +62,8 @@ describe("gptLiveEngine (VoiceEngine adapter)", () => {
 
     const start = received.find((m) => m.type === "session.start") as { session: { model: string } } | undefined;
     expect(start?.session.model).toBe("fake");
+    // The voice chosen for the call is the voice Live is started with.
+    expect((start as unknown as { session: { audio: { output: { voice: string } } } }).session.audio.output.voice).toBe("vesper");
     const append = received.find((m) => m.type === "session.input_audio.append") as { audio: string } | undefined;
     // 24 kHz in -> μ-law 8 kHz at the adapter boundary -> 24 kHz PCM16 for Live: 480 samples = 960 bytes.
     expect(Buffer.from(append!.audio, "base64").length).toBe(960);
