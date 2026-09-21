@@ -297,7 +297,6 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
 
 Choose voice engine
 ❯ GPT-Live        <span class="amb">Recommended</span> · best conversation quality
-  OpenAI Realtime speech-to-speech
   Pipeline        Deepgram + any brain + OpenAI TTS
 
 How would you like to make calls?
@@ -381,7 +380,6 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
       <table class="matrix">
         <tr><th>Voice engine</th><th></th></tr>
         <tr><td>GPT-Live <span class="tag rec">recommended</span></td><td class="s">full-duplex · $0.05/min</td></tr>
-        <tr><td>OpenAI Realtime</td><td class="s">speech-to-speech</td></tr>
         <tr><td>Pipeline</td><td class="s">Deepgram + any brain + TTS</td></tr>
         <tr><td>Brains</td><td class="s">OpenAI · Gemini · Ollama · scripted</td></tr>
         <tr><td>Local</td><td class="s">experimental</td></tr>
@@ -394,7 +392,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
                 ┌──────────┴──────────┐
             Phone Layer          Voice Layer
                 │                     │
-   Twilio Direct · SIP Gateway   GPT-Live · Realtime · Pipeline · Local
+   Twilio Direct · SIP Gateway   GPT-Live · Pipeline · Local
                       │
          LiveKit Cloud / self-host  →  Plivo · Custom SIP · (Telnyx …)</pre>
   </section>
@@ -417,7 +415,6 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
 
 Choose voice engine
 ❯ GPT-Live       needs OPENAI_API_KEY
-  OpenAI Realtime needs OPENAI_API_KEY
   Pipeline       needs DEEPGRAM_API_KEY + OPENAI_API_KEY
 
 OpenAI API key

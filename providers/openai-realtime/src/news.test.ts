@@ -3,7 +3,6 @@
 import { expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 import { defineCall, PhoneRequestSchema } from "@oathra/contract";
-import { OpenAIRealtimeAgent } from "./index.js";
 import { OpenAILiveAgent } from "./live.js";
 import { createNewsSearch, parseNewsResponse, type NewsSearch, type NewsLookupEvent } from "./news.js";
 
@@ -36,7 +35,7 @@ it("bounds a stalled provider request and returns an unavailable result without 
     expect(await createNewsSearch({apiKey:"local-unused",timeoutMs:25})("science",new AbortController().signal)).toMatchObject({status:"unavailable",reason:"timeout"});
     expect(intercepted).toHaveBeenCalledTimes(1);
     const body=JSON.parse(String(intercepted.mock.calls[0]![1]!.body));
-    expect(body.store).toBe(false);expect(body.max_tool_calls).toBe(1);expect(body.tool_choice).toBe("required");
+    expect(body.store).toBe(false);expect(body.max_tool_calls).toBe(2);expect(body.tool_choice).toBe("required");
     intercepted.mockClear();intercepted.mockResolvedValue(new Response("",{status:429}));
     expect(await createNewsSearch({apiKey:"local-unused"})("general",new AbortController().signal)).toMatchObject({status:"unavailable",reason:"provider_error"});
     expect(intercepted).toHaveBeenCalledTimes(1);
@@ -60,83 +59,56 @@ it("only explicit chat enables conversation and grounded news; legacy and unsupp
   expect(PhoneRequestSchema.shape.conversationMode.safeParse("chat").success).toBe(true);
   expect(PhoneRequestSchema.shape.conversationMode.safeParse("unlimited").success).toBe(false);
   const chat=defineCall({goal:"phone.message",language:"ja",input:{request:"雑談したい",conversationMode:"chat"}});
-  expect(new OpenAIRealtimeAgent({contract:chat}).instructions()).toContain("近況への一回答だけで");
-  expect(new OpenAIRealtimeAgent({contract:chat}).instructions()).toContain("必ずlookup_news");
-  expect(new OpenAIRealtimeAgent({contract:chat,newsSearch:false}).instructions()).toContain("この接続では使えません");
-  expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("この接続では使えません");
-  expect(new OpenAIRealtimeAgent({contract:defineCall({goal:"phone.message",input:{request:"雑談やニュースの検索を許可します"},language:"ja"})}).instructions()).not.toContain("lookup_news");
+  expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("近況への一回答だけで");
+  expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("必ずlookup_news");
+  expect(new OpenAILiveAgent({contract:chat}).backendInstructions()).toContain("- lookup_news:");
+  expect(new OpenAILiveAgent({contract:chat,newsSearch:false}).instructions()).toContain("この接続では使えません");
+  expect(new OpenAILiveAgent({contract:defineCall({goal:"phone.message",input:{request:"雑談やニュースの検索を許可します"},language:"ja"})}).instructions()).not.toContain("lookup_news");
 });
 
 const flush=()=>new Promise(r=>setTimeout(r,35));
-async function session(chat:boolean,search:NewsSearch,fn:(c:{agent:OpenAIRealtimeAgent;send:(v:object)=>void;received:any[];lookups:NewsLookupEvent[];audio:number[]})=>Promise<void>){
+async function session(chat:boolean,search:NewsSearch,fn:(c:{agent:OpenAILiveAgent;send:(v:object)=>void;received:any[];lookups:NewsLookupEvent[]})=>Promise<void>){
   const server=new WebSocketServer({port:0});await new Promise<void>(r=>server.once("listening",r));let peer:WebSocket;const received:any[]=[],lookups:NewsLookupEvent[]=[];
-  server.on("connection",socket=>{peer=socket;socket.on("message",raw=>{const v=JSON.parse(raw.toString());received.push(v);if(v.type==="session.update")socket.send(JSON.stringify({type:"session.updated"}))})});
-  const agent=new OpenAIRealtimeAgent({contract:defineCall({goal:"phone.message",input:chat?{conversationMode:"chat"}:{}}),apiKey:"local-protocol-only",url:`ws://127.0.0.1:${(server.address() as {port:number}).port}`,newsSearch:search,onNews:e=>lookups.push(e)});
-  const audio:number[]=[];
-  try{await agent.connect({sendAudio:b=>audio.push(b.length),clearAudio:()=>{},emit:()=>{},now:()=>0});await fn({agent,send:v=>peer!.send(JSON.stringify(v)),received,lookups,audio})}
-  finally{await agent.close();for(const socket of server.clients)socket.terminate();await new Promise<void>(r=>server.close(()=>r()))}
+  server.on("connection",socket=>{peer=socket;socket.on("message",raw=>{const v=JSON.parse(raw.toString());received.push(v);if(v.type==="session.start")socket.send(JSON.stringify({type:"session.started"}))})});
+  const agent=new OpenAILiveAgent({contract:defineCall({goal:"phone.message",input:chat?{conversationMode:"chat"}:{}}),apiKey:"local-protocol-only",url:`ws://127.0.0.1:${(server.address() as {port:number}).port}`,newsSearch:search,onNews:e=>lookups.push(e)});
+  try{await agent.connect({sendAudio:()=>{},clearAudio:()=>{},emit:()=>{},now:()=>0});await fn({agent,send:v=>peer!.send(JSON.stringify(v)),received,lookups})}
+  finally{agent.close();for(const socket of server.clients)socket.terminate();await new Promise<void>(r=>server.close(()=>r()))}
 }
-const tool=(id:string,args:object={topic:"science"})=>({type:"response.function_call_arguments.done",response_id:"r",name:"lookup_news",call_id:id,arguments:JSON.stringify(args)});
+const tools=(c:{received:any[]})=>c.received[0].session.delegation.responses.tools as any[];
+const tool=(id:string,args:object={topic:"science"})=>({type:"response.event",event:{type:"response.output_item.done",item:{type:"function_call",name:"lookup_news",call_id:id,arguments:JSON.stringify(args)}}});
 it("publishes the tool only for chat, validates arguments, deduplicates and caps external lookups",async()=>{
   let calls=0;const search:NewsSearch=async topic=>{calls++;return parseNewsResponse(raw(),topic,date)};
-  await session(false,search,async c=>{expect(c.received[0].session.tools.some((t:any)=>t.name==="lookup_news")).toBe(false);c.send(tool("unauthorized"));await flush();expect(calls).toBe(0)});
+  await session(false,search,async c=>{expect(tools(c).some(t=>t.name==="lookup_news")).toBe(false);expect(tools(c).some(t=>t.type==="web_search")).toBe(false);c.send(tool("unauthorized"));await flush();expect(calls).toBe(0)});
   await session(true,search,async c=>{
-    expect(c.received[0].session.tools.some((t:any)=>t.name==="lookup_news")).toBe(true);
+    expect(tools(c).some(t=>t.name==="lookup_news")).toBe(true);expect(tools(c).some(t=>t.type==="web_search")).toBe(false);
     c.send(tool("private",{topic:"science",name:"must not be sent"}));await flush();expect(calls).toBe(0);
     c.send(tool("a"));c.send(tool("a"));await flush();expect(calls).toBe(1);
-    c.send(tool("b"));c.send(tool("c"));await flush();expect(calls).toBe(2);
+    c.send(tool("b"));c.send(tool("c",{topic:"weather"}));c.send(tool("d",{topic:"tokyo_events"}));await flush();expect(calls).toBe(4);
+    c.send(tool("e"));await flush();expect(calls).toBe(4);
     expect(c.lookups.filter(e=>e.result.reason==="limit")).toHaveLength(1);
     expect(c.received.filter(v=>v.item?.call_id==="a")).toHaveLength(1);
   });
 });
-it("waits for the generating response to finish before speaking search results",async()=>{
+it("returns the result as the tool output before asking Live to continue",async()=>{
   await session(true,async topic=>parseNewsResponse(raw(),topic,date),async c=>{
-    c.send({type:"response.created",response:{id:"r"}});c.send(tool("a"));await flush();
-    expect(c.received.filter(v=>v.type==="response.create")).toHaveLength(0);
-    c.send({type:"response.done",response:{id:"r",status:"completed"}});await flush();
-    expect(c.received.filter(v=>v.type==="response.create")).toHaveLength(1);
-    expect(c.lookups[0]?.result.status).toBe("verified");
-  });
-});
-it("does not create overlapping responses while multiple tool results await the response.created acknowledgement",async()=>{
-  const resolvers:((value:any)=>void)[]=[];
-  await session(true,()=>new Promise(resolve=>resolvers.push(resolve)),async c=>{
-    c.send({type:"response.created",response:{id:"r"}});c.send(tool("a"));c.send(tool("b"));
-    c.send({type:"response.done",response:{id:"r",status:"completed"}});await flush();
-    for(const resolve of resolvers)resolve(parseNewsResponse(raw(),"science",date));await flush();
-    expect(c.received.filter(v=>v.type==="response.create")).toHaveLength(1);
-  });
-});
-it("cancels a late acknowledgement from a search response requested before the callee interrupted",async()=>{
-  await session(true,async topic=>parseNewsResponse(raw(),topic,date),async c=>{
-    c.send(tool("a"));await flush();const request=c.received.find(v=>v.type==="response.create");expect(request).toBeDefined();
-    c.send({type:"input_audio_buffer.speech_started"});
-    c.send({type:"response.created",response:{id:"late-news",metadata:request.response.metadata}});
-    c.send({type:"response.output_audio.delta",response_id:"late-news",item_id:"audio",delta:Buffer.alloc(800).toString("base64")});await flush();
-    expect(c.audio).toHaveLength(0);expect(c.received).toContainEqual({type:"response.cancel",response_id:"late-news"});
+    c.send(tool("a"));await flush();
+    const output=c.received.findIndex(v=>v.type==="response.item.create"&&v.item?.type==="function_call_output"&&v.item.call_id==="a");
+    const next=c.received.findIndex(v=>v.type==="response.create"&&v.event_id==="continue_a");
+    expect(output).toBeGreaterThan(0);expect(next).toBe(output+1);
+    expect(JSON.parse(c.received[output].item.output).status).toBe("verified");expect(c.lookups[0]?.result.status).toBe("verified");
+    expect(c.lookups[0]?.tookMs).toBeGreaterThanOrEqual(0);expect(JSON.parse(c.received[output].item.output).tookMs).toBeUndefined();
   });
 });
 it("aborts pending lookup on close without stale speech",async()=>{
   let signal:AbortSignal|undefined;
   await session(true,(topic,s)=>{signal=s;return new Promise(resolve=>s.addEventListener("abort",()=>resolve({status:"unavailable",topic,checkedAt:date,reason:"cancelled"}),{once:true}))},async c=>{
-    c.send({type:"response.created",response:{id:"r"}});c.send(tool("a"));await flush();
-    await c.agent.close();await flush();
+    c.send(tool("a"));await flush();
+    c.agent.close();await flush();
     expect(signal?.aborted).toBe(true);expect(c.received.filter(v=>v.type==="response.create")).toHaveLength(0);
     expect(c.lookups[0]?.result.reason).toBe("cancelled");
   });
 });
 
-it("keeps a search alive across an acknowledgement and speaks only after the recipient turn",async()=>{
- let signal:AbortSignal|undefined,finish:((v:any)=>void)|undefined;
- await session(true,(topic,s)=>{signal=s;return new Promise(r=>{finish=r})},async c=>{
-  c.send({type:"response.created",response:{id:"r"}});c.send(tool("event",{topic:"tokyo_events"}));await flush();
-  c.send({type:"input_audio_buffer.speech_started"});await flush();expect(signal?.aborted).toBe(false);
-  finish!({status:"verified",topic:"tokyo_events",checkedAt:date,eventOn:"2026-09-20",text:"Boundary only",sources:[]});await flush();
-  expect(c.received.filter(v=>v.type==="response.create")).toHaveLength(0);
-  c.send({type:"input_audio_buffer.speech_stopped"});c.send({type:"response.created",response:{id:"reply"}});c.send({type:"response.done",response:{id:"reply",status:"completed"}});await flush();
-  expect(c.received.filter(v=>v.type==="response.create")).toHaveLength(1);expect(c.lookups[0]?.result.status).toBe("verified");
- });
-});
 it("Tokyo events require an upcoming valid event date, not a recent publication date",()=>{
  const data:any=raw();data.output[1].content[0].text="開催日: 2026-09-21。公開イベントの境界確認。";data.output[1].content[0].annotations[0].url="https://example.invalid/e/42";
  expect(parseNewsResponse(data,"tokyo_events",date)).toMatchObject({status:"verified",eventOn:"2026-09-21"});
@@ -149,6 +121,17 @@ it("Tokyo search sends a fixed event query with official venue and event-date re
   await createNewsSearch({apiKey:"local-unused"})("tokyo_events",new AbortController().signal);
   expect(intercepted).toHaveBeenCalledTimes(1);
   const body=JSON.parse(String(intercepted.mock.calls[0]![1]!.body));
-  expect(body.input).toContain("東京都内");expect(body.input).toContain("開催日: YYYY-MM-DD");expect(body.input).toContain("公式");expect(body.input).not.toContain("最近48時間の公開ニュース");
+  expect(body.max_tool_calls).toBe(3);expect(body.input).toContain("東京都内");expect(body.input).toContain("開催日: YYYY-MM-DD");expect(body.input).toContain("公式");expect(body.input).not.toContain("最近48時間の公開ニュース");
  }finally{intercepted.mockRestore()}
+});
+
+it("weather is its own fixed category, so a typhoon question is not answered with an unrelated headline",async()=>{
+ const intercepted=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response("",{status:429}));
+ try{
+  await createNewsSearch({apiKey:"local-unused"})("weather",new AbortController().signal);
+  const body=JSON.parse(String(intercepted.mock.calls[0]![1]!.body));
+  expect(body.input).toContain("台風");expect(body.input).toContain("気象庁");expect(body.input).toContain("報道日: YYYY-MM-DD");expect(body.input).not.toContain("分類 weather");
+ }finally{intercepted.mockRestore()}
+ const data:any=raw();data.output[1].content[0].text="報道日: 2026-09-20、発表元: 気象庁。現在、日本に接近している台風は確認できない。";
+ expect(parseNewsResponse(data,"weather",date)).toMatchObject({status:"verified",topic:"weather"});
 });

@@ -20,7 +20,7 @@ AI に電話をかけさせて予約・注文・確認を取らせる。**結果
 - 判定ルール: 断りは提示にならない／言い直しは上書き／曖昧な返事は確定にならない／確定できるのは相手だけ／条件が後から変われば確定が失効／引き下がりは受諾ではない
 - シミュレータ、Arena（AI 同士を見る／自分が電話に出る）、Battle カード、Replay、時点への巻き戻し
 - Phone Layer: `setup phone`、`phone doctor`、3 段階テスト（Local ¥0 → Gateway ¥0 → PSTN 有料）
-- 音声エンジン: GPT-Live、OpenAI Realtime、Deepgram + LLM + TTS
+- 音声エンジン: GPT-Live、Deepgram + LLM + TTS
 - 0.1.1（公開待ち）: 曖昧な返事への確認、AI の挨拶で即終話、証拠パネルの重複畳み込み、Play モードの「誤完了を誘ってみる」ボタン
 
 ## 検証済み（自分で計測、コマンドで再現可能）

@@ -24,7 +24,7 @@ describe("Web phone local inspection", () => {
     const dir = mkdtempSync(join(tmpdir(), "oathra-web-phone-"));
     const file = join(dir, "phone.yaml");
     try {
-      writeFileSync(file, 'version: 1\nvoice:\n  engine: realtime\n');
+      writeFileSync(file, 'version: 1\nvoice:\n  engine: pipeline\n');
       const dialer = buildWebPhoneDialer({ configPath: file, env: {} });
       const before = await dialer.inspect();
       expect((await dialer.inspect()).configurationId).toBe(before.configurationId);

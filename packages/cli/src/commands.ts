@@ -462,13 +462,13 @@ ${bold("Try it")}
 
 ${bold("Real phone")}
   oathra setup phone                 guided API-key, voice-engine and carrier setup (.env is updated)
-                                     ${dim("--engine gpt-live|realtime|pipeline  --provider twilio|plivo|sip  --skip-test")}
+                                     ${dim("--engine gpt-live|pipeline  --provider twilio|plivo|sip  --skip-test")}
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
   oathra call --request-file <json> --dry-run  review a saved phone request without dialing
   oathra call --request-file <json> --approve-request  explicitly place the reviewed call
-  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|realtime|pipeline  --provider <id>")}
+  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|pipeline  --provider <id>")}
 
 ${bold("Trust")}
   oathra verify <json | ->           check your final transcripts locally; JSON output, no API key

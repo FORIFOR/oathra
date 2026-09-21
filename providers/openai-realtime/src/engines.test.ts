@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 import { defineCall } from "@oathra/contract";
 import { PCM_24K, type VoiceOutput } from "@oathra/voice";
-import { realtimeEngine } from "./engines.js";
+import { gptLiveEngine } from "./engines.js";
 
 let wss: WebSocketServer;
 let port = 0;
@@ -17,36 +17,32 @@ beforeAll(async () => {
     socket.on("message", (raw) => {
       const msg = JSON.parse(raw.toString()) as Record<string, unknown>;
       received.push(msg);
-      if (msg.type === "session.update" && received.filter((m) => m.type === "session.update").length === 1) {
-        send({ type: "session.updated" });
-        setTimeout(() => {
-          send({ type: "input_audio_buffer.speech_started", audio_start_ms: 100 });
-          send({ type: "input_audio_buffer.speech_stopped", audio_end_ms: 900 });
-          send({ type: "conversation.item.input_audio_transcription.completed", transcript: "19時半でしたら空いております。" });
-          send({ type: "response.output_audio.delta", item_id: "it1", response_id: "r1", delta: Buffer.alloc(800, 0xff).toString("base64") });
-          send({ type: "response.output_audio_transcript.done", transcript: "では、19時半でお願いします。" });
-          send({ type: "response.function_call_arguments.done", name: "end_call", call_id: "c1", arguments: JSON.stringify({ reason: "done" }) });
-          send({ type: "response.done", response: {} });
-        }, 30);
+      if (msg.type === "session.start") send({ type: "session.started" });
+      if (msg.type === "session.input_audio.append" && received.filter((m) => m.type === "session.input_audio.append").length === 1) {
+        // 20 ms of audible 24 kHz PCM -> 160 μ-law bytes for the carrier.
+        const voiced = new Int16Array(480).fill(4000);
+        send({ type: "session.output_audio.delta", delta: Buffer.from(voiced.buffer).toString("base64") });
+        send({ type: "session.output_transcript.delta", delta: "では、19時半でお願いします。" });
+        send({ type: "session.input_transcript.delta", delta: "19時半でしたら空いております。" });
+        setTimeout(() => send({ type: "session.closed" }), 30);
       }
     });
   });
 });
 afterAll(() => wss.close());
 
-describe("realtimeEngine (VoiceEngine adapter)", () => {
-  it("converts carrier PCM to μ-law appends and publishes audio, events and hangup", async () => {
-    const engine = realtimeEngine({ model: "fake", apiKey: "test", url: `ws://127.0.0.1:${port}` });
+describe("gptLiveEngine (VoiceEngine adapter)", () => {
+  it("converts carrier PCM to Live PCM appends and publishes μ-law audio, events and hangup", async () => {
+    const engine = gptLiveEngine({ model: "fake", apiKey: "test", url: `ws://127.0.0.1:${port}` });
+    expect(engine.id).toBe("gpt-live");
     expect(engine.speaksItself).toBe(true);
     expect(engine.nativeAudio.format).toBe("mulaw");
     const contract = defineCall({ goal: "restaurant.reservation", require: { time: true, confirmed: true }, permissions: { ask: true } });
     const t0 = Date.now();
     const session = await engine.start({ contract, language: "ja", carrierAudio: PCM_24K }, { now: () => Date.now() - t0 });
 
-    // 20 ms of 24 kHz PCM = 480 samples = 960 bytes -> 160 μ-law bytes.
     const pcm = new Int16Array(480);
     session.input({ ...PCM_24K, data: new Uint8Array(pcm.buffer) });
-    session.updateContext({ verified: { time: "19:30" }, pending: {}, missing: ["confirmed"], violations: [] });
 
     const outputs: VoiceOutput[] = [];
     const deadline = Date.now() + 1500;
@@ -58,15 +54,17 @@ describe("realtimeEngine (VoiceEngine adapter)", () => {
     const audio = outputs.filter((o) => o.type === "audio");
     expect(audio).toHaveLength(1);
     expect(audio[0]!.type === "audio" && audio[0]!.chunk.format).toBe("mulaw");
-    expect(audio[0]!.type === "audio" && audio[0]!.chunk.data.length).toBe(800);
+    expect(audio[0]!.type === "audio" && audio[0]!.chunk.data.length).toBe(160);
     const types = outputs.flatMap((o) => (o.type === "event" ? [o.event.type] : []));
     expect(types).toContain("speech");
     expect(types).toContain("agent.speech");
     expect(types.at(-1)).toBe("hangup");
 
-    const append = received.find((m) => m.type === "input_audio_buffer.append") as { audio: string } | undefined;
-    expect(append).toBeDefined();
-    expect(Buffer.from(append!.audio, "base64").length).toBe(160);
+    const start = received.find((m) => m.type === "session.start") as { session: { model: string } } | undefined;
+    expect(start?.session.model).toBe("fake");
+    const append = received.find((m) => m.type === "session.input_audio.append") as { audio: string } | undefined;
+    // 24 kHz in -> μ-law 8 kHz at the adapter boundary -> 24 kHz PCM16 for Live: 480 samples = 960 bytes.
+    expect(Buffer.from(append!.audio, "base64").length).toBe(960);
     await session.close();
   });
 });

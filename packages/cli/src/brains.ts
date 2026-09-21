@@ -51,9 +51,6 @@ export function resolveBrain(spec: string): BrainProvider {
   return entry.create(model);
 }
 
-/** Speech-to-speech specs: "realtime", "realtime:<model>", or a bare gpt-realtime* model id. */
-export const DEFAULT_REALTIME_MODEL = "gpt-realtime-2.1";
-
 /** GPT-Live specs: "live", "live:<model>", or a bare gpt-live* model id. */
 export const DEFAULT_LIVE_MODEL = "gpt-live-1";
 
@@ -64,23 +61,16 @@ export function liveModelOf(spec: string): string | undefined {
   return undefined;
 }
 
-export function realtimeModelOf(spec: string): string | undefined {
-  const { name, model } = parseBrainSpec(spec);
-  if (name === "realtime") return model ?? DEFAULT_REALTIME_MODEL;
-  if (/^gpt-realtime/.test(spec)) return spec;
-  return undefined;
-}
-
 export type BrainStatus = { name: string; ready: boolean; reason?: string };
 
 /** Readiness of each registered brain (for `doctor`). Does not touch the network. */
 export function listBrains(): BrainStatus[] {
-  const realtime: BrainStatus = process.env.OPENAI_API_KEY
-    ? { name: "realtime", ready: true, reason: `speech-to-speech, default ${DEFAULT_REALTIME_MODEL} (real calls only)` }
-    : { name: "realtime", ready: false, reason: "OPENAI_API_KEY not set (https://platform.openai.com/api-keys)" };
+  const live: BrainStatus = process.env.OPENAI_API_KEY
+    ? { name: "live", ready: true, reason: `speech-to-speech, default ${DEFAULT_LIVE_MODEL} (real calls only)` }
+    : { name: "live", ready: false, reason: "OPENAI_API_KEY not set (https://platform.openai.com/api-keys)" };
   return [...Object.entries(registry).map(([name, e]) => {
     if (e.envKey && !process.env[e.envKey]) return { name, ready: false, reason: `${e.envKey} not set (${e.keyUrl})` };
     if (name === "ollama") return { name, ready: true, reason: `no key needed; requires a running Ollama at ${process.env.OLLAMA_HOST ?? "http://127.0.0.1:11434"} (not checked)` };
     return { name, ready: true };
-  }), realtime];
+  }), live];
 }

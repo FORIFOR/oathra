@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { defineCall } from "@oathra/contract";
-import { OpenAIRealtimeAgent } from "./index.js";
 import { OpenAILiveAgent } from "./live.js";
 
 // Exercise actual instruction generation only; constructors do not open sockets.
 describe("reviewed phone message voice instructions", () => {
-  for (const Agent of [OpenAILiveAgent, OpenAIRealtimeAgent]) {
+  for (const Agent of [OpenAILiveAgent]) {
     it(`${Agent.name} carries the request and identifies the AI without reservation or friend impersonation rules`, () => {
       const contract = defineCall({ goal: "phone.message", language: "ja", input: { request: "到着時刻を確認してください。" }, permissions: { ask: true } });
       const instructions = new Agent({ contract }).instructions();

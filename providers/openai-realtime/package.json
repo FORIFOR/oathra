@@ -1,7 +1,7 @@
 {
   "name": "@oathra/openai-realtime",
   "version": "0.1.0",
-  "description": "OpenAI Realtime (speech-to-speech) agent for Oathra: Twilio \u03bc-law in, model audio out, transcripts to the evidence engine",
+  "description": "GPT-Live (speech-to-speech) agent for Oathra: Twilio \u03bc-law in, model audio out, transcripts to the evidence engine",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",

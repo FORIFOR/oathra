@@ -478,7 +478,7 @@
   function setPhoneMode(mode,selection='') {
     phoneConversationMode=mode==='chat'?'chat':'message';phoneSelectedTemplate=selection;$('#phone-template').value=selection;
     let note=$('#phone-chat-note');if(!note){note=el('p',{id:'phone-chat-note',class:'note'});$('#phone-template').after(note)}
-    note.hidden=phoneConversationMode!=='chat';note.textContent=LANG==='ja'?'雑談。ニュース検索はRealtime接続で利用できます（API従量料金）。':'Casual chat. News search requires Realtime (API usage charges apply).';
+    note.hidden=phoneConversationMode!=='chat';note.textContent=LANG==='ja'?'雑談。ニュースを聞かれたら公開ニュースを確認します（API従量料金）。':'Casual chat. News questions are checked against public headlines (API usage charges apply).';
   }
   function phoneInputChanged() {
     phoneRevision++; clearPhoneReview(); $("#phone-error").hidden = true;
@@ -556,7 +556,7 @@
       $("#phone-download").href = phoneDownloadUrl;
       const ready=data.readiness;
       renderPhoneReadiness(ready);
-      $("#phone-disclosure").replaceChildren(el("p",{text:`${ready.provider} / ${ready.engine}`}),el("p",{text:ready.disclosure+(request.conversationMode==="chat"? (LANG==="ja"?" 雑談のニュース検索では公開カテゴリをOpenAIへ送信します。検索は1通話2回までで、別途API料金が発生します。":" News search sends a public category to OpenAI, at most twice per call, with additional API charges."):"")}),...(ready.issues||[]).map(issue=>el("p",{text:issue})));
+      $("#phone-disclosure").replaceChildren(el("p",{text:`${ready.provider} / ${ready.engine}`}),el("p",{text:ready.disclosure+(request.conversationMode==="chat"? (LANG==="ja"?" 雑談のニュース検索では公開カテゴリをOpenAIへ送信します。検索は1通話4回までで、別途API料金が発生します。":" News search sends a public category to OpenAI, at most up to four times per call, with additional API charges."):"")}),...(ready.issues||[]).map(issue=>el("p",{text:issue})));
       $("#phone-review").hidden = false; $("#phone-review").focus();syncPhoneDial();
       phoneExpiryTimer=setTimeout(syncPhoneDial,Math.max(0,Date.parse(data.expiresAt)-Date.now()));
       await refreshPhoneHistory();

@@ -14,7 +14,7 @@ import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
 import { OpenAITTS } from "@oathra/openai";
-import { gptLiveEngine, realtimeEngine } from "@oathra/openai-realtime";
+import { gptLiveEngine } from "@oathra/openai-realtime";
 import {
   loadPhoneConfig,
   phoneConfigPath,
@@ -38,7 +38,7 @@ import { runCall } from "@oathra/runtime";
 import { contractFromScenario, loadScenarioDir, loadScenarioFile, type Scenario } from "@oathra/scenario";
 import { MULAW_8K, type VoiceEngine } from "@oathra/voice";
 import { pipelineEngine } from "@oathra/voice-pipeline";
-import { liveModelOf, realtimeModelOf, resolveBrain } from "./brains.js";
+import { liveModelOf, resolveBrain } from "./brains.js";
 import { scenariosDir } from "./paths.js";
 import { liveRenderer, resultBox } from "./render.js";
 import { bad, bold, cyan, dim, green, ok, red, warn, yellow } from "./ui.js";
@@ -55,32 +55,27 @@ export function buildRegistry(env: NodeJS.ProcessEnv = process.env): PhoneRegist
   return reg;
 }
 
-export type EngineSpec = { id: "gpt-live" | "realtime" | "pipeline"; model?: string; brain?: string };
+export type EngineSpec = { id: "gpt-live" | "pipeline"; model?: string; brain?: string };
 
-/** Accepts `--engine gpt-live|realtime|pipeline[:model]` and the legacy `--brain` spellings. */
+/** Accepts `--engine gpt-live|pipeline[:model]` and the legacy `--brain` spellings. */
 export function parseEngineSpec(engine?: string, brain?: string, configDefault = "gpt-live"): EngineSpec {
   const spec = engine ?? (brain ? undefined : configDefault);
   if (spec) {
     const [id, ...rest] = spec.split(":");
     const model = rest.length ? rest.join(":") : undefined;
     if (id === "gpt-live" || id === "live") return { id: "gpt-live", ...(model ? { model } : {}) };
-    if (id === "realtime") return { id: "realtime", ...(model ? { model } : {}) };
     if (id === "pipeline") return { id: "pipeline", ...(model ? { brain: model } : {}) };
     if (/^gpt-live/.test(spec)) return { id: "gpt-live", model: spec };
-    if (/^gpt-realtime/.test(spec)) return { id: "realtime", model: spec };
-    throw new Error(`Unknown voice engine "${spec}". Use gpt-live, realtime or pipeline[:brain]`);
+    throw new Error(`Unknown voice engine "${spec}". Use gpt-live or pipeline[:brain]`);
   }
   // legacy --brain
   const live = brain ? liveModelOf(brain) : undefined;
   if (live) return { id: "gpt-live", model: live };
-  const rt = brain ? realtimeModelOf(brain) : undefined;
-  if (rt) return { id: "realtime", model: rt };
   return { id: "pipeline", ...(brain ? { brain } : {}) };
 }
 
 export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env): VoiceEngine {
   if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
-  if (spec.id === "realtime") return realtimeEngine({ ...(spec.model ? { model: spec.model } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
   return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: new OpenAITTS() });
 }
@@ -88,7 +83,6 @@ export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.e
 export function engineChoices(): Array<{ id: string; label: string; note: string }> {
   return [
     { id: "gpt-live", label: "GPT-Live", note: "Recommended · needs OPENAI_API_KEY · $0.05/min session" },
-    { id: "realtime", label: "OpenAI Realtime", note: "needs OPENAI_API_KEY · speech-to-speech" },
     { id: "pipeline", label: "Pipeline", note: "needs DEEPGRAM_API_KEY + OPENAI_API_KEY · customizable" },
   ];
 }
@@ -116,7 +110,6 @@ const CREDENTIAL_GUIDES: Record<string, CredentialGuide> = {
 
 const ENGINE_CREDENTIALS: Record<EngineSpec["id"], string[]> = {
   "gpt-live": ["OPENAI_API_KEY"],
-  realtime: ["OPENAI_API_KEY"],
   pipeline: ["DEEPGRAM_API_KEY", "OPENAI_API_KEY"],
 };
 
@@ -729,7 +722,8 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
         callId,
         scenarioId: scenario.id,
         onEvent: liveRenderer(scenario),
-        openingTimeoutMs: 4000,
+        // The agent opens the call as soon as the line is up; it does not wait for the callee's hello.
+        openingTimeoutMs: 0,
       });
       console.log("");
       console.log(resultBox(outcome));

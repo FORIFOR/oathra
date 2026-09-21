@@ -103,9 +103,9 @@ API キーの取得先、`.env` の扱い、Twilio / Plivo / Custom SIP の違�
 | 電話会社 | | 音声モデル | |
 |--|--|--|--|
 | Twilio（直結） | 実通話で検証済み | GPT-Live | 推奨。全二重、$0.05/分 |
-| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | OpenAI Realtime | speech-to-speech |
-| Custom SIP | 任意のトランク | Pipeline | Deepgram + 任意の LLM + OpenAI TTS |
-| Telnyx · Wavix · Sinch | v0.2 | LLM | OpenAI · Gemini · Ollama · 組み込み |
+| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | Pipeline | Deepgram + 任意の LLM + OpenAI TTS |
+| Custom SIP | 任意のトランク | LLM | OpenAI · Gemini · Ollama · 組み込み |
+| Telnyx · Wavix · Sinch | v0.2 | | |
 
 人の操作が必要な手順（発信元番号の本人確認、海外発信の許可）はリンク付きの一手順として案内し、終わるまで待ちます。「ワンクリック」とは言いません。
 
@@ -231,7 +231,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 - [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
 - [x] Phone Layer：`setup phone`、`phone doctor`、3 段階テスト、フォールバック付きルーティング
 - [x] Twilio 直結（実通話で検証済み）、Plivo と Custom SIP（LiveKit 経由、ドキュメント準拠で実装、PSTN 未検証）
-- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、OpenAI Realtime、Deepgram + LLM + TTS
+- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、Deepgram + LLM + TTS
 - [ ] Telnyx、Wavix、Sinch、ElevenLabs TTS
 - [ ] 金額・番号の二重 ASR、パイプライン 650 ms 目標
 - [x] MCP サーバ `oathra mcp`（simulate_call · verify_transcript · inspect_call · list_calls · list_scenarios）。ローカルだけで動き、実電話は発信しない
@@ -304,9 +304,9 @@ Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や
 
 Arena keeps the current practice call available when returning to the mission list. Finish it or use Hang up before starting another; restaurant exercises use the fixed date 2026-09-12 for reproducibility.
 
-Arena の「電話をかける」で、電話番号・相手・目的を入力し、送信先と費用の説明を確認してから発信できます。目的は「雑談」を含む13種類の編集可能なテンプレート、または保存済み履歴から再利用できます。Web発信は experimental（Twilio + gpt-live / realtime、設定済み公開WSSが必要）。未設定では発信できず、不足設定を表示します。JSON保存とCLI引き継ぎも利用できます。LINE/Slackの汎用依頼は引き続き下書き受付までです。[Web発信の設定と契約](docs/quality/web-phone.md)、[Gatewayで実行した電話の記録](docs/quality/user-ui-call.md)。
+Arena の「電話をかける」で、電話番号・相手・目的を入力し、送信先と費用の説明を確認してから発信できます。目的は「雑談」を含む13種類の編集可能なテンプレート、または保存済み履歴から再利用できます。Web発信は experimental（Twilio + gpt-live、設定済み公開WSSが必要）。未設定では発信できず、不足設定を表示します。JSON保存とCLI引き継ぎも利用できます。LINE/Slackの汎用依頼は引き続き下書き受付までです。[Web発信の設定と契約](docs/quality/web-phone.md)、[Gatewayで実行した電話の記録](docs/quality/user-ui-call.md)。
 
-「雑談」は近況・趣味・日常の会話を続けるテンプレートです。Realtime接続ではニュースを聞かれた際にOpenAIのWeb検索で確認し、報道日と出典を添えます（1通話2回まで）。確認できない内容は未確認と伝えます。サービス版の `usage-rate-v1` では検索の回数・token使用量も精算（旧契約は運営者負担）し、参照したニュースを履歴から確認できます。OSS版では自身のOpenAI APIに検索料金が発生します。GPT-Live接続でのニュース検索は未対応。[設定・互換性と検証範囲](docs/quality/chat-news.md)。
+「雑談」は近況・趣味・日常の会話を続けるテンプレートです。ニュースを聞かれた際にはOpenAIのWeb検索で確認し、報道日と出典を添えます（1通話4回まで）。確認できない内容は未確認と伝えます。サービス版の `usage-rate-v1` では検索の回数・token使用量も精算（旧契約は運営者負担）し、参照したニュースを履歴から確認できます。OSS版では自身のOpenAI APIに検索料金が発生します。[設定・互換性と検証範囲](docs/quality/chat-news.md)。
 
 ### General contacts / 一般連絡先
 

@@ -7,9 +7,7 @@
 import type { Action } from "@oathra/contract";
 import type { MissionView } from "@oathra/core";
 import { convert, MULAW_8K, OutputQueue, type AudioChunk, type VoiceEngine, type VoiceOutput, type VoiceSession, type VoiceSessionContext } from "@oathra/voice";
-import { OpenAIRealtimeAgent } from "./index.js";
 import { OpenAILiveAgent } from "./live.js";
-import type { RealtimeUsageEvent } from "./usage.js";
 import type { NewsSearch, NewsLookupEvent } from "./news.js";
 
 type AgentLike = {
@@ -71,7 +69,7 @@ class S2SVoiceSession implements VoiceSession {
   }
 }
 
-export type GptLiveEngineOptions = { model?: string; voice?: string; delegateTo?: string; webSearch?: boolean; apiKey?: string; url?: string };
+export type GptLiveEngineOptions = { model?: string; voice?: string; delegateTo?: string; webSearch?: boolean; apiKey?: string; url?: string; newsSearch?: NewsSearch | false; onNews?: (event: NewsLookupEvent) => void };
 
 export function gptLiveEngine(opts: GptLiveEngineOptions = {}): VoiceEngine {
   const model = opts.model ?? "gpt-live-1";
@@ -88,35 +86,8 @@ export function gptLiveEngine(opts: GptLiveEngineOptions = {}): VoiceEngine {
         ...(opts.voice ? { voice: opts.voice } : {}),
         ...(opts.delegateTo ? { delegateTo: opts.delegateTo } : {}),
         ...(opts.webSearch !== undefined ? { webSearch: opts.webSearch } : {}),
-        ...(opts.apiKey ? { apiKey: opts.apiKey } : {}),
-        ...(opts.url ? { url: opts.url } : {}),
-        ...(ctx.calleeName ? { calleeName: ctx.calleeName } : {}),
-      });
-      const session = new S2SVoiceSession(agent, clock);
-      await session.start();
-      return session;
-    },
-  };
-}
-
-export type RealtimeEngineOptions = { model?: string; voice?: string; apiKey?: string; url?: string; onUsage?: (event: RealtimeUsageEvent) => void; newsSearch?: NewsSearch | false; onNews?: (event: NewsLookupEvent) => void };
-
-export function realtimeEngine(opts: RealtimeEngineOptions = {}): VoiceEngine {
-  const model = opts.model ?? "gpt-realtime-2.1";
-  return {
-    id: "realtime",
-    label: `OpenAI Realtime (${model})`,
-    speaksItself: true,
-    nativeAudio: MULAW_8K,
-    requires: ["OPENAI_API_KEY"],
-    async start(ctx: VoiceSessionContext, clock) {
-      const agent = new OpenAIRealtimeAgent({
-        contract: ctx.contract,
-        model,
-        ...(opts.onUsage ? { onUsage: opts.onUsage } : {}),
         ...(opts.newsSearch !== undefined ? { newsSearch: opts.newsSearch } : {}),
         ...(opts.onNews ? { onNews: opts.onNews } : {}),
-        ...(opts.voice ? { voice: opts.voice } : {}),
         ...(opts.apiKey ? { apiKey: opts.apiKey } : {}),
         ...(opts.url ? { url: opts.url } : {}),
         ...(ctx.calleeName ? { calleeName: ctx.calleeName } : {}),

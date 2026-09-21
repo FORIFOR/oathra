@@ -7,8 +7,8 @@
  * format and takes AudioChunks back; the adapters here convert.
  *
  *   Twilio (μ-law 8k) ─┐                       ┌─ GPT-Live
- *   LiveKit (PCM 48k) ─┼─ AudioAdapter ─ Engine ┼─ OpenAI Realtime
- *   Simulator         ─┘                       ├─ Pipeline (STT+LLM+TTS)
+ *   LiveKit (PCM 48k) ─┼─ AudioAdapter ─ Engine ┼─ Pipeline (STT+LLM+TTS)
+ *   Simulator         ─┘                       │
  *                                              └─ Local
  */
 import type { Action, CallContract } from "@oathra/contract";
