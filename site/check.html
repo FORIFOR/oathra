@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer"><title>音声AIの文字起こしを、その場で検証。 — Oathra</title>
-<meta name="description" content="保存済みの文字起こしJSONから、条件と発言の根拠を確認。インストール・APIキー不要。ブラウザ内で処理します。">
+<meta name="description" content="通話ログを貼るだけで、相手が本当に承諾したかを判定。インストール・APIキー不要。ブラウザ内で処理します。">
 <link rel="stylesheet" href="check.css?v=20260914-3"></head><body>
 <header><a class="brand" href="./">Oathra</a><nav><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">入力形式 / SDK</a><a href="en/check.html">English</a><a href="https://github.com/FORIFOR/oathra">GitHub ↗</a></nav></header>
 <main><p class="eyebrow">TRANSCRIPT CHECK · NO API KEY</p><h1>音声AIの文字起こしを、その場で検証。</h1>
@@ -10,7 +10,7 @@
 <p class="privacy">入力はこのタブの中で処理。送信・自動保存・アクセス解析はしません。 <a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">対応範囲を読む</a></p>
 <div class="workspace"><section class="panel"><h2>01 / 文字起こしを用意する</h2>
 <button id="load-recording" type="button" class="secondary">公開済みの交渉記録を読み込む</button>
-<form id="check-form"><label for="check-input">文字起こしJSON（contract / referenceDate / connection / utterances）</label>
+<form id="check-form"><label for="check-input">通話ログ（「店: …」「AI: …」と発言者を付けた行）、または文字起こしJSON（contract / referenceDate / connection / utterances）</label>
 <textarea id="check-input" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="input-source check-error" required></textarea>
 <p class="source" id="input-source"></p><div class="toolbar"><button type="submit">このログを検証</button><button id="clear-input" class="secondary" type="button">消去</button></div>
 <p class="error" id="check-error" role="alert"></p></form>

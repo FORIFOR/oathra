@@ -14,7 +14,7 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE, HEDGE_RE, REFUSAL_RE, RETRACTION_RE } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE, HEDGE_RE, REFUSAL_RE, RETRACTION_RE, UNAVAILABLE_RE } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 /**
@@ -73,6 +73,9 @@ export class EvidenceEngine {
 
   ingest(u: Utterance): IngestResult {
     if (u.source === "callee" && RETRACTION_RE.test(u.text)) this.retractedAt = u.t;
+    // The slot is gone (「その日は貸切でした」「満席になってしまいました」). Only a confirmation spoken strictly
+    // earlier is revoked, so the ordinary 「19時は満席ですが19時半なら」 before a booking is unaffected.
+    if (u.source === "callee" && UNAVAILABLE_RE.test(u.text)) this.retractedAt = u.t;
     // Appointment mode: 「はい。」 followed by 「あ、その日は出張でした」 or 「上司に聞いてからでないと…」.
     // A commitment is a person's word, so a later refusal or hedge from the same person takes it back;
     // the agent has to ask again. (A shop's 「ご予約承りました」 is a record and keeps the stricter rule above.)
