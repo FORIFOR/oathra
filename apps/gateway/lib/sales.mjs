@@ -82,7 +82,7 @@ export function evaluateSales(turns, mission, connected, now = Date.now()) {
   if (mission.kind === 'phone-request') {
     const doNotContact = turns.some(t=>t.source==='callee' && wantsNoContact(t.text));
     return {status:doNotContact?'DECLINED':'INCOMPLETE',verified:{},evidence:[],doNotContact,
-      caveat:mission.direction==='inbound'?'着信の記録です。用件と折り返し先は会話内容を確認してください。':'通話の記録です。依頼が達成されたかは会話内容を確認してください。'};
+      caveat:mission.goal==='phone.reception'?'予約受付の記録です。成立した予約は予約台帳の記録が正です。':mission.direction==='inbound'?'着信の記録です。用件と折り返し先は会話内容を確認してください。':'通話の記録です。依頼が達成されたかは会話内容を確認してください。'};
   }
   const evidence = []; let material = false, acknowledged = false, declined = false, dnc = false;
   for (const [index, turn] of turns.entries()) {

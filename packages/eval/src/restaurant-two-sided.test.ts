@@ -116,6 +116,20 @@ describe("ビストロ灯: the caller's verdict and the restaurant's ledger, cal
     expect(book.bookings).toHaveLength(1);
   });
 
+  it("a read-back is answered with a yes to the time on offer, never to the time that was just refused", async () => {
+    const agent = new ScriptedAgent(), scenario = situation({ id: "read-back" });
+    const { contractFromScenario } = await import("@oathra/scenario");
+    const contract = contractFromScenario(scenario);
+    const ask = (text: string, pending: Record<string, unknown>) => agent.respond({ contract, language: "ja", transcript: [{ id: "t", source: "callee", text, t: 1 }], mission: { verified: {}, pending, missing: ["time", "confirmed"], violations: [] }, permitted: [], elapsedMs: 0, turnIndex: 3 } as unknown as Parameters<ScriptedAgent["respond"]>[0]);
+    expect((await ask("19時は満席ですが、19時半でよろしいでしょうか？", { time: "19:30" })).text).toBe("はい、19時半でお願いします。");
+    expect((await ask("9月25日の19時半、2名様、田中様でよろしいでしょうか？", {})).text).toBe("はい、19時半でお願いします。");
+    // One full time with an invitation to pick another is not the end of the call.
+    expect((await ask("申し訳ございませんが、19時は満席となっております。他の時間帯でのご予約はいかがでしょうか？", {})).text).toBe("19時以降で空いているお時間はありますでしょうか？");
+    // A read-back of something the contract does not allow is not agreed to.
+    expect((await ask("9月25日の18時、2名様、田中様でよろしいでしょうか？", { time: "18:00" })).text).not.toMatch(/^はい/);
+    expect((await ask("9月26日の19時半、2名様、田中様でよろしいでしょうか？", {})).text).not.toMatch(/^はい/);
+  });
+
   it("the evening fills up call by call: every table goes once, and the caller after the last one is turned away", async () => {
     const book = new ReservationBook({ "19:00": 1, "19:30": 1 });
     const names = ["田中", "佐藤", "鈴木"], runs = [];

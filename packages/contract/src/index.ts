@@ -363,6 +363,20 @@ export function definePhoneInbound(call: { ownerName: string; callerPhone: strin
   });
 }
 
+/**
+ * A restaurant's own number, answered by an AI that takes table bookings. The voice only talks: whether a
+ * table exists and whether it is now taken is decided by the reservation desk (`@oathra/core`), through tools.
+ * `today` anchors "あさって" and "今週の金曜"; `seatings` are the only times that can be booked.
+ */
+export function defineRestaurantReception(call: { restaurantName: string; callerPhone: string; callerName?: string; today: string; seatings: string[]; maxParty: number; closedNote?: string }, budget: Partial<CallContract["budget"]> = {}): CallContract {
+  const closedNote = call.closedNote?.trim().slice(0, 120);
+  return defineCall({ goal: "phone.reception", language: "ja",
+    input: { restaurantName: call.restaurantName.trim().slice(0, 40), today: call.today, seatings: call.seatings.slice(0, 48), maxParty: call.maxParty, ...(closedNote ? { closedNote } : {}), policy: "店の電話にAIが出て席の予約だけを受ける。AIであることと店名を最初に伝える。空席の確認と予約の記録は台帳のツールだけで行い、ツールが booked を返すまで予約成立と言わない。支払い・割引・貸切・メニューの約束はしない。" },
+    permissions: { ask: true, reserve: true }, budget: { maxDurationMs: 240000, maxTurns: 40, maxCostUsd: 1, ...budget },
+    target: { phone: call.callerPhone, name: call.callerName?.trim().slice(0, 100) || "着信" },
+  });
+}
+
 /** Shared ask-only policy for personal phone requests across CLI, OSS Web and managed Gateway. */
 export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
   const parsed = parsePhoneRequest(request);

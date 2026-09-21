@@ -42,6 +42,8 @@ export class Store {
     if (status !== undefined) { sql += ' AND status=?'; args.push(status); }
     return this.db.prepare(sql + ' ORDER BY updated DESC LIMIT 1000').all(...args).map(r => this.open(r.body));
   }
+  /** Every record of a kind for an owner: a ledger cannot stop at the newest thousand. */
+  all(kind, owner) { return this.db.prepare('SELECT body FROM records WHERE kind=? AND owner=?').all(kind, owner).map(r => this.open(r.body)); }
   /** Safety checks must consider every record, including those outside a UI listing page. */
   some(kind, predicate) {
     for (const row of this.db.prepare('SELECT body FROM records WHERE kind=?').iterate(kind)) {
@@ -105,6 +107,8 @@ export class Store {
     this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox') AND status IN ('done','failed') AND updated<?").run(cutoff);
     this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-48*3600000);
     this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);
+    // A table booking holds a name: it goes once its day is as old as any other record may be.
+    for (const row of this.db.prepare("SELECT id,body FROM records WHERE kind='table-booking'").all()) if (Date.parse(this.open(row.body).date + 'T00:00:00+09:00') < cutoff) this.db.prepare("DELETE FROM records WHERE kind='table-booking' AND id=?").run(row.id);
     // Walk every old mission, not the newest 1000. A mission untouched since the cutoff finished before it;
     // an abandoned draft holds a name and a number and expires on the same schedule.
     for (let last = 0;;) {

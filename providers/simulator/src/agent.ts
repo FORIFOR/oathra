@@ -8,7 +8,7 @@
  * to beat in Agent Battle.
  */
 import { checkConstraints, isPermitted, type CallContract } from "@oathra/contract";
-import { AGREEMENT_RE, HEDGE_RE, parsePrices, parseTimes, REFUSAL_RE } from "@oathra/evidence";
+import { AGREEMENT_RE, HEDGE_RE, parseDates, parsePartySize, parsePrices, parseTimes, REFUSAL_RE } from "@oathra/evidence";
 import type { BrainContext, BrainProvider, BrainResponse } from "@oathra/core";
 import { enDate, enTime, jaDate, jaPrice, jaTime, NAME_ASK_RE, spellSerial } from "./character.js";
 
@@ -18,6 +18,9 @@ const REPEAT_RE = /もう一度(?:お願い|おっしゃって|お聞かせ|言�
 const TRANSFER_RE = /お電話代わり|代わりました|担当の者に代わ|transfer you|this is \w+ speaking|you're through to/i;
 /** "Please hold": wait, do not restate. */
 const HOLD_RE = /少々お待ち|そのままお待ち|お待ちください|one moment|hold on|please hold|hold the line|bear with me/i;
+
+/** The callee reads the booking back and asks for a yes. */
+const READ_BACK_RE = /よろしいでしょうか|よろしいですか|お間違い(?:ない|ございません)|is that (?:right|correct)|does that sound right|shall I (?:book|confirm)/i;
 
 type Domain = "restaurant" | "hotel" | "shop" | "serial" | "friend" | "generic";
 
@@ -41,6 +44,7 @@ export class ScriptedAgent implements BrainProvider {
   /** Set by decide() when the reply is a wait or a deliberate repeat; those never count as a stall. */
   private kind: "normal" | "wait" | "repeat" = "normal";
   private waits = 0;
+  private nameGiven = false;
   private repeatsAsked = 0;
 
   async respond(ctx: BrainContext): Promise<BrainResponse> {
@@ -130,9 +134,25 @@ export class ScriptedAgent implements BrainProvider {
       return { text: this.lastSubstantive || this.opener(domain, contract), verbatim: true };
     }
 
+    // 2a. A read-back ("9月25日の19時半、2名様、田中様でよろしいでしょうか") wants a yes, not the name again. Say yes
+    //     only when every value in it is one the contract allows; otherwise the usual checks below answer it.
+    if (READ_BACK_RE.test(lastText) && (this.nameGiven || !NAME_ASK_RE.test(lastText))) {
+      const lang = en ? "en" : "ja";
+      // "19時は満席ですが、19時半でよろしいでしょうか": the time on offer is the pending one (refused clauses never
+      // become pending), not the first time in the sentence.
+      const times = parseTimes(lastText, lang).map((t) => t.value);
+      const onOffer = typeof mission.pending.time === "string" ? mission.pending.time
+        : typeof mission.verified.time === "string" && times.includes(mission.verified.time) ? mission.verified.time
+          : times.length === 1 ? times[0] : undefined;
+      const heard = { time: onOffer, date: parseDates(lastText, date ? new Date(`${date.slice(0, 4)}-01-01T00:00:00+09:00`) : new Date(), lang)[0]?.value, partySize: parsePartySize(lastText, lang)[0]?.value };
+      const stated = Object.fromEntries(Object.entries(heard).filter(([, v]) => v !== undefined));
+      const fits = checkConstraints(contract.constraints, stated).violations.length === 0 && (!date || heard.date === undefined || heard.date === date);
+      if (fits && heard.time) return { text: en ? `Yes, ${enTime(heard.time)} please.` : `はい、${jaTime(heard.time)}でお願いします。` };
+    }
+
     // 2. Callee asked for a name.
     if (NAME_ASK_RE.test(lastText)) {
-      if (name && isPermitted(contract, "share_name")) return { text: en ? `It's under ${name}.` : `${name}と申します。` };
+      if (name && isPermitted(contract, "share_name")) { this.nameGiven = true; return { text: en ? `It's under ${name}.` : `${name}と申します。` }; }
       if (name) return { text: en ? "I'm sorry, I can't give the name over the phone. Can you still take the booking?" : "申し訳ありません、名前はこの電話ではお伝えできないのですが、予約は可能でしょうか？", requestedAction: { action: "share_name", detail: `share name "${name}"` } };
       return { text: en ? "I'll give you the name later." : "予約者名は後ほどお伝えします。" };
     }
@@ -215,6 +235,14 @@ export class ScriptedAgent implements BrainProvider {
       (typeof mission.verified.time === "string" && parseTimes(lastText, en ? "en" : "ja").some((t) => t.value === mission.verified.time)) ||
       (typeof mission.verified.price === "number" && parsePrices(lastText).some((p) => p.value === mission.verified.price));
     if (REFUSAL_RE.test(lastText) && !AGREEMENT_RE.test(lastText) && pendingKeys.length === 0 && !restatesVerified) {
+      // "19時は満席です。他のお時間はいかがでしょうか": one time is gone, not the evening. Ask for the range we may
+      // accept instead of leaving (an LLM-played restaurant said exactly this and the call ended with 19:30 free).
+      if ((after || before) && this.altAsks < 2 && /他の(?:お)?時間|別の(?:お)?時間|ほかの(?:お)?時間|other times?|another time|different time/i.test(lastText)) {
+        this.altAsks++;
+        const rangeEn = after && before ? `between ${enTime(after)} and ${enTime(before)}` : after ? `${enTime(after)} or later` : `before ${enTime(before!)}`;
+        const range = after && before ? `${jaTime(after)}から${jaTime(before)}の間` : after ? `${jaTime(after)}以降` : `${jaTime(before!)}まで`;
+        return { text: en ? `Do you have anything ${rangeEn}?` : `${range}で空いているお時間はありますでしょうか？` };
+      }
       if (/満席|満室|定休|休業|お休み|以降は満席|在庫|fully booked|sold out|closed/i.test(lastText)) {
         return { text: en ? "Understood, we'll try another day. Thank you, goodbye." : "承知しました。では別の日を検討いたします。ありがとうございました。", action: "hangup" };
       }

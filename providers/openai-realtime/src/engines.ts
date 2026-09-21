@@ -9,6 +9,7 @@ import type { MissionView } from "@oathra/core";
 import { convert, MULAW_8K, OutputQueue, type AudioChunk, type VoiceEngine, type VoiceOutput, type VoiceSession, type VoiceSessionContext } from "@oathra/voice";
 import { OpenAILiveAgent } from "./live.js";
 import type { NewsSearch, NewsLookupEvent } from "./news.js";
+import type { DeskEvent, ReservationDesk } from "./reception.js";
 
 type AgentLike = {
   pushAudio(mulaw: Uint8Array): void;
@@ -69,7 +70,7 @@ class S2SVoiceSession implements VoiceSession {
   }
 }
 
-export type GptLiveEngineOptions = { model?: string; voice?: string; delegateTo?: string; webSearch?: boolean; apiKey?: string; url?: string; newsSearch?: NewsSearch | false; onNews?: (event: NewsLookupEvent) => void };
+export type GptLiveEngineOptions = { model?: string; voice?: string; delegateTo?: string; webSearch?: boolean; apiKey?: string; url?: string; newsSearch?: NewsSearch | false; onNews?: (event: NewsLookupEvent) => void; desk?: ReservationDesk; onDesk?: (event: DeskEvent) => void };
 
 export function gptLiveEngine(opts: GptLiveEngineOptions = {}): VoiceEngine {
   const model = opts.model ?? "gpt-live-1";
@@ -88,6 +89,8 @@ export function gptLiveEngine(opts: GptLiveEngineOptions = {}): VoiceEngine {
         ...(opts.webSearch !== undefined ? { webSearch: opts.webSearch } : {}),
         ...(opts.newsSearch !== undefined ? { newsSearch: opts.newsSearch } : {}),
         ...(opts.onNews ? { onNews: opts.onNews } : {}),
+        ...(opts.desk ? { desk: opts.desk } : {}),
+        ...(opts.onDesk ? { onDesk: opts.onDesk } : {}),
         ...(opts.apiKey ? { apiKey: opts.apiKey } : {}),
         ...(opts.url ? { url: opts.url } : {}),
         ...(ctx.calleeName ? { calleeName: ctx.calleeName } : {}),

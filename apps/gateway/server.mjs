@@ -1,4 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
+import { parseDeskConfig } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
@@ -35,8 +36,11 @@ export function configuration(env=process.env){
   let inbound=null;
   if(env.OATHRA_INBOUND_OWNER){
     assert(users.some(u=>u.id===env.OATHRA_INBOUND_OWNER),'unknown_inbound_owner',500);
-    const name=String(env.OATHRA_INBOUND_NAME??'').trim();assert(name.length>0&&name.length<=40&&!/[\d@<>{}]/.test(name),'configure_inbound_name',500);
-    inbound={owner:env.OATHRA_INBOUND_OWNER,name,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
+    // A restaurant's line takes table bookings against its own ledger; otherwise the AI only takes messages for a person.
+    let restaurant=null;
+    if(env.OATHRA_RESTAURANT_JSON){try{restaurant=parseDeskConfig(JSON.parse(env.OATHRA_RESTAURANT_JSON))}catch{throw new Fault(500,'configure_restaurant_json')}}
+    const name=String(env.OATHRA_INBOUND_NAME??'').trim();assert(restaurant||(name.length>0&&name.length<=40&&!/[\d@<>{}]/.test(name)),'configure_inbound_name',500);
+    inbound={owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
   }
   return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
     dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
@@ -145,6 +149,8 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/phone/status')return send(res,200,phoneReadiness(service,config,u));
       if(method==='GET'&&path==='/v1/phone/templates')return send(res,200,PHONE_PURPOSE_TEMPLATES);
       if(method==='GET'&&path==='/v1/phone/history')return send(res,200,store.list('mission',u.id).filter(m=>m.kind==='phone-request').map(m=>phoneRecord(service,m)));
+      // The restaurant's ledger, as the desk wrote it. The caller's number stays in the call record, not here.
+      if(method==='GET'&&path==='/v1/phone/bookings')return send(res,200,store.all('table-booking',u.id).map(({phone,...b})=>b).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)));
       if(method==='POST'&&path==='/v1/phone/draft') {
         let m;try {m=prepareManagedPhone(service,u,data);}catch(e){if(e.name==='ZodError')throw new Fault(400,'invalid_phone_request');throw e;}
         return send(res,201,{...service.review(u,m.id),readiness:phoneReadiness(service,config,u),consentVersion:config.consentVersion});

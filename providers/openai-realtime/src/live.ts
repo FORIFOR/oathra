@@ -15,6 +15,7 @@ import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { AgentBridge } from "./index.js";
 import { conversationPolicies, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
+import { DESK_TOOLS, deskTool, receptionGreeting, restaurantReceptionInstructions, type DeskEvent, type ReservationDesk } from "./reception.js";
 import { createNewsSearch, NEWS_TOPICS, publicQuery, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
 
 export type LiveAgentOptions = {
@@ -44,6 +45,11 @@ export type LiveAgentOptions = {
    */
   parallelLookups?: boolean;
   onNews?: (event: NewsLookupEvent) => void;
+  /** The restaurant's reservation desk. Only a `phone.reception` contract gets the tools that reach it. */
+  desk?: ReservationDesk;
+  onDesk?: (event: DeskEvent) => void;
+  /** The clock used to read dates back ("あさって"); defaults to the wall clock. */
+  today?: () => Date;
 };
 
 type Json = Record<string, unknown>;
@@ -104,11 +110,16 @@ export class OpenAILiveAgent {
   private pendingActions = new Map<string, { callId: string; action: Action }>();
   private endRequested: string | undefined;
   private readonly newsSearch: NewsSearch | undefined;
+  /** Only a reception contract reaches the desk, whatever options were passed. */
+  private get desk(): ReservationDesk | undefined { return this.opts.contract.goal === "phone.reception" ? this.opts.desk : undefined; }
   private newsCalls = new Set<string>();
   private newsControllers = new Set<AbortController>();
   private newsCount = 0;
   private lastFillerMs = Number.NEGATIVE_INFINITY;
   private pendingLookups = 0;
+  /** Everything the agent has said aloud on this call: a booking is only written once its values are in here. */
+  private readonly said: string[] = [];
+  private readonly deskCalls = new Set<string>();
   private sentMission: string | undefined;
   // One filter per direction for the whole call: chunk edges stay inaudible and nothing aliases onto the line.
   private readonly toLive = new StreamResampler(8000, LIVE_RATE);
@@ -203,6 +214,7 @@ export class OpenAILiveAgent {
         parameters: { type: "object", properties: { topic: { type: "string", enum: NEWS_TOPICS }, query: { type: "string", description: "Only with topic=search: 2-60 characters of public words, e.g. \"任天堂 株価\"." } }, required: ["topic"], additionalProperties: false },
       });
     }
+    if (this.desk) tools.push(...DESK_TOOLS);
     if (this.opts.webSearch ?? !this.opts.contract.goal.startsWith("phone.")) tools.push({ type: "web_search" });
     this.send({
       type: "session.start",
@@ -272,14 +284,14 @@ export class OpenAILiveAgent {
     const calleeBusy = this.lastCalleeVoiceMs > 0 && now - this.lastCalleeVoiceMs < 700 || this.inText !== "";
     // Answering a call is the other way round: whoever picks up speaks first, and the person who rang is
     // saying "もしもし?" into the silence until we do. A real incoming call waited seven seconds for this.
-    const answering = this.opts.contract.goal === "phone.inbound";
+    const answering = this.opts.contract.goal === "phone.inbound" || this.opts.contract.goal === "phone.reception";
     if (!answering && (calleeBusy || now < this.audibleEndMs)) {
       this.calleeOpened ||= calleeBusy;
       if (attempt < 100) { setTimeout(() => this.greet(attempt + 1), 300).unref?.(); return; }
     }
     this.greeted = true;
     // Other kinds of call let the callee's own opening stand; Live answers it from its instructions.
-    if (this.calleeOpened && this.opts.contract.goal !== "phone.message" && this.opts.contract.goal !== "phone.inbound") return;
+    if (this.calleeOpened && this.opts.contract.goal !== "phone.message" && !answering) return;
     // `instructions.append` is accepted here but does not make Live speak
     // (measured: silent for 14 s). `commentary.append` is the event for words
     // to say aloud, and starts within a second; Live may paraphrase them.
@@ -300,6 +312,7 @@ export class OpenAILiveAgent {
       ? `${this.agentSpoke ? "" : "もしもし。"}${caller ? `${caller}さんの代わりにお電話しているAIです。` : "知り合いの方の代わりにお電話しているAIです。"}今、少しお話しできますか？`
       : `${this.agentSpoke ? "" : "Hello. "}This is an AI calling on behalf of ${caller ?? "someone you know"}. Is now a good time to talk?`;
     // They rang us: the one who picks up speaks first, and says whose phone this is and that an AI has it.
+    if (goal === "phone.reception") return receptionGreeting(this.opts.contract);
     if (goal === "phone.inbound") { const owner = String(this.opts.contract.input.ownerName ?? ""); return ja ? `お電話ありがとうございます。${owner}さんの電話を預かっているAIアシスタントです。ご用件をお伺いします。` : `Thank you for calling. This is an AI assistant looking after ${owner}'s phone. How can I help?`; }
     if (goal.startsWith("chat.")) return ja ? "もしもし？" : "Hello?";
     return ja ? "もしもし、お忙しいところ失礼いたします。" : "Hello, sorry to bother you.";
@@ -479,6 +492,8 @@ export class OpenAILiveAgent {
       b.emit({ type: "action.requested", action, detail: String(args.detail ?? "") });
     } else if (name === "lookup_news") {
       void this.lookupNews(callId, args);
+    } else if (name === "check_table" || name === "book_table") {
+      void this.askDesk(callId, name, args);
     }
   }
 
@@ -494,6 +509,21 @@ export class OpenAILiveAgent {
       delegation_id: null,
       content: this.language === "ja" ? "いま確認しているところです。もう少しだけ待ってくださいね。" : "I'm still checking. Just a moment more.",
     });
+  }
+
+  /** The reservation desk answers; the model only relays. A booking needs its values to have been said aloud first. */
+  private async askDesk(callId: string, tool: string, args: Json): Promise<void> {
+    if (!callId || this.deskCalls.has(callId)) return;
+    this.deskCalls.add(callId);
+    this.pendingLookups++;
+    const result = this.desk
+      ? await deskTool(this.desk, tool, args ?? {}, [...this.said, this.outText], this.opts.today?.() ?? new Date(), this.language)
+      : { status: "unavailable" as const };
+    this.pendingLookups--;
+    try { this.opts.onDesk?.({ type: tool === "book_table" ? "desk.book" : "desk.check", request: args ?? {}, result }); } catch { /* Observers cannot cause an unhandled async rejection. */ }
+    if (this.closed) return;
+    this.send({ type: "response.item.create", event_id: `tool_${callId}`, item: { type: "function_call_output", call_id: callId, output: JSON.stringify(result) } });
+    if (this.pendingLookups === 0) this.send({ type: "response.create", event_id: `continue_${callId}` });
   }
 
   /** Category-only public news lookup. The conversation, names and numbers never reach the search. */
@@ -697,6 +727,7 @@ export class OpenAILiveAgent {
     if (this.missionDeferred && !this.closed) this.sendMission();
     if (!b || !text || startMs === undefined) return;
     this.agentSpoke = true;
+    this.said.push(text);
     const ev: Extract<SessionEvent, { type: "agent.speech" }> = { type: "agent.speech", text, startMs, endMs: this.outLastMs, ...(interrupted ? { interrupted: true } : {}) };
     if (this.lastCalleeEndMs !== undefined && startMs >= this.lastCalleeEndMs) ev.ttfaMs = startMs - this.lastCalleeEndMs;
     b.emit(ev);
@@ -757,6 +788,7 @@ export class OpenAILiveAgent {
         ? ["- web_search: use it for current or external facts, or whenever the callee asks you to look something up. Wait for the tool result before answering; give the concise gist in one or two spoken sentences and never read URLs. If the tool fails, say that the lookup failed and ask whether to continue."]
         : []),
       ...(this.newsSearch ? ["- lookup_news: the only way to check news, weather, Tokyo events or any other public information. Pass a category, or topic=search with a short query of public words; never anyone's name or number from this call. Wait for the result before answering and never invent details it does not contain."] : []),
+      ...(this.desk ? ["- check_table / book_table: the reservation desk. Availability and bookings come only from these; a booking exists only when book_table returns status=booked."] : []),
       ...(!casual ? ["- request_action: required before any action outside the permitted list."] : []),
       "Keep replies short and spoken. Never promise to do something later.",
     ].join("\n");
@@ -766,6 +798,7 @@ export class OpenAILiveAgent {
     const c = this.opts.contract;
     if (c.goal === "phone.message") return phoneMessageInstructions(c, !!this.newsSearch);
     if (c.goal === "phone.inbound") return phoneInboundInstructions(c);
+    if (c.goal === "phone.reception") return restaurantReceptionInstructions(c);
     const ja = this.language === "ja";
     const casual = c.goal.startsWith("chat.");
     const v = this.view;
