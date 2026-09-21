@@ -28,9 +28,12 @@ try{
  assert.match(await page.text('#phone-review-fields'),/雑談/);assert.match(await page.text('#phone-disclosure'),/カテゴリ.*運営者負担/);assert.equal(await page.js("document.querySelector('#phone-dial').disabled"),true);
  const [record]=await api('/phone/history');assert.equal(record.request.conversationMode,'chat');assert.equal(record.state,'draft');
  await page.press('Escape');
- // Cancelling a template replacement keeps the already-reviewed chat mode.
- await page.js("window.confirm=()=>false;document.querySelector('#phone-template').value='callback';document.querySelector('#phone-template').dispatchEvent(new Event('change'))");
- assert.equal(await page.js("document.querySelector('#phone-template').value"),'chat');
+ // A template replaces the text at once, without a native confirm; one explicit undo brings back the reviewed chat mode and its text.
+ const reviewedText=await page.js("document.querySelector('#phone-instruction').value");
+ await page.js("window.confirm=()=>{throw new Error('native confirm must not be used')};document.querySelector('#phone-template').value='callback';document.querySelector('#phone-template').dispatchEvent(new Event('change'))");
+ assert.equal(await page.js("document.querySelector('#phone-template').value"),'callback');assert.equal(await page.visible('#phone-chat-note'),false);assert.equal(await page.visible('#phone-template-undo'),true);
+ await page.click('#phone-template-undo');
+ assert.equal(await page.js("document.querySelector('#phone-template').value"),'chat');assert.equal(await page.js("document.querySelector('#phone-instruction').value"),reviewedText);assert.equal(await page.visible('#phone-chat-note'),true);assert.equal(await page.visible('#phone-template-undo'),false);
  await page.click('#phone-clear');assert.equal(await page.visible('#phone-chat-note'),false);
  await page.click('#phone-history-section summary');await page.click('.phone-history-item button');
  assert.equal(await page.js("document.querySelector('#phone-template').value"),'chat');assert.equal(await page.visible('#phone-chat-note'),true);
@@ -48,7 +51,7 @@ try{
   assert.equal(await page.noSidewaysScroll(),true);await page.screenshot(join(out,label+'.png'));
  }
  await page.js("document.body.style.zoom='2'");assert.equal(await page.noSidewaysScroll(),true);await page.js("document.body.style.zoom='1'");
- await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");assert.equal(await page.js("document.querySelector('#phone-news')"),null);assert.deepEqual(page.pageErrors,[]);
+ await page.click('#managed-account-button');await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");assert.equal(await page.js("document.querySelector('#phone-news')"),null);assert.deepEqual(page.pageErrors,[]);
  await page.close();page=null;await app.close();app=await createGateway(config,{env:{}});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+app.server.address().port;
  const saved=await api('/phone/calls/'+record.id);assert.equal(saved.request.conversationMode,'chat');assert.deepEqual(saved.news,[evidence]);assert.equal(saved.state,'draft');
  writeFileSync(join(out,'ui-result.json'),JSON.stringify({status:'PASS',mode:saved.request.conversationMode,persistence:'after server restart',newsSources:saved.news[0].sources.length,phoneCalls:0,viewports:[1280,390],zoom:'CSS 200%',ime:'not exercised',pageErrors:[]},null,2));

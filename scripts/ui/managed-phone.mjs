@@ -33,6 +33,8 @@ try {
  const stored=app.store.get('mission',id);stored.transcript=[{id:'memory-ui',source:'callee',text:'19時半でしたら空いております。',t:1}];stored.status='UNKNOWN';stored.error='worker_interrupted_reconcile_carrier_before_retry';app.store.put('mission',stored);
  await page.click('#phone-history-refresh');await page.until("document.querySelector('#phone-history-list').textContent.includes('結果未確認')");
  await page.click('.phone-history-item button:last-child');assert.ok(await page.visible('#phone-resolve'));assert.ok(await page.visible('#phone-hangup'));
+ // An unknown result blocks a second dial and says why, independent of the balance; the named action is the primary one.
+ assert.equal(await page.js("document.querySelector('#phone-form button[type=submit]').disabled"),true);assert.match(await page.text('#phone-credit-availability'),/前の電話の結果を確認できていません/);assert.equal(await page.js("(()=>{const b=document.querySelector('#phone-form button[type=submit]').getBoundingClientRect(),r=document.querySelector('#phone-submit-reason');return !r.hidden&&/前の電話の結果/.test(r.textContent)&&r.getBoundingClientRect().top-b.bottom<24})()"),true);assert.ok(await page.visible('#phone-credit-availability'));assert.equal(await page.js("document.querySelector('#phone-resolve').classList.contains('primary')"),true);
  await page.js("document.querySelector('#phone-memory').open=true;document.querySelector('[data-memory=changes]').open=true");await page.click('#phone-refresh');assert.equal(await page.js("document.querySelector('[data-memory=changes]').open"),true);
  assert.match(await page.text('#phone-memory'),/19:30/);assert.match(await page.text('#phone-memory'),/提案・未確認/);
  await page.js("[...document.querySelector('.phone-history-item').querySelectorAll('button')].find(b=>b.textContent==='前回の内容を引き継ぐ').click()");assert.match(await page.js("document.querySelector('#phone-instruction').value"),/前回の通話メモ.*19:30/s);await page.click('#phone-template-undo');assert.match(await page.js("document.querySelector('#phone-instruction').value"),/元の画面/);
@@ -45,7 +47,7 @@ try {
  await req('/contacts',{name:'設定済みの発信元',phone:number});await req('/contacts',{company:'Oathra'},other);
  await page.click('#contacts-open');await page.until("!document.querySelector('#screen-contacts').hidden && !!document.querySelector('#contacts-list button')");await page.click('#contacts-list button');
  assert.equal(await page.js("document.querySelector('#contact-use').disabled"),false);
- await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");await page.goto(base);assert.ok(await page.visible('#managed-login'));await login(other);
+ await page.click('#managed-account-button');await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");await page.goto(base);assert.ok(await page.visible('#managed-login'));await login(other);
  await page.click('#contacts-open');await page.until("!document.querySelector('#screen-contacts').hidden");
  assert.equal(await page.js("document.querySelector('#contact-use').disabled"),true);assert.equal(await page.js("document.querySelector('#contact-phone').value"),'');
  await page.click('.tt-btn[data-transport=real]');assert.equal(await page.js("document.querySelector('#phone-instruction').value"),'');assert.match(await page.text('#phone-history-list'),/まだありません/);// CSS 200% zoom and reduced motion are browser checks, not a native OS IME test.
@@ -54,7 +56,7 @@ try {
  await page.screenshot(join(out,'zoom-200.png'));assert.deepEqual(page.pageErrors,[]);
  // Bounded setup-state injection to verify approval/credits at the durable queue boundary.
  // No executor/worker is started, so no carrier or AI can be contacted. This is not PSTN evidence.
- await page.js("document.documentElement.style.zoom=''");await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");
+ await page.js("document.documentElement.style.zoom=''");await page.click('#managed-account-button');await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");
  config.mode='live';config.liveReady=true;config.callerId=number;config.missing=[];
  assert.equal((await req('/admin/credits/grants',{owner:user.id,amount:3,reason:'ローカルの承認と取消の境界確認'})).status,200);
  await login(token);assert.equal(await page.text('#phone-form button[type=submit]'),'電話する');

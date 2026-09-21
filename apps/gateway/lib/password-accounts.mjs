@@ -39,6 +39,10 @@ export class PasswordAccounts {
       }
     });
   }
+  forgive(identity) {
+    const key=Math.floor(this.store.now()/WINDOW)+':identity:'+mac(this.store.cipherKey,identity),count=Number(this.store.key('password-rate',key)??0);
+    if(count>0)this.store.setKey('password-rate',key,String(count-1),WINDOW);
+  }
   async authenticate(input,ip) {
     let email='';try{email=loginEmail(input.email)}catch{/* Use the same hash work and generic error as an unknown account. */}
     this.throttle(ip,email);
@@ -46,7 +50,9 @@ export class PasswordAccounts {
     const record=email?this.byEmail(email):null,digest=await this.digest(input.password,record?.salt??this.unknownSalt);
     const matches=timingSafeEqual(Buffer.from(digest,'hex'),Buffer.from(record?.digest??'0'.repeat(64),'hex'));
     assert(record&&matches&&this.version(record.owner)===record.version,'invalid_login',401);
-    const u=this.config.users.find(u=>u.id===record.owner);assert(u,'invalid_login',401);return {user:u,version:record.version};
+    const u=this.config.users.find(u=>u.id===record.owner);assert(u,'invalid_login',401);
+    // Only failures count against an account: signing in normally must not use up its own attempts.
+    this.forgive(email);return {user:u,version:record.version};
   }
   issue(owner,{reset=false}={}) {
     const u=this.user(owner),old=this.get(owner);assert(reset||!old,'password_already_configured',409);

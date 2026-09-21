@@ -8,7 +8,7 @@ let app=await createGateway(config,{env:{}}),page;await new Promise(r=>app.serve
 const out=resolve(process.env.OATHRA_UI_EVIDENCE_DIR??'artifacts/quality/email-login');mkdirSync(out,{recursive:true});
 async function fill(selector,value){await page.js(`document.querySelector(${JSON.stringify(selector)}).value='';document.querySelector(${JSON.stringify(selector)}).focus()`);await page.type(value)}
 async function submit(emailValue,passwordValue){await fill('#managed-email',emailValue);await page.press('Tab');assert.equal((await page.focused()).id,'managed-password');await page.type(passwordValue);await page.press('Enter')}
-async function logout(){await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");}
+async function logout(){await page.click('#managed-account-button');await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");}
 try{
  // Existing data is created through the same service used by the API; no call execution.
  const contact=app.service.contact(user,{company:'Oathra'});app.service.credits.grant(user,user.id,6,randomUUID(),'Local auth preservation verification');

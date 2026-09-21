@@ -110,6 +110,7 @@ export function createAccount({ api, on, enter, beginLogin, onLogout, getAccount
     on('#managed-credits-close', 'click', () => $('#managed-credits').close());
     on('#managed-logout', 'click', async () => {
         await api('/session', 'DELETE');
+        if ($('#managed-account').open) $('#managed-account').close();
         onLogout();
     });
     return {

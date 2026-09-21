@@ -1,5 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
-import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES } from './lib/phone-service.mjs';
+import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +31,7 @@ export function configuration(env=process.env){
   const required=['TWILIO_ACCOUNT_SID','TWILIO_AUTH_TOKEN','TWILIO_PHONE_NUMBER','OPENAI_API_KEY','OATHRA_VOICE_MODEL','OATHRA_BUSINESS_NAME','OATHRA_RATE_CEILING_USD','OATHRA_LIVE_POLICY_REVIEWED'];
   const missing=required.filter(k=>k==='OATHRA_LIVE_POLICY_REVIEWED'?env[k]!=='true':!env[k]);
   const liveReady=mode==='live'&&missing.length===0&&env.OATHRA_LIVE_POLICY_REVIEWED==='true'&&parsed.protocol==='https:'&&existsSync(new URL('../../packages/runtime/dist/index.js',import.meta.url));
-  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,newsAvailable:env.OATHRA_VOICE_ENGINE!=='gpt-live',callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
+  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
     dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,0,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0,1000),
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),
@@ -140,10 +140,23 @@ export async function createGateway(config,options={}){
         let m;try {m=prepareManagedPhone(service,u,data);}catch(e){if(e.name==='ZodError')throw new Fault(400,'invalid_phone_request');throw e;}
         return send(res,201,{...service.review(u,m.id),readiness:phoneReadiness(service,config,u),consentVersion:config.consentVersion});
       }
+      const phoneCalendarRoute=path.match(/^\/v1\/phone\/calls\/([a-f0-9-]{36})\/calendar\.ics$/);
+      if(method==='GET'&&phoneCalendarRoute){
+        const m=service.own('mission',phoneCalendarRoute[1],u);assert(m.kind==='phone-request','not_found',404);
+        const ics=phoneCalendar(service,m);assert(ics,'call_memo_has_no_date_and_time',409);
+        res.setHeader('content-disposition','attachment; filename="oathra-phone-memo.ics"');return send(res,200,ics,'text/calendar; charset=utf-8');
+      }
       const phoneRecordRoute=path.match(/^\/v1\/phone\/calls\/([a-f0-9-]{36})$/);
       if(method==='GET'&&phoneRecordRoute){const m=service.own('mission',phoneRecordRoute[1],u);assert(m.kind==='phone-request','not_found',404);return send(res,200,phoneRecord(service,m));}
       if(method==='GET'&&path==='/v1/credits')return send(res,200,{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)});
       if(method==='GET'&&path==='/v1/credits/ledger')return send(res,200,{entries:service.credits.history(u.id,Number(url.searchParams.get('after')??0))});
+      // Administrators act on any owner's call here; the owner-scoped routes below would answer 404.
+      const adminCall=path.match(/^\/v1\/admin\/missions\/([a-f0-9-]{36})\/(billing-waive|credits-force-release)$/);
+      if(method==='POST'&&adminCall){
+        assert(u.role==='admin','administrator_required',403);assert(data.acknowledged===true,'explicit_waiver_required',403);
+        const target=store.get('mission',adminCall[1]);assert(target,'not_found',404);
+        return send(res,200,adminCall[2]==='billing-waive'?service.credits.waive(u,target,data.reason):service.credits.forceRelease(u,target.id,data.reason,data.carrierChecked));
+      }
       if(method==='POST'&&path==='/v1/admin/credits/grants')return send(res,200,service.credits.grant(u,data.owner,data.amount,req.headers['idempotency-key'],data.reason));
       if(method==='GET'&&path==='/v1/audit'){
         assert(u.role==='admin','administrator_required',403);

@@ -79,7 +79,8 @@ export class Credits {
     if(hold?.owner===m.owner&&hold.amount===m.creditQuote.amount&&hold.status==='captured')return;
     assert(hold?.owner===m.owner&&hold.amount===m.creditQuote.amount&&hold.status==='held','credit_reservation_missing',409);
     if(m.creditQuote.policy===METERED)return; // Execution is not evidence of a charge.
-    this.store.db.prepare('UPDATE credit_wallets SET held=held-? WHERE owner=? AND held>=?').run(hold.amount,m.owner,hold.amount);
+    const moved=this.store.db.prepare('UPDATE credit_wallets SET held=held-? WHERE owner=? AND held>=?').run(hold.amount,m.owner,hold.amount);
+    assert(moved.changes===1,'credit_reservation_mismatch',409);
     this.store.db.prepare("UPDATE credit_holds SET status='captured' WHERE mission=?").run(m.id);this.entry(m.owner,'consume',hold.amount,m.id);
   }
   releaseTx(m) {
@@ -106,6 +107,30 @@ export class Credits {
     if(released)this.entry(m.owner,'release',released,m.id,{policy:METERED});
     m.billing.state='settled';m.billing.cost=detail;this.store.put('mission',m);
     this.store.audit(m.owner,'credits.settled',m.id,{consumed,released,policy:METERED});return true;
+  }
+  /**
+   * Last resort for a call whose outcome can never be read back: the dial request
+   * timed out or the worker died before a carrier SID was stored, so neither
+   * reconciliation nor a waiver can ever apply and the hold would stay forever.
+   * An administrator who has checked the carrier console returns the whole hold.
+   */
+  forceRelease(actor,missionId,reason,carrierChecked) {
+    assert(actor.role==='admin','administrator_required',403);reason=text(reason,500);
+    assert(carrierChecked===true,'carrier_console_check_required',403);
+    return this.store.tx(()=>{
+      const current=this.store.get('mission',missionId);assert(current,'not_found',404);
+      const previous=this.store.db.prepare('SELECT * FROM credit_settlements WHERE mission=?').get(current.id);
+      if(previous){assert(this.store.open(previous.detail).forced===true,'credits_already_settled',409);return this.usage(current);}
+      // With a SID the carrier can still be asked; this path is only for the call that cannot be.
+      assert(!current.carrierSid&&(current.status==='UNKNOWN'||current.stopNeedsReconciliation),'reconcile_call_instead',409);
+      const hold=this.store.db.prepare('SELECT * FROM credit_holds WHERE mission=?').get(current.id);assert(hold?.status==='held'&&hold.owner===current.owner,'credit_reservation_missing',409);
+      this.releaseTx(current);
+      this.store.db.prepare('INSERT INTO credit_settlements VALUES(?,?,0,?,?)').run(current.id,current.owner,hold.amount,this.store.seal({waived:true,forced:true,reason,actor:actor.id}));
+      if(current.billing)current.billing.state='waived';
+      current.previousStatus=current.status;current.status='FAILED';current.error='carrier_outcome_unknown_released_by_operator';delete current.stopNeedsReconciliation;current.finishedAt??=this.store.now();
+      this.store.put('mission',current);this.store.audit(actor.id,'credits.force_released',current.id,{owner:current.owner,released:hold.amount,reason});
+      return this.usage(current);
+    });
   }
   waive(actor,m,reason) {
     assert(actor.role==='admin','administrator_required',403);reason=text(reason,500);

@@ -35,7 +35,7 @@ async function fixture(fn){
 
 test('one recording notice is followed immediately by a stream without asking for digits',()=>fixture(async f=>{
  const params=f.requests[0].params;
- assert.equal(params.Twiml,`<Response><Say language="ja-JP">${RECORDING_NOTICE}</Say><Connect><Stream url="wss://gateway.test${f.session.path}"/></Connect><Hangup/></Response>`);
+ assert.equal(params.Twiml,`<Response><Say language="ja-JP" voice="Polly.Kazuha-Neural">${RECORDING_NOTICE}</Say><Connect><Stream url="wss://gateway.test${f.session.path}"/></Connect><Hangup/></Response>`);
  assert.equal(RECORDING_NOTICE,'この通話は記録されています。');assert.equal(params.Record,'false');assert.equal(params.TimeLimit,'60');assert.ok(!params.Twiml.includes('Gather'));
  assert.equal(f.events.some(e=>e.type==='recording.notice'),false);
  const socket=await f.connect();f.start(socket);

@@ -4,7 +4,8 @@ export function renderNews(r) {
     if (!area) {
         area = element('details');
         area.id = 'phone-news';
-        $('#phone-live-transcript').after(area);
+        // Beside the transcript fold, not inside it: sources must be findable without opening the conversation.
+        $('#phone-live-transcript').closest('details').after(area);
     }
     area.hidden = !r.news?.length;
     area.replaceChildren(element('summary', '調べたニュース・イベント'));

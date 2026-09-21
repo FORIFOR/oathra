@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:arena-outcome": "pnpm build && node scripts/verify-arena-outcome.mjs && node scripts/ui/arena-recovery.mjs && node scripts/ui/arena-zoom.mjs",
     "test:ui": "tsc -b tsconfig.build.json && node scripts/bundle-cli.mjs && node scripts/ui/gateway-flow.mjs && node scripts/ui/arena-flow.mjs",
+    "test:ui:managed": "for s in managed-phone managed-states managed-credits managed-recovery metered-credits usage-cost email-login; do node scripts/ui/$s.mjs || exit 1; done",
     "ui:gate:test": "node --test tests/ui-gate.test.mjs",
     "test:gateway": "tsc -b tsconfig.build.json && node --test apps/gateway/test/*.node.mjs",
     "lint:deps": "node scripts/check-deps.mjs",

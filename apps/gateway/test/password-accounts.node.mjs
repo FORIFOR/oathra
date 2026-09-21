@@ -49,6 +49,8 @@ test('login routes enforce origin, shape and authentication; throttling is persi
  assert.equal((await req('/auth/login',{email,password},{headers:{origin:''}})).status,403);
  assert.equal((await req('/auth/setup',[])).status,400);assert.equal((await req('/auth/password',{currentPassword:password,newPassword:password})).status,401);
  assert.equal((await req('/auth/setup',{code:invite,email,password,owner:'unrelated',role:'viewer'})).status,200);assert.equal(app.service.passwords.get(user.id).owner,user.id);
+ // Signing in correctly any number of times leaves the account's failure budget untouched.
+ for(let i=0;i<12;i++)assert.equal((await req('/auth/login',{email,password})).status,200);
  for(let i=0;i<10;i++)assert.equal((await req('/auth/login',{email,password:'wrong'})).status,401);
  assert.equal((await req('/auth/login',{email,password})).status,429);
  assert.ok(app.store.db.prepare("SELECT COUNT(*) AS n FROM keys WHERE scope='password-rate'").get().n>0);

@@ -181,12 +181,34 @@ import { renderNews } from './news.js';
     creditAvailability.className = 'note';
     creditAvailability.setAttribute('role', 'status');
     $('#phone-readiness').after(creditAvailability);
+    // Why the main button is unavailable is said right under it, not a screen away.
+    const submitReason = element('p');
+    submitReason.id = 'phone-submit-reason';
+    submitReason.className = 'note';
+    submitReason.setAttribute('role', 'status');
+    submitReason.hidden = true;
+    $('#phone-form button[type=submit]').after(submitReason);
     function availability() {
         const metered = readiness?.creditQuote?.tariff?.settlement === 'usage-rate-v1';
+        // A call whose result is unknown must be checked first; a second dial could ring the same person twice.
+        const unresolved = activeState === 'unknown';
+        $('#phone-form button[type=submit]').disabled = preparing || pending || unresolved;
+        submitReason.hidden = true;
+        if (unresolved) {
+            submitReason.textContent = '前の電話の結果を確認するまで、新しい電話はかけられません。下の「電話の状況」をご覧ください。';
+            submitReason.hidden = false;
+            creditAvailability.hidden = false;
+            creditAvailability.textContent = '前の電話の結果を確認できていません。下の「電話の状況」で確認が済むまで、新しい電話はかけられません。';
+            return;
+        }
         creditAvailability.hidden = !metered || !account;
         if (!metered || !account) return;
         const {available, held} = account.credits;
-        creditAvailability.textContent = available > 0 ? `利用可能 ${available} クレジット · 上限で自動終了` : held > 0 ? `現在 ${held} クレジットを通話に確保中です。終了・精算後に残高が戻ります。` : '残高がありません。クレジットを追加すると電話できます。';
+        if (readiness.ready && available === 0) {
+            submitReason.textContent = held > 0 ? '残高を別の通話に確保中です。精算が終わるとかけられます。' : '残高がありません。管理者にクレジットの追加を依頼してください。';
+            submitReason.hidden = false;
+        }
+        creditAvailability.textContent = available > 0 ? `残高 ${available} クレジット · 上限に達すると自動で終了します` : held > 0 ? `現在 ${held} クレジットを通話に確保中です。終了・精算後に残高が戻ります。` : '残高がありません。クレジットを追加すると電話できます。';
         $('#phone-form button[type=submit]').disabled = preparing || pending || (readiness.ready && available === 0);
     }
     function readyView(r) {
@@ -201,6 +223,66 @@ import { renderNews } from './news.js';
         }
         availability();
     }
+    /** What an ordinary caller needs first; exact unit prices stay one tap away for anyone who wants to check them. */
+    function renderReview() {
+        const m = review.mission, quote = m.creditQuote, t = quote.tariff, chat = m.phoneRequest.conversationMode === 'chat';
+        const minutes = Math.floor(m.maxSeconds / 60), limit = minutes >= 1 && m.maxSeconds % 60 === 0 ? `最長${minutes}分（${m.maxSeconds}秒）` : `最長${m.maxSeconds}秒`;
+        const purpose = element('dd', m.request);
+        purpose.className = 'phone-review-purpose';
+        const fields = $('#phone-review-fields');
+        fields.replaceChildren();
+        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name]])
+            fields.append(element('dt', label), element('dd', value));
+        fields.append(element('dt', '目的'), purpose);
+        if (m.request.length > 90) {
+            const more = element('button', '全文を表示');
+            more.type = 'button';
+            more.className = 'phone-review-more';
+            more.setAttribute('aria-expanded', 'false');
+            more.addEventListener('click', () => {
+                const open = purpose.classList.toggle('open');
+                more.textContent = open ? '短く表示' : '全文を表示';
+                more.setAttribute('aria-expanded', String(open));
+            });
+            fields.append(more);
+        }
+        fields.append(element('dt', '通話の長さ'), element('dd', limit));
+        $('#phone-cost-summary')?.remove();
+        $('#phone-price-details')?.remove();
+        const summary = element('p');
+        summary.id = 'phone-cost-summary';
+        const yen = usd => t?.carrierFx ? `（約${Math.round(usd * t.carrierFx.unitsPerUsdNano / 1e9).toLocaleString('ja-JP')}円）` : '';
+        if (t?.settlement === 'usage-rate-v1') {
+            const perMinuteNano = t.carrierRate.perMinuteNanoUsd + t.mediaPerMinuteNanoUsd + t.voicePerMinuteNanoUsd;
+            const tooLittle = quote.minimumAmount !== undefined && quote.amount < quote.minimumAmount;
+            const ceiling = quote.spendingLimit === 'balance-v1' && account?.credits && quote.amount >= account.credits.available ? `いまの残高 ${quote.amount} クレジット${yen(quote.amount * quote.creditUsd)}` : `1回の通話の上限 ${quote.amount} クレジット${yen(quote.amount * quote.creditUsd)}`;
+            summary.append(element('strong', `1分あたり 約${Math.ceil(perMinuteNano / t.creditNanoUsd)}クレジット${yen(perMinuteNano / 1e9)}`),
+                element('span', tooLittle ? `いまの残高 ${quote.amount} クレジットでは、この番号への最初の1分に足りません。` : `${ceiling}を一時的に確保します。そこに達すると通話は自動で終わり、使わなかった分は通話後すぐに返却します。${chat ? 'ニュースなどを調べた場合は、1回につき数クレジットが加わります。' : ''}`));
+        } else if (quote.policy === 'provider-cost-v1')
+            summary.append(element('strong', `最大 ${quote.amount} クレジット${yen(quote.amount * quote.creditUsd)}を一時的に確保`), element('span', '通話後に実際の料金で精算し、使わなかった分を返却します。'));
+        else
+            summary.append(element('strong', `${quote.amount} クレジットを使います`));
+        const prices = element('details');
+        prices.id = 'phone-price-details';
+        const list = element('dl');
+        const rows = [];
+        if (quote.creditUsd) rows.push(['1クレジット', `$${quote.creditUsd}`]);
+        if (t?.settlement === 'usage-rate-v1') {
+            const carrier = t.carrierRate.currency === 'JPY' ? `${t.carrierRate.perMinute}円/分` : `$${t.carrierRate.perMinute}/分`;
+            rows.push(['電話回線', `${carrier}（${t.carrierRate.incrementSeconds}秒単位）`], ['音声の中継', `$${t.mediaPerMinuteNanoUsd / 1e9}/分`], ['音声AI', `$${t.voicePerMinuteNanoUsd / 1e9}/分（1分単位・${t.model}）`]);
+            if (chat) rows.push(['検索', `1回 $${t.search.perCallNanoUsd / 1e9} ＋ 検索AI（${t.search.model}）の使用量`]);
+        }
+        if (t?.carrierFx) rows.push(['円とドルの換算', `1 USD = ${t.carrierFx.unitsPerUsdNano / 1e9}円（${t.carrierFx.date} 基準）`]);
+        for (const [label, value] of rows) list.append(element('dt', label), element('dd', value));
+        prices.append(element('summary', '料金の内訳'), list);
+        // Nothing to unfold under the fixed per-call price.
+        fields.after(summary, ...(rows.length ? [prices] : []));
+        const news = chat ? (review.readiness.newsAvailable === false ? ' この接続では最新ニュースの検索は使えません。' : ` 雑談でニュースを聞かれると、公開ニュースのカテゴリをOpenAIのWeb検索へ送ります。ニュース・天気・イベントの確認は1通話4回まで。${t?.settlement === 'usage-rate-v1' ? '検索回数と使用トークン数を利用額に含めます。' : '検索費用は運営者負担です。'}出典は履歴に保存します。`) : '';
+        // The full disclosure stays in view before consent; one sentence per line instead of a single block.
+        const points = element('ul');
+        for (const sentence of (review.readiness.disclosure + news).split('。').map(x => x.trim()).filter(Boolean)) points.append(element('li', sentence + '。'));
+        $('#phone-disclosure').replaceChildren(points);
+    }
     function sync() {
         if (!review)
             return;
@@ -209,9 +291,10 @@ import { renderNews } from './news.js';
         const ready = review.readiness.ready, expired = Date.now() > review.expiresAt, short = quote.amount > account.credits.available;
         $('#phone-setup').hidden = !!ready;
         $('#phone-dial').hidden = false;
-        $('#phone-dial').textContent = ready ? `同意して電話する · ${review.mission.creditQuote.policy === 'provider-cost-v1' ? '最大 ' : ''}${review.mission.creditQuote.amount} クレジット` : '電話する（接続準備中）';
+        $('#phone-dial').textContent = !ready ? '電話する（接続準備中）' : minimumShort ? 'クレジットが足りません' : `同意して電話する · ${review.mission.creditQuote.policy === 'provider-cost-v1' ? '最大 ' : ''}${review.mission.creditQuote.amount} クレジット`;
         $('#phone-dial').disabled = pending || !ready || expired || short || minimumShort;
-        notice('#phone-dial-hint', pending ? '発信を受け付けています…' : !ready ? '下書きを保存しました。接続が整うと、この画面から発信できます。' : expired ? '確認の有効期限が切れました。戻ってもう一度確認してください。' : minimumShort ? `この番号への発信には最低 ${quote.minimumAmount} クレジットが必要です（利用可能 ${account.credits.available}）。` : short ? '残高が別の通話に確保されました。戻って残高を確認してください。' : 'ボタンを押すと、上記に同意して発信します。');
+        $('#phone-dial-hint').classList.toggle('blocked', !pending && !!ready && (expired || short || minimumShort));
+        notice('#phone-dial-hint', pending ? '発信を受け付けています…' : !ready ? '下書きを保存しました。接続が整うと、この画面から発信できます。' : expired ? '確認の有効期限が切れました。戻ってもう一度確認してください。' : minimumShort ? `クレジットが足りません。この番号への発信には最低 ${quote.minimumAmount} クレジットが必要です（残高 ${account.credits.available}）。管理者にクレジットの追加を依頼してください。` : short ? '残高が別の通話に確保されました。戻って残高を確認してください。' : 'AI代理であることを相手に伝え、番号・音声・文字起こしを Twilio と OpenAI へ送り、会話を保存します。この説明に同意して発信します。');
     }
     async function balance() {
         account.credits = await api('/credits');
@@ -288,20 +371,39 @@ import { renderNews } from './news.js';
     }
     function renderMemory(r) {
         let area=$('#phone-memory');
-        if(!area){area=element('details');area.id='phone-memory';$('#phone-live-transcript').before(area);}
+        // The memo is the result, not part of the transcript: it sits above that fold, never inside it.
+        if(!area){area=element('details');area.id='phone-memory';$('#phone-live-transcript').closest('details').before(area);}
         const same=area.dataset.call===r.id, originalOpen=same&&area.querySelector('[data-memory=original]')?.open, changesOpen=same&&area.querySelector('[data-memory=changes]')?.open;
-        if(!same)area.open=false;area.dataset.call=r.id;
+        // What was confirmed and what is only an offer is what the caller came for: shown without a tap once there is something to show.
+        if(!same)area.open=!!r.memory?.notes?.length;area.dataset.call=r.id;
         area.replaceChildren(element('summary','通話メモ'));
-        if(!r.memory){area.hidden=true;return;}area.hidden=false;
+        // Nothing has been said about the conditions yet: an empty fold during a call only adds noise.
+        if(!r.memory||(!r.memory.notes.length&&['starting','running','stopping'].includes(r.state))){area.hidden=true;return;}area.hidden=false;
         area.append(element('p','空席確認・伝言の記録です。予約成立を保証するものではありません。'));
         const labels={date:'日付',time:'時刻',partySize:'人数',price:'料金',confirmed:'相手の確認発言'};
+        // The verdict first: what the other side confirmed, and what is still open. The cards below are the evidence for it.
+        if(r.memory.notes.length){
+            const names=list=>list.map(n=>labels[n.field]??n.field).join('・')||'なし';
+            const verdict=element('div');verdict.id='phone-memory-verdict';
+            verdict.append(element('p','確認できたこと：'+names(r.memory.notes.filter(n=>n.status==='verified'))),element('p','まだ決まっていないこと：'+names(r.memory.notes.filter(n=>n.status!=='verified'))));
+            area.append(verdict);
+        }
         for(const n of r.memory.notes){
             const row=element('div');row.append(element('strong',labels[n.field]??n.field));
             if(n.requested!==undefined)row.append(element('p','希望：'+String(n.requested)));
-            row.append(element('p',(n.status==='verified'?'会話で確認：':n.status==='proposed'?'提案・未確認：':'未確認：')+String(n.value??'回答なし')));
-            if(n.quote)row.append(element('blockquote',n.quote));area.append(row);
+            const asRequested=n.status==='proposed'&&n.requested!==undefined&&String(n.requested)===String(n.value);
+            row.append(element('p',(n.status==='verified'?'会話で確認：':n.status==='proposed'?'提案・未確認：':'未確認：')+String(n.value??'回答なし')+(asRequested?'（希望どおりですが、相手の確定はまだです）':'')));
+            // Whose words these are decides how much they prove.
+            if(n.quote)row.append(element('blockquote',`${n.source==='callee'?'相手':'AI'}：「${n.quote}」`));area.append(row);
         }
         if(!r.memory.notes.length)area.append(element('p','条件の回答はまだ記録されていません。'));
+        // A date and a time are enough for the caller's own calendar. The file says whether they were confirmed or only offered.
+        const value=field=>r.memory.notes.find(n=>n.field===field)?.value;
+        if(/^\d{4}-\d{2}-\d{2}$/.test(String(value('date')??''))&&/^\d{2}:\d{2}$/.test(String(value('time')??''))){
+            const settled=['date','time'].every(f=>r.memory.notes.find(n=>n.field===f)?.status==='verified');
+            const add=element('a','予定に追加（カレンダー用ファイル）');add.id='phone-calendar';add.className='btn';add.href='/v1/phone/calls/'+encodeURIComponent(r.id)+'/calendar.ics';add.setAttribute('download','oathra-phone-memo.ics');
+            area.append(add,element('p',settled?'電話で確認した日時として追加します。予約の成立を保証するものではありません。':'まだ確定していない日時です。「未確定」の予定として追加します。'));
+        }
         const original=element('details');original.dataset.memory='original';original.open=!!originalOpen;original.append(element('summary','元の依頼'),element('p',r.memory.originalRequest));area.append(original);
         const changes=element('details');changes.dataset.memory='changes';changes.open=!!changesOpen;changes.append(element('summary','条件の変更履歴'));
         for(const n of r.memory.history)changes.append(element('p',`${n.source==='callee'?'相手':'AI'} · ${labels[n.field]??n.field}：${String(n.value)} — ${n.quote}`));area.append(changes);
@@ -325,13 +427,17 @@ import { renderNews } from './news.js';
         $('#phone-live-cost').textContent = costText(r);
         $('#phone-live-balance').textContent = '';
         $('#phone-live-recipient').textContent = `${r.request.name} · ${r.request.phone}`;
-        $('#phone-live-summary').textContent = r.summary ?? r.request.instruction;
+        $('#phone-live-summary').textContent = r.summary ?? '';
+        $('#phone-live-summary').hidden = !r.summary;
+        $('#phone-live-request-text').textContent = r.request.instruction;
         renderMemory(r);
-        notice('#phone-live-error', r.state === 'unknown' ? '結果を確認できていません。再発信せず、通信会社の状態を確認してください。' : errorText[r.error] ?? (r.error?.startsWith('realtime_') ? '音声AIでエラーが発生し、通話を終了しました。管理者に確認を依頼してください。' : r.error));
+        notice('#phone-live-error', r.state === 'unknown' ? '結果を確認できていません。再発信せず、通信会社の状態を確認してください。' : r.state === 'failed' && !r.error ? '通話が途中で終わりました。つながっていた時間の分だけクレジットを使っています。下の会話の記録を確認し、必要ならもう一度かけてください。' : errorText[r.error] ?? (r.error?.startsWith('realtime_') ? '音声AIでエラーが発生し、通話を終了しました。管理者に確認を依頼してください。' : r.error));
         $('#phone-live-transcript').replaceChildren(...r.transcript.map(t => element('p', `${t.source === 'callee' ? r.request.name : 'AI'}：${t.text}`)));
         $('#phone-hangup').hidden = !['starting', 'running', 'stopping', 'unknown'].includes(r.state);
         $('#phone-hangup').disabled = controlPending || r.state === 'stopping';
         $('#phone-resolve').hidden = r.state !== 'unknown';
+        $('#phone-resolve').classList.toggle('primary', r.state === 'unknown');
+        availability();
     }
     function schedule(r) {
         clearTimeout(poll);
@@ -467,15 +573,7 @@ import { renderNews } from './news.js';
             review = {
                 ...result, key: crypto.randomUUID(), expiresAt: Date.now() + result.expiresInSeconds * 1000
             };
-            $('#phone-review-fields').replaceChildren();
-            for (const [label, value] of [...(review.mission.phoneRequest.conversationMode === 'chat' ? [['会話', '雑談']] : []), ['電話番号', review.mission.target.phone], ['相手', review.mission.target.name], ['目的', review.mission.request], [review.mission.creditQuote.policy === 'provider-cost-v1' ? '最大確保' : '利用クレジット', String(review.mission.creditQuote.amount) + (review.mission.creditQuote.creditUsd ? `（1クレジット = $${review.mission.creditQuote.creditUsd}）` : '')], ['通話の上限', review.mission.maxSeconds + '秒'], ...(review.mission.creditQuote.tariff?.carrierFx ? [['円建て回線の換算', `1 USD = ${review.mission.creditQuote.tariff.carrierFx.unitsPerUsdNano / 1e9}円（${review.mission.creditQuote.tariff.carrierFx.date} 基準）`]] : [])])
-                $('#phone-review-fields').append(element('dt', label), element('dd', value));
-            const t = review.mission.creditQuote.tariff;
-            if (t?.settlement === 'usage-rate-v1') {
-                for (const [label, value] of [['回線', `${t.carrierRate.currency} ${t.carrierRate.perMinute}/分（${t.carrierRate.incrementSeconds}秒単位）`], ['音声AI', t.model + ' · 使用トークン数で計算'], ...(review.mission.phoneRequest.conversationMode === 'chat' ? [['検索', `1回 $${t.search.perCallNanoUsd / 1e9} ＋ ${t.search.model} の使用量`]] : [])])
-                    $('#phone-review-fields').append(element('dt', label), element('dd', value));
-            }
-            $('#phone-disclosure').textContent = review.readiness.disclosure + (review.mission.phoneRequest.conversationMode === 'chat' ? (review.readiness.newsAvailable === false ? ' この接続では最新ニュースの検索は使えません。' : ` 雑談でニュースを聞かれると、公開ニュースのカテゴリをOpenAIのWeb検索へ送ります。ニュース確認は1通話2回まで。${t?.settlement === 'usage-rate-v1' ? '検索回数と使用トークン数を利用額に含めます。' : '検索費用は運営者負担です。'}出典は履歴に保存します。`) : '');
+            renderReview();
             $('#phone-review').hidden = false;
             sync();
             expiry = setTimeout(sync, review.expiresInSeconds * 1000);

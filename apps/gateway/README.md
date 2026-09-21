@@ -125,7 +125,7 @@ OATHRA_DOMAIN=oathra.example.com docker compose -f apps/gateway/deploy/compose.y
 - **フォローアップの二重送信防止**：同じ通話・同じ種類で送信済み、または結果不明（送られた可能性あり）のものがあると、新しいプレビューを作れません。プロバイダ側で未送信を確認した場合だけ `POST /v1/followups/<id>/not-delivered`（`{"acknowledged":true}`）で解除できます。
 - **エラーログ**：5xx、ワーカーの失敗、5回失敗して諦めた通知は、コードと要求IDだけを標準エラーにJSONで出します（氏名・番号・本文は出しません）。諦めた件数は管理者の `/v1/bootstrap` の `failedJobs` に出ます。
 
-通話中のRuntimeエラーは `runtime.error` イベントに `code`・`fatal`・時刻を保存します。致命エラーはミッションの `runtimeError` と標準エラーの `call.runtime_failed` にも残します。提供元のメッセージ本文は保存せず、Realtimeでは `realtime_invalid_api_key` 等のコードを使います。既知の取消競合 `realtime_response_cancel_not_active` は記録して会話を継続し、他のエラーを無条件に無視しません。音声生成の完了と電話先の再生完了を区別し、自動VADで取消済みの応答へ手動取消を重ねません。
+通話中のRuntimeエラーは `runtime.error` イベントに `code`・`fatal`・時刻を保存します。致命エラーはミッションの `runtimeError` と標準エラーの `call.runtime_failed` にも残します。提供元のメッセージ本文は保存せず、機密を含まないコードだけを使います。GPT-Liveのセッション開始後に拒否されたコマンドは回復可能として記録して会話を継続し、開始前のエラーは致命として扱います。
 
 イベント取得とSSEの `seq` / `Last-Event-ID` はDBの永続連番です。Runtime内の連番で上書きしないため、既存イベントもDB順で再開できます。Coreのエラーイベントには任意の `code` を追加しており、従来の `message` / `fatal` の利用は互換です。[実通話後の修正・検証](../../docs/quality/realtime-recovery.md)。
 
@@ -233,9 +233,11 @@ node --env-file=.env.managed apps/gateway/login-setup.mjs operator .oathra/login
 
 発信・取消は既存mission APIと同じ認可・承認・台帳処理を使います。番号はCoreの `PhoneRequestSchema` で日本国内表記も正規化し、余分な入力項目や未記入のテンプレート項目は400。CLIとGatewayは `definePhoneRequest` で契約を共有します。HTTP受付は通話完了を意味しません。通信障害時は自動再発信せず、「更新」「通信会社の状態を確認」から照合します。回線IDも不明の場合は管理者が通信会社で確認する必要があります。結果不明のまま取消済みに変更しません。
 
-Realtimeの電話は最初の音声パケット（無音を含む）を受けた時点で一度だけ挨拶を生成します。通常の `end_call` で終了挨拶が未生成なら短い挨拶を生成し、音声の再生待ちをしてから切断します。プロバイダー無応答時は10秒で退避し、相手の切断・取消・クレジット上限は優先します。実際に相手が聞けたことを保証するものではありません。
+GPT-Liveは全二重です。回線がつながった時点で相手を待たずに「もしもし」と名乗るよう指示し、その後の発話の順番はモデルに任せます。入力音声は無音も含めて送り続けます。相づちでは返答を止めず、質問・訂正などの割り込みのときだけ回線に溜まった返答を破棄します。発話が重なった後に双方が1.5秒以上黙ったままなら、一度だけ発言を譲るよう促します（10秒以内の連発なし、相手が待つよう求めた場合と検索中は行いません）。通話中の確認状態は `session.thinking.append` で渡し、発話を中断させません。`end_call` の後は挨拶の再生を待ってから切断します。双方が無音のままなら25秒で終了し、相手の切断・取消・クレジット上限は優先します。実際に相手が聞けたことを保証するものではありません。
 
-「テンプレート → 雑談」を選ぶと、近況や趣味などの会話を続けられます。Realtime接続ではニュースの質問時に公開カテゴリ、東京のイベント・お出かけ情報では固定カテゴリ `tokyo_events` をOpenAI Responses `web_search`（`gpt-5.4-mini`）へ送信します。`OPENAI_API_KEY` に同モデルと検索の利用枠が必要です。検索は1通話2回まで、1回15秒、失敗時の自動再試行なし。番号・氏名・会話全文を検索へ渡さず、ニュースは報道日・出典、東京イベントは日本時間の今日から14日以内の開催日と公式な主催者・会場ページを確認します。開催日を報道日で代用しません。検索中に相手が相槌を打っても検索自体は続け、話している間は結果の読み上げを待ちます。通話終了・明示的中断時は検索を中止します。GPT-Live接続では最新ニュースを確認できない旨を表示・応答します。
+通話メモに日付と時刻が残った通話には「予定に追加（カレンダー用ファイル）」が出ます。`GET /v1/phone/calls/:id/calendar.ics`（所有者のみ、日時が無ければ409）が、1時間の予定を Asia/Tokyo で返します。双方が確認した日時は「【電話で確認】」、相手の提案や未確認の日時は「【未確定】・TENTATIVE」とし、本文に各項目の確認状況と根拠の発言、予約の成立を保証しない旨を入れます。外部のカレンダーへは接続せず、認証情報も使いません。
+
+「テンプレート → 雑談」を選ぶと、近況や趣味などの会話を続けられます。ニュースの質問時には公開カテゴリ、台風・大雨・天気では固定カテゴリ `weather`（気象庁の発表を伝える日付つきの気象記事を確認）、東京のイベント・お出かけ情報では固定カテゴリ `tokyo_events`（探す→主催者等のページで開催日を確認するため検索は最大3回、25秒）をOpenAI Responses `web_search`（`gpt-5.4-mini`）へ送信します。`OPENAI_API_KEY` に同モデルと検索の利用枠が必要です。検索は1通話4回まで、1回15秒、失敗時の自動再試行なし。番号・氏名・会話全文を検索へ渡さず、ニュースは報道日・出典、東京イベントは日本時間の今日から14日以内の開催日と公式な主催者・会場ページを確認します。開催日を報道日で代用しません。検索中に相手が相槌を打っても検索自体は続けます。通話終了時は検索を中止します。検索はGPT-Liveの `lookup_news` ツールから呼ばれ、Live側の汎用 `web_search` は有効にしません。
 
 `usage-rate-v1` では検索ツールの回数と要約APIの使用トークン数もクレジットへ算入します。旧精算契約では検索・要約の費用は運営者負担です。検索結果を音声で伝える際の音声AI使用量は、その精算に含まれます。ニュースの出典は「履歴から使う → 状況を見る → 調べたニュース・イベント」で確認できます。検索結果・取得日時・出典も通話履歴と同じ所有者単位で保存・削除します。
 
@@ -294,9 +296,10 @@ OATHRA_CREDIT_USD=0.01
 # 円建て回線: 運営者が確認したJPY/USD換算率と基準日を別途設定
 # OATHRA_CARRIER_JPY_PER_USD=<確認した1米ドルあたりの円額>
 # OATHRA_CARRIER_FX_DATE=YYYY-MM-DD
-OATHRA_VOICE_ENGINE=realtime
-OATHRA_VOICE_MODEL=gpt-realtime-1.5
-OATHRA_REALTIME_PRICES_JSON='{"model":"gpt-realtime-1.5","version":"2026-09-20","inputText":4,"inputAudio":32,"cachedText":0.4,"cachedAudio":0.4,"outputText":16,"outputAudio":64}'
+OATHRA_VOICE_ENGINE=gpt-live
+OATHRA_VOICE_MODEL=gpt-live-1
+# セッション1分あたりのUSD。ご自身の契約単価を確認して設定してください。modelはOATHRA_VOICE_MODELと一致が必要です。
+OATHRA_LIVE_PRICES_JSON='{"model":"gpt-live-1","version":"2026-09-20","perMinute":"0.05"}'
 # 0 disables each daily limit. Per-call time/cost ceilings and prepaid balance remain enforced.
 OATHRA_DAILY_CALLS=0
 OATHRA_DAILY_USD=0
@@ -304,13 +307,15 @@ OATHRA_DAILY_USD=0
 
 円建ての回線は承認時の換算率を固定して米ドル相当額へ換算し、元の円額・換算率・基準日も保存/表示します。換算率はサービスの算定用で、決済カードや提供元請求書の実換算手数料とは一致を保証しません。設定更新は新しい発信だけに適用します。
 
-上記モデル単価は100万tokenあたりのUSD。2026-09-20の[公式価格](https://developers.openai.com/api/docs/models/gpt-realtime-1.5)を確認した値です。`gpt-live`・外部call plugin・有人転送はこの方式では未対応で、設定または操作を拒否します。OSSのself-hostedや旧固定方式は維持します。
+音声エンジンはGPT-Liveのみです（`OATHRA_VOICE_ENGINE` は省略可、`gpt-live` 以外は500 `unsupported_voice_engine`）。GPT-Liveはtoken使用量を通知しないため、音声AIは「Media Stream接続時間を分へ切り上げ×セッション分単価」で計算します。分単価はご自身の契約で確認してください。外部call plugin・有人転送はこの方式では未対応で、設定または操作を拒否します。OSSのself-hostedや旧固定方式は維持します。
 
-旧方式（`OATHRA_SETTLEMENT_MODE` 未設定）では承認時に `ceil(OATHRA_MAX_CALL_USD / OATHRA_CREDIT_USD)` を確保します。終了後、[Twilio Call.price](https://www.twilio.com/docs/voice/api/call-resource)の接続料金（USDまたは換算率を設定したJPY）と、各Realtime応答の実usage×承認時のモデル単価を合算し、最後に一度だけクレジット単位へ切り上げます。応答中断・失敗時も報告された使用量を数え、入力キャッシュの割引を分けます。電話会社の通話時間も結果と履歴へ表示します。承認上限以上は引き落とさず、超過額は運営者負担です。
+旧方式（`OATHRA_SETTLEMENT_MODE` 未設定）では承認時に `ceil(OATHRA_MAX_CALL_USD / OATHRA_CREDIT_USD)` を確保します。終了後、[Twilio Call.price](https://www.twilio.com/docs/voice/api/call-resource)の接続料金（USDまたは換算率を設定したJPY）と、GPT-Liveの接続時間（分へ切り上げ）×承認時の分単価を合算し、最後に一度だけクレジット単位へ切り上げます。電話会社の通話時間も結果と履歴へ表示します。承認上限以上は引き落とさず、超過額は運営者負担です。
 
 文字起こし・Media Streams・番号月額・税・インフラ費用は運営者負担とし、利用者へ加算しません。AI金額は報告使用量と設定単価による算定で、提供元の請求書全体を取り込んだ額ではありません。割引・契約変更は運営者が単価設定へ反映してください。
 
 Call.price未取得・換算未設定の通貨・使用量欠測・通信断では **精算待ち** のまま確保を保持し、無料や消費済みと表示しません。5秒周期で対象を確認し、同じ通話への価格照会は最大1分に1回、発信の自動再実行はありません。再起動後も継続します。欠けたAI usageは復元したと仮定せず、管理者が回線終了を確認して `POST /v1/missions/:id/billing-waive` に `{acknowledged:true,reason}` を送れば、費用を運営者負担として一度だけ全額返却できます。未精算の履歴は削除/保持期限の対象外です。
+
+発信要求がタイムアウトした、または回線IDを保存する前にworkerが停止した通話は、回線へ照会する手段がなく、通常の精算にも `billing-waive` にも進めません。管理者が通信会社の管理画面でその番号への通話が無いことを確認したうえで、`POST /v1/admin/missions/:id/credits-force-release` に `{acknowledged:true,carrierChecked:true,reason}` を送ると、確保分を全額返却して通話を「完了しませんでした」に確定します（一度だけ、監査ログ `credits.force_released`）。回線IDがある通話は 409 `reconcile_call_instead` です。管理者が他の利用者の通話を運営者負担にする場合は `POST /v1/admin/missions/:id/billing-waive` を使います（利用者向けの `/v1/missions/:id/billing-waive` は所有者本人の通話だけが対象）。精算で例外が出た通話は起動時に記録して残りを続行し、確保が無い予約はその1件だけ失敗にして後続の発信を止めません。
 
 旧固定方式の通話は遡及再計算しません。新しい料金で古い承認を使うと409になり、入力を確認し直す必要があります。SDKの `phoneRecord(id).creditUsage` / `status(id).creditUsage` で確保・精算待ち・消費・返却を取得できます。管理者SDKには `waiveBilling({missionId,reason,acknowledged:true})` を追加しています。[受け入れ条件と実行証拠](../../docs/quality/metered-credits.md)。
 
@@ -330,7 +335,9 @@ managed電話の新しい承認は `spendingLimit: "balance-v1"` とし、利用
 
 workerは250ms周期と使用量通知時に同じ精算式で使用額を確認し、上限到達または次の回線課金単位での超過前に停止を要求します。音声AI・検索の使用量通知と通信会社の停止には遅延があるため、残高ゼロと完全同時の切断は保証できません。超過額は運営者負担で、利用者の引落しは確保額以内です。停止未確認はUNKNOWN・精算待ちを維持します。別途設定された最大通話時間 `OATHRA_MAX_SECONDS`（30〜600秒）も適用されます。残高上限監視のあるmanaged電話はこの設定値を使い、従来の180秒への切り詰めを行いません。新しい設定は新規確認に適用し、既存承認を延長しません。電話会社の終了時間が上限に到達した履歴には、その旨を表示します。[受け入れ条件と検証](../../docs/quality/credit-cutoff.md)。
 
-計算式: 回線は課金単位へ切り上げた接続秒数×分単価、音声中継は接続分数×単価、Realtimeはキャッシュ別の実token使用量×単価、検索は実際の `web_search_call` 数×呼出単価＋Responsesモデルのtoken使用量×単価。すべて整数nanodollarで合算し、合計をcredit単価で一度だけ切り上げます。ニュース確認要求は最大2回ですが、1要求の内部検索呼出数は複数の場合があり、APIが返した数で計算します。
+計算式: 回線は課金単位へ切り上げた接続秒数×分単価、音声中継は接続分数×単価、GPT-Liveは接続分数×セッション分単価、検索は実際の `web_search_call` 数×呼出単価＋Responsesモデルのtoken使用量×単価。すべて整数nanodollarで合算し、合計をcredit単価で一度だけ切り上げます。確認要求は最大4回ですが、1要求の内部検索呼出数は複数の場合があり、APIが返した数で計算します。
+
+残高上限の監視・最初の1分の最低残高にも同じ分単価を含めます。接続したのに接続時間を記録できなかった通話の音声AI費用は、終了時精算では `cost.excluded` に記録して運営者負担、旧方式では精算待ちのままにします。GPT-Liveの裏側で使う推論モデル（delegation）の費用は計測せず運営者負担です。
 
 終了時間は署名付きTwilio終了通知/Call.durationを優先、まだ届かなければ記録した応答開始〜停止時刻（応答開始未取得時はMedia Stream接続時間）を使います。停止HTTP応答待ち時間は含めません。取得できなかったAI/検索使用量は `cost.excluded` に記録し運営者負担にします。未知の発信・停止結果は **精算待ち** のまま照会し、再発信しません。STT・税・番号月額・インフラ費用も運営者負担です。これは請求書そのものではなく、使用量と設定単価によるサービス利用額です。
 

@@ -56,14 +56,14 @@ test('a recording notice is saved without claiming affirmative callee consent', 
 test('runtime failure diagnostics persist codes without provider messages or nested runtime sequence numbers', withFixture(async f => {
   const m=f.approve(f.draft());
   const worker=new Worker(f.service,quiet,async (_m,hooks)=>{
-    hooks.onEvent({type:'error',code:'realtime_response_cancel_not_active',message:'private-provider-payload',fatal:false,seq:800,t:10});
-    hooks.onEvent({type:'error',code:'realtime_invalid_api_key',message:'private-provider-payload',fatal:true,seq:1,t:11});
-    throw Object.assign(new Error('private-provider-payload'),{code:'realtime_invalid_api_key'});
+    hooks.onEvent({type:'error',code:'voice_command_rejected',message:'private-provider-payload',fatal:false,seq:800,t:10});
+    hooks.onEvent({type:'error',code:'voice_invalid_api_key',message:'private-provider-payload',fatal:true,seq:1,t:11});
+    throw Object.assign(new Error('private-provider-payload'),{code:'voice_invalid_api_key'});
   });
   await worker.tick();await worker.active?.promise;
   const saved=f.store.get('mission',m.id),events=f.store.events(m.id,m.owner);
-  assert.equal(saved.status,'FAILED');assert.equal(saved.error,'realtime_invalid_api_key');
-  assert.deepEqual(saved.runtimeError,{type:'runtime.error',code:'realtime_invalid_api_key',fatal:true,t:11});
+  assert.equal(saved.status,'FAILED');assert.equal(saved.error,'voice_invalid_api_key');
+  assert.deepEqual(saved.runtimeError,{type:'runtime.error',code:'voice_invalid_api_key',fatal:true,t:11});
   assert.equal(events.filter(e=>e.type==='runtime.error').length,2);
   assert.ok(!JSON.stringify({saved,events,audit:f.store.audits({})}).includes('private-provider-payload'));
 }));

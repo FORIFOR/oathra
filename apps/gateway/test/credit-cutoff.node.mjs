@@ -9,7 +9,8 @@ import {Worker} from '../lib/worker.mjs';
 import {billingConfiguration,applyBillingEvent} from '../lib/billing.mjs';
 import {spendingProgress} from '../lib/credit-guard.mjs';
 import {prepareManagedPhone,phoneRecord} from '../lib/phone-service.mjs';
-const env={OATHRA_CREDIT_POLICY:'provider-cost-v1',OATHRA_CREDIT_USD:'0.01',OATHRA_VOICE_ENGINE:'realtime',OATHRA_VOICE_MODEL:'gpt-realtime-1.5',OATHRA_REALTIME_PRICES_JSON:JSON.stringify({model:'gpt-realtime-1.5',version:'cutoff-boundary',inputText:4,inputAudio:32,cachedText:0.4,cachedAudio:0.4,outputText:16,outputAudio:64}),OATHRA_SETTLEMENT_MODE:'usage-rate-v1',OATHRA_USAGE_PRICES_JSON:JSON.stringify({version:'cutoff-boundary',carrier:[{prefix:'+81',currency:'USD',perMinute:'0.2',incrementSeconds:60,source:'bounded accounting fixture'}],mediaPerMinute:'0.0044',search:{model:'gpt-5.4-mini',perCall:'0.01',input:'0.75',cached:'0.075',output:'4.5'}})};
+// First started minute: carrier 0.2 + media 0.0044 + voice 0.0006 = 0.205 USD, i.e. 21 credits.
+const env={OATHRA_CREDIT_POLICY:'provider-cost-v1',OATHRA_CREDIT_USD:'0.01',OATHRA_VOICE_ENGINE:'gpt-live',OATHRA_VOICE_MODEL:'gpt-live-1',OATHRA_LIVE_PRICES_JSON:JSON.stringify({model:'gpt-live-1',version:'cutoff-boundary',perMinute:'0.0006'}),OATHRA_SETTLEMENT_MODE:'usage-rate-v1',OATHRA_USAGE_PRICES_JSON:JSON.stringify({version:'cutoff-boundary',carrier:[{prefix:'+81',currency:'USD',perMinute:'0.2',incrementSeconds:60,source:'bounded accounting fixture'}],mediaPerMinute:'0.0044',search:{model:'gpt-5.4-mini',perCall:'0.01',input:'0.75',cached:'0.075',output:'4.5'}})};
 function fixture(amount=377){
  let now=100000;const store=new Store(':memory:',randomBytes(32).toString('hex'),()=>now),u={id:randomUUID(),team:'local',role:'admin'};
  const config={deployment:'managed',mode:'live',liveReady:true,users:[u],billing:billingConfiguration(env),maxCallUsd:4,maxSeconds:180,rateCeilingUsd:0.1,setupFeeUsd:0,dailyCalls:0,dailyUsd:0,consentVersion:'v1',callerId:'+819000000000'};
@@ -35,21 +36,22 @@ test('a second reviewed draft cannot spend credits already held by another appro
  assert.throws(()=>f.service.start(f.u,r.approvalToken,randomUUID(),true,b.id),/insufficient_credits/);assert.equal(f.service.credits.balance(f.u.id).held,377);
 }));
 test('price changes invalidate the approved amount without spending any credits',using(f=>{
- const m=f.draft(),r=f.service.review(f.u,m.id);f.config.billing.rates.outputAudio++;
+ const m=f.draft(),r=f.service.review(f.u,m.id);f.config.billing.voicePerMinuteNanoUsd++;
  assert.throws(()=>f.service.start(f.u,r.approvalToken,randomUUID(),true,m.id),/credit_price_changed/);assert.equal(f.service.credits.balance(f.u.id).available,377);
 }));
 test('elapsed carrier time and search usage share the final settlement arithmetic',using(f=>{
- const m=f.start(f.draft());m.billing={connectedAt:f.now(),ai:{started:false,closed:false,pending:[],responses:[]}};
+ const m=f.start(f.draft());m.billing={connectedAt:f.now()};
  f.advance(1000);assert.equal(spendingProgress(m,f.now()).consumed,21);
  applyBillingEvent(m,{type:'billing.search',kind:'response',id:'search',model:'gpt-5.4-mini',calls:2,usage:{input_tokens:0,output_tokens:0,input_tokens_details:{cached_tokens:0}}});
  assert.equal(spendingProgress(m,f.now()).consumed,23);
  m.creditQuote.amount=21;assert.equal(spendingProgress(m,f.now()).stop,true);
 }));
-test('worker aborts once on voice usage, caps the debit, and records a readable stopping reason',using(async f=>{
+test('worker aborts once on reported usage, caps the debit, and records a readable stopping reason',using(async f=>{
  f.start(f.draft());const worker=new Worker(f.service,{},async(m,h)=>{
   let stops=0;h.signal.addEventListener('abort',()=>{stops++});h.onEvent({type:'call.connected'});f.advance(1000);
-  const usage={input_tokens:0,output_tokens:2000,input_token_details:{text_tokens:0,audio_tokens:0,cached_tokens:0},output_token_details:{text_tokens:0,audio_tokens:2000}};
-  for(let i=0;i<2;i++)h.onEvent({type:'billing.ai',kind:'response',id:'large-response',model:env.OATHRA_VOICE_MODEL,usage});
+  // 0.205 for the first minute plus five searches (0.05) exceeds the 25 credit hold; the duplicate report must not stop twice.
+  const usage={input_tokens:0,output_tokens:0,input_tokens_details:{cached_tokens:0}};
+  for(let i=0;i<2;i++)h.onEvent({type:'billing.search',kind:'response',id:'large-search',model:'gpt-5.4-mini',calls:5,usage});
   assert.equal(h.signal.aborted,true);assert.equal(stops,1);
   h.onEvent({type:'billing.timing',startedAt:f.now()-1000,endedAt:f.now()});return {transcript:[]};
  });
@@ -70,10 +72,10 @@ test('a manual stop or closed media cannot be relabelled as credit exhaustion du
  f.start(f.draft());const abort=new AbortController();
  const worker=new Worker(f.service,{},async(m,h)=>{h.onEvent({type:'call.connected'});abort.abort();f.advance(120000);await new Promise(r=>setTimeout(r,300));return {transcript:[]}});
  const m=worker.claimNext();await worker.run(m,{abort,control:{}});assert.equal(f.store.get('mission',m.id).stopReason,undefined);
- const closed={...m,billing:{connectedAt:100000,timing:{startedAt:100000,endedAt:100100},ai:{responses:[]}}};assert.equal(spendingProgress(closed,999999),null);
+ const closed={...m,billing:{connectedAt:100000,timing:{startedAt:100000,endedAt:100100}}};assert.equal(spendingProgress(closed,999999),null);
 },25));
 test('failed carrier stop remains unknown and holds credits for reconciliation',using(async f=>{
- f.start(f.draft());const worker=new Worker(f.service,{},async(m,h)=>{h.onEvent({type:'call.connected'});f.advance(59500);h.onEvent({type:'billing.ai',kind:'started'});const saved=f.store.get('mission',m.id);saved.stopNeedsReconciliation=true;f.store.put('mission',saved);return {transcript:[]}});
+ f.start(f.draft());const worker=new Worker(f.service,{},async(m,h)=>{h.onEvent({type:'call.connected'});f.advance(59500);const saved=f.store.get('mission',m.id);saved.stopNeedsReconciliation=true;f.store.put('mission',saved);return {transcript:[]}});
  const m=worker.claimNext();await worker.run(m,{abort:new AbortController(),control:{}});assert.equal(f.store.get('mission',m.id).status,'UNKNOWN');assert.equal(f.service.credits.usage(m).held,25);
 },25));
 
@@ -86,8 +88,8 @@ test('JPY conversion and a six-second carrier increment use the same cutoff and 
  const usage=JSON.parse(env.OATHRA_USAGE_PRICES_JSON);usage.carrier[0]={...usage.carrier[0],currency:'JPY',perMinute:'29.858741',incrementSeconds:6};
  f.config.billing=billingConfiguration({...env,OATHRA_CARRIER_JPY_PER_USD:'157.888307',OATHRA_CARRIER_FX_DATE:'2026-09-18',OATHRA_USAGE_PRICES_JSON:JSON.stringify(usage)});
  const m=f.draft();assert.equal(m.creditQuote.minimumAmount,3);assert.equal(m.creditQuote.tariff.carrierRate.perMinuteNanoUsd,189113060);
- m.creditQuote.amount=3;m.billing={connectedAt:f.now(),ai:{started:false,closed:false,pending:[],responses:[]}};
- f.advance(1000);const a=spendingProgress(m,f.now());assert.equal(a.totalNanoUsd,23311306);assert.equal(a.consumed,3);assert.equal(a.stop,false);
+ m.creditQuote.amount=3;m.billing={connectedAt:f.now()};
+ f.advance(1000);const a=spendingProgress(m,f.now());assert.equal(a.totalNanoUsd,23911306);assert.equal(a.consumed,3);assert.equal(a.stop,false);
  f.advance(4500);assert.equal(spendingProgress(m,f.now()).stop,true);
 }));
 

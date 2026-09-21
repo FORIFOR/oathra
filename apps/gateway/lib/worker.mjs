@@ -14,14 +14,16 @@ export class Worker {
     const recovery=new Map([...this.store.list('mission'),...this.service.credits.pendingMissions()].map(m=>[m.id,m]));
     // A crash can also land after the terminal result write but before run.finally.
     for(const m of recovery.values())if(m.billing?.state==='pending'&&m.executionId&&!['DRAFT','QUEUED'].includes(m.status)){
-      finishBilling(m);if(!m.billing.ai.closed){m.billing.ai.closed=true;m.billing.ai.complete=false;}this.store.put('mission',m);
+      finishBilling(m);this.store.put('mission',m);
     }
     for(const m of recovery.values()) if(['DIALING','ACTIVE','VERIFYING','CANCEL_REQUESTED','HANDOFF_PENDING','HANDOFF_ACTIVE'].includes(m.status)) {
-      if(m.billing){m.billing.executionFinished=true;if(!m.billing.ai.closed){m.billing.ai.closed=true;m.billing.ai.complete=false;}}
+      if(m.billing)m.billing.executionFinished=true;
       m.status='UNKNOWN'; m.finishedAt=this.store.now(); m.error='worker_interrupted_reconcile_carrier_before_retry'; this.store.put('mission',m); this.service.notify(m,'result');
     }
     for(const m of recovery.values())if(m.billing?.state==='pending'&&m.creditQuote?.tariff?.settlement==='usage-rate-v1'){
-      this.store.tx(()=>this.service.credits.settleTx(this.store.get('mission',m.id)));
+      // One call that cannot be settled must not keep the whole service from starting; its hold stays for an administrator.
+      try{this.store.tx(()=>this.service.credits.settleTx(this.store.get('mission',m.id)));}
+      catch(error){this.log('billing.recovery_failed',error,{mission:m.id});}
     }
     // Inbox and notifications can be retried; telephone attempts cannot.
     for(const f of this.store.list('followup',undefined,'EXECUTING')) { f.status='UNKNOWN'; f.error='process_interrupted_do_not_resend_without_reconciliation'; this.store.put('followup',f); }
@@ -49,7 +51,7 @@ export class Worker {
       if(!m)return;
       this.service.notify(m,'発信しています。');
       const active={ id:m.id,abort:new AbortController(),control:{} }; this.active=active;
-      active.promise=this.run(m,active).finally(()=>{ if(this.active===active) this.active=null; });
+      active.promise=this.run(m,active).catch(error=>this.log('call.run_failed',error,{mission:m.id})).finally(()=>{ if(this.active===active) this.active=null; });
     } finally { this.busy=false; }
   }
   /** Atomically commits an execution claim and its credits; does not contact a carrier. */
@@ -59,10 +61,10 @@ export class Worker {
         const lease=this.store.db.prepare('SELECT * FROM lease WHERE id=1').get();
         assert(!lease||lease.holder===this.holder,'worker_lease_lost',409);
         this.store.db.prepare('INSERT INTO lease VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires').run(this.holder,this.store.now()+30000);
-        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);}
+        // A capture that cannot succeed fails this call only; left outside, it would block every call queued behind it.
+        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);this.service.credits.captureTx(m);}
         catch(e){m.status='FAILED';m.finishedAt=this.store.now();m.error=e.code??'policy_rejected';this.service.credits.releaseTx(m);this.store.put('mission',m);this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error});this.service.notify(m,'result');return null;}
-        this.service.credits.captureTx(m);
-        if(m.creditQuote?.policy===METERED)m.billing={state:'pending',ai:{started:false,closed:false,complete:false,pending:[],responses:[]}};
+        if(m.creditQuote?.policy===METERED)m.billing={state:'pending'};
         m.status='DIALING';m.executionId=randomUUID();this.store.put('mission',m);this.store.event(m,{type:'status',status:'DIALING'});
         this.store.audit(m.owner,'call.dialing',m.id,{mission:m.id,execution:m.executionId,target:this.store.phoneRef(m.target.phone),mode:m.mode,approvedAt:m.approvedAt});
         return m;
@@ -92,7 +94,7 @@ export class Worker {
     const onEvent=e=>{
       const current=this.store.get('mission',m.id); if(!current) return;
       let shouldAbort=false;
-      if(['billing.ai','billing.search','billing.timing'].includes(e.type)){applyBillingEvent(current,e);this.store.put('mission',current);checkCredits();return;}
+      if(['billing.search','billing.timing'].includes(e.type)){applyBillingEvent(current,e);this.store.put('mission',current);checkCredits();return;}
       if(e.type==='error') {
         const diagnostic={type:'runtime.error',code:/^[a-z][a-z0-9_]{0,99}$/.test(e.code??'')?e.code:'runtime_error',fatal:e.fatal!==false,...(Number.isFinite(e.t)?{t:e.t}:{})};
         this.store.event(current,diagnostic);

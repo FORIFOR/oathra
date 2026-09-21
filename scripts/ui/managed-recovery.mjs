@@ -82,6 +82,6 @@ try {
  await page.click('#contacts-open');await page.until("!document.querySelector('#screen-contacts').hidden");assert.equal(await page.js("document.querySelector('#contact-notes').value"),'再ログイン後に復元する未保存メモ');
  await page.click('#contact-form button[type=submit]');await page.until("document.querySelector('#contact-save-status').textContent==='保存しました。'");assert.equal(app.store.list('contact').length,2);assert.ok(app.store.list('contact').some(c=>c.notes==='再ログイン後に復元する未保存メモ'));
  assert.deepEqual(page.pageErrors,[]);
- await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");assert.equal(await page.js("Object.keys(sessionStorage).filter(k=>k.startsWith('oathra:')).length"),0);
+ await page.click('#managed-account-button');await page.click('#managed-logout');await page.until("!document.querySelector('#managed-login').hidden");assert.equal(await page.js("Object.keys(sessionStorage).filter(k=>k.startsWith('oathra:')).length"),0);
  console.log('PASS: same-tab draft/active-call/recent-result reload without redial, one-row double save, typing during save, native discard-dialog cancel, saved-contact target, late navigation read, one cancel/credit release, known consent rejection, lost accepted start recovery with one reservation, 390/1280px, no JS errors, logout clears recovery storage. No PSTN/API execution.');
 } finally {await page?.close();await app.close();rmSync(dir,{recursive:true,force:true});}

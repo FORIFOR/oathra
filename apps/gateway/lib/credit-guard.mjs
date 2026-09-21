@@ -3,7 +3,7 @@ import { USAGE_RATE, usageRateCost } from './billing.mjs';
 export const BALANCE_LIMIT = 'balance-v1';
 export function firstConnectionNanoUsd(tariff) {
   const rate = tariff.carrierRate;
-  return Number((BigInt(rate.perMinuteNanoUsd) * BigInt(rate.incrementSeconds) + 59n) / 60n) + tariff.mediaPerMinuteNanoUsd;
+  return Number((BigInt(rate.perMinuteNanoUsd) * BigInt(rate.incrementSeconds) + 59n) / 60n) + tariff.mediaPerMinuteNanoUsd + tariff.voicePerMinuteNanoUsd;
 }
 /** Use the same unit accounting as settlement; this view is never a ledger debit. */
 export function spendingProgress(m, now) {
