@@ -5,13 +5,17 @@
 // What is measured: median fundamental frequency of the voiced frames (how high the voice is) and how long
 // the same sentence takes. Whether a voice "is male" is not something a file can state: the labels below are
 // derived from pitch alone and say so.
-import { mkdirSync, writeFileSync } from "node:fs";
+//
+// `--measure` re-measures the existing recordings without recording again: each sample goes through the phone
+// path (8 kHz mu-law), is transcribed, and compared with the sentence (phoneCer: 0 = heard exactly), and its
+// level on the line is taken (phoneLevel). These two and the pace are what a recommendation is based on.
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 const require = createRequire(resolve("providers/openai-realtime/package.json"));
 const WebSocket = require("ws");
 const { PHONE_VOICES } = await import(resolve("packages/contract/dist/index.js"));
-const { wavFromInt16 } = await import(resolve("providers/audio-kit/dist/index.js"));
+const { wavFromInt16, mulawEncode, mulawDecode } = await import(resolve("providers/audio-kit/dist/index.js"));
 
 const key = process.env.OPENAI_API_KEY;
 if (!key) { console.error("BLOCKED: OPENAI_API_KEY is required"); process.exit(2); }
@@ -74,6 +78,34 @@ function pitchHz(pcm) {
   return found.length ? found[Math.floor(found.length / 2)] : null;
 }
 
+/** How the sample survives the phone line: character error rate of its transcription, and its level there. */
+async function onThePhone(voice) {
+  const wav = readFileSync(join(out, `${voice}.wav`)), pcm16k = new Int16Array(wav.buffer, wav.byteOffset + 44, (wav.length - 44) >> 1);
+  const pcm8k = new Int16Array(pcm16k.length >> 1);
+  for (let i = 0; i < pcm8k.length; i++) pcm8k[i] = (pcm16k[2 * i] + pcm16k[2 * i + 1]) >> 1;
+  const line = mulawDecode(mulawEncode(pcm8k));
+  const form = new FormData();
+  form.append("model", "gpt-4o-mini-transcribe"); form.append("language", "ja");
+  form.append("file", new Blob([wavFromInt16(line, 8000)], { type: "audio/wav" }), `${voice}.wav`);
+  const r = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { authorization: `Bearer ${key}` }, body: form });
+  if (!r.ok) throw new Error(`transcription ${r.status}`);
+  const norm = (t) => t.normalize("NFKC").replace(/[\s、。，．！？!?「」・…]/g, "");
+  const a = norm(LINE), b = norm((await r.json()).text ?? ""), d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  let sum = 0, n = 0;
+  for (const v of line) if (Math.abs(v) > 600) { sum += v * v; n++; }
+  return { phoneCer: Number((d[a.length][b.length] / a.length).toFixed(2)), phoneLevel: Math.round(Math.sqrt(sum / Math.max(1, n))) };
+}
+
+if (process.argv.includes("--measure")) {
+  const file = join(out, "voices.json"), saved = JSON.parse(readFileSync(file, "utf8"));
+  for (const voice of Object.keys(saved.voices)) { Object.assign(saved.voices[voice], await onThePhone(voice)); console.log(voice.padEnd(10), JSON.stringify(saved.voices[voice])); }
+  saved.note = "pitchHz: median fundamental frequency of one sample. phoneCer/phoneLevel: the same sample after the 8 kHz mu-law phone path, transcribed and compared with the sentence (0 = heard exactly; a paraphrase by the model also counts as error), and its RMS level there. Labels derived from these describe a voice, not a person.";
+  writeFileSync(file, JSON.stringify(saved, null, 1) + "\n");
+  process.exit(0);
+}
+
 const results = {};
 for (const voice of PHONE_VOICES) {
   const pcm = await record(voice), seconds = pcm.length / RATE, hz = pitchHz(pcm);
@@ -82,7 +114,7 @@ for (const voice of PHONE_VOICES) {
   const down = new Int16Array(Math.floor(pcm.length * 2 / 3));
   for (let i = 0; i < down.length; i++) { const p = i * 1.5, i0 = Math.floor(p), f = p - i0; down[i] = Math.round(pcm[i0] * (1 - f) + (pcm[Math.min(pcm.length - 1, i0 + 1)]) * f); }
   writeFileSync(join(out, `${voice}.wav`), wavFromInt16(down, 16000));
-  results[voice] = { pitchHz: Math.round(hz), seconds: Number(seconds.toFixed(1)) };
+  results[voice] = { pitchHz: Math.round(hz), seconds: Number(seconds.toFixed(1)), ...(await onThePhone(voice)) };
   console.log(voice.padEnd(10), `${Math.round(hz)} Hz`, `${seconds.toFixed(1)} s`);
 }
 writeFileSync(join(out, "voices.json"), JSON.stringify({ measuredOn: new Date().toISOString().slice(0, 10), line: LINE, note: "pitchHz is the median fundamental frequency of one sample; labels derived from it describe pitch, not a person.", voices: results }, null, 1) + "\n");

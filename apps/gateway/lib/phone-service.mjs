@@ -11,9 +11,29 @@ import { readFileSync } from 'node:fs';
 function voiceDetails() {
  try {
   const measured=JSON.parse(readFileSync(new URL('../public/phone/voices/voices.json',import.meta.url),'utf8')).voices??{};
-  return Object.fromEntries(PHONE_VOICES.filter(v=>Number.isFinite(measured[v]?.pitchHz)).map(v=>{const {pitchHz,seconds}=measured[v];
-   return [v,{pitchHz,seconds,pitch:pitchHz<150?'low':pitchHz<195?'mid':pitchHz<250?'high':'very-high',pace:seconds<=5.2?'fast':seconds>=6.4?'slow':'medium',sample:`/phone/voices/${v}.wav`}];}));
+  const details=Object.fromEntries(PHONE_VOICES.filter(v=>Number.isFinite(measured[v]?.pitchHz)).map(v=>{const {pitchHz,seconds,phoneCer,phoneLevel}=measured[v];
+   return [v,{pitchHz,seconds,phoneCer,phoneLevel,pitch:pitchHz<150?'low':pitchHz<195?'mid':pitchHz<250?'high':'very-high',pace:seconds<=5.2?'fast':seconds>=6.4?'slow':'medium',quiet:Number.isFinite(phoneLevel)&&phoneLevel<QUIET_LEVEL,sample:`/phone/voices/${v}.wav`}];}));
+  recommend(details);return details;
  } catch { return {}; }
+}
+/** Below this level on the line a voice is about half as loud as the louder ones. */
+const QUIET_LEVEL=2000,ENOUGH_LEVEL=2600;
+/**
+ * A recommendation is a rule over what was measured, not a taste:
+ *  - the engine's default voice, which is also the one every real call here was made with;
+ *  - in each other pitch group, the one voice that was heard exactly over the phone path, is loud enough
+ *    there, speaks at a medium pace, and whose pace is nearest the middle of all voices.
+ * A group where no voice meets this gets no recommendation rather than a weaker one.
+ */
+function recommend(details) {
+ const all=Object.values(details),sorted=all.map(d=>d.seconds).sort((a,b)=>a-b),middle=sorted[Math.floor(sorted.length/2)];
+ const group=d=>d.pitch==='very-high'?'high':d.pitch,defaultGroup=details[DEFAULT_PHONE_VOICE]&&group(details[DEFAULT_PHONE_VOICE]);
+ if(details[DEFAULT_PHONE_VOICE])Object.assign(details[DEFAULT_PHONE_VOICE],{recommended:true,reason:'default-and-verified-on-real-calls'});
+ for(const g of ['low','mid','high']){
+  if(g===defaultGroup)continue;
+  const fit=Object.entries(details).filter(([,d])=>group(d)===g&&d.phoneCer===0&&d.phoneLevel>=ENOUGH_LEVEL&&d.pace==='medium').sort((a,b)=>Math.abs(a[1].seconds-middle)-Math.abs(b[1].seconds-middle))[0];
+  if(fit)Object.assign(fit[1],{recommended:true,reason:'clear-loud-enough-medium-pace-on-the-phone-path'});
+ }
 }
 const VOICE_DETAILS=voiceDetails();
 

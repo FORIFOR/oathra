@@ -71,6 +71,13 @@ test('a phone request may choose the voice; unknown voices are refused and the l
   assert.deepEqual(Object.keys(status.voiceDetails).sort(),[...status.voices].sort());
   for(const [name,d] of Object.entries(status.voiceDetails)){assert.ok(d.pitchHz>60&&d.pitchHz<400,name);assert.ok(['low','mid','high','very-high'].includes(d.pitch));assert.ok(['fast','medium','slow'].includes(d.pace));assert.equal(d.sample,'/phone/voices/'+name+'.wav');}
   assert.equal(status.voiceDetails.vesper.pitch,'low');assert.equal(status.voiceDetails.marin.pitch,'high');
+  // A recommendation follows from the measurements: the default, and per other pitch group at most one voice that was
+  // heard exactly on the phone path, loud enough there, and of medium pace. Never a quiet or misheard voice.
+  const recommended=Object.entries(status.voiceDetails).filter(([,d])=>d.recommended);
+  assert.ok(status.voiceDetails.marin.recommended);assert.ok(recommended.length>=1&&recommended.length<=3);
+  for(const [name,d] of recommended)if(name!=='marin'){assert.equal(d.phoneCer,0,name);assert.ok(d.phoneLevel>=2600,name);assert.equal(d.pace,'medium',name);assert.equal(d.quiet,false,name);}
+  assert.equal(new Set(recommended.map(([,d])=>d.pitch==='very-high'?'high':d.pitch)).size,recommended.length);
+  assert.equal(status.voiceDetails.quartz.quiet,true);assert.ok(!status.voiceDetails.quartz.recommended);
   const sample=await fetch(base+'/phone/voices/vesper.wav');assert.equal(sample.status,200);assert.equal(sample.headers.get('content-type'),'audio/wav');assert.equal(Buffer.from(await sample.arrayBuffer()).subarray(0,4).toString(),'RIFF');
   for(const path of ['/phone/voices/alloy.wav','/phone/voices/../main.js','/phone/voices/voices.json'])assert.notEqual((await fetch(base+path)).headers.get('content-type'),'audio/wav');
   const draft=body=>fetch(base+'/v1/phone/draft',{method:'POST',headers,body:JSON.stringify({phone:'+819000000000',name:'local',instruction:'Only local validation; no phone execution.',...body})});

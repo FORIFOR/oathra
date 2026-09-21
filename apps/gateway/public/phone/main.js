@@ -82,14 +82,14 @@ import { renderNews } from './news.js';
     chatNote.hidden = true;
     $('#phone-template').after(chatNote);
     // Which voice speaks. The list comes from the server; a voice is fixed for the whole call.
-    const voiceField = element('div'), voiceLabel = element('label', 'AIの声'), voiceSelect = element('select'), voiceNote = element('p', '声は通話の途中では変えられません。選んだ声はこの端末に覚えておきます。声の高さと速さは、同じ一文の録音を測った目安です。実際の印象は試聴で確かめてください。'), voicePreview = element('button', 'この声を試聴');
+    const voiceField = element('div'), voiceLabel = element('label', 'AIの声'), voiceSelect = element('select'), voiceNote = element('p', '声は通話の途中では変えられません。選んだ声はこの端末に覚えておきます。声の高さと速さは、同じ一文の録音を測った目安です。★ 推奨は、標準の声（実際の通話で確認済み）と、電話の音質に通しても正確に聞き取れ・音量が十分で・速さがふつうの声です。実際の印象は試聴で確かめてください。'), voicePreview = element('button', 'この声を試聴');
     voiceField.id = 'phone-voice-field'; voiceLabel.htmlFor = 'phone-voice'; voiceSelect.id = 'phone-voice'; voiceSelect.name = 'voice'; voiceNote.className = 'note'; voiceNote.id = 'phone-voice-note';
     voiceSelect.setAttribute('aria-describedby', 'phone-voice-note');
     voicePreview.type = 'button'; voicePreview.id = 'phone-voice-preview'; voicePreview.className = $('#phone-clear').className;
     voiceField.append(voiceLabel, voiceSelect, voicePreview, voiceNote);
     // How high and how fast, from the measured sample. Not who: a recording cannot say that.
     const pitchWord = { low: '低めの声（男性に多い高さ）', mid: '中くらいの高さの声', high: '高めの声（女性に多い高さ）', 'very-high': 'かなり高めの声' }, paceWord = { fast: 'やや速め', medium: 'ふつうの速さ', slow: 'ゆっくりめ' };
-    const describeVoice = v => { const d = readiness?.voiceDetails?.[v]; return d ? `${v} — ${pitchWord[d.pitch]}・${paceWord[d.pace]}` : v; };
+    const describeVoice = v => { const d = readiness?.voiceDetails?.[v]; return d ? `${d.recommended ? '★ 推奨 ' : ''}${v} — ${pitchWord[d.pitch]}・${paceWord[d.pace]}${d.quiet ? '・音量は小さめ' : ''}` : v; };
     let previewAudio = null;
     voicePreview.addEventListener('click', () => {
         const sample = readiness?.voiceDetails?.[voiceSelect.value]?.sample;
@@ -251,9 +251,9 @@ import { renderNews } from './news.js';
         if (voiceSelect.options.length !== voices().length) {
             const keep = voiceSelect.value;
             const option = v => { const o = element('option', describeVoice(v) + (v === defaultVoice() ? '（標準）' : '')); o.value = v; return o; };
-            // Grouped by how high the voice is, lowest first inside each group, so thirteen names are not one flat list.
+            // Grouped by how high the voice is; inside a group the recommended voice comes first, then lowest first.
             const details = r.voiceDetails ?? {}, groups = [['低めの声', ['low']], ['中くらいの高さの声', ['mid']], ['高めの声', ['high', 'very-high']]];
-            const grouped = groups.map(([label, kinds]) => { const g = element('optgroup'); g.label = label; g.append(...voices().filter(v => kinds.includes(details[v]?.pitch)).sort((a, b) => details[a].pitchHz - details[b].pitchHz).map(option)); return g; }).filter(g => g.children.length);
+            const grouped = groups.map(([label, kinds]) => { const g = element('optgroup'); g.label = label; g.append(...voices().filter(v => kinds.includes(details[v]?.pitch)).sort((a, b) => (details[b].recommended ? 1 : 0) - (details[a].recommended ? 1 : 0) || details[a].pitchHz - details[b].pitchHz).map(option)); return g; }).filter(g => g.children.length);
             voiceSelect.replaceChildren(...grouped, ...voices().filter(v => !details[v]).map(option));
             voicePreview.hidden = !Object.keys(r.voiceDetails ?? {}).length;
             setVoice(keep || rememberedVoice());
