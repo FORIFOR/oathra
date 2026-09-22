@@ -24,7 +24,9 @@ npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/
 
 [インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
 
-<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="880" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録。音声付きの動画（63秒）は画像をクリック</sub></p>
+<p align="center"><a href="https://forifor.github.io/oathra/#verdict-video"><img src="docs/media/oathra-share-2026-09.png" width="880" alt="判定画面。AIが「ご予約承りました」と言った直後に、日付2026-09-12・時刻19:30・人数2名は相手の発言を根拠に確定し、「確定」だけが未確認のまま残っている"/></a><br><sub>AIは「承りました」と言い、店はまだ確定していない。26秒の画面録画（音声なし）は画像をクリック</sub></p>
+
+<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="600" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録（63秒・音声あり）</sub></p>
 追加の聞き取りを実際に見るなら、[48秒の Arena 録画](https://forifor.github.io/oathra/#intake-video)と [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml)を確認できます。
 
 ## Omnichannel Sales — LINE / iOS / Web から電話を任せる
