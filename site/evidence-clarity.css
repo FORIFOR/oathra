@@ -117,3 +117,7 @@ footer{border-top:1px solid var(--ink)!important}
   .btn{width:100%;justify-content:center}.btn.sec{width:100%}
   .replay-h{display:block}.replay-h p{margin-top:12px}
 }
+/* The small print sits under the buttons on a desktop, and below the live panel on a phone, so the
+   first thing a phone reader reaches is the product rather than three paragraphs about it. */
+.hero-a .hero-notes{grid-column:1;grid-row:2}
+@media (max-width:860px){.hero-a .hero-notes{grid-column:auto;grid-row:auto}}
