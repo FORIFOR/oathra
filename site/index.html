@@ -221,7 +221,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <div><b>0 / 10,000</b><small>店員役の変異 1 万通り（シミュレーション）での誤完了</small></div>
     <div><b>約0.4秒</b><small>3件目の実電話で観測した最初の返答（平均・p95ではありません）</small></div>
     <div><b>1コマンド</b><small>GitHub Releaseのコマンドで AI 同士の通話まで</small></div>
-    <div><b>Twilio 検証済み</b><small>Plivo · SIP は実装済み、PSTN 未検証</small></div>
+    <div><b>回線は Twilio のみ検証</b><small>Plivo・SIP は実装済みだが実回線 (PSTN) では未検証</small></div>
   </div>
 
 <section id="integrate"><h2>いまの音声AIに、判定だけを加える。</h2><div class="prose"><p>電話会社やモデルはそのまま。v0.1.18の <code>oathra verify</code> で保存済みの文字起こしをローカル検査し、日時・人数・金額・確定の根拠をJSONで取り出せます。<code>ActionProof</code>で会話・確認・システム・結果の証拠レベルも統一できます。仮押さえ・未確定・承認待ちを確定と扱いません。APIキーは不要です。</p><p><code>oathra/evidence</code> のTypeScript SDKとLiveKit接続例も公開しています。</p><p><a class="btn" href="check.html">インストールせずにログを検証 →</a></p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">自分の文字起こしで使う →</a> · <a href="https://github.com/FORIFOR/oathra">更新を追うためにGitHubでStar</a></p><p class="note">対応済みの発言規則に基づく判定です。店舗の予約台帳は確認しません。LiveKit接続例は型検査済み、実通話では未検証です。</p></div><div class="video-section" id="transcript-video"><h2>25秒で見る：交渉ログから検証結果へ</h2><video class="demo-video" style="width:100%;max-width:850px" controls playsinline preload="none" poster="media/oathra-transcript-poster.jpg"><source src="media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="ja" label="日本語" src="media/oathra-transcript-ja.vtt" default></video><p class="note">英語画面の実操作を収録。公開済みのGPT-4o-mini／ホテルシミュレーター記録を検証しています。実電話の録音ではありません。 <a href="check.html">自分でも試す →</a></p></div></section>
