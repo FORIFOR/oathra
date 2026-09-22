@@ -8,6 +8,14 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
+### External distribution checkpoint — 2026-09-21 00:03 JST
+
+The existing [awesome-voice-agents #42](https://github.com/yzfly/awesome-voice-agents/pull/42) was merged at `2026-09-20T15:03:09Z` (merge commit `033a28e77ba5bf9987de9bd84ee8f8ed49e1ccc8`). The public entry places Oathra under Specialized Solutions and describes utterance-anchored completion, the simulator, phone adapters and consented intake. This is confirmed third-party distribution, not evidence of stars, external trials, phone success or business demand.
+
+### Measurement checkpoint — 2026-09-23 00:36 JST
+
+The read-only snapshot reports 0 stars / 0 forks, 24 repository views / 15 unique visitors and 3,823 clones / 557 unique cloners in the available 14-day window. It also reports 4 v0.1.18 tarball downloads and 1 checksum download. GitHub does not identify fetchers, and traffic includes maintainer/automation activity, so these are unclassified distribution signals rather than external-user evidence. Raw snapshot: [metrics/2026-09-23-0036-jst.json](metrics/2026-09-23-0036-jst.json).
+
 ### External distribution checkpoint — 2026-09-18 14:04 JST
 
 The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) was merged at `2026-09-18T05:04:23Z` (merge commit `7cb5da0ea95d95d80d4239aa8178648dfa7f42ae`). Its public entry names the standalone OSS evidence-verification engine and the simulator/Arena evidence surface, while keeping phone adapters and consented follow-up scope explicit. This is confirmed third-party distribution, not proof of stars, external trials, phone success or business demand. The current read-only snapshot is [metrics/2026-09-19-1911-jst.json](metrics/2026-09-19-1911-jst.json); it still reports 0 stars, 0 forks and no external issue or inquiry.

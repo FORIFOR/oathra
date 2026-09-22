@@ -1,5 +1,16 @@
 # Launch posts and publication record
 
+## awesome-voice-agents listing merged — 2026-09-21 00:03 JST
+
+- The existing [awesome-voice-agents #42](https://github.com/yzfly/awesome-voice-agents/pull/42) was merged at `2026-09-20T15:03:09Z` (merge commit `033a28e77ba5bf9987de9bd84ee8f8ed49e1ccc8`). The public entry places Oathra under Specialized Solutions and describes utterance-anchored completion, the simulator, phone adapters and consented intake.
+- This is confirmed third-party distribution. It is not proof of stars, external trials, phone-call success or business demand.
+
+## Measurement checkpoint — 2026-09-23 00:36 JST
+
+- The read-only snapshot reports 0 stars / 0 forks, 24 repository views / 15 unique visitors and 3,823 clones / 557 unique cloners in the available 14-day window. These traffic values include maintainer or automation activity and are not confirmed external users.
+- v0.1.18 assets show 4 tarball downloads and 1 checksum download. GitHub does not identify asset fetchers, so these are unclassified distribution signals rather than external adoption.
+- Raw snapshot: [metrics/2026-09-23-0036-jst.json](metrics/2026-09-23-0036-jst.json).
+
 ## Awesome-AI-Agents listing merged — 2026-09-18 14:04 JST
 
 - The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) was merged at `2026-09-18T05:04:23Z` (merge commit `7cb5da0ea95d95d80d4239aa8178648dfa7f42ae`). The public entry describes Oathra's standalone evidence-verification engine, simulator/Arena evaluation surface, phone-agent adapters and consented follow-up boundary.
