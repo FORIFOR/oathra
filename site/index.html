@@ -6,17 +6,17 @@
 <title>Oathra — AIが電話で予約を取る。予約できたかは相手の発言で判定する</title>
 <meta name="description" content="AIが電話をかけて予約を取るオープンソース。予約できたかどうかは、AIではなく店側の発言で判定する。v0.1.18をAPIキーなしで試せます。">
 <meta property="og:title" content="Oathra — AIが電話で予約を取る。予約できたかは相手の発言で判定する">
-<meta property="og:description" content="「予約できました」とAIが言っても完了にならない。店側が言った時だけ✓が付く。仮押さえや未確定を完了扱いしない。v0.1.18をGitHub Releaseの1コマンドで試せる。">
-<meta property="og:image" content="https://forifor.github.io/oathra/media/oathra-intake-ja-poster.png">
+<meta property="og:description" content="AIは「ご予約承りました」と言った。店はまだ確定していない。日付・時刻・人数は相手の言葉で確定し、確定だけが未確認のまま残る。その判定をブラウザでそのまま試せる。">
+<meta property="og:image" content="https://forifor.github.io/oathra/media/oathra-share-2026-09.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://forifor.github.io/oathra/media/oathra-intake-ja-poster.png">
+<meta name="twitter:image" content="https://forifor.github.io/oathra/media/oathra-share-2026-09.png">
 <meta name="theme-color" content="#fbfaf7">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Oathra","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","softwareVersion":"0.1.18","description":"AIが電話で交渉した結果を、相手の発話に紐づく証拠で検証するオープンソースのランタイム。","url":"https://forifor.github.io/oathra/","codeRepository":"https://github.com/FORIFOR/oathra","license":"https://www.apache.org/licenses/LICENSE-2.0","isAccessibleForFree":true,"featureList":["相手の発話に基づく完了判定","ActionProof証拠レベル","同意付きの追加聞き取り","ローカル文字起こし検証","仮押さえの誤完了防止","シーンに応じた質問分岐"]}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"VideoObject","name":"Oathra 48秒：同意付きの追加聞き取り","description":"予約確定後に同意を確認し、宣言した項目だけを1回ずつ聞き、明示回答を記録するArena実演。","thumbnailUrl":"https://forifor.github.io/oathra/media/oathra-intake-ja-poster.png","contentUrl":"https://forifor.github.io/oathra/media/oathra-intake-ja.mp4","embedUrl":"https://forifor.github.io/oathra/#intake-video","uploadDate":"2026-09-14","duration":"PT48S","inLanguage":"ja"}
+{"@context":"https://schema.org","@type":"VideoObject","name":"Oathra 48秒：同意付きの追加聞き取り","description":"予約確定後に同意を確認し、宣言した項目だけを1回ずつ聞き、明示回答を記録するArena実演。","thumbnailUrl":"https://forifor.github.io/oathra/media/oathra-share-2026-09.png","contentUrl":"https://forifor.github.io/oathra/media/oathra-intake-ja.mp4","embedUrl":"https://forifor.github.io/oathra/#intake-video","uploadDate":"2026-09-14","duration":"PT48S","inLanguage":"ja"}
 </script>
 <link rel="alternate" hreflang="ja" href="https://forifor.github.io/oathra/">
 <link rel="alternate" hreflang="en" href="https://forifor.github.io/oathra/en/">
@@ -212,7 +212,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <h2>判定が変わるところを、26秒で見る。</h2>
     <p class="prose">上のラボを実際に操作した画面録画です。店の返事を差し替えるたびに、同じ判定コードが走り直します。カメラの寄りとカーソルと字幕は編集で足したもので、画面と判定は編集していません。</p>
     <div class="player player-video">
-      <video controls playsinline preload="none" poster="media/oathra-verdict-2026-09-poster.png" aria-label="証拠ラボの画面録画。店の返事を差し替えると判定が変わる。"><source src="media/oathra-verdict-2026-09.mp4" type="video/mp4"></video>
+      <video controls playsinline preload="none" poster="media/oathra-verdict-2026-09-poster.jpg" aria-label="証拠ラボの画面録画。店の返事を差し替えると判定が変わる。"><source src="media/oathra-verdict-2026-09.mp4" type="video/mp4"></video>
       <span class="lbl">26秒 · 画面録画 · 音声なし</span>
     </div>
   </section>
@@ -225,7 +225,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
   </div>
 
 <section id="integrate"><h2>いまの音声AIに、判定だけを加える。</h2><div class="prose"><p>電話会社やモデルはそのまま。v0.1.18の <code>oathra verify</code> で保存済みの文字起こしをローカル検査し、日時・人数・金額・確定の根拠をJSONで取り出せます。<code>ActionProof</code>で会話・確認・システム・結果の証拠レベルも統一できます。仮押さえ・未確定・承認待ちを確定と扱いません。APIキーは不要です。</p><p><code>oathra/evidence</code> のTypeScript SDKとLiveKit接続例も公開しています。</p><p><a class="btn" href="check.html">インストールせずにログを検証 →</a></p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">自分の文字起こしで使う →</a> · <a href="https://github.com/FORIFOR/oathra">更新を追うためにGitHubでStar</a></p><p class="note">対応済みの発言規則に基づく判定です。店舗の予約台帳は確認しません。LiveKit接続例は型検査済み、実通話では未検証です。</p></div><div class="video-section" id="transcript-video"><h2>25秒で見る：交渉ログから検証結果へ</h2><video class="demo-video" style="width:100%;max-width:850px" controls playsinline preload="none" poster="media/oathra-transcript-poster.jpg"><source src="media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="ja" label="日本語" src="media/oathra-transcript-ja.vtt" default></video><p class="note">英語画面の実操作を収録。公開済みのGPT-4o-mini／ホテルシミュレーター記録を検証しています。実電話の録音ではありません。 <a href="check.html">自分でも試す →</a></p></div></section>
-<section class="intake-callout" id="intake"><h2>追加で聞くときも、相手のペースを守る。</h2><p>必要な予約情報が確定した後に目的を伝えて同意を一度だけ確認し、同意後は契約に書いた質問を1回に1つだけ尋ねます。拒否・保留・曖昧な返答ならその場で終了し、明示回答だけを <code>intake.json</code> と <code>summary.md</code> に残します。</p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">契約の書き方と保存形式を見る →</a></p></section><section class="video-section" id="intake-video"><h2>48秒で見る：同意付きの追加聞き取り</h2><video class="demo-video" controls playsinline preload="none" poster="media/oathra-intake-ja-poster.png"><source src="media/oathra-intake-ja.mp4" type="video/mp4"><track kind="captions" src="media/oathra-intake-ja.vtt" srclang="ja" label="日本語" default></video><p class="note">実際の Arena シミュレーターで、予約確定 → 同意 → 2項目の明示回答 → <code>intake.json</code> を収録。APIキー不要、実電話ではありません。<a href="https://github.com/FORIFOR/oathra/blob/main/scenarios/restaurant/restaurant-reservation-intake.yaml">シナリオを見る →</a></p></section><section id="demo-video"><h2>成功だけでなく、取り消しも見せる。</h2><div class="player player-video"><video controls playsinline preload="none" poster="media/oathra-evidence-ja-poster.jpg"><source src="media/oathra-evidence-ja.mp4" type="video/mp4"><track kind="captions" src="media/oathra-evidence-ja.vtt" srclang="ja" label="日本語" default></video></div><p class="cap">30秒 · 実エンジンの操作録画 · 字幕付き・音声なし。ブラウザ画面を4fpsで取得し30fpsの動画に編集。実電話の録音ではありません。</p><p><a href="#sim">自分の言葉で判定を試す →</a></p></section>
+<section class="intake-callout" id="intake"><h2>追加で聞くときも、相手のペースを守る。</h2><p>必要な予約情報が確定した後に目的を伝えて同意を一度だけ確認し、同意後は契約に書いた質問を1回に1つだけ尋ねます。拒否・保留・曖昧な返答ならその場で終了し、明示回答だけを <code>intake.json</code> と <code>summary.md</code> に残します。</p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.ja.md">契約の書き方と保存形式を見る →</a></p></section><section class="video-section" id="intake-video"><h2>48秒で見る：同意付きの追加聞き取り</h2><video class="demo-video" controls playsinline preload="none" poster="media/oathra-share-2026-09.png"><source src="media/oathra-intake-ja.mp4" type="video/mp4"><track kind="captions" src="media/oathra-intake-ja.vtt" srclang="ja" label="日本語" default></video><p class="note">実際の Arena シミュレーターで、予約確定 → 同意 → 2項目の明示回答 → <code>intake.json</code> を収録。APIキー不要、実電話ではありません。<a href="https://github.com/FORIFOR/oathra/blob/main/scenarios/restaurant/restaurant-reservation-intake.yaml">シナリオを見る →</a></p></section><section id="demo-video"><h2>成功だけでなく、取り消しも見せる。</h2><div class="player player-video"><video controls playsinline preload="none" poster="media/oathra-evidence-ja-poster.jpg"><source src="media/oathra-evidence-ja.mp4" type="video/mp4"><track kind="captions" src="media/oathra-evidence-ja.vtt" srclang="ja" label="日本語" default></video></div><p class="cap">30秒 · 実エンジンの操作録画 · 字幕付き・音声なし。ブラウザ画面を4fpsで取得し30fpsの動画に編集。実電話の録音ではありません。</p><p><a href="#sim">自分の言葉で判定を試す →</a></p></section>
   <p class="cap"><a href="https://github.com/FORIFOR/oathra/discussions/14">用途と判定をDiscussion #14で共有 →</a></p>
   <p class="cap">追加聞き取りは <code>startAfter</code>・<code>dependsOn</code>・<code>choices</code> でシーンに合わせて分岐できます。拒否・保留・曖昧な返答・選択肢に一致しない返答は保存せず終了します。</p>
   <section id="real">
