@@ -1,6 +1,6 @@
 ---
 title: "「承りました」の次に「その日は貸切でした」と言われたら。電話AIの完了判定を自分で壊した話"
-emoji: "🪑"
+emoji: "☑️"
 type: "tech"
 topics: ["ai", "typescript", "voiceagent", "testing", "oss"]
 published: true
