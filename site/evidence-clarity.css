@@ -133,9 +133,16 @@ footer{border-top:1px solid var(--ink)!important}
 .hero-a .ctas .btn{min-width:min(15em,100%)}
 /* The section links are a plain row on a desktop and a disclosure on a phone, where they used to be
    hidden with no way back to them. Native <details>, so it works without script and closes with Esc. */
-nav .menu{display:contents}
-nav .menu>summary{display:none}
-nav .menu>.menu-panel{display:contents}
+/* One row of links on a desktop, one disclosure on a phone. Two blocks rather than one clever one:
+   wrapping the links in <details> for both changed the flex sizing of the header and collapsed them
+   into a 12px column that fell out of the bar. Only one copy is ever displayed, so only one is in the
+   accessibility tree. */
+.nav-wide{display:inline-flex;align-items:center;gap:20px}
+nav .menu{display:none}
+nav a{white-space:nowrap}
+@media (max-width:860px){
+  .nav-wide{display:none}
+}
 @media (max-width:860px){
   nav .menu{display:inline-block;position:relative}
   nav .menu>summary{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:15px;color:var(--ink);list-style:none}
