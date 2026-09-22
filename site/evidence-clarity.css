@@ -178,3 +178,6 @@ video{max-width:100%;height:auto}
 /* A heading that is a flex/grid item keeps min-width:auto and refuses to shrink below its longest run:
    on a 390px phone the closing call-to-action measured 402px inside a 350px column. */
 .cta>h2,.cta>h3{min-width:0;max-width:100%;overflow-wrap:anywhere}
+/* A way to make contact that is visible without opening anything: the form is a disclosure, and before
+   this there was no route on screen at all until you opened it. */
+.contact-alt{margin:2px 0 18px;font-size:14px;line-height:1.8;color:var(--ink2)}
