@@ -46,7 +46,9 @@ header nav .gh { border-radius: 8px; padding: 10px 15px; }
 #sim .ph { padding: 16px 20px; background: #f4f1ea; }
 #sim .ph b { font-family: var(--sans); font-size: 15px; font-weight: 600; }
 #sim .tx { padding: 18px 20px; min-height: 96px; }
-#sim .ln { grid-template-columns: 34px minmax(0, 1fr); gap: 10px; font-size: 15px; }
+/* 34px fitted "AI" and split 「相手」 down the middle, one character per line. */
+#sim .ln { grid-template-columns: 3.4em minmax(0, 1fr); gap: 10px; font-size: 15px; }
+#sim .ln>b { white-space: nowrap; }
 #sim .chips { padding: 14px 20px 20px; }
 #sim .chips > p { font-family: var(--sans); font-size: 13px; letter-spacing: 0; }
 #sim .chip { min-height: 48px; padding: 10px 12px; font-size: 14px; line-height: 1.65; }
