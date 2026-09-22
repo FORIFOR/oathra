@@ -1,3 +1,4 @@
+import { parseSpeakerTurns } from "./speaker-lines.js";
 import { z } from "zod";
 import { CallContractSchema, defineCall } from "@oathra/contract";
 import { EvidenceEngine, evaluate, type VerifiedResult } from "@oathra/evidence";
@@ -46,27 +47,9 @@ export type TranscriptCheckInput = z.input<typeof TranscriptCheckSchema>;
  * so it assumes the least: the only required field is `confirmed`, and every value the callee's words
  * support still shows up in the result. Returns undefined when the text is not a labelled log.
  */
-const SPEAKER_LINE = /^[\s>*-]*\[?\s*([^\]:：]{1,24}?)\s*\]?\s*[:：]\s*(.+)$/;
-const CALLEE_LABEL = /^(店|お店|店員|受付|相手|先方|お客様|callee|shop|them|they|store|staff|customer|clerk|hotel|restaurant)$/i;
-const CALLER_LABEL = /^(ai|エージェント|エーアイ|自分|私|僕|こちら|発信|caller|agent|bot|assistant|me|us|you)$/i;
-
 export function parseSpokenLines(text: string, today = new Date()): TranscriptCheckInput | undefined {
-  const utterances: NonNullable<TranscriptCheckInput["utterances"]> = [];
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line) continue;
-    const match = SPEAKER_LINE.exec(line);
-    const label = match?.[1]?.trim() ?? "";
-    const source = CALLEE_LABEL.test(label) ? "callee" : CALLER_LABEL.test(label) ? "caller" : undefined;
-    if (!source) {
-      // A wrapped continuation belongs to the turn above; anything before the first label is not this format.
-      if (!utterances.length) return undefined;
-      utterances[utterances.length - 1]!.text += " " + line;
-      continue;
-    }
-    utterances.push({ id: `line-${utterances.length + 1}`, source, text: match![2]!.trim(), t: utterances.length * 1000 });
-  }
-  if (!utterances.some((u) => u.source === "callee") || utterances.length < 2) return undefined;
+  const utterances = parseSpeakerTurns(text);
+  if (!utterances) return undefined;
   const language = /[ぁ-んァ-ン一-龯]/.test(text) ? "ja" : "en";
   return {
     contract: defineCall({ goal: "transcript.check", language, input: {}, require: { confirmed: true }, permissions: { ask: true } }) as TranscriptCheckInput["contract"],
