@@ -20,6 +20,8 @@ video/.work/*
 video/*/frames-*/
 # The exports live in docs/media, which Pages deploys; keeping a second copy under video/ only doubles the repo.
 video/*/oathra-evidence-*
+# Upload-ready renders (same picture, silent audio track added for X); rebuildable from docs/media.
+video/*/x/
 !video/.work/battle.json
 !video/.work/tts/
 video/.work/tts/*
