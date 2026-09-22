@@ -56,12 +56,13 @@ const STAGE = `(() => {
     #rec-cursor.down svg { transform: scale(.82); }
     #rec-ring { position: fixed; z-index: 2147483646; border-radius: 999px; border: 2px solid #b3452a;
       pointer-events: none; opacity: 0; width: 0; height: 0; }
-    #rec-cap { position: fixed; z-index: 2147483645; left: 0; right: 0; bottom: 0; padding: 26px 40px 30px;
+    /* Clear of where a player draws its control bar, so the caption is not read through a seek bar. */
+    #rec-cap { position: fixed; z-index: 2147483645; left: 0; right: 0; bottom: 0; padding: 26px 40px 74px;
       background: linear-gradient(transparent, rgba(24,22,20,.92) 38%); color: #fff; pointer-events: none;
       font-family: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; text-align: center; }
     #rec-cap b { display:inline-block; font-size: 34px; line-height: 1.35; font-weight: 700; letter-spacing: .01em;
       text-shadow: 0 2px 10px rgba(0,0,0,.5); }
-    #rec-cap.v { padding: 22px 26px 46px; }
+    #rec-cap.v { padding: 22px 26px 96px; }
     #rec-cap.v b { font-size: 40px; }
   \`;
   document.head.append(style);
