@@ -145,3 +145,9 @@ nav .menu>.menu-panel{display:contents}
   nav .menu>.menu-panel a{display:block;min-height:44px;padding:12px 10px;font-size:14px;color:var(--ink)}
   nav .menu[open]>summary{background:var(--ink);color:var(--panel,#fff);border-color:var(--ink)}
 }
+/* The recording sits between the live panel and the numbers: watch it, or scroll past it. */
+.verdict-video{margin:52px 0 8px}
+.verdict-video h2{margin-bottom:10px}
+.verdict-video .player-video{margin-top:18px;max-width:980px}
+.verdict-video video{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:14px;background:#111}
+@media (max-width:860px){.verdict-video{margin:36px 0 4px}}

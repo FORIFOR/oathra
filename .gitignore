@@ -16,6 +16,10 @@ packages/cli/LICENSE
 site/media/
 # video render workspace: keep only the recorded run and the voice clips it needs
 video/.work/*
+# Raw recorder frames: 159 MB per take, rebuildable with scripts/record-evidence-demo.mjs.
+video/*/frames-*/
+# The exports live in docs/media, which Pages deploys; keeping a second copy under video/ only doubles the repo.
+video/*/oathra-evidence-*
 !video/.work/battle.json
 !video/.work/tts/
 video/.work/tts/*
