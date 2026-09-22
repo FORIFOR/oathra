@@ -151,3 +151,11 @@ nav .menu>.menu-panel{display:contents}
 .verdict-video .player-video{margin-top:18px;max-width:980px}
 .verdict-video video{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:14px;background:#111}
 @media (max-width:860px){.verdict-video{margin:36px 0 4px}}
+/* What a pilot actually is, before the form: what is in scope, what is needed, and what is not built yet. */
+.pilot{margin:22px 0 26px;padding:22px 24px;border:1px solid var(--line);border-radius:14px}
+.pilot h3{margin:0 0 14px;font-size:17px}
+.pilot dl{display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:10px 20px;margin:0}
+.pilot dt{font-weight:650;font-size:14px}
+.pilot dd{margin:0;font-size:14.5px;line-height:1.85;color:var(--ink2)}
+.pilot .note{margin:16px 0 0;font-size:13px;color:var(--ink2)}
+@media (max-width:700px){.pilot{padding:18px 16px}.pilot dl{grid-template-columns:1fr;gap:4px 0}.pilot dt{margin-top:10px}}
