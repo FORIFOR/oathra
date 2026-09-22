@@ -181,3 +181,12 @@ video{max-width:100%;height:auto}
 /* A way to make contact that is visible without opening anything: the form is a disclosure, and before
    this there was no route on screen at all until you opened it. */
 .contact-alt{margin:2px 0 18px;font-size:14px;line-height:1.8;color:var(--ink2)}
+/* The recording's heading broke into three uneven lines on a phone; two lines read better and the
+   section is a signpost, not the page's headline. And say that it is easier to read full screen,
+   because at 348px the lab's own text inside the recording is not legible.
+   Base rule first: appended after the media query, display:none simply won the cascade. */
+.verdict-video .fullscreen-hint{display:none;margin:10px 0 0;font-size:13px;color:var(--ink2)}
+@media (max-width:640px){
+  .verdict-video h2{font-size:27px;line-height:1.25}
+  .verdict-video .fullscreen-hint{display:block}
+}

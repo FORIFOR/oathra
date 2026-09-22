@@ -13,10 +13,10 @@
 <meta name="twitter:image" content="https://forifor.github.io/oathra/media/oathra-share-2026-09-en.png">
 <meta name="theme-color" content="#fbfaf7">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Oathra","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","softwareVersion":"0.1.18","description":"An open-source runtime that verifies phone-agent outcomes against evidence in the callee's own words.","url":"https://forifor.github.io/oathra/en/","codeRepository":"https://github.com/FORIFOR/oathra","license":"https://www.apache.org/licenses/LICENSE-2.0","isAccessibleForFree":true,"featureList":["Callee-evidence completion checks","ActionProof evidence levels","Consent-based optional intake","Local transcript verification","Provisional-confirmation guard","Scene-aware follow-up intake"]}
+{“@context”:“https://schema.org”,“@type”:“SoftwareApplication”,“name”:“Oathra”,“applicationCategory”:“DeveloperApplication”,“operatingSystem”:“Cross-platform”,“softwareVersion”:“0.1.18”,“description”:“An open-source runtime that verifies phone-agent outcomes against evidence in the callee’s own words.”,“url”:“https://forifor.github.io/oathra/en/”,“codeRepository”:“https://github.com/FORIFOR/oathra”,“license”:“https://www.apache.org/licenses/LICENSE-2.0”,“isAccessibleForFree”:true,“featureList”:[“Callee-evidence completion checks”,“ActionProof evidence levels”,“Consent-based optional intake”,“Local transcript verification”,“Provisional-confirmation guard”,“Scene-aware follow-up intake”]}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"VideoObject","name":"Oathra in 48 seconds: consent-based follow-up intake","description":"An Arena demonstration that asks once for consent after booking, asks only declared fields one at a time, and records explicit answers.","thumbnailUrl":"https://forifor.github.io/oathra/media/oathra-share-2026-09-en.png","contentUrl":"https://forifor.github.io/oathra/media/oathra-intake.mp4","embedUrl":"https://forifor.github.io/oathra/en/#intake-video","uploadDate":"2026-09-14","duration":"PT48S","inLanguage":"en"}
+{“@context”:“https://schema.org”,“@type”:“VideoObject”,“name”:“Oathra in 48 seconds: consent-based follow-up intake”,“description”:"An Arena demonstration that asks once for consent after booking, asks only declared fields one at a time, and records explicit answers.“,”thumbnailUrl“:”https://forifor.github.io/oathra/media/oathra-share-2026-09-en.png“,”contentUrl“:”https://forifor.github.io/oathra/media/oathra-intake.mp4“,”embedUrl“:”https://forifor.github.io/oathra/en/#intake-video“,”uploadDate“:”2026-09-14“,”duration“:”PT48S“,”inLanguage“:”en"}
 </script>
 <link rel="alternate" hreflang="ja" href="https://forifor.github.io/oathra/">
 <link rel="alternate" hreflang="en" href="https://forifor.github.io/oathra/en/">
@@ -161,7 +161,7 @@ footer a{color:var(--ink2)}
 .player .pts{padding:16px 18px;min-height:300px;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;border-right:1px solid var(--line2);scroll-behavior:smooth;background:#fff}
 .player .ln{display:grid;grid-template-columns:96px 1fr;gap:12px;font-size:14.5px;line-height:1.7;color:var(--ink2)}
 .player .ln b{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);padding-top:5px;letter-spacing:.03em}
-.player .ln.callee b::before{content:"▸ ";color:var(--accent)}
+.player .ln.callee b::before{content:“▸ ”;color:var(--accent)}
 .player .ln.agent{color:var(--ink)}
 .player .ln.typing span{color:var(--muted);letter-spacing:.2em}
 .player aside{padding:16px 18px;display:grid;gap:18px;align-content:start;background:var(--bg)}
@@ -202,22 +202,23 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <div>
       <p class="kicker">FOR DEVELOPERS RUNNING A VOICE AGENT · OPEN SOURCE · APACHE-2.0 · TYPESCRIPT</p>
       <h1>An AI makes the call.<br>The verdict comes from <em>what the other side said</em>.</h1>
-      <p class="lede"><span class="lede-short">When the agent says "booked", nothing settles until the callee says so.</span><span class="lede-rest">A runtime for people who hand reservation, order and confirmation calls to an agent. The date, the party, the terms and the proof of confirmation are stored with the call, and you keep the carrier and the model you already use.</span></p>
+      <p class="lede"><span class="lede-short">When the agent says “booked”, nothing settles until the callee says so.</span><span class="lede-rest">A runtime for people who hand reservation, order and confirmation calls to an agent. The date, the party, the terms and the proof of confirmation are stored with the call, and you keep the carrier and the model you already use.</span></p>
       <div class="ctas"><a class="btn" href="#sim">Try the evidence engine</a><button class="btn sec" data-copy-command="npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra demo"><b>$</b> Copy v0.1.18 command</button></div>
       </div>
     <div class="sim" id="sim" data-lang="en"></div>
     <div class="hero-notes">
 <p class="note"><a href="https://github.com/FORIFOR/oathra/releases/tag/v0.1.18">Install v0.1.18 with the latest fixes</a> · Copy buttons use the GitHub Release package. npm remains at 0.1.0.</p>
-      <p class="note">This is the product's own evidence engine. The agent has already declared "your reservation is confirmed", but the shop has not confirmed anything — so <b>confirmed is the one field still open</b>. Swap the shop's reply and the verdict changes. Your input stays in this tab; no phone call is placed.</p>
+      <p class="note">This is the product’s own evidence engine. The agent has already declared “your reservation is confirmed”, but the shop has not confirmed anything — so <b>confirmed is the one field still open</b>. Swap the shop’s reply and the verdict changes. Your input stays in this tab; no phone call is placed.</p>
     </div>
   </div>
   <section id="verdict-video" class="verdict-video">
     <h2>Twenty-six seconds of the verdict changing.</h2>
-    <p class="prose">A screen recording of the lab above, actually being used. Every time the shop's reply is swapped, the same checker runs again. The camera moves, the cursor and the captions were added in the edit; the screen and the verdicts were not.</p>
+    <p class="prose">A screen recording of the lab above, actually being used. Every time the shop’s reply is swapped, the same checker runs again. The camera moves, the cursor and the captions were added in the edit; the screen and the verdicts were not.</p>
     <div class="player player-video">
       <video controls playsinline preload="none" poster="../media/oathra-verdict-2026-09-poster.jpg" aria-label="Screen recording of the evidence lab: swapping the shop's reply changes the verdict."><source src="../media/oathra-verdict-2026-09.mp4" type="video/mp4"></video>
       <span class="lbl">26 s · screen recording · no sound</span>
     </div>
+      <p class="fullscreen-hint">At this size the text inside the recording is not legible. Full screen makes the fields readable.</p>
   </section>
 
   <div class="strip">
@@ -227,7 +228,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
     <div><b>Twilio is the only verified carrier</b><small>Plivo and SIP are implemented but unverified on a real line (PSTN)</small></div>
   </div>
 
-<section id="integrate"><h2>Add evidence checks to the voice agent you already have.</h2><div class="prose"><p>Keep your carrier and model. Use <code>oathra verify</code> in v0.1.18 to check saved transcripts locally and get JSON fields, missing requirements and supporting utterances. <code>ActionProof</code> also gives conversation, confirmation, system and outcome evidence one typed model. Provisional, pending-approval and confirmation-needed phrases do not count as completed reservations. No API key needed.</p><p>A typed SDK at <code>oathra/evidence</code> and a LiveKit integration example are included.</p><p><a class="btn" href="check.html">Check a transcript in your browser →</a></p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">Use your own transcripts →</a> · <a href="https://github.com/FORIFOR/oathra">Star on GitHub to follow updates</a></p><p class="note">Checks supported language rules; does not verify a venue's booking system. The LiveKit example is type-checked, not tested on a live call.</p></div><div class="video-section" id="transcript-video"><h2>25 seconds: from transcript to evidence</h2><video class="demo-video" style="width:100%;max-width:850px" controls playsinline preload="none" poster="../media/oathra-transcript-poster.jpg"><source src="../media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="../media/oathra-transcript-en.vtt" default></video><p class="note">Actual browser interaction with the saved GPT-4o-mini / hotel simulator recording. This is not a real phone call. <a href="check.html">Try it yourself →</a></p></div></section>
+<section id="integrate"><h2>Add evidence checks to the voice agent you already have.</h2><div class="prose"><p>Keep your carrier and model. Use <code>oathra verify</code> in v0.1.18 to check saved transcripts locally and get JSON fields, missing requirements and supporting utterances. <code>ActionProof</code> also gives conversation, confirmation, system and outcome evidence one typed model. Provisional, pending-approval and confirmation-needed phrases do not count as completed reservations. No API key needed.</p><p>A typed SDK at <code>oathra/evidence</code> and a LiveKit integration example are included.</p><p><a class="btn" href="check.html">Check a transcript in your browser →</a></p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">Use your own transcripts →</a> · <a href="https://github.com/FORIFOR/oathra">Star on GitHub to follow updates</a></p><p class="note">Checks supported language rules; does not verify a venue’s booking system. The LiveKit example is type-checked, not tested on a live call.</p></div><div class="video-section" id="transcript-video"><h2>25 seconds: from transcript to evidence</h2><video class="demo-video" style="width:100%;max-width:850px" controls playsinline preload="none" poster="../media/oathra-transcript-poster.jpg"><source src="../media/oathra-transcript.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="../media/oathra-transcript-en.vtt" default></video><p class="note">Actual browser interaction with the saved GPT-4o-mini / hotel simulator recording. This is not a real phone call. <a href="check.html">Try it yourself →</a></p></div></section>
 <section class="intake-callout" id="intake"><h2>Follow up without pushing the callee.</h2><p>After the required booking details settle, Oathra states the purpose and asks consent once. With consent, it asks one contract-declared question per turn. A decline, hold or ambiguous reply ends intake immediately; only explicit answers go to <code>intake.json</code> and <code>summary.md</code>.</p><p><a href="https://github.com/FORIFOR/oathra/blob/main/docs/INTEGRATION.md">See the contract and saved format →</a></p></section><section class="video-section" id="intake-video"><h2>48 seconds: consent-based follow-up intake</h2><video class="demo-video" controls playsinline preload="none" poster="../media/oathra-share-2026-09-en.png"><source src="../media/oathra-intake.mp4" type="video/mp4"><track kind="captions" src="../media/oathra-intake-en.vtt" srclang="en" label="English" default></video><p class="note">Recorded from the real Arena simulator: booking confirmed → consent → two explicit answers → <code>intake.json</code>. No API key or real phone call. <a href="https://github.com/FORIFOR/oathra/blob/main/scenarios/restaurant/restaurant-reservation-intake.yaml">View the scenario →</a></p></section><section id="demo-video"><h2>Watch success turn back into incomplete.</h2><div class="player player-video"><video controls playsinline preload="none" poster="../media/oathra-evidence-en-poster.jpg"><source src="../media/oathra-evidence-en.mp4" type="video/mp4"><track kind="captions" src="../media/oathra-evidence-en.vtt" srclang="en" label="English" default></video></div><p class="cap">30 seconds · recorded interaction with the real evidence engine · captions, no audio. Browser frames captured at 4 fps and encoded at 30 fps. Not a phone-call recording.</p><p><a href="#sim">Try your own wording →</a></p></section>
   <p class="cap"><a href="https://github.com/FORIFOR/oathra/discussions/14">Share your use case in Discussion #14 →</a></p>
   <p class="cap">Follow-up intake can branch by scene with <code>startAfter</code>, <code>dependsOn</code> and <code>choices</code>. Declined, held, ambiguous or unmatched replies are not saved.</p>
@@ -250,15 +251,15 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
 
   <section id="screen">
     <div class="two" style="gap:20px;align-items:start">
-      <figure style="margin:0"><img src="../media/arena-negotiating.png" alt="Arena: GPT-4o mini negotiating with the hotel; the price field is still unverified at 21,100" style="width:100%;border:1px solid var(--line);border-radius:10px;display:block"><figcaption class="cap">Mid-negotiation. The hotel just offered ¥21,100; "price ≤ 20,000" stays unfilled. Evidence stacks up on the right, one card per utterance.</figcaption></figure>
-      <figure style="margin:0"><img src="../media/arena-confirmed.png" alt="Arena: the hotel's confirmation flips the confirmed check; evidence shows confirmed = yes from the callee" style="width:100%;border:1px solid var(--line);border-radius:10px;display:block"><figcaption class="cap">The moment the hotel says "¥19,900 per night, your reservation is confirmed". The confirmed row gets its check and <code>confirmed = yes</code> (callee) lands at the top of the evidence. Nothing the agent says can fill that row.</figcaption></figure>
+      <figure style="margin:0"><img src="../media/arena-negotiating.png" alt="Arena: GPT-4o mini negotiating with the hotel; the price field is still unverified at 21,100" style="width:100%;border:1px solid var(--line);border-radius:10px;display:block"><figcaption class="cap">Mid-negotiation. The hotel just offered ¥21,100; “price ≤ 20,000” stays unfilled. Evidence stacks up on the right, one card per utterance.</figcaption></figure>
+      <figure style="margin:0"><img src="../media/arena-confirmed.png" alt="Arena: the hotel's confirmation flips the confirmed check; evidence shows confirmed = yes from the callee" style="width:100%;border:1px solid var(--line);border-radius:10px;display:block"><figcaption class="cap">The moment the hotel says “¥19,900 per night, your reservation is confirmed”. The confirmed row gets its check and <code>confirmed = yes</code> (callee) lands at the top of the evidence. Nothing the agent says can fill that row.</figcaption></figure>
     </div>
   </section>
 
   <section id="play">
     <p class="kicker">Play</p>
     <h2>Watch two agents haggle. <em>Then answer the phone yourself.</em></h2>
-    <p class="sub">Six scenarios ship with the simulator: a restaurant that is full at 7 pm (in English too: <code>oathra play restaurant-reservation-en</code>), an "impossible" hotel with a secret floor price, a bulk purchase, a serial number read-back, and a trap where every slot is full and the only correct answer is "I could not book it." Pit models against each other and share the card.</p>
+    <p class="sub">Six scenarios ship with the simulator: a restaurant that is full at 7 pm (in English too: <code>oathra play restaurant-reservation-en</code>), an “impossible” hotel with a secret floor price, a bulk purchase, a serial number read-back, and a trap where every slot is full and the only correct answer is “I could not book it.” Pit models against each other and share the card.</p>
     <div class="two">
       <pre>$ npx oathra battle impossible-hotel \
     --agent scripted --agent openai --agent gemini \
@@ -277,8 +278,8 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
 
 <span class="ok">False completions: 0</span></pre>
       <div>
-        <p class="quote">The run behind the video. All three closed under ¥20,000 (¥19,900 / ¥19,900 / ¥20,000) — <em>and every "win" is anchored to the hotel saying "your reservation is confirmed."</em></p>
-        <p class="sub" style="margin-top:18px">This run first produced one false completion: a hotel line that merely restated the price was being counted as a "yes". The evidence engine was fixed and the same three calls re-run to zero. That is what the battle command is for. Points reflect price and time; cards export as SVG/PNG and the run as JSON.</p>
+        <p class="quote">The run behind the video. All three closed under ¥20,000 (¥19,900 / ¥19,900 / ¥20,000) — <em>and every “win” is anchored to the hotel saying “your reservation is confirmed.”</em></p>
+        <p class="sub" style="margin-top:18px">This run first produced one false completion: a hotel line that merely restated the price was being counted as a “yes”. The evidence engine was fixed and the same three calls re-run to zero. That is what the battle command is for. Points reflect price and time; cards export as SVG/PNG and the run as JSON.</p>
         <div class="player player-video" id="rec" style="margin-top:18px">
           <video controls playsinline preload="metadata" poster="../media/oathra-battle-en-poster.png"><source src="../media/oathra-battle-en.mp4?v=bgm2" type="video/mp4"></video>
           <span class="lbl">63 s · screen recording · sound on</span>
@@ -290,11 +291,11 @@ gemini:gemini-flash-latest  ✓         79s  $0.00   90.1
 
   <section class="wrap">
     <h3>Try to fool it</h3>
-    <p>Pick "Play" and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick <code>confirmed</code>.</p>
+    <p>Pick “Play” and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick <code>confirmed</code>.</p>
     <ul class="fool">
-      <li>Restaurant: "probably fine, but it's not confirmed yet"<span>→ not confirmed</span></li>
-      <li>Restaurant: "7 pm is full, but 7:30 works"<span>→ the refused 7 pm is not an offer; bare 7:30 remains unresolved until am/pm is clarified and the time is accepted</span></li>
-      <li>Hotel: "you're booked", then "the rate is ¥23,500"<span>→ the confirmation goes stale and has to be re-obtained</span></li>
+      <li>Restaurant: “probably fine, but it’s not confirmed yet”<span>→ not confirmed</span></li>
+      <li>Restaurant: “7 pm is full, but 7:30 works”<span>→ the refused 7 pm is not an offer; bare 7:30 remains unresolved until am/pm is clarified and the time is accepted</span></li>
+      <li>Hotel: “you’re booked”, then “the rate is ¥23,500”<span>→ the confirmation goes stale and has to be re-obtained</span></li>
     </ul>
     <p class="cap">Found a phrasing that slips through? <a href="https://github.com/FORIFOR/oathra/issues/new">Open an issue</a>. That is the most useful contribution.</p>
   </section>
@@ -343,15 +344,15 @@ Cost           JP mobile · twilio · $0.185/min
     <p class="sub">Oathra returns a VerifiedResult. Each field is anchored to an utterance from the other party (and to audio on real calls). Ten thousand mutated callees produce zero false completions — reproducible with one command.</p>
     <div class="two">
       <pre>{
-  <span class="k">"field"</span>: <span class="s">"time"</span>,
-  <span class="k">"value"</span>: <span class="s">"19:30"</span>,
-  <span class="k">"source"</span>: <span class="s">"callee"</span>,
-  <span class="k">"transcript"</span>: <span class="s">"19時はいっぱいですが、19時半でしたら空いております。"</span>,
-  <span class="k">"span"</span>: <span class="s">"19時半"</span>,
-  <span class="k">"explicit"</span>: <span class="t">true</span>,
-  <span class="k">"verified"</span>: <span class="t">true</span>,
-  <span class="k">"note"</span>: <span class="s">"accepted with value restated by caller"</span>,
-  <span class="k">"audio"</span>: { <span class="k">"startMs"</span>: 14210, <span class="k">"endMs"</span>: 18960 }
+  <span class="k">“field”</span>: <span class="s">“time”</span>,
+  <span class="k">“value”</span>: <span class="s">“19:30”</span>,
+  <span class="k">“source”</span>: <span class="s">“callee”</span>,
+  <span class="k">“transcript”</span>: <span class="s">“19時はいっぱいですが、19時半でしたら空いております。”</span>,
+  <span class="k">“span”</span>: <span class="s">“19時半”</span>,
+  <span class="k">“explicit”</span>: <span class="t">true</span>,
+  <span class="k">“verified”</span>: <span class="t">true</span>,
+  <span class="k">“note”</span>: <span class="s">“accepted with value restated by caller”</span>,
+  <span class="k">“audio”</span>: { <span class="k">“startMs”</span>: 14210, <span class="k">“endMs”</span>: 18960 }
 }
 
 Success = Connected
@@ -413,7 +414,7 @@ hold-then-reply · voicemail · transfer · ask-back · dialect-confirm
     <h2>Ask for only the keys you need, with the right link.</h2>
     <div class="two">
       <div class="prose">
-        <p>Start with the browser evidence lab or <code>oathra demo</code>; neither needs an API key. When you move to a real phone, <code>setup phone</code> asks for the selected engine's keys first, then walks through your carrier.</p>
+        <p>Start with the browser evidence lab or <code>oathra demo</code>; neither needs an API key. When you move to a real phone, <code>setup phone</code> asks for the selected engine’s keys first, then walks through your carrier.</p>
         <ol class="steps">
           <li><b>Enter credentials</b><span>OpenAI, Deepgram, Twilio, Plivo and LiveKit links are shown beside the prompt. Values are saved to <code>.env</code>; secrets are masked in a TTY.</span></li>
           <li><b>Run the doctor</b><span><code>oathra doctor</code> and <code>oathra phone doctor</code> identify missing layers and show a fix.</span></li>
@@ -455,7 +456,7 @@ How would you like to make calls?
     </div>
     <p class="cap" style="margin-top:22px">Want to try it on your own reservation, front-desk or confirmation calls, including real-call verification? <a href="#business">Ask about a pilot →</a> (Private inquiry form.)</p>
   </section>
-<section class="scope-note" id="scope"><h2>Keep decisions with their evidence.</h2><p>Saved calls also produce a human-readable <code>summary.md</code> and an <code>intake.json</code> record with verified decisions and utterance-linked answers. You can form an operational profile from explicit answers, while Oathra never infers a callee's attributes or sensitive traits. Extra intake runs only after required details are settled and only when the contract declares its purpose, fields, question limit, consent and stop-on-decline behavior; consent and answers retain utterance IDs and timestamps, and an ambiguous or hesitant reply stops immediately.</p></section>
+<section class="scope-note" id="scope"><h2>Keep decisions with their evidence.</h2><p>Saved calls also produce a human-readable <code>summary.md</code> and an <code>intake.json</code> record with verified decisions and utterance-linked answers. You can form an operational profile from explicit answers, while Oathra never infers a callee’s attributes or sensitive traits. Extra intake runs only after required details are settled and only when the contract declares its purpose, fields, question limit, consent and stop-on-decline behavior; consent and answers retain utterance IDs and timestamps, and an ambiguous or hesitant reply stops immediately.</p></section>
 </main>
 <p class="cap" style="max-width:1100px;margin:0 auto 28px;padding:0 24px">If the callee says they are busy or short on time, Oathra ends follow-up intake instead of pressing for another answer.</p>
 
@@ -464,9 +465,9 @@ How would you like to make calls?
 <div class="pilot">
   <h3>What a pilot actually involves</h3>
   <dl>
-    <dt>The work</dt><dd>Reservations, stock checks, date confirmations — <b>calls where the other person's "yes" decides whether it is done</b>. We write the completion conditions for one of them together: date, time, amount, whether it was confirmed.</dd>
+    <dt>The work</dt><dd>Reservations, stock checks, date confirmations — <b>calls where the other person’s “yes” decides whether it is done</b>. We write the completion conditions for one of them together: date, time, amount, whether it was confirmed.</dd>
     <dt>What you get</dt><dd>That contract, scripted simulator scenarios for it, the run of 10,000 adversarial dialogues at zero false completions, and per-call evidence JSON with a replayable log. All of it runs on the code in this repository.</dd>
-    <dt>What you need</dt><dd>Your own carrier and speech-model accounts (usage is billed to you), a few real call transcripts, and the callee's consent. Recording audio is not required.</dd>
+    <dt>What you need</dt><dd>Your own carrier and speech-model accounts (usage is billed to you), a few real call transcripts, and the callee’s consent. Recording audio is not required.</dd>
     <dt>How it is checked</dt><dd>First in the simulator, to see whether the completion check matches your work. Then a small number of real calls, comparing the verdict with what actually happened. A three-minute call to a Japanese mobile costs roughly ¥110 in carrier and model fees.</dd>
     <dt>Not built yet</dt><dd>Recording consent, retention settings, dialling controls, tenant isolation and escalation to a human are unimplemented, so the conditions for a paid PoC (L2) are not met. Monitoring, SLOs and redundancy (L3) have not been started. Only three real calls have been run; success rate and p95 are unmeasured. <a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">The stage-by-stage conditions</a> list all of it.</dd>
   </dl>
@@ -490,39 +491,39 @@ How would you like to make calls?
     const lines = [], ev = []; let mission = { verified: [], missing: FIELDS, pending: [] }, speaking = null, ended = false, result = null, connected = false;
     for (const e of data.events) { if (e.t > ms) break;
       switch (e.type) {
-        case "call.connected": connected = true; break;
-        case "callee.speech.started": speaking = "callee"; break;
-        case "callee.speech.ended": speaking = null; break;
-        case "agent.speech.started": speaking = "agent"; lines.push({ who: "agent", text: e.text }); break;
-        case "agent.speech.ended": speaking = null; break;
-        case "transcript.final": if (e.source === "callee") lines.push({ who: "callee", text: e.text }); break;
-        case "evidence.verified": ev.unshift(e); break;
-        case "mission.progress": mission = e; break;
-        case "call.ended": ended = true; speaking = null; break;
-        case "result": result = e; break;
+        case “call.connected”: connected = true; break;
+        case “callee.speech.started”: speaking = “callee”; break;
+        case “callee.speech.ended”: speaking = null; break;
+        case “agent.speech.started”: speaking = “agent”; lines.push({ who: “agent”, text: e.text }); break;
+        case “agent.speech.ended”: speaking = null; break;
+        case “transcript.final”: if (e.source === “callee”) lines.push({ who: “callee”, text: e.text }); break;
+        case “evidence.verified”: ev.unshift(e); break;
+        case “mission.progress”: mission = e; break;
+        case “call.ended”: ended = true; speaking = null; break;
+        case “result”: result = e; break;
       } }
     return { lines, ev, mission, speaking, ended, result, connected };
   }
-  let lastKey = "";
+  let lastKey = "“;
   function render() {
     const s = state(t);
-    const key = s.lines.length + "|" + s.ev.length + "|" + s.speaking + "|" + s.ended + "|" + s.mission.verified.join();
-    $("p-time").textContent = mmss(t) + " / " + mmss(data.durationMs);
-    $("p-seek").value = t;
+    const key = s.lines.length + ”|“ + s.ev.length + ”|“ + s.speaking + ”|“ + s.ended + ”|“ + s.mission.verified.join();
+    $(”p-time“).textContent = mmss(t) + ” / “ + mmss(data.durationMs);
+    $(”p-seek“).value = t;
     if (key === lastKey) return; lastKey = key;
-    const box = $("p-lines"); box.replaceChildren();
-    if (!s.connected) box.append(Object.assign(document.createElement("div"), { className: "ln", innerHTML: "<b></b><span style='color:var(--muted)'>" + L.dialing + "</span>" }));
-    for (const l of s.lines) { const d = document.createElement("div"); d.className = "ln " + l.who; d.innerHTML = "<b>" + (l.who === "callee" ? L.callee : "AI") + "</b><span></span>"; d.lastChild.textContent = l.text; box.append(d); }
-    if (s.speaking === "callee") { const d = document.createElement("div"); d.className = "ln callee typing"; d.innerHTML = "<b>" + L.callee + "</b><span>・・・</span>"; box.append(d); }
+    const box = $(”p-lines“); box.replaceChildren();
+    if (!s.connected) box.append(Object.assign(document.createElement(”div“), { className: ”ln“, innerHTML: ”<b></b><span style='color:var(--muted)'>“ + L.dialing + ”</span>“ }));
+    for (const l of s.lines) { const d = document.createElement(”div“); d.className = ”ln “ + l.who; d.innerHTML = ”<b>“ + (l.who === ”callee“ ? L.callee : ”AI“) + ”</b><span></span>“; d.lastChild.textContent = l.text; box.append(d); }
+    if (s.speaking === ”callee“) { const d = document.createElement(”div“); d.className = ”ln callee typing“; d.innerHTML = ”<b>“ + L.callee + ”</b><span>・・・</span>“; box.append(d); }
     box.scrollTop = box.scrollHeight;
-    const ul = $("p-mission"); ul.replaceChildren();
-    for (const f of FIELDS) { const li = document.createElement("li"); const ok = s.mission.verified.includes(f), pend = s.mission.pending.includes(f);
-      li.className = ok ? "ok" : pend ? "pend" : ""; const rule = L.rules[f] ? "<em>" + L.rules[f] + "</em>" : "";
+    const ul = $(”p-mission“); ul.replaceChildren();
+    for (const f of FIELDS) { const li = document.createElement(”li“); const ok = s.mission.verified.includes(f), pend = s.mission.pending.includes(f);
+      li.className = ok ? ”ok“ : pend ? ”pend“ : ”“; const rule = L.rules[f] ? ”<em>“ + L.rules[f] + ”</em>" : "";
       const val = ok || pend ? (s.ev.find((e) => e.field === f) || {}).value : undefined;
-      li.innerHTML = "<i>" + (ok ? "✓" : pend ? "○" : "·") + "</i><span>" + L.fields[f] + rule + "</span><span class='v'>" + (val === undefined ? "" : fmt(f, val)) + "</span>"; ul.append(li); }
-    $("p-count").textContent = String(s.ev.length);
-    const evb = $("p-ev"); evb.replaceChildren();
-    for (const e of s.ev.slice(0, 4)) { const d = document.createElement("div"); d.className = e.source; d.innerHTML = "<span>" + e.field + " = " + fmt(e.field, e.value) + "<span class='tag" + (e.source === "callee" ? " rec" : "") + "'>" + (e.source === "callee" ? L.calleeTag : "AI") + "</span></span><small>" + mmss(e.t) + "</small>"; evb.append(d); }
+      li.innerHTML = "<i>“ + (ok ? ”✓“ : pend ? ”○“ : ”·“) + ”</i><span>“ + L.fields[f] + rule + ”</span><span class='v'>“ + (val === undefined ? ”“ : fmt(f, val)) + ”</span>“; ul.append(li); }
+    $(”p-count“).textContent = String(s.ev.length);
+    const evb = $(”p-ev“); evb.replaceChildren();
+    for (const e of s.ev.slice(0, 4)) { const d = document.createElement(”div“); d.className = e.source; d.innerHTML = ”<span>“ + e.field + ” = “ + fmt(e.field, e.value) + ”<span class='tag" + (e.source === "callee" ? " rec" : "") + "'>“ + (e.source === ”callee“ ? L.calleeTag : ”AI“) + ”</span></span><small>“ + mmss(e.t) + ”</small>"; evb.append(d); }
     $("p-live").classList.toggle("on", s.connected && !s.ended); $("p-live-t").textContent = s.ended ? L.ended : L.replay;
     const res = $("p-res"); if (s.result) { res.hidden = false; res.textContent = L.done + " · " + FIELDS.map((f) => L.fields[f] + " " + fmt(f, s.result.fields[f])).join(" · "); } else res.hidden = true;
   }
@@ -533,7 +534,7 @@ How would you like to make calls?
   $("p-seek").addEventListener("input", (e) => { t = Number(e.target.value); lastKey = ""; render(); });
   $("p-speed").addEventListener("click", (e) => { speed = speed === 3 ? 1 : speed === 1 ? 6 : 3; e.target.textContent = "×" + speed; });
   fetch(root.dataset.src).then((r) => r.json()).then((d) => { data = d; $("p-seek").max = d.durationMs; render();
-    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia("(prefers-reduced-motion: reduce)").matches) { started = true; } }, { threshold: .5 });
+    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia(“(prefers-reduced-motion: reduce)”).matches) { started = true; } }, { threshold: .5 });
     auto.observe(root); });
 })();
 </script>
