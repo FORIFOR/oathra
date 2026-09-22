@@ -166,3 +166,15 @@ nav a{white-space:nowrap}
 .pilot dd{margin:0;font-size:14.5px;line-height:1.85;color:var(--ink2)}
 .pilot .note{margin:16px 0 0;font-size:13px;color:var(--ink2)}
 @media (max-width:700px){.pilot{padding:18px 16px}.pilot dl{grid-template-columns:1fr;gap:4px 0}.pilot dt{margin-top:10px}}
+/* A <video> with no width rule renders at its intrinsic size: the intake recording was 1200px wide
+   inside a 390px screen. Every video on the page stays inside its column. */
+video{max-width:100%;height:auto}
+/* The phone menu is pinned to the viewport, not to a narrow header cell that pushed it off the left edge. */
+@media (max-width:860px){
+  /* Closed, it is not rendered at all; a <details> does not hide a panel we gave a display to. */
+  nav .menu:not([open])>.menu-panel{display:none}
+  nav .menu[open]>.menu-panel{position:fixed;top:60px;left:16px;right:16px;width:auto;min-width:0;max-width:none}
+}
+/* A heading that is a flex/grid item keeps min-width:auto and refuses to shrink below its longest run:
+   on a 390px phone the closing call-to-action measured 402px inside a 350px column. */
+.cta>h2,.cta>h3{min-width:0;max-width:100%;overflow-wrap:anywhere}
