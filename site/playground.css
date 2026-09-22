@@ -82,3 +82,12 @@ main.wrap section { scroll-margin-top: 120px; }
 }
 /* The verdict belongs with the fields it summarises, not below the whole panel. */
 #sim aside .res{margin:14px 0 0;padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.6}
+/* On a phone the verdict comes before the conversation that produced it: stacked the other way round, the
+   3 / 4 and the open field sat ~700px below the fold and the first screen was a panel header and one line. */
+@media(max-width:600px){
+  #sim .body>div:first-child{order:2}
+  #sim aside{order:1;border-top:0;border-bottom:1px solid var(--line)}
+  #sim .tx{max-height:150px}
+  /* The panel header's badge wraps to a second line on a narrow phone; one line keeps the verdict higher. */
+  #sim .ph{padding-block:10px}
+}
