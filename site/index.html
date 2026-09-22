@@ -472,7 +472,19 @@ How would you like to make calls?
 </main>
 <p class="cap" style="max-width:1100px;margin:0 auto 28px;padding:0 24px">相手が忙しい・時間がないと伝えた場合も、追加質問を続けず、その場で聞き取りを終了します。</p>
 
-<section class="portfolio-contact" id="business" aria-labelledby="business-heading"><p>事業・導入の相談 · Oathra</p><h2 id="business-heading">電話業務の試験導入を相談する</h2><p class="contact-intro">電話業務の種類、条件の確認方法、想定件数を教えてください。電話番号や通話内容は不要です。</p><p class="privacy">提供可否・範囲・納期・料金は個別に確認します。送信による契約や課金はありません。</p><details><summary>非公開で相談する</summary><form id="portfolio-form"><label>お名前<input name="name" required maxlength="80" autocomplete="name"></label><label>返信先メール<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label class="wide">会社・団体名（任意）<input name="organization" maxlength="120" autocomplete="organization"></label><label class="wide">相談したい内容<textarea name="message" required minlength="10" maxlength="2000"></textarea></label><label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label><p class="privacy wide">入力内容は運営者への非公開の問い合わせとしてGoogle Cloudに保存し、返信のために利用します。AIの入力やアクセス解析には利用しません。90日後から順次削除します。公開Issueには投稿されません。</p><label class="consent wide"><input type="checkbox" name="consent" required>上記の取り扱いに同意して送信します。</label><button type="submit">相談を送信</button><p class="wide" id="portfolio-status" role="status" aria-live="polite"></p></form></details></section><footer class="wrap">
+<section class="portfolio-contact" id="business" aria-labelledby="business-heading"><p>事業・導入の相談 · Oathra</p><h2 id="business-heading">電話業務の試験導入を相談する</h2><p class="contact-intro">電話業務の種類、条件の確認方法、想定件数を教えてください。電話番号や通話内容は不要です。</p>
+<div class="pilot">
+  <h3>試験導入で実際にやること</h3>
+  <dl>
+    <dt>対象業務</dt><dd>予約・在庫確認・日程確認など、<b>相手の「はい」で完了が決まる電話</b>。1業務ぶんの完了条件（日時・人数・金額・確定の有無）を一緒に契約として書き下ろします。</dd>
+    <dt>お渡しするもの</dt><dd>その業務の完了条件、台本つきシミュレータのシナリオ、1万件の敵対的対話での誤完了0の実行結果、通話ごとの証拠JSONと再生ログ。すべてこのリポジトリのコードで動くものです。</dd>
+    <dt>そちらで必要なもの</dt><dd>Twilio等の回線と音声モデルのアカウント（従量課金はそちらの契約）、実際の通話文字起こしを数本、掛け先の同意。通話の録音は必須ではありません。</dd>
+    <dt>確かめ方</dt><dd>まずシミュレータで完了判定が業務に合うかを見ます。実電話は少数から始め、判定と実際の結果を突き合わせます。日本の携帯宛でおよそ1通話3分・¥110前後（回線と音声モデルの実費）。</dd>
+    <dt>まだできないこと</dt><dd>録音同意の管理・保持期間の設定・発信制御・テナント分離・人間へのエスカレーションは未実装で、有償PoC（L2）の条件を満たしていません。監視・SLO・冗長化（L3）も未着手です。実電話は3件しか回しておらず、成功率とp95は未測定です。<a href="https://github.com/FORIFOR/oathra/blob/main/docs/READINESS.md">段階別の条件</a>に全部書いてあります。</dd>
+  </dl>
+  <p class="note">料金・納期・契約はこの場では決めません。上のとおり L2 の条件が未達なので、いまお受けできるのは「使えるかどうかを一緒に確かめる」ところまでです。</p>
+</div>
+<p class="privacy">提供可否・範囲・納期・料金は個別に確認します。送信による契約や課金はありません。</p><details><summary>非公開で相談する</summary><form id="portfolio-form"><label>お名前<input name="name" required maxlength="80" autocomplete="name"></label><label>返信先メール<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label class="wide">会社・団体名（任意）<input name="organization" maxlength="120" autocomplete="organization"></label><label class="wide">相談したい内容<textarea name="message" required minlength="10" maxlength="2000"></textarea></label><label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label><p class="privacy wide">入力内容は運営者への非公開の問い合わせとしてGoogle Cloudに保存し、返信のために利用します。AIの入力やアクセス解析には利用しません。90日後から順次削除します。公開Issueには投稿されません。</p><label class="consent wide"><input type="checkbox" name="consent" required>上記の取り扱いに同意して送信します。</label><button type="submit">相談を送信</button><p class="wide" id="portfolio-status" role="status" aria-live="polite"></p></form></details></section><footer class="wrap">
   <span>Oathra · Apache-2.0 · 東京で開発 · <a href="https://x.com/forifori_dev">@forifori_dev</a> · <a href="https://reachmade.com/products/#oathra">Reachmade Labのプロダクト</a></span>
   <span><a href="https://github.com/FORIFOR/oathra">GitHub</a> · <a href="https://github.com/FORIFOR/oathra/blob/main/docs/ARCHITECTURE.md">設計</a> · <a href="https://github.com/FORIFOR/oathra/tree/main/scenarios">シナリオ</a> · <a href="#business">導入相談</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a> · <a href="en/">English</a></span>
 </footer>
