@@ -12,6 +12,10 @@ The local preview path had one concrete parity defect: a fresh `pnpm build:site`
 
 The existing [awesome-voice-agents #42](https://github.com/yzfly/awesome-voice-agents/pull/42) was merged at `2026-09-20T15:03:09Z` (merge commit `033a28e77ba5bf9987de9bd84ee8f8ed49e1ccc8`). The public entry places Oathra under Specialized Solutions and describes utterance-anchored completion, the simulator, phone adapters and consented intake. This is confirmed third-party distribution, not evidence of stars, external trials, phone success or business demand.
 
+### Measurement checkpoint — 2026-09-23 18:51 JST
+
+The read-only snapshot remains at 0 stars / 0 forks and 24 repository views / 15 unique visitors. The available 14-day clone window increased to 4,126 clones / 596 unique cloners, including a new 2026-09-22 bucket of 303 clones / 77 unique cloners. GitHub does not identify fetchers, and the counts may include maintainer or automation activity, so this is an unclassified distribution signal rather than external-user evidence. No external issue or business inquiry is observed; v0.1.18 asset counts remain 4 tarball downloads and 1 checksum download. Raw snapshot: [metrics/2026-09-23-1851-jst.json](metrics/2026-09-23-1851-jst.json).
+
 ### Measurement checkpoint — 2026-09-23 00:36 JST
 
 The read-only snapshot reports 0 stars / 0 forks, 24 repository views / 15 unique visitors and 3,823 clones / 557 unique cloners in the available 14-day window. It also reports 4 v0.1.18 tarball downloads and 1 checksum download. GitHub does not identify fetchers, and traffic includes maintainer/automation activity, so these are unclassified distribution signals rather than external-user evidence. Raw snapshot: [metrics/2026-09-23-0036-jst.json](metrics/2026-09-23-0036-jst.json).
