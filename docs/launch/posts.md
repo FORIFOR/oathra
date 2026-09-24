@@ -1,5 +1,12 @@
 # Launch posts and publication record
 
+## Measurement checkpoint — 2026-09-24 18:21 JST
+
+- The read-only snapshot remains at 0 stars / 0 forks.
+- GitHub's available 14-day window now reports 28 repository views / 17 unique visitors and 4,137 clones / 601 unique cloners. The new 2026-09-23 bucket contributes 4 views / 3 unique visitors and 11 clones / 7 unique cloners. GitHub does not identify fetchers, and these counts can include maintainer or automation activity, so they are unclassified distribution signals rather than confirmed external users.
+- No external issue or business inquiry is observed. v0.1.18 assets remain at 4 tarball downloads and 1 checksum download.
+- Raw snapshot: [metrics/2026-09-24-1821-jst.json](metrics/2026-09-24-1821-jst.json).
+
 ## awesome-voice-agents listing merged — 2026-09-21 00:03 JST
 
 - The existing [awesome-voice-agents #42](https://github.com/yzfly/awesome-voice-agents/pull/42) was merged at `2026-09-20T15:03:09Z` (merge commit `033a28e77ba5bf9987de9bd84ee8f8ed49e1ccc8`). The public entry places Oathra under Specialized Solutions and describes utterance-anchored completion, the simulator, phone adapters and consented intake.

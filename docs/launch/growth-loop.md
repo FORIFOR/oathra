@@ -8,6 +8,10 @@ Stages 1 and 2 are prepared and public. Stage 3 is the current priority. Do not 
 
 The local preview path had one concrete parity defect: a fresh `pnpm build:site` did not copy the intake recordings into the ignored `site/media/` directory, even though the Pages deploy job did. `scripts/build-site.mjs` now syncs changed files from `docs/media/`, and CI asserts both language variants. Local and public HTTP checks passed after the fix. This is an onboarding reliability correction, not a new campaign or an adoption signal.
 
+### Measurement checkpoint — 2026-09-24 18:21 JST
+
+The read-only snapshot remains at 0 stars / 0 forks. GitHub's available 14-day window now reports 28 repository views / 17 unique visitors and 4,137 clones / 601 unique cloners; the new 2026-09-23 bucket contributes 4 views / 3 unique visitors and 11 clones / 7 unique cloners. GitHub does not identify fetchers, and these counts can include maintainer or automation activity, so they are unclassified distribution signals rather than confirmed external users. No external issue or business inquiry is observed; v0.1.18 assets remain at 4 tarball downloads and 1 checksum download. Raw snapshot: [metrics/2026-09-24-1821-jst.json](metrics/2026-09-24-1821-jst.json).
+
 ### External distribution checkpoint — 2026-09-21 00:03 JST
 
 The existing [awesome-voice-agents #42](https://github.com/yzfly/awesome-voice-agents/pull/42) was merged at `2026-09-20T15:03:09Z` (merge commit `033a28e77ba5bf9987de9bd84ee8f8ed49e1ccc8`). The public entry places Oathra under Specialized Solutions and describes utterance-anchored completion, the simulator, phone adapters and consented intake. This is confirmed third-party distribution, not evidence of stars, external trials, phone success or business demand.
