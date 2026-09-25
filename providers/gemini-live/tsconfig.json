@@ -16,13 +16,13 @@
       "path": "../../packages/contract"
     },
     {
-      "path": "../../packages/evidence"
-    },
-    {
       "path": "../../packages/core"
     },
     {
       "path": "../../packages/voice"
+    },
+    {
+      "path": "../audio-kit"
     },
     {
       "path": "../voice-kit"

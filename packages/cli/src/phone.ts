@@ -15,6 +15,7 @@ import { DeepgramSTT } from "@oathra/deepgram";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
 import { OpenAITTS } from "@oathra/openai";
 import { gptLiveEngine } from "@oathra/openai-realtime";
+import { geminiLiveEngine } from "@oathra/gemini-live";
 import {
   loadPhoneConfig,
   phoneConfigPath,
@@ -55,18 +56,20 @@ export function buildRegistry(env: NodeJS.ProcessEnv = process.env): PhoneRegist
   return reg;
 }
 
-export type EngineSpec = { id: "gpt-live" | "pipeline"; model?: string; brain?: string };
+export type EngineSpec = { id: "gpt-live" | "gemini-live" | "pipeline"; model?: string; brain?: string };
 
-/** Accepts `--engine gpt-live|pipeline[:model]` and the legacy `--brain` spellings. */
+/** Accepts `--engine gpt-live|gemini-live|pipeline[:model]` and the legacy `--brain` spellings. */
 export function parseEngineSpec(engine?: string, brain?: string, configDefault = "gpt-live"): EngineSpec {
   const spec = engine ?? (brain ? undefined : configDefault);
   if (spec) {
     const [id, ...rest] = spec.split(":");
     const model = rest.length ? rest.join(":") : undefined;
     if (id === "gpt-live" || id === "live") return { id: "gpt-live", ...(model ? { model } : {}) };
+    if (id === "gemini-live" || id === "gemini") return { id: "gemini-live", ...(model ? { model } : {}) };
     if (id === "pipeline") return { id: "pipeline", ...(model ? { brain: model } : {}) };
     if (/^gpt-live/.test(spec)) return { id: "gpt-live", model: spec };
-    throw new Error(`Unknown voice engine "${spec}". Use gpt-live or pipeline[:brain]`);
+    if (/^gemini-.*live/.test(spec)) return { id: "gemini-live", model: spec };
+    throw new Error(`Unknown voice engine "${spec}". Use gpt-live, gemini-live or pipeline[:brain]`);
   }
   // legacy --brain
   const live = brain ? liveModelOf(brain) : undefined;
@@ -76,6 +79,7 @@ export function parseEngineSpec(engine?: string, brain?: string, configDefault =
 
 export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env, voice?: string): VoiceEngine {
   if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
+  if (spec.id === "gemini-live") return geminiLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}) });
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
   return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: new OpenAITTS() });
 }
@@ -83,6 +87,7 @@ export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.e
 export function engineChoices(): Array<{ id: string; label: string; note: string }> {
   return [
     { id: "gpt-live", label: "GPT-Live", note: "Recommended · needs OPENAI_API_KEY · $0.05/min session" },
+    { id: "gemini-live", label: "Gemini Live", note: "gemini-3.8-live · needs GEMINI_API_KEY · not yet verified on a real line" },
     { id: "pipeline", label: "Pipeline", note: "needs DEEPGRAM_API_KEY + OPENAI_API_KEY · customizable" },
   ];
 }
@@ -110,6 +115,7 @@ const CREDENTIAL_GUIDES: Record<string, CredentialGuide> = {
 
 const ENGINE_CREDENTIALS: Record<EngineSpec["id"], string[]> = {
   "gpt-live": ["OPENAI_API_KEY"],
+  "gemini-live": ["GEMINI_API_KEY"],
   pipeline: ["DEEPGRAM_API_KEY", "OPENAI_API_KEY"],
 };
 

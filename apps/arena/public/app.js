@@ -70,7 +70,7 @@
       contacts: "Contacts", contactsIntro: "Save a name or company. Phone and email are optional. Contacts stay on this device; saving does not call or upload them.", contactNew: "New contact", contactEdit: "Edit contact", contactSearch: "Search name or company", contactsEmpty: "No contacts to show. Add a name or company to get started.", contactsReload: "Reload list",
       contactResume: "Return to unsaved changes", contactBack: "Back to contacts", contactHint: "Enter a name or company. Everything else is optional.", contactExtra: "Email and other notes", contactName: "Name", contactCompany: "Company", contactPhone: "Phone (optional)", contactEmail: "Email (optional)", contactLast: "Previous call notes (entered by you)", contactNotes: "Other notes", contactSave: "Save contact", contactUse: "Prepare a call", contactPick: "Choose a contact", contactUseNote: "Save a phone number to prepare a call. Notes and history are not sent to the AI automatically.", contactHistory: "Saved calls to this number", contactHistoryNote: "Matched by the saved phone number, not identity. Shared numbers may include someone else's calls.", contactNoHistory: "No saved calls found for this number.", contactSaved: "Saved on this device.", contactUnsaved: "Unsaved changes", contactSaving: "Saving…", contactDiscard: "Discard unsaved changes?", contactInvalid: "Enter a name or company, and check the optional phone and email.", contactConflict: "This contact was changed elsewhere. Your input remains here. Reload the contact before saving again.", contactOpenCall: "Open saved call", contactReload: "Reload saved contact",
       phoneTitle: "Prepare a call draft", phoneIntro: "1. Enter the number, recipient and purpose → 2. Review → 3. Place the call. Start from a template or a previous purpose.",
-      phoneNumber: "Recipient phone number", phoneName: "Recipient name", phoneCallerName: "Your name (optional, told to callee)", phoneInstruction: "Purpose", phoneHelp: "Japanese numbers may start with 0. For other countries, include + and the country code. One number only; no extension.",
+      phoneEngine: "Voice AI", phoneEngineNote: "Which model speaks on the call. Only engines whose API key is set on this server can be chosen; the voice is fixed for the whole call.", phoneEngineUnavailable: "not set up", phoneNumber: "Recipient phone number", phoneName: "Recipient name", phoneCallerName: "Your name (optional, told to callee)", phoneInstruction: "Purpose", phoneHelp: "Japanese numbers may start with 0. For other countries, include + and the country code. One number only; no extension.",
       phoneReview: "Review call details", phoneClear: "Clear input", phoneReviewTitle: "Call draft · not sent", phoneSave: "Save call draft (JSON)",
       phonePrivacy: "This draft stays on this device. The downloaded file contains personal information. A real call sends the number to your carrier and conversation data to your voice provider; usage charges apply.",
       phoneNext: "After configuring your phone service, review the saved draft without calling:", phoneApprove: "Only after checking the recipient, recording policy and provider charges, explicitly place the call:", phoneInvalid: "Check the number, recipient and purpose, and replace every {{field}} in the template.",
@@ -113,7 +113,7 @@
       contacts: "連絡先", contactsIntro: "相手の情報と、前回話したことを一か所に。登録だけで電話はかかりません。", contactNew: "連絡先を追加", contactEdit: "連絡先を編集", contactSearch: "名前・会社名で検索", contactsEmpty: "該当する連絡先はありません。名前または会社名から登録できます。", contactsReload: "一覧を再読込",
       contactResume: "入力中の内容に戻る", contactBack: "連絡先一覧へ", contactHint: "名前か会社名のどちらかを入力してください。他は後から追加できます。", contactExtra: "メール・その他のメモを追加", contactName: "名前", contactCompany: "会社名", contactPhone: "電話番号（任意）", contactEmail: "メールアドレス（任意）", contactLast: "前回の電話内容（手入力メモ）", contactNotes: "その他のメモ", contactSave: "連絡先を保存", contactUse: "電話の依頼内容を入力", contactPick: "連絡先から選ぶ", contactUseNote: "電話番号を保存すると電話依頼に進めます。メモや履歴はAIへ自動送信しません。", contactHistory: "同じ電話番号の保存済み通話", contactHistoryNote: "保存された電話番号で照合しています。共有番号の場合は別の人の通話も含まれることがあります。", contactNoHistory: "この番号に一致する保存済み通話はありません。", contactSaved: "この端末に保存しました。", contactUnsaved: "未保存の変更があります", contactSaving: "保存中…", contactDiscard: "未保存の変更を破棄しますか？", contactInvalid: "名前か会社名を入力し、電話番号・メールの形式を確認してください。", contactConflict: "別の操作で更新されています。入力は残しています。保存済みの連絡先を再読込してから編集してください。", contactOpenCall: "保存済みの通話を開く", contactReload: "保存済みの連絡先を再読込",
       phoneTitle: "電話をかける", phoneIntro: "1. 番号・相手・目的を入力 → 2. 発信内容を確認 → 3. 電話をかける。目的はテンプレートや履歴から選べます。",
-      phoneNumber: "電話番号", phoneName: "相手", phoneCallerName: "あなたの名前（相手に伝えます・任意）", phoneInstruction: "目的", phoneHelp: "日本の番号は0から入力できます。海外の番号は＋と国番号から入力してください。番号は1件、内線は指定できません。",
+      phoneEngine: "音声AI", phoneEngineNote: "通話で話すモデルです。このサーバーに API キーがある音声AIだけ選べます。通話の途中では変えられません。", phoneEngineUnavailable: "未設定", phoneNumber: "電話番号", phoneName: "相手", phoneCallerName: "あなたの名前（相手に伝えます・任意）", phoneInstruction: "目的", phoneHelp: "日本の番号は0から入力できます。海外の番号は＋と国番号から入力してください。番号は1件、内線は指定できません。",
       phoneReview: "内容を確認", phoneClear: "入力を消去", phoneReviewTitle: "発信前の下書き・未送信", phoneSave: "発信依頼を保存（JSON）",
       phonePrivacy: "確認した下書きはこの端末内で扱います。保存ファイルには個人情報が含まれます。実発信時は電話会社へ番号、音声AIへ会話データが送信され、利用料金がかかります。",
       phoneNext: "電話サービスの設定後、保存した依頼を発信せずに確認できます：", phoneApprove: "宛先・録音設定・サービスの料金を確認し、実際に発信するときだけ実行してください：", phoneInvalid: "電話番号・相手・目的を確認し、テンプレートの {{項目}} を書き換えてください。",
@@ -500,7 +500,17 @@
     $("#phone-instruction").value=template.instruction[LANG] || template.instruction.en;
     phoneInputChanged();$("#phone-instruction").focus();
   });
+  function renderPhoneEngines(readiness) {
+    const select = $("#phone-engine"), engines = readiness.engines || [];
+    if (!select) return;
+    const keep = select.value;
+    select.replaceChildren(...engines.map(e => el("option", { value: e.id, text: `${e.label}${e.ready ? "" : `（${t("phoneEngineUnavailable")}）`}` })));
+    select.value = engines.some(e => e.id === keep) ? keep : (readiness.defaultEngine || engines[0]?.id || "");
+    const hide = engines.length < 2;
+    for (const node of [select, $("#phone-engine-note"), select.closest("form")?.querySelector("label[for=phone-engine]")]) if (node) node.hidden = hide;
+  }
   function renderPhoneReadiness(readiness) {
+    renderPhoneEngines(readiness);
     const issues = readiness.issues || [];
     $("#phone-readiness").replaceChildren(el("strong",{text:t(readiness.ready ? "phoneReady" : "phoneNotReady")}), ...(issues.length ? [el("details", {}, [el("summary", {text:t("phoneSetupDetails")}), ...issues.map(issue=>el("p",{text:issue}))])] : []));
   }
@@ -547,12 +557,13 @@
     const revision = ++phoneRevision;
     clearPhoneReview(); $("#phone-error").hidden = true;
     const callerVal = $("#phone-caller-name")?.value.trim();
-    const input = { phone: $("#phone-number").value, name: $("#phone-name").value, instruction: $("#phone-instruction").value, ...(callerVal ? { callerName: callerVal } : {}), ...(phoneConversationMode==="chat"?{conversationMode:"chat"}:{}) };
+    const engineVal = $("#phone-engine")?.value;
+    const input = { phone: $("#phone-number").value, name: $("#phone-name").value, instruction: $("#phone-instruction").value, ...(callerVal ? { callerName: callerVal } : {}), ...(engineVal ? { engine: engineVal } : {}), ...(phoneConversationMode==="chat"?{conversationMode:"chat"}:{}) };
     try {
       const data = await api("/api/phone/prepare", { method: "POST", body: JSON.stringify(input) });
       if (revision !== phoneRevision) return;
       const {request}=data;phoneReviewData=data;
-      $("#phone-review-fields").replaceChildren(...[["phoneNumber", request.phone], ["phoneName", request.name], ...(request.callerName ? [["phoneCallerName", request.callerName]] : []), ["phoneInstruction", request.instruction]].flatMap(([label, value]) => [el("dt", {text:t(label)}), el("dd", {text:value})]));
+      $("#phone-review-fields").replaceChildren(...[["phoneNumber", request.phone], ["phoneName", request.name], ...(request.callerName ? [["phoneCallerName", request.callerName]] : []), ...(request.engine ? [["phoneEngine", request.engine]] : []), ["phoneInstruction", request.instruction]].flatMap(([label, value]) => [el("dt", {text:t(label)}), el("dd", {text:value})]));
       phoneDownloadUrl = URL.createObjectURL(new Blob([JSON.stringify(request, null, 2)], {type:"application/json"}));
       $("#phone-download").href = phoneDownloadUrl;
       const ready=data.readiness;

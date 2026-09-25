@@ -2,7 +2,7 @@
 // No provider credentials/phone calls. Temporary sockets and callbacks are disposed after each test.
 import { expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
-import { defineCall, PhoneRequestSchema } from "@oathra/contract";
+import { defineCall, PhoneRequestFieldsSchema } from "@oathra/contract";
 import { OpenAILiveAgent } from "./live.js";
 import { publicQuery, createNewsSearch, parseNewsResponse, type NewsSearch, type NewsLookupEvent } from "./news.js";
 
@@ -55,9 +55,9 @@ it('reports real provider quantities even when the news result cannot be verifie
  }finally{intercepted.mockRestore()}
 });
 it("only explicit chat enables conversation and grounded news; legacy and unsupported connections stay honest",()=>{
-  expect(PhoneRequestSchema.shape.conversationMode.safeParse(undefined).success).toBe(true);
-  expect(PhoneRequestSchema.shape.conversationMode.safeParse("chat").success).toBe(true);
-  expect(PhoneRequestSchema.shape.conversationMode.safeParse("unlimited").success).toBe(false);
+  expect(PhoneRequestFieldsSchema.shape.conversationMode.safeParse(undefined).success).toBe(true);
+  expect(PhoneRequestFieldsSchema.shape.conversationMode.safeParse("chat").success).toBe(true);
+  expect(PhoneRequestFieldsSchema.shape.conversationMode.safeParse("unlimited").success).toBe(false);
   const chat=defineCall({goal:"phone.message",language:"ja",input:{request:"雑談したい",conversationMode:"chat"}});
   expect(new OpenAILiveAgent({contract:chat}).instructions()).toContain("近況への一回答だけで");
   // A chat is carried by reactions to what was said, not by a question every turn.

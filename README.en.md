@@ -59,7 +59,8 @@ Same runtime, real phone. **Bring your own carrier. Bring your own model.**
 ```text
 Carrier                       Voice engine
 Twilio       ✓ direct         GPT-Live          ✓ recommended
-Plivo        ✓ SIP            Pipeline (STT+LLM+TTS) ✓
+Plivo        ✓ SIP            Gemini Live       ✓ gemini-3.8-live, not yet verified on a real line
+                              Pipeline (STT+LLM+TTS) ✓
 Custom SIP   ✓ SIP            Local             experimental
 Telnyx · Wavix · Sinch  v0.2
 ```
@@ -301,7 +302,7 @@ v0.1.18 (released 2026-09-19):
 - [x] LLM brains: OpenAI, Gemini, Ollama via `BrainProvider` (Anthropic next)
 - [x] Phone Layer: `oathra setup phone`, `phone add|list|doctor|test|remove`, preferred-order routing with fallback, reference pricing
 - [x] Twilio direct (verified on real calls), Plivo SIP + custom SIP via the LiveKit gateway (implemented against provider docs, PSTN unverified)
-- [x] Voice Layer: GPT-Live (recommended, verified on real calls), Deepgram + LLM + OpenAI TTS pipeline
+- [x] Voice Layer: GPT-Live (recommended, verified on real calls), Gemini Live (gemini-3.8-live, offline-tested only), Deepgram + LLM + OpenAI TTS pipeline
 - [ ] Telnyx, Wavix, Sinch, didlogic providers; ElevenLabs TTS; self-hosted SIP gateways beyond LiveKit
 - [ ] Dual-ASR safe path for dates / amounts / numbers, preemptive generation
 - [x] MCP server `oathra mcp` (`simulate_call`, `verify_transcript`, `inspect_call`, `list_calls`, `list_scenarios`). Local only; it never dials

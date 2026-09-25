@@ -11,6 +11,8 @@ const LAYER = {
   "@oathra/runtime": 4,
   "@oathra/simulator": 5,
   "@oathra/brain-kit": 4.5,
+  "@oathra/voice-kit": 4.5,
+  "@oathra/gemini-live": 5,
   "@oathra/audio-kit": 3.5,
   "@oathra/deepgram": 5,
   "@oathra/voice": 3.8,

@@ -166,6 +166,9 @@
           <input id="phone-name" type="text" autocomplete="off" required maxlength="100" />
           <label for="phone-caller-name" data-i18n="phoneCallerName">Your name (optional, told to callee)</label>
           <input id="phone-caller-name" type="text" autocomplete="name" maxlength="40" />
+          <label for="phone-engine" data-i18n="phoneEngine">Voice AI</label>
+          <select id="phone-engine" aria-describedby="phone-engine-note"></select>
+          <p id="phone-engine-note" class="note" data-i18n="phoneEngineNote"></p>
           <label for="phone-template" data-i18n="phoneTemplate">Start from a purpose template</label>
           <select id="phone-template"><option value="" data-i18n="phoneTemplateBlank">Write your own purpose</option></select>
           <label for="phone-instruction" data-i18n="phoneInstruction">What should the AI say?</label>

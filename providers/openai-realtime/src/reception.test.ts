@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { defineRestaurantReception, definePhoneInbound } from "@oathra/contract";
 import { bookTable, checkTable, parseDeskConfig, type DeskBooking } from "@oathra/core";
 import { OpenAILiveAgent } from "./live.js";
-import { deskTool, notReadBack, type DeskEvent, type ReservationDesk } from "./reception.js";
+import { deskTool, notReadBack, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 
 const config = parseDeskConfig({ name: "ビストロ灯", slots: { "19:00": 0, "19:30": 1, "20:00": 2 }, maxParty: 6 });
 const NOW = new Date("2026-09-21T10:00:00+09:00");

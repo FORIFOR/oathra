@@ -90,9 +90,18 @@ const PhoneNumberSchema = z.string().transform((value, ctx) => {
  */
 export const PHONE_VOICES = ["marin", "quartz", "ripple", "vesper", "willow", "stone", "gleam", "meridian", "bossa", "tempo", "beacon", "delta", "cinder"] as const;
 export const DEFAULT_PHONE_VOICE = "marin";
+/** Speech-to-speech engines a request may ask for. Absent keeps the server's configured engine. */
+export const PHONE_ENGINES = ["gpt-live", "gemini-live"] as const;
+export type PhoneEngine = (typeof PHONE_ENGINES)[number];
+/** Gemini Live prebuilt voices; the first is the default. */
+export const GEMINI_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Puck", "Charon", "Fenrir", "Orus"] as const;
+export const DEFAULT_GEMINI_VOICE = "Kore";
+export const ENGINE_VOICES: Record<PhoneEngine, readonly string[]> = { "gpt-live": PHONE_VOICES, "gemini-live": GEMINI_VOICES };
+export const ENGINE_DEFAULT_VOICE: Record<PhoneEngine, string> = { "gpt-live": DEFAULT_PHONE_VOICE, "gemini-live": DEFAULT_GEMINI_VOICE };
 
 /** Experimental v1 handoff file: preparing/parsing it does not approve a call. */
-export const PhoneRequestSchema = z.object({
+/** The fields of a phone request. `PhoneRequestSchema` adds the engine/voice consistency check on top. */
+export const PhoneRequestFieldsSchema = z.object({
   schemaVersion: z.literal(1),
   kind: z.literal("oathra.phone-request"),
   phone: PhoneNumberSchema,
@@ -102,13 +111,21 @@ export const PhoneRequestSchema = z.object({
   // Optional: whose behalf the call is on, as the callee should hear it ("堀尾"). A call that cannot say who is
   // behind it gets "誰?" and a hang-up. Letters, not contact details.
   callerName: z.string().trim().min(1).max(40).refine(value => !/[\d@<>{}]|https?:/i.test(value), "名前だけを入力してください。").optional(),
-  // Optional: which voice speaks. Absent keeps the engine's default.
-  voice: z.enum(PHONE_VOICES).optional(),
+  // Optional: which speech-to-speech engine speaks. Absent keeps the server's configured engine.
+  engine: z.enum(PHONE_ENGINES).optional(),
+  // Optional: which voice speaks. Absent keeps the engine's default. A voice belongs to one engine.
+  voice: z.enum([...PHONE_VOICES, ...GEMINI_VOICES]).optional(),
   instruction: z.string().trim().min(1).max(2000).refine(value => !/\{\{[^{}]+\}\}/.test(value), "テンプレートの {{項目}} を具体的な内容に書き換えてください。"),
 }).strict();
 
+export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, ctx) => {
+  if (!value.voice) return;
+  const engine: PhoneEngine = value.engine ?? ((GEMINI_VOICES as readonly string[]).includes(value.voice) ? "gemini-live" : "gpt-live");
+  if (!ENGINE_VOICES[engine].includes(value.voice)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["voice"], message: `この声は ${engine} では使えません。` });
+});
+
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

@@ -102,6 +102,12 @@ import { renderNews } from './news.js';
     voiceSelect.setAttribute('aria-describedby', 'phone-voice-note');
     voicePreview.type = 'button'; voicePreview.id = 'phone-voice-preview'; voicePreview.className = $('#phone-clear').className;
     voiceField.append(voiceLabel, voiceSelect, voicePreview, voiceNote);
+    // Which model speaks. Only engines the server can run are offered; a voice belongs to one engine.
+    const engineField = element('div'), engineLabel = element('label', '音声AI'), engineSelect = element('select'), engineNote = element('p', '通話で話すモデルです。このサーバーに API キーがある音声AIだけ選べます。通話の途中では変えられません。');
+    engineField.id = 'phone-engine-field'; engineLabel.htmlFor = 'phone-engine'; engineSelect.id = 'phone-engine'; engineSelect.name = 'engine'; engineNote.className = 'note'; engineNote.id = 'phone-engine-note';
+    engineSelect.setAttribute('aria-describedby', 'phone-engine-note');
+    engineField.append(engineLabel, engineSelect, engineNote);
+    const engineChoices = () => readiness?.engines ?? [], currentEngine = () => engineSelect.value || readiness?.defaultEngine || 'gpt-live', engineOf = id => engineChoices().find(e => e.id === id);
     // How high and how fast, from the measured sample. Not who: a recording cannot say that.
     const pitchWord = { low: '低めの声（男性に多い高さ）', mid: '中くらいの高さの声', high: '高めの声（女性に多い高さ）', 'very-high': 'かなり高めの声' }, paceWord = { fast: 'やや速め', medium: 'ふつうの速さ', slow: 'ゆっくりめ' };
     const describeVoice = v => { const d = readiness?.voiceDetails?.[v]; return d ? `${d.recommended ? '★ 推奨 ' : ''}${v} — ${pitchWord[d.pitch]}・${paceWord[d.pace]}${d.quiet ? '・音量は小さめ' : ''}` : v; };
@@ -117,15 +123,17 @@ import { renderNews } from './news.js';
         previewAudio.play().catch(reset);
     });
     // After the template's own undo, so that control stays beside the field it belongs to.
-    callerField.after(voiceField);
+    callerField.after(engineField);
+    engineField.after(voiceField);
     const voiceKey = () => account ? 'oathra:phone-voice:' + account.user.id : null;
-    const voices = () => readiness?.voices ?? [], defaultVoice = () => readiness?.defaultVoice ?? voices()[0] ?? '';
+    const voices = () => engineOf(currentEngine())?.voices ?? readiness?.voices ?? [], defaultVoice = () => engineOf(currentEngine())?.defaultVoice ?? readiness?.defaultVoice ?? voices()[0] ?? '';
     function setVoice(value) {
         voiceSelect.value = voices().includes(value) ? value : defaultVoice();
     }
     function rememberedVoice() {
         try { return voiceKey() ? localStorage.getItem(voiceKey()) : null; } catch { return null; }
     }
+    engineSelect.addEventListener('change', () => { rebuildVoices(); setVoice(defaultVoice()); invalidate(); saveDraft(); });
     voiceSelect.addEventListener('change', () => {
         try { if (voiceKey()) localStorage.setItem(voiceKey(), voiceSelect.value); } catch { /* A private window still uses the choice for this call. */ }
         invalidate(); saveDraft();
@@ -264,22 +272,33 @@ import { renderNews } from './news.js';
         creditAvailability.textContent = available > 0 ? `残高 ${available} クレジット · 上限に達すると自動で終了します` : held > 0 ? `現在 ${held} クレジットを通話に確保中です。終了・精算後に残高が戻ります。` : '残高がありません。クレジットを追加すると電話できます。';
         $('#phone-form button[type=submit]').disabled = preparing || pending || (readiness.ready && available === 0);
     }
-    function readyView(r) {
-        readiness = r;
-        bookingsView.enable(r.reception);
-        if (voiceSelect.options.length !== voices().length) {
-            const keep = voiceSelect.value;
+    function rebuildVoices() {
+        const r = readiness ?? {};
+        if (voiceSelect.options.length === voices().length && [...voiceSelect.options].every(o => voices().includes(o.value))) return;
+        const keep = voiceSelect.value;
             const option = v => { const o = element('option', describeVoice(v) + (v === defaultVoice() ? '（標準）' : '')); o.value = v; return o; };
             // Grouped by how high the voice is; inside a group the recommended voice comes first, then lowest first.
             const details = r.voiceDetails ?? {}, groups = [['低めの声', ['low']], ['中くらいの高さの声', ['mid']], ['高めの声', ['high', 'very-high']]];
             const grouped = groups.map(([label, kinds]) => { const g = element('optgroup'); g.label = label; g.append(...voices().filter(v => kinds.includes(details[v]?.pitch)).sort((a, b) => (details[b].recommended ? 1 : 0) - (details[a].recommended ? 1 : 0) || details[a].pitchHz - details[b].pitchHz).map(option)); return g; }).filter(g => g.children.length);
             voiceSelect.replaceChildren(...grouped, ...voices().filter(v => !details[v]).map(option));
-            voicePreview.hidden = !Object.keys(r.voiceDetails ?? {}).length;
+            // Samples were recorded for GPT-Live's voices only.
+            voicePreview.hidden = currentEngine() !== 'gpt-live' || !Object.keys(r.voiceDetails ?? {}).length;
             setVoice(keep || rememberedVoice());
+    }
+    function readyView(r) {
+        readiness = r;
+        bookingsView.enable(r.reception);
+        if (engineSelect.options.length !== engineChoices().length) {
+            const keepEngine = engineSelect.value;
+            engineSelect.replaceChildren(...engineChoices().map(e => { const o = element('option', e.label + (e.ready ? '' : '（未設定）') + (e.id === r.defaultEngine ? '（標準）' : '')); o.value = e.id; o.disabled = !e.ready; return o; }));
+            engineSelect.value = engineOf(keepEngine)?.ready ? keepEngine : (r.defaultEngine ?? engineChoices()[0]?.id ?? '');
         }
+        engineField.hidden = engineChoices().length < 2;
+        rebuildVoices();
         voiceField.hidden = voices().length < 2;
         if (!callerInput.value) callerInput.value = rememberedCaller();
         $('#phone-form button[type=submit]').textContent = r.ready ? '電話する' : '下書きを保存';
+
         $('#phone-readiness').replaceChildren(element('strong', r.ready ? '発信設定済み' : '現在は発信できません'));
         if (r.issues.length) {
             const details = element('details');
@@ -297,7 +316,7 @@ import { renderNews } from './news.js';
         purpose.className = 'phone-review-purpose';
         const fields = $('#phone-review-fields');
         fields.replaceChildren();
-        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')]])
+        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')], ['音声AI', engineOf(m.phoneRequest.engine ?? review.readiness.defaultEngine)?.label ?? m.phoneRequest.engine ?? 'GPT-Live']])
             fields.append(element('dt', label), element('dd', value));
         fields.append(element('dt', '目的'), purpose);
         if (m.request.length > 90) {
@@ -634,7 +653,7 @@ import { renderNews } from './news.js';
         const values = {
             phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, ...(conversationMode === 'chat' ? {
                 conversationMode: 'chat'
-            } : {}), ...(voiceSelect.value && voiceSelect.value !== defaultVoice() ? { voice: voiceSelect.value } : {}), ...(callerInput.value.trim() ? { callerName: callerInput.value.trim() } : {})
+            } : {}), ...(engineSelect.value && engineSelect.value !== (readiness?.defaultEngine ?? 'gpt-live') ? { engine: engineSelect.value } : {}), ...(voiceSelect.value && voiceSelect.value !== defaultVoice() ? { voice: voiceSelect.value } : {}), ...(callerInput.value.trim() ? { callerName: callerInput.value.trim() } : {})
         }, session = generation;
         preparing = true;
         const button = $('#phone-form button[type=submit]');

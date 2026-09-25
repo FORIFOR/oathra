@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defineCall } from "@oathra/contract";
 import { GOODBYE_RE, OpenAILiveAgent } from "./live.js";
-import { extractCallerName } from "./phone-message.js";
+import { extractCallerName } from "@oathra/voice-kit";
 
 // Exercise actual instruction generation only; constructors do not open sockets.
 describe("reviewed phone message voice instructions", () => {

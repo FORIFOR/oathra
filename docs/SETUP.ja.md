@@ -52,6 +52,7 @@ python3 -m http.server 4380 --directory site
 | 目的 | 環境変数 | 取得先 |
 | --- | --- | --- |
 | GPT-Live | `OPENAI_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) |
+| Gemini Live（`--engine gemini-live`、`gemini-3.8-live`） | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) |
 | Pipeline の音声認識 | `DEEPGRAM_API_KEY` | [Deepgram Console](https://console.deepgram.com/) |
 | Twilio 発信 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | [Twilio Console](https://console.twilio.com/) |
 | Twilio 発信元番号 | `TWILIO_PHONE_NUMBER` | [Twilio 電話番号](https://console.twilio.com/us1/develop/phone-numbers/manage/search) |
@@ -138,7 +139,7 @@ Arenaで練習中に一覧へ戻っても「進行中の通話に戻る」から
 
 Arenaの「電話をかける」で、電話番号・相手の名前・目的を入力します。目的は12種類のテンプレートか「過去の目的を再利用」から選べます。テンプレートの `{{項目}}` は具体的な内容に置き換えてください。「発信前に内容を確認」の後、送信先・料金・保存内容を確認し、同意して「この内容で電話をかける」を押します。確認や履歴の再利用だけでは発信しません。
 
-Web発信はTwilioとgpt-liveに対応するexperimental機能です。`.env` のTwilio/OpenAI設定と `.oathra/phone.yaml` に加え、`OATHRA_PUBLIC_WS_URL` に既存の公開 `wss://` 接続先が必要です。この接続先はTwilio音声ポート（既定4243、phone.yamlのportで変更）へ転送してください。ArenaのHTTPポートとは別です。画面から公開トンネルは作成しません。未設定項目は入力画面に表示します。再起動後や設定変更後はもう一度内容を確認してください。実回線の接続・切断・料金はまだ未検証です。
+Web発信はTwilioと gpt-live / gemini-live に対応するexperimental機能です。画面の「音声AI」で、API キーが設定されているエンジンを通話ごとに選べます。`.env` のTwilio/OpenAI設定と `.oathra/phone.yaml` に加え、`OATHRA_PUBLIC_WS_URL` に既存の公開 `wss://` 接続先が必要です。この接続先はTwilio音声ポート（既定4243、phone.yamlのportで変更）へ転送してください。ArenaのHTTPポートとは別です。画面から公開トンネルは作成しません。未設定項目は入力画面に表示します。再起動後や設定変更後はもう一度内容を確認してください。実回線の接続・切断・料金はまだ未検証です。
 
 通話中は「通話を終了」を押します。終了確認が取れなければ「結果未確認」を維持します。通信会社側で終了したことを確かめてから、画面の確認操作を行ってください。自動で再発信しません。履歴と会話テキストは端末内の `.oathra/phone-history` に保存します。音声ファイルは保存しません。詳細は [Web発信の契約](quality/web-phone.md) を参照してください。
 

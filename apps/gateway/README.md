@@ -235,7 +235,7 @@ node --env-file=.env.managed apps/gateway/login-setup.mjs operator .oathra/login
 
 「あなたの名前（相手に伝えます）」（`POST /v1/phone/draft` の `callerName`、40文字まで、数字・メール・URLは拒否）を入れると、AIは「〇〇さんの代わりにお電話しているAIです」と最初に名乗ります。空欄なら「知り合いの方の代わり」と伝え、依頼者の名前は預かっていないと正直に答えます。相手に「誰?」「何の電話?」と聞かれたら、話の途中でも止めて、AIであること・誰の代わりか・用件を最優先で答えます。この名前は検索語には使いません。
 
-AIの声は電話ごとに画面の「AIの声」で選べます（GPT-Liveの13種、既定は `marin`。`POST /v1/phone/draft` の `voice`、一覧は `GET /v1/phone/status` の `voices`）。声は通話の途中では変えられず、一覧に無い名前は400で拒否します。名前だけでは選べないので、各声で同じ一文を話させた録音（`public/phone/voices/*.wav`、`node --env-file=<env> scripts/voice-samples.mjs` で再生成）から声の高さ（基本周波数の中央値）と速さを測り、「低めの声（男性に多い高さ）・やや速め」のように表示して、高さごとにまとめます。性別そのものは録音からは断定できないため表示せず、「この声を試聴」で録音を聞けるようにしています。「★ 推奨」は好みではなく計測からの規則です: 既定の声（実通話で確認済み）と、それ以外の高さのグループごとに、電話の経路（8kHz μ-law）を通した録音が一字も誤らず文字起こしされ・その音量が十分で・速さがふつうの声のうち、速さが全体の中央に最も近い1つ。条件を満たす声が無いグループには推奨を付けません。電話の経路での音量が他の約半分の声には「音量は小さめ」と表示します。`node --env-file=<env> scripts/voice-samples.mjs --measure` で録音をそのままに測り直せます。計測値は `GET /v1/phone/status` の `voiceDetails`。選んだ声は確認ダイアログに表示し、その端末に記憶します。
+音声AI（GPT-Live / Gemini Live）は電話ごとに画面の「音声AI」で選べます（`POST /v1/phone/draft` の `engine`、使えるものは `GET /v1/phone/status` の `engines`。サーバーに API キーが無いものと、従量課金では Gemini Live は選べません）。AIの声は電話ごとに画面の「AIの声」で選べます（GPT-Liveの13種、既定は `marin`。Gemini Live は8種、既定は `Kore`。`POST /v1/phone/draft` の `voice`、一覧は `GET /v1/phone/status` の `voices`）。声は通話の途中では変えられず、一覧に無い名前は400で拒否します。名前だけでは選べないので、各声で同じ一文を話させた録音（`public/phone/voices/*.wav`、`node --env-file=<env> scripts/voice-samples.mjs` で再生成）から声の高さ（基本周波数の中央値）と速さを測り、「低めの声（男性に多い高さ）・やや速め」のように表示して、高さごとにまとめます。性別そのものは録音からは断定できないため表示せず、「この声を試聴」で録音を聞けるようにしています。「★ 推奨」は好みではなく計測からの規則です: 既定の声（実通話で確認済み）と、それ以外の高さのグループごとに、電話の経路（8kHz μ-law）を通した録音が一字も誤らず文字起こしされ・その音量が十分で・速さがふつうの声のうち、速さが全体の中央に最も近い1つ。条件を満たす声が無いグループには推奨を付けません。電話の経路での音量が他の約半分の声には「音量は小さめ」と表示します。`node --env-file=<env> scripts/voice-samples.mjs --measure` で録音をそのままに測り直せます。計測値は `GET /v1/phone/status` の `voiceDetails`。選んだ声は確認ダイアログに表示し、その端末に記憶します。
 
 GPT-Liveは全二重です。回線がつながった時点で相手を待たずに「もしもし」と名乗るよう指示し、その後の発話の順番はモデルに任せます。入力音声は無音も含めて送り続けます。相づちでは返答を止めず、質問・訂正などの割り込みのときだけ回線に溜まった返答を破棄します。発話が重なった後に双方が1.5秒以上黙ったままなら、一度だけ発言を譲るよう促します（10秒以内の連発なし、相手が待つよう求めた場合と検索中は行いません）。通話中の確認状態は `session.thinking.append` で渡し、発話を中断させません。`end_call` の後は挨拶の再生を待ってから切断します。双方が無音のままなら25秒で終了し、相手の切断・取消・クレジット上限は優先します。実際に相手が聞けたことを保証するものではありません。
 
@@ -302,6 +302,9 @@ OATHRA_CREDIT_USD=0.01
 # OATHRA_CARRIER_FX_DATE=YYYY-MM-DD
 OATHRA_VOICE_ENGINE=gpt-live
 OATHRA_VOICE_MODEL=gpt-live-1
+# 任意: Gemini Live も画面の「音声AI」で選べるようにする（GEMINI_API_KEY が必要）。従量課金（provider-cost-v1）では GPT-Live のみ。
+# GEMINI_API_KEY=...
+# OATHRA_GEMINI_LIVE_MODEL=gemini-3.8-live
 # セッション1分あたりのUSD。ご自身の契約単価を確認して設定してください。modelはOATHRA_VOICE_MODELと一致が必要です。
 OATHRA_LIVE_PRICES_JSON='{"model":"gpt-live-1","version":"2026-09-20","perMinute":"0.05"}'
 # 0 disables each daily limit. Per-call time/cost ceilings and prepaid balance remain enforced.

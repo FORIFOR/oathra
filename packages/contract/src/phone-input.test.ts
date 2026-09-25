@@ -80,3 +80,14 @@ it("a request may say on whose behalf the call is: a name, never contact details
   expect(preparePhoneRequest(base).callerName).toBeUndefined();
   for (const callerName of ["", " ", "x".repeat(41), "090-1234-5678", "a@example.com", "https://example.com", "<b>名前</b>"]) expect(() => preparePhoneRequest({ ...base, callerName })).toThrow();
 });
+
+it("a request may name the engine, and a voice belongs to one engine", () => {
+  const base = { phone: "+819012345678", name: "田中", instruction: "明日の集合時間を伝えてください。" };
+  expect(preparePhoneRequest({ ...base, engine: "gemini-live" }).engine).toBe("gemini-live");
+  expect(preparePhoneRequest({ ...base, engine: "gemini-live", voice: "Kore" }).voice).toBe("Kore");
+  // A Gemini voice without an engine implies Gemini; a GPT-Live voice with the Gemini engine is refused.
+  expect(preparePhoneRequest({ ...base, voice: "Kore" }).voice).toBe("Kore");
+  expect(() => preparePhoneRequest({ ...base, engine: "gemini-live", voice: "vesper" })).toThrow();
+  expect(() => preparePhoneRequest({ ...base, engine: "gpt-live", voice: "Kore" })).toThrow();
+  expect(() => preparePhoneRequest({ ...base, engine: "realtime" as never })).toThrow();
+});

@@ -38,6 +38,10 @@ contract → evidence → core → scenario → runtime → providers → replay
 
 Invalid external observations remain in the audit checks and cannot upgrade a result. A valid lower-level observation is retained when a higher-level record conflicts or expires. Provider credentials, partner agreements and PII retention stay outside Oathra; this repository ships no vendor adapter or network call.
 
+## Voice engines
+
+Speech-to-speech engines implement `VoiceEngine` from `packages/voice`: `providers/openai-realtime` (GPT-Live) and `providers/gemini-live` (Gemini Live, `gemini-3.8-live`). They never import each other; the system prompts, the reservation-desk tools and farewell detection they share live in `providers/voice-kit`. A phone request may name its `engine`; the CLI's `--engine`, the Arena's and the Gateway's 「音声AI」 selector all resolve to the same `buildEngine`.
+
 ## Simulator
 
 `SimulatorTransport` implements `TransportProvider`; a `CalleeCharacter` answers. Scripted characters are deterministic (seeded) and expose `truth()` so eval can detect false completions. `HumanCharacter` lets a person answer in Play mode. Pace `realtime` sleeps for speech durations; `fast` uses a virtual clock.

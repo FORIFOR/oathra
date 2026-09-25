@@ -51,7 +51,7 @@
     {
       "path": "../../providers/deepgram"
     },
-    {
+    { "path": "../../providers/voice-kit" }, { "path": "../../providers/gemini-live" }, {
       "path": "../../providers/openai-realtime"
     },
     {

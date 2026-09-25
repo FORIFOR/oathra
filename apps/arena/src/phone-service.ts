@@ -7,7 +7,12 @@ import { renderCallSummary, saveCall } from "@oathra/replay";
 import type { CallOutcome } from "@oathra/runtime";
 
 /** Experimental local Web telephone adapter. inspect MUST have no external side effects. */
-export type PhoneReadiness = { ready: boolean; issues: string[]; provider: string; engine: string; recording: boolean; disclosure: string; configurationId?: string };
+export type PhoneEngineChoice = { id: string; label: string; ready: boolean; issues: string[]; voices: string[]; defaultVoice: string };
+export type PhoneReadiness = {
+  ready: boolean; issues: string[]; provider: string; engine: string; recording: boolean; disclosure: string; configurationId?: string;
+  /** Speech-to-speech engines this server can use, so the form can offer a choice. */
+  engines?: PhoneEngineChoice[]; defaultEngine?: string;
+};
 export interface PhoneDialer {
   inspect(request?: PhoneRequest): PhoneReadiness | Promise<PhoneReadiness>;
   execute(request: PhoneRequest, ctx: { callId: string; reviewedConfigurationId?: string; signal: AbortSignal; onEvent: (event: CallEvent) => void }): Promise<CallOutcome>;
