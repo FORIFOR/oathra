@@ -5,6 +5,8 @@ export const stateLabel = {
     draft: '下書き（未発信）', starting: '発信準備中', running: '通話中', stopping: '終了を確認中', ended: '通話終了', failed: '通話は完了しませんでした', unknown: '結果未確認'
 };
 export const errorText = {
+    contact_name_or_company_required: '名前か会社名を入力してください。',
+    execution_failed: '通話を実行できませんでした。保存された会話と状況を確認してください。',
     call_time_limit_reached: '通話時間の上限に達しました。',
     carrier_outcome_unknown_released_by_operator: '発信の結果を通信会社で確認できなかったため、運営者が確保分を全額返却しました。',
     credit_limit_reached: '利用クレジットの上限に達しました。', insufficient_connection_credits: '残高が初回の回線料金に足りません。クレジットを追加してください。', privacy_consent_required: '確認内容が更新されました。もう一度内容を確認してください。', recipient_suppressed: 'この相手は電話の連絡停止を指定しています。発信できません。',

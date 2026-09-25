@@ -83,8 +83,11 @@ import { renderNews } from './news.js';
     chatNote.hidden = true;
     $('#phone-template').after(chatNote);
     // Whose behalf the call is on. Without it the callee only hears "an AI is calling" and asks who.
-    const callerField = element('div'), callerLabel = element('label', 'あなたの名前（相手に伝えます）'), callerInput = element('input'), callerNote = element('p', '「〇〇さんの代わりにお電話しているAIです」と最初に名乗ります。空欄なら「知り合いの方の代わり」と伝えます。');
-    callerField.id = 'phone-caller-field'; callerLabel.htmlFor = 'phone-caller-name'; callerInput.id = 'phone-caller-name'; callerInput.name = 'callerName'; callerInput.type = 'text'; callerInput.maxLength = 40; callerInput.autocomplete = 'name'; callerInput.placeholder = '例：堀尾';
+    // The shared Arena HTML may already ship this field; reuse it instead of adding a second #phone-caller-name.
+    const staticCaller = $('#phone-caller-name'), staticCallerLabel = staticCaller ? $('label[for="phone-caller-name"]') : null;
+    const callerField = element('div'), callerLabel = staticCallerLabel ?? element('label'), callerInput = staticCaller ?? element('input'), callerNote = element('p', '「〇〇さんの代わりにお電話しているAIです」と最初に名乗ります。空欄なら「知り合いの方の代わり」と伝えます。');
+    callerLabel.textContent = 'あなたの名前（相手に伝えます）';
+    callerField.id = 'phone-caller-field'; callerLabel.htmlFor = 'phone-caller-name'; callerInput.id = 'phone-caller-name'; callerInput.name = 'callerName'; callerInput.type = 'text'; callerInput.maxLength = 40; callerInput.autocomplete = 'name'; callerInput.placeholder = '例：田中';
     callerNote.className = 'note'; callerNote.id = 'phone-caller-note'; callerInput.setAttribute('aria-describedby', 'phone-caller-note');
     callerField.append(callerLabel, callerInput, callerNote);
     // With the other optional settings, after the three required fields: number, recipient and purpose stay

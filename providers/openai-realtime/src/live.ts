@@ -14,7 +14,7 @@ import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler }
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { AgentBridge } from "./index.js";
-import { conversationPolicies, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
+import { conversationPolicies, extractCallerName, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
 import { DESK_TOOLS, deskTool, receptionGreeting, restaurantReceptionInstructions, type DeskEvent, type ReservationDesk } from "./reception.js";
 import { createNewsSearch, NEWS_TOPICS, publicQuery, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
 
@@ -307,7 +307,7 @@ export class OpenAILiveAgent {
   private greeting(): string {
     const ja = this.language === "ja";
     const goal = this.opts.contract.goal;
-    const caller = typeof this.opts.contract.input.callerName === "string" ? this.opts.contract.input.callerName : undefined;
+    const caller = extractCallerName(this.opts.contract);
     if (goal === "phone.message") return ja
       ? `${this.agentSpoke ? "" : "もしもし。"}${caller ? `${caller}さんの代わりにお電話しているAIです。` : "知り合いの方の代わりにお電話しているAIです。"}今、少しお話しできますか？`
       : `${this.agentSpoke ? "" : "Hello. "}This is an AI calling on behalf of ${caller ?? "someone you know"}. Is now a good time to talk?`;
@@ -480,7 +480,13 @@ export class OpenAILiveAgent {
     }
     if (name === "end_call") {
       this.endRequested = String(args.reason ?? "agent_hangup");
-      this.send({ type: "response.item.create", event_id: `tool_${callId}`, item: { type: "function_call_output", call_id: callId, output: JSON.stringify({ ok: true, note: "Say a one-word goodbye; the line closes now." }) } });
+      const casual = this.opts.contract.goal === "phone.message";
+      const note = this.language === "ja"
+        ? (casual
+          ? "通話を終了します。相手のトーンに合わせて「失礼します」や「はーい、失礼します！バイバーイ」など、自然で温かい最後の挨拶を一言だけ言って終了してください。"
+          : "通話を終了します。「ありがとうございました。失礼いたします」のような短い挨拶を一言だけ言って終了してください。")
+        : "Say a warm, brief one-phrase goodbye; the line closes now.";
+      this.send({ type: "response.item.create", event_id: `tool_${callId}`, item: { type: "function_call_output", call_id: callId, output: JSON.stringify({ ok: true, note }) } });
       this.send({ type: "response.create", event_id: `continue_${callId}` });
       // Give the model a moment to finish its goodbye audio, then hang up.
       setTimeout(() => {
@@ -882,4 +888,5 @@ export class OpenAILiveAgent {
 
 /** "Hang up" is a request to end the call even without a goodbye word. */
 const HANGUP_REQUEST_RE = /(?:電話|でんわ)?(?:を)?切って|もう切る|切ってい?い|hang up|end the call/i;
-const GOODBYE_RE = /ばいばい|バイバイ|またね|じゃあね|じゃあ(?:また)?今度|また(?:今度|連絡)|切る(?:ね|よ)|失礼(?:いた)?します|おやすみ|\bbye\b|talk (?:to you )?later|see you/i;
+/** Farewells only. 「それじゃ」「では」 are conjunctions mid-sentence and must not end a call. */
+export const GOODBYE_RE = /ばいば[ー〜]*い|バイバ[ー〜]*イ|またね[ー〜]*|じゃあね[ー〜]*|じゃあ(?:また)?今度|また(?:今度|連絡)|切る(?:ね|よ)|失礼(?:いた)?します|おやすみ|\bbye\b|talk (?:to you )?later|see you/i;
