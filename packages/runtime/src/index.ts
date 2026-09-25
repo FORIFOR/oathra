@@ -148,6 +148,10 @@ export class CallRuntime {
     const gate = this.opts.permissionGate ?? denyAll;
     let endReason: EndReason = "completed";
     const start = Date.now();
+    // Wall-clock budget. The per-turn check below only runs when the callee speaks; a silent or held
+    // line would otherwise stay open (and billed) forever.
+    let budgetTimer: NodeJS.Timeout | undefined;
+    let budgetFired = false;
 
     this.emit({
       type: "call.started",
@@ -165,6 +169,11 @@ export class CallRuntime {
       this.session = await transport.connect(contract.target, { language: contract.language, contract });
       const session = this.session;
       const iterator = session.events[Symbol.asyncIterator]();
+      budgetTimer = setTimeout(() => {
+        budgetFired = true;
+        void session.hangup("budget_exceeded").catch(() => undefined);
+      }, Math.max(1000, contract.budget.maxDurationMs));
+      budgetTimer.unref?.();
 
       let agentHungUp = false;
       let calleeSpoke = false;
@@ -360,6 +369,7 @@ export class CallRuntime {
         }
       }
 
+      if (budgetFired) endReason = "budget_exceeded";
       if (this.cancelled) endReason = "cancelled";
       if (agentHungUp) endReason = "agent_hangup";
       if (this.connection !== "failed") this.connection = "completed";
@@ -368,6 +378,10 @@ export class CallRuntime {
       this.emit({ type: "error", message: (e as Error).message, fatal: true });
       this.connection = "failed";
       endReason = "error";
+      // A brain or TTS failure must not leave a real line open.
+      await this.session?.hangup("error").catch(() => undefined);
+    } finally {
+      if (budgetTimer) clearTimeout(budgetTimer);
     }
 
     if (this.state.state !== "ENDED") this.state.transition("ENDED");

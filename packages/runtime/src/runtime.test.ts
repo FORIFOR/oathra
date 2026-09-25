@@ -491,3 +491,32 @@ it.each([true,false])('preserves interrupted readbacks through RunResult and not
  const request=preparePhoneRequest({phone:'+819000000000',name:'条件確認',instruction:'19時の空席を確認'});
  expect(phoneMemory(request,out.transcript,NOW.getTime()).notes.find(n=>n.field==='time')).toMatchObject({value:'19:30',status:'proposed'});
 });
+
+describe("audit 2026-09-26: the line is never left open", () => {
+  const budget = (maxDurationMs: number) => defineCall({ goal: "restaurant.reservation", language: "ja", require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true }, budget: { maxTurns: 20, maxDurationMs, maxCostUsd: 1 } });
+
+  it("hangs up when the brain throws mid-call", async () => {
+    const contract = budget(30_000);
+    const session = new FakeSession([]);
+    const transport = fakeTransport(session, "はい、こちらレストランです。");
+    const brain: BrainProvider = { name: "broken", respond: async () => { throw new Error("model down"); } };
+    const outcome = await runCall({ contract, transport, brain });
+    expect(outcome.endReason).toBe("error");
+    expect(session.hangups.length).toBeGreaterThan(0);
+  });
+
+  it("ends a silent line when the wall-clock budget runs out", async () => {
+    // Never yields a callee turn after connecting, so the per-turn budget check would never run.
+    const contract = budget(1000);
+    const session = new FakeSession([]);
+    const transport = fakeTransport(session, undefined, { speaksItself: true });
+    const brain: BrainProvider = { name: "quiet", respond: async () => ({ text: "" }) };
+    const started = Date.now();
+    const outcome = await Promise.race([
+      runCall({ contract, transport, brain }),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("still open after 5 s")), 5000)),
+    ]);
+    expect(outcome.endReason).toBe("budget_exceeded");
+    expect(Date.now() - started).toBeLessThan(4000);
+  });
+});
