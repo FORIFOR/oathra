@@ -24,13 +24,18 @@ export type Claim = {
 const NEGATIVE_JA =
   /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!問題(?:は)?)ございません|(?<!問題(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|定休日|休業|お休みを?(?:いただ|頂)|できまへん|でけへん|あきまへん|あかん/;
 const NEGATIVE_EN =
-  /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work|(?:we're|we are|is|are) closed)\b/i;
+  /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work|(?:we're|we are|is|are) closed|not (?:yet )?confirmed|not confirmed yet|(?:is|are|remains?) (?:still )?(?:pending|tentative))\b/i;
 
 export const REFUSAL_RE = new RegExp(`${NEGATIVE_JA.source}|${NEGATIVE_EN.source}`, "i");
 
-/** Explicit reservation confirmation by the callee. Only these phrases count. */
+/**
+ * Explicit reservation confirmation by the callee. Only these phrases count.
+ * A bare 「承りました」 is an acknowledgement of the request (「ご希望は承りました」); it confirms only
+ * next to what was booked (「2名様で承りました」「ご予約承りました」). In English a bare
+ * "confirmed" is excluded when negated or in the future ("not confirmed yet", "will be confirmed").
+ */
 export const CONFIRMATION_RE =
-  /ご予約(?:を)?(?:承り|お取り|お受け|確定|お受けいたし|承っ)|承りました|お取りしました|お取りいたしました|確保(?:いたし|し)ました|確定(?:いたし|し)ました|予約完了|お席をご用意|(?:ご)?予約(?:を)?(?:いたし|し|させていただき|を入れ)ました|(?:お)?押さえ(?:いたし|し|ておき)?ました|手配(?:いたし|し)ました|(?:ご)?用意(?:いたし|し)ました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|(?:reservation|booking|table|room)\s+(?:is|has been)\s+(?:confirmed|booked|reserved|set)|\b(?:confirmed|booked|reserved|all set)\b|(?:you're|you are) (?:all set|booked)|I've (?:booked|reserved|confirmed)|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)|(?:you're|you are) down for/i;
+  /ご予約(?:を)?(?:承り|お取り|お受け|確定|お受けいたし|承っ)|(?:予約|お席|注文|手配|時|名様|名|人|日|円|様)[^。、]{0,6}?承りました|お取りしました|お取りいたしました|確保(?:いたし|し)ました|確定(?:いたし|し)ました|予約完了|お席をご用意|(?:ご)?予約(?:を)?(?:いたし|し|させていただき|を入れ)ました|(?:お)?押さえ(?:いたし|し|ておき)?ました|手配(?:いたし|し)ました|(?:ご)?用意(?:いたし|し)ました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|(?:reservation|booking|table|room)\s+(?:is|has been)\s+(?:confirmed|booked|reserved|set)|(?<!\b(?:not|be|get|isn't|is not|to be|not yet|isn't yet|will be|once)\s)\b(?:confirmed|booked|reserved|all set)\b|(?:you're|you are) (?:all set|booked)|I've (?:booked|reserved|confirmed)|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)|(?:you're|you are) down for/i;
 
 /**
  * A commitment in the present/future tense ("…でご予約いたします"). On its own it is an intention,
@@ -55,7 +60,7 @@ export const ACCEPTANCE_RE =
  * "予約を取れると思います" / "たぶん大丈夫です" must never settle a field.
  */
 export const HEDGE_RE =
-  /と思います|と思う|たぶん|多分|おそらく|恐らく|かもしれません|かもしれない|確認してみ|確認いたします|確認します|調べてみ|仮(?:の)?(?:押さえ|予約|受付|確保)|未確定|正式な確定ではありません|本予約では(?:ありません|ない)|承認待ち|確認待ち|確認が必要|確約(?:は)?(?:できません|できない)|保留扱い|調整中|確認中|確認してから|キャンセル待ち|確定前|見込み|(?:聞いて|相談して|確認して|検討して)から|折り返し|持ち帰|検討(?:し|させ|いたし)ます|それから(?:判断|決め|お返事)|判断(?:し|いたし)ます|と言いたいところ|約束(?:は)?でき|get back to you|need to (?:ask|check with)|check with my|run it by|probably|maybe|perhaps|I think|let me check|not sure|I'll check|might be/i;
+  /と思います|と思う|たぶん|多分|おそらく|恐らく|かもしれません|かもしれない|確認してみ|確認いたします|確認します|調べてみ|仮(?:の)?(?:押さえ|予約|受付|確保)|未確定|正式な確定ではありません|本予約では(?:ありません|ない)|承認待ち|確認待ち|確認が必要|確約(?:は)?(?:できません|できない)|保留扱い|調整中|確認中|確認してから|キャンセル待ち|確定前|見込み|(?:聞いて|相談して|確認して|検討して)から|折り返し|持ち帰|検討(?:し|させ|いたし)ます|それから(?:判断|決め|お返事)|判断(?:し|いたし)ます|と言いたいところ|約束(?:は)?でき|get back to you|need to (?:ask|check with)|check with my|run it by|probably|maybe|perhaps|I think|let me check|not sure|I'll check|might be|call you back|(?:will|to) be confirmed|once we receive|tentative|pending/i;
 
 /** Split text into clauses with a polarity. */
 export function splitClauses(text: string): Clause[] {
@@ -183,9 +188,12 @@ export const CONFIRM_REQUEST_RE =
 export const AFFIRMATIVE_RE =
   /^[\s「]*(?:はい|ええ|そうです|大丈夫です|問題ございません|問題ありません|かしこまりました|承知(?:いたし|し)ました|もちろん|了解(?:です|しました)|お願いします|yes|sure|of course|certainly|absolutely|that works|sounds good|correct)/i;
 
+/** 「はい、少々お待ちください」 answers a question with a hold, not a yes. */
+export const HOLD_RE = /少々お待ち|お待ちください|お待ちくださいませ|one moment|hold on|bear with me/i;
+
 export function isAffirmativeAnswer(text: string): boolean {
   const t = text.trim();
-  if (!t || HEDGE_RE.test(t) || REFUSAL_RE.test(t)) return false;
+  if (!t || HEDGE_RE.test(t) || REFUSAL_RE.test(t) || HOLD_RE.test(t)) return false;
   if (/[?？]|いかがでしょうか|いかがですか|でしょうか$/.test(t)) return false;
   return AFFIRMATIVE_RE.test(t) || CONFIRMATION_RE.test(t);
 }
@@ -199,7 +207,7 @@ export function isConfirmRequest(text: string, source: Speaker): boolean {
  * A confirmation followed by this (same utterance or later) is not a confirmation.
  */
 export const RETRACTION_RE =
-  /やはり[^。]*?(?:できません|できかね|無理|キャンセル|やめ)|キャンセル(?:して|させて|でお願い)|取り消して|(?:please )?cancel (?:it|that|the (?:meeting|appointment))|(?:予約|ご予約|注文|ご注文)(?:は|を)?(?:お受けでき(?:ません|かねます)|お取りでき(?:ません|かねます)|承れません|お受けいたしかねます|お取りいたしかねます|キャンセル|取り消し)|取り消させていただき|(?:can't|cannot|unable to|won't be able to) (?:take|honou?r|hold|keep|confirm) (?:the|that|your|this) (?:reservation|booking|order)|(?:reservation|booking|order) (?:is|has been|was) (?:cancelled|canceled|off|withdrawn)|after all,? (?:we|I) can't/i;
+  /やはり[^。]*?(?:できません|できかね|無理|難しい|厳しい|キャンセル|やめ)|(?:その|この|ご希望の)?(?:お?時間|お?日にち|日程|時間帯|その日|お日柄)(?:は|も|が|では|だと)[^。]{0,10}?(?:難しい|厳しい|無理|できません|できかね|いっぱい|埋まって)|キャンセル(?:して(?!いただ|頂|もら)|させていただき(?:ます|たい|たく)|でお願い)|取り消して|(?:please )?cancel (?:it|that|the (?:meeting|appointment))|(?:予約|ご予約|注文|ご注文)(?:は|を)?(?:お受けでき(?:ません|かねます)|お取りでき(?:ません|かねます)|承れません|お受けいたしかねます|お取りいたしかねます|キャンセル(?!され|なさ|の場合|する場合|される場合|料|規定|ポリシー|待ち|し(?:て)?(?:いただ|頂|もら))|取り消し)|取り消させていただき|(?:can't|cannot|unable to|won't be able to) (?:take|honou?r|hold|keep|confirm) (?:the|that|your|this) (?:reservation|booking|order)|(?:reservation|booking|order) (?:is|has been|was) (?:cancelled|canceled|off|withdrawn)|after all,? (?:we|I) can't/i;
 
 /**
  * The slot itself is gone. Said by the callee AFTER a confirmation, this takes the booking back even without

@@ -15,7 +15,21 @@ export function kanjiToNumber(s: string): number | undefined {
   let total = 0;
   let current = 0;
   let matched = false;
+  let digits = "";
+  // Arabic digits before a unit ("2万3千500", "8千800") count like kanji digits.
+  const flush = () => {
+    if (digits) {
+      current = Number(digits);
+      digits = "";
+    }
+  };
   for (const ch of s) {
+    if (ch >= "0" && ch <= "9") {
+      digits += ch;
+      matched = true;
+      continue;
+    }
+    flush();
     if (ch in KANJI_DIGITS) {
       current = KANJI_DIGITS[ch]!;
       matched = true;
@@ -35,6 +49,7 @@ export function kanjiToNumber(s: string): number | undefined {
       return undefined;
     }
   }
+  flush();
   return matched ? total + current : undefined;
 }
 
@@ -76,7 +91,8 @@ export function parseTimes(text: string, lang: Language = "ja"): TimeMatch[] {
   }
 
   // Japanese: 19時半 / 19時30分 / 7時 / 午後7時半
-  const re2 = new RegExp(`(午前|午後|夜|朝|昼|夕方)?\\s*${NUM_JA}時(半|${NUM_JA}分)?`, "g");
+  // 「2時間制」「1時間半」 are durations, not clock times.
+  const re2 = new RegExp(`(午前|午後|夜|朝|昼|夕方)?\\s*${NUM_JA}時(?!間)(半|${NUM_JA}分)?`, "g");
   for (const m of s.matchAll(re2)) {
     const hRaw = kanjiToNumber(m[2]!);
     if (hRaw === undefined || hRaw > 23) continue;
@@ -164,7 +180,7 @@ export function parseDates(text: string, now: Date, lang: Language = "ja"): Date
 
   // Day-only ("14日"): the next occurrence of that day-of-month. Durations
   // ("3日間", "2日後") and counters are excluded.
-  for (const m of s.matchAll(/(?<![\d月])(\d{1,2})日(?![間後前以\d])/g)) {
+  for (const m of s.matchAll(/(?<![\d月])(\d{1,2})日(?![間後前以\d]|ほど|程|くらい|ぐらい|位)/g)) {
     const day = Number(m[1]);
     if (day < 1 || day > 31) continue;
     if (out.some((o) => (m.index ?? 0) >= o.index && (m.index ?? 0) < o.index + o.span.length)) continue;
@@ -214,14 +230,16 @@ export type NumberMatch = { value: number; span: string; index: number };
 export function parsePartySize(text: string, lang: Language = "ja"): NumberMatch[] {
   const s = toFullWidthDigits(text);
   const out: NumberMatch[] = [];
-  for (const m of s.matchAll(/(\d{1,3}|[一二三四五六七八九十]{1,3})\s*(名様|名|人)/g)) {
+  // 「お一人様8,800円」「3人前」「一人当たり」 are per-head prices or portions, not a party size.
+  const PER_HEAD = "(?!前|分|当たり|あたり|につき|ずつ|様?\\s*[\\d一二三四五六七八九十百千万,]+\\s*円)";
+  for (const m of s.matchAll(new RegExp(`(\\d{1,3}|[一二三四五六七八九十]{1,3})\\s*(名様|名|人)${PER_HEAD}`, "g"))) {
     const n = kanjiToNumber(m[1]!);
     if (n === undefined || n === 0) continue;
     out.push({ value: n, span: m[0], index: m.index ?? 0 });
   }
   const special: Array<[RegExp, number]> = [
-    [/お一人様|お一人|おひとり|ひとり/g, 1],
-    [/お二人様|お二人|おふたり|ふたり/g, 2],
+    [new RegExp(`(?:お一人様|お一人|おひとり|ひとり)${PER_HEAD}`, "g"), 1],
+    [new RegExp(`(?:お二人様|お二人|おふたり|ふたり)${PER_HEAD}`, "g"), 2],
   ];
   for (const [re, n] of special) {
     for (const m of s.matchAll(re)) {
@@ -254,15 +272,15 @@ export function parsePrices(text: string): PriceMatch[] {
   const out: PriceMatch[] = [];
 
   // 2万円 / 1万8800円 / 2万3千500円 / 一万八千八百円
-  const reMan = /(\d{1,3}|[一二三四五六七八九十]{1,3})万\s*(\d{1,4}|[一二三四五六七八九十百千]{1,7})?\s*円/g;
+  const reMan = /(\d{1,3}|[一二三四五六七八九十]{1,3})万\s*([\d一二三四五六七八九十百千]{1,7})?\s*円/g;
   for (const m of s.matchAll(reMan)) {
     const man = kanjiToNumber(m[1]!);
-    const rest = m[2] ? kanjiToNumber(m[2]) ?? Number(m[2]) : 0;
-    if (man === undefined) continue;
+    const rest = m[2] ? kanjiToNumber(m[2]) : 0;
+    if (man === undefined || rest === undefined) continue;
     out.push({ value: man * 10000 + rest, currency: "JPY", span: m[0], index: m.index ?? 0 });
   }
-  // 五千円 / 八千八百円 / 千円
-  for (const m of s.matchAll(/([一二三四五六七八九十百千]{1,8})円/g)) {
+  // 五千円 / 八千八百円 / 千円 / 5千円 / 8千800円 (must contain a kanji unit; "5千円" is 5000, never "千円")
+  for (const m of s.matchAll(/(?<![\d一二三四五六七八九十百千万])(\d{0,3}[一二三四五六七八九十百千][\d一二三四五六七八九十百千]{0,7})円/g)) {
     if (out.some((o) => m.index! >= o.index && m.index! < o.index + o.span.length)) continue;
     const n = kanjiToNumber(m[1]!);
     if (n === undefined) continue;
