@@ -45,7 +45,7 @@ See the [48-second Arena intake recording](https://forifor.github.io/oathra/en/#
 Pick a mission, watch an agent negotiate with a simulated restaurant or hotel, or answer the phone yourself and try to stop it. Pit models against each other:
 
 ```bash
-npx oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:qwen2.5:7b --png card.png
+pnpm oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:qwen2.5:7b --png card.png   # from a clone; see below
 ```
 
 A real run against the "impossible" hotel (lists at ¥23,500, budget ¥20,000): the built-in agent, GPT-4o mini and Gemini Flash all closed under budget, zero false completions. Only calls where the hotel says "your reservation is confirmed" count.
@@ -68,9 +68,9 @@ Telnyx · Wavix · Sinch  v0.2
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
 # from the public v0.1.18 asset:
 npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra setup phone
-npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
-npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
-npx oathra call --to +81… --scenario restaurant-reservation
+pnpm oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
+pnpm oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
+pnpm oathra call --to +81… --scenario restaurant-reservation
 ```
 
 Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio keeps its direct Media Streams fast path. Providers that need a human step (caller-ID verification, geo permissions) get a guided, linked step instead of a wall of SIP settings. See the [beginner setup guide](docs/SETUP.en.md) for credential links and staged tests. Add a carrier with `oathra provider create phone <id>`.
@@ -131,7 +131,7 @@ pnpm oathra play impossible-hotel --fast       # instant, virtual clock
 pnpm oathra play friend-hype --fast            # a thrilled friend says yes to everything; only 「絶対行く！」 counts
 pnpm oathra eval                               # every scenario, False Completion count
 pnpm oathra eval --adversarial 10000           # mutated callees, 14 kinds: hedges, tentative holds, asking back, confirm-then-retract, voicemail, transfer, dialect…
-npx oathra eval --callee openai               # let GPT-4o mini play the shop: phrasing nobody scripted (a few cents)
+pnpm oathra eval --callee openai              # let GPT-4o mini play the shop: phrasing nobody scripted (a few cents)
 pnpm oathra replay <callId> --at 00:18.420     # time travel
 pnpm oathra doctor
 ```
@@ -316,7 +316,7 @@ Simulator numbers (latency, scores) are from the simulator. Real-call latency to
 
 No install: the [browser evidence lab](https://forifor.github.io/oathra/en/#sim) runs the production `EvidenceEngine` and `evaluate` locally. Enter your own wording, switch speakers, or retract a reservation. Your input text stays in the browser; no call is placed. The [30-second interaction recording](https://forifor.github.io/oathra/en/#demo-video) shows a hedge, a confirmation, and a retraction.
 
-Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
+Run the v0.1.18 command at the top, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
 
 - Restaurant: "probably fine, but it's not confirmed yet" → not confirmed
 - Restaurant: "7 pm is full, but 7:30 works" → the refused 7 pm is not an offer; bare 7:30 remains unresolved until am/pm is clarified and the time is accepted

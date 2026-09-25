@@ -13,10 +13,10 @@
 <meta name="twitter:image" content="https://forifor.github.io/oathra/media/oathra-share-2026-09-en.png">
 <meta name="theme-color" content="#fbfaf7">
 <script type="application/ld+json">
-{“@context”:“https://schema.org”,“@type”:“SoftwareApplication”,“name”:“Oathra”,“applicationCategory”:“DeveloperApplication”,“operatingSystem”:“Cross-platform”,“softwareVersion”:“0.1.18”,“description”:“An open-source runtime that verifies phone-agent outcomes against evidence in the callee’s own words.”,“url”:“https://forifor.github.io/oathra/en/”,“codeRepository”:“https://github.com/FORIFOR/oathra”,“license”:“https://www.apache.org/licenses/LICENSE-2.0”,“isAccessibleForFree”:true,“featureList”:[“Callee-evidence completion checks”,“ActionProof evidence levels”,“Consent-based optional intake”,“Local transcript verification”,“Provisional-confirmation guard”,“Scene-aware follow-up intake”]}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Oathra","applicationCategory":"DeveloperApplication","operatingSystem":"Cross-platform","softwareVersion":"0.1.18","description":"An open-source runtime that verifies phone-agent outcomes against evidence in the callee's own words.","url":"https://forifor.github.io/oathra/en/","codeRepository":"https://github.com/FORIFOR/oathra","license":"https://www.apache.org/licenses/LICENSE-2.0","isAccessibleForFree":true,"featureList":["Callee-evidence completion checks","ActionProof evidence levels","Consent-based optional intake","Local transcript verification","Provisional-confirmation guard","Scene-aware follow-up intake"]}
 </script>
 <script type="application/ld+json">
-{“@context”:“https://schema.org”,“@type”:“VideoObject”,“name”:“Oathra in 48 seconds: consent-based follow-up intake”,“description”:"An Arena demonstration that asks once for consent after booking, asks only declared fields one at a time, and records explicit answers.“,”thumbnailUrl“:”https://forifor.github.io/oathra/media/oathra-share-2026-09-en.png“,”contentUrl“:”https://forifor.github.io/oathra/media/oathra-intake.mp4“,”embedUrl“:”https://forifor.github.io/oathra/en/#intake-video“,”uploadDate“:”2026-09-14“,”duration“:”PT48S“,”inLanguage“:”en"}
+{"@context":"https://schema.org","@type":"VideoObject","name":"Oathra in 48 seconds: consent-based follow-up intake","description":"An Arena demonstration that asks once for consent after booking, asks only declared fields one at a time, and records explicit answers.","thumbnailUrl":"https://forifor.github.io/oathra/media/oathra-share-2026-09-en.png","contentUrl":"https://forifor.github.io/oathra/media/oathra-intake.mp4","embedUrl":"https://forifor.github.io/oathra/en/#intake-video","uploadDate":"2026-09-14","duration":"PT48S","inLanguage":"en"}
 </script>
 <link rel="alternate" hreflang="ja" href="https://forifor.github.io/oathra/">
 <link rel="alternate" hreflang="en" href="https://forifor.github.io/oathra/en/">
@@ -88,7 +88,7 @@ h1{word-break:auto-phrase;font-family:var(--head);font-weight:700;font-size:clam
 h1 em{font-style:normal;color:var(--accent);display:block;font-size:.8em;margin-top:6px}
 .hero-c .head{display:block;margin-bottom:26px}
 .hero-c .lede,.lede{font-size:17px;color:var(--ink2);max-width:38em;margin:0 0 22px;text-wrap:pretty}
-.cmd{display:inline-flex;align-items:center;gap:14px;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:12px 18px;border-radius:8px;font-family:var(--mono);font-size:14.5px;cursor:pointer}
+.cmd{display:inline-flex;align-items:center;min-height:44px;gap:14px;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:12px 18px;border-radius:8px;font-family:var(--mono);font-size:14.5px;cursor:pointer}
 .cmd b{color:rgba(255,255,255,.55);font-weight:400}.cmd .copy{font-size:11px;letter-spacing:.08em;color:rgba(255,255,255,.6);border-left:1px solid rgba(255,255,255,.25);padding-left:12px}
 .cmd:hover{background:#000}
 a.cmd{background:transparent;color:var(--ink)}a.cmd b,a.cmd .copy{color:var(--muted)}a.cmd .copy{border-color:var(--line)}a.cmd:hover{background:var(--code)}
@@ -161,7 +161,7 @@ footer a{color:var(--ink2)}
 .player .pts{padding:16px 18px;min-height:300px;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:11px;border-right:1px solid var(--line2);scroll-behavior:smooth;background:#fff}
 .player .ln{display:grid;grid-template-columns:96px 1fr;gap:12px;font-size:14.5px;line-height:1.7;color:var(--ink2)}
 .player .ln b{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);padding-top:5px;letter-spacing:.03em}
-.player .ln.callee b::before{content:“▸ ”;color:var(--accent)}
+.player .ln.callee b::before{content:"▸ ";color:var(--accent)}
 .player .ln.agent{color:var(--ink)}
 .player .ln.typing span{color:var(--muted);letter-spacing:.2em}
 .player aside{padding:16px 18px;display:grid;gap:18px;align-content:start;background:var(--bg)}
@@ -177,9 +177,9 @@ footer a{color:var(--ink2)}
 .player .ev div.callee{border-color:var(--accent)}.player .ev small{color:var(--muted)}
 .player .ev .tag{margin-left:6px}.player .ev .tag.rec{border-color:var(--accent);color:var(--accent)}
 .player .pc{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line2);font-family:var(--mono);font-size:12px;color:var(--muted);background:#fff}
-.player .pc button{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-family:var(--mono);font-size:12px;cursor:pointer}
+.player .pc button{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;min-height:44px;font-family:var(--mono);font-size:12px;cursor:pointer}
 .player .pc button:hover{border-color:var(--ink)}
-.player .pc input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+.player .pc input[type=range]{flex:1;accent-color:var(--accent);min-width:0;min-height:44px}
 .player .pc input[type=range]:focus-visible{outline-offset:6px}
 .player .res{margin:0 18px 14px;padding:12px 14px;border:1px solid var(--green);border-radius:8px;font-family:var(--mono);font-size:12.5px;color:var(--green)}
 @media (max-width:900px){.hero-a{grid-template-columns:1fr;gap:28px}.hero-a h1{font-size:clamp(30px,8.5vw,36px)}.sim .body{grid-template-columns:1fr}.sim .tx,.sim .chips{border-right:0}.sim .tx{min-height:0}.sim .chips{border-bottom:1px solid var(--line2)}.two,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line2)}nav a:not(.gh):not(.lang){display:none}.hero{padding-top:44px}section{padding-top:64px}main.wrap{padding-bottom:64px}.player .pb{grid-template-columns:1fr}.player .pts{border-right:0;border-bottom:1px solid var(--line2);max-height:280px}}
@@ -259,7 +259,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
   <section id="play">
     <p class="kicker">Play</p>
     <h2>Watch two agents haggle. <em>Then answer the phone yourself.</em></h2>
-    <p class="sub">Six scenarios ship with the simulator: a restaurant that is full at 7 pm (in English too: <code>oathra play restaurant-reservation-en</code>), an “impossible” hotel with a secret floor price, a bulk purchase, a serial number read-back, and a trap where every slot is full and the only correct answer is “I could not book it.” Pit models against each other and share the card.</p>
+    <p class="sub">Ten scenarios ship with the simulator: a restaurant that is full at 7 pm (in English too: <code>oathra play restaurant-reservation-en</code>, and a consented follow-up intake version), an “impossible” hotel with a secret floor price, a bulk purchase, a serial number read-back, a trap where every slot is full and the only correct answer is “I could not book it,” and three casual calls with a friend where “probably!” never counts as a promise. Pit models against each other and share the card.</p>
     <div class="two">
       <pre>$ npx oathra battle impossible-hotel \
     --agent scripted --agent openai --agent gemini \
@@ -344,15 +344,15 @@ Cost           JP mobile · twilio · $0.185/min
     <p class="sub">Oathra returns a VerifiedResult. Each field is anchored to an utterance from the other party (and to audio on real calls). Ten thousand mutated callees produce zero false completions — reproducible with one command.</p>
     <div class="two">
       <pre>{
-  <span class="k">“field”</span>: <span class="s">“time”</span>,
-  <span class="k">“value”</span>: <span class="s">“19:30”</span>,
-  <span class="k">“source”</span>: <span class="s">“callee”</span>,
-  <span class="k">“transcript”</span>: <span class="s">“19時はいっぱいですが、19時半でしたら空いております。”</span>,
-  <span class="k">“span”</span>: <span class="s">“19時半”</span>,
-  <span class="k">“explicit”</span>: <span class="t">true</span>,
-  <span class="k">“verified”</span>: <span class="t">true</span>,
-  <span class="k">“note”</span>: <span class="s">“accepted with value restated by caller”</span>,
-  <span class="k">“audio”</span>: { <span class="k">“startMs”</span>: 14210, <span class="k">“endMs”</span>: 18960 }
+  <span class="k">"field"</span>: <span class="s">"time"</span>,
+  <span class="k">"value"</span>: <span class="s">"19:30"</span>,
+  <span class="k">"source"</span>: <span class="s">"callee"</span>,
+  <span class="k">"transcript"</span>: <span class="s">"19時はいっぱいですが、19時半でしたら空いております。"</span>,
+  <span class="k">"span"</span>: <span class="s">"19時半"</span>,
+  <span class="k">"explicit"</span>: <span class="t">true</span>,
+  <span class="k">"verified"</span>: <span class="t">true</span>,
+  <span class="k">"note"</span>: <span class="s">"accepted with value restated by caller"</span>,
+  <span class="k">"audio"</span>: { <span class="k">"startMs"</span>: 14210, <span class="k">"endMs"</span>: 18960 }
 }
 
 Success = Connected
@@ -491,39 +491,39 @@ How would you like to make calls?
     const lines = [], ev = []; let mission = { verified: [], missing: FIELDS, pending: [] }, speaking = null, ended = false, result = null, connected = false;
     for (const e of data.events) { if (e.t > ms) break;
       switch (e.type) {
-        case “call.connected”: connected = true; break;
-        case “callee.speech.started”: speaking = “callee”; break;
-        case “callee.speech.ended”: speaking = null; break;
-        case “agent.speech.started”: speaking = “agent”; lines.push({ who: “agent”, text: e.text }); break;
-        case “agent.speech.ended”: speaking = null; break;
-        case “transcript.final”: if (e.source === “callee”) lines.push({ who: “callee”, text: e.text }); break;
-        case “evidence.verified”: ev.unshift(e); break;
-        case “mission.progress”: mission = e; break;
-        case “call.ended”: ended = true; speaking = null; break;
-        case “result”: result = e; break;
+        case "call.connected": connected = true; break;
+        case "callee.speech.started": speaking = "callee"; break;
+        case "callee.speech.ended": speaking = null; break;
+        case "agent.speech.started": speaking = "agent"; lines.push({ who: "agent", text: e.text }); break;
+        case "agent.speech.ended": speaking = null; break;
+        case "transcript.final": if (e.source === "callee") lines.push({ who: "callee", text: e.text }); break;
+        case "evidence.verified": ev.unshift(e); break;
+        case "mission.progress": mission = e; break;
+        case "call.ended": ended = true; speaking = null; break;
+        case "result": result = e; break;
       } }
     return { lines, ev, mission, speaking, ended, result, connected };
   }
-  let lastKey = "“;
+  let lastKey = "";
   function render() {
     const s = state(t);
-    const key = s.lines.length + ”|“ + s.ev.length + ”|“ + s.speaking + ”|“ + s.ended + ”|“ + s.mission.verified.join();
-    $(”p-time“).textContent = mmss(t) + ” / “ + mmss(data.durationMs);
-    $(”p-seek“).value = t;
+    const key = s.lines.length + "|" + s.ev.length + "|" + s.speaking + "|" + s.ended + "|" + s.mission.verified.join();
+    $("p-time").textContent = mmss(t) + " / " + mmss(data.durationMs);
+    $("p-seek").value = t;
     if (key === lastKey) return; lastKey = key;
-    const box = $(”p-lines“); box.replaceChildren();
-    if (!s.connected) box.append(Object.assign(document.createElement(”div“), { className: ”ln“, innerHTML: ”<b></b><span style='color:var(--muted)'>“ + L.dialing + ”</span>“ }));
-    for (const l of s.lines) { const d = document.createElement(”div“); d.className = ”ln “ + l.who; d.innerHTML = ”<b>“ + (l.who === ”callee“ ? L.callee : ”AI“) + ”</b><span></span>“; d.lastChild.textContent = l.text; box.append(d); }
-    if (s.speaking === ”callee“) { const d = document.createElement(”div“); d.className = ”ln callee typing“; d.innerHTML = ”<b>“ + L.callee + ”</b><span>・・・</span>“; box.append(d); }
+    const box = $("p-lines"); box.replaceChildren();
+    if (!s.connected) box.append(Object.assign(document.createElement("div"), { className: "ln", innerHTML: "<b></b><span style='color:var(--muted)'>" + L.dialing + "</span>" }));
+    for (const l of s.lines) { const d = document.createElement("div"); d.className = "ln " + l.who; d.innerHTML = "<b>" + (l.who === "callee" ? L.callee : "AI") + "</b><span></span>"; d.lastChild.textContent = l.text; box.append(d); }
+    if (s.speaking === "callee") { const d = document.createElement("div"); d.className = "ln callee typing"; d.innerHTML = "<b>" + L.callee + "</b><span>・・・</span>"; box.append(d); }
     box.scrollTop = box.scrollHeight;
-    const ul = $(”p-mission“); ul.replaceChildren();
-    for (const f of FIELDS) { const li = document.createElement(”li“); const ok = s.mission.verified.includes(f), pend = s.mission.pending.includes(f);
-      li.className = ok ? ”ok“ : pend ? ”pend“ : ”“; const rule = L.rules[f] ? ”<em>“ + L.rules[f] + ”</em>" : "";
+    const ul = $("p-mission"); ul.replaceChildren();
+    for (const f of FIELDS) { const li = document.createElement("li"); const ok = s.mission.verified.includes(f), pend = s.mission.pending.includes(f);
+      li.className = ok ? "ok" : pend ? "pend" : ""; const rule = L.rules[f] ? "<em>" + L.rules[f] + "</em>" : "";
       const val = ok || pend ? (s.ev.find((e) => e.field === f) || {}).value : undefined;
-      li.innerHTML = "<i>“ + (ok ? ”✓“ : pend ? ”○“ : ”·“) + ”</i><span>“ + L.fields[f] + rule + ”</span><span class='v'>“ + (val === undefined ? ”“ : fmt(f, val)) + ”</span>“; ul.append(li); }
-    $(”p-count“).textContent = String(s.ev.length);
-    const evb = $(”p-ev“); evb.replaceChildren();
-    for (const e of s.ev.slice(0, 4)) { const d = document.createElement(”div“); d.className = e.source; d.innerHTML = ”<span>“ + e.field + ” = “ + fmt(e.field, e.value) + ”<span class='tag" + (e.source === "callee" ? " rec" : "") + "'>“ + (e.source === ”callee“ ? L.calleeTag : ”AI“) + ”</span></span><small>“ + mmss(e.t) + ”</small>"; evb.append(d); }
+      li.innerHTML = "<i>" + (ok ? "✓" : pend ? "○" : "·") + "</i><span>" + L.fields[f] + rule + "</span><span class='v'>" + (val === undefined ? "" : fmt(f, val)) + "</span>"; ul.append(li); }
+    $("p-count").textContent = String(s.ev.length);
+    const evb = $("p-ev"); evb.replaceChildren();
+    for (const e of s.ev.slice(0, 4)) { const d = document.createElement("div"); d.className = e.source; d.innerHTML = "<span>" + e.field + " = " + fmt(e.field, e.value) + "<span class='tag" + (e.source === "callee" ? " rec" : "") + "'>" + (e.source === "callee" ? L.calleeTag : "AI") + "</span></span><small>" + mmss(e.t) + "</small>"; evb.append(d); }
     $("p-live").classList.toggle("on", s.connected && !s.ended); $("p-live-t").textContent = s.ended ? L.ended : L.replay;
     const res = $("p-res"); if (s.result) { res.hidden = false; res.textContent = L.done + " · " + FIELDS.map((f) => L.fields[f] + " " + fmt(f, s.result.fields[f])).join(" · "); } else res.hidden = true;
   }
@@ -534,7 +534,7 @@ How would you like to make calls?
   $("p-seek").addEventListener("input", (e) => { t = Number(e.target.value); lastKey = ""; render(); });
   $("p-speed").addEventListener("click", (e) => { speed = speed === 3 ? 1 : speed === 1 ? 6 : 3; e.target.textContent = "×" + speed; });
   fetch(root.dataset.src).then((r) => r.json()).then((d) => { data = d; $("p-seek").max = d.durationMs; render();
-    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia(“(prefers-reduced-motion: reduce)”).matches) { started = true; } }, { threshold: .5 });
+    const auto = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !started && !matchMedia("(prefers-reduced-motion: reduce)").matches) { started = true; } }, { threshold: .5 });
     auto.observe(root); });
 })();
 </script>

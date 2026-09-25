@@ -1,5 +1,6 @@
 node_modules/
 dist/
+target/
 *.tsbuildinfo
 .env
 .env.local
@@ -46,3 +47,14 @@ artifacts/ui/
 .env.managed
 .env.managed.*
 .oathra-managed/
+
+# Local audit / QA output and agent workspaces: rebuildable, never source.
+artifacts/
+.agents/
+apps/desktop/src-tauri/gen/
+# SNS operations ledgers and the one-off status audit kept next to the repo.
+/accounts.csv
+/activities.csv
+/assets.csv
+/metrics.csv
+/status-audit.md

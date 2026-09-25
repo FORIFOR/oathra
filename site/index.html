@@ -85,7 +85,7 @@ h1{word-break:auto-phrase;font-family:var(--head);font-weight:700;font-size:clam
 h1 em{font-style:normal;color:var(--accent);display:block;font-size:.8em;margin-top:6px}
 .hero-c .head{display:block;margin-bottom:26px}
 .hero-c .lede,.lede{font-size:17px;color:var(--ink2);max-width:38em;margin:0 0 22px;text-wrap:pretty}
-.cmd{display:inline-flex;align-items:center;gap:14px;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:12px 18px;border-radius:8px;font-family:var(--mono);font-size:14.5px;cursor:pointer}
+.cmd{display:inline-flex;align-items:center;min-height:44px;gap:14px;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:12px 18px;border-radius:8px;font-family:var(--mono);font-size:14.5px;cursor:pointer}
 .cmd b{color:rgba(255,255,255,.55);font-weight:400}.cmd .copy{font-size:11px;letter-spacing:.08em;color:rgba(255,255,255,.6);border-left:1px solid rgba(255,255,255,.25);padding-left:12px}
 .cmd:hover{background:#000}
 a.cmd{background:transparent;color:var(--ink)}a.cmd b,a.cmd .copy{color:var(--muted)}a.cmd .copy{border-color:var(--line)}a.cmd:hover{background:var(--code)}
@@ -174,9 +174,9 @@ footer a{color:var(--ink2)}
 .player .ev div.callee{border-color:var(--accent)}.player .ev small{color:var(--muted)}
 .player .ev .tag{margin-left:6px}.player .ev .tag.rec{border-color:var(--accent);color:var(--accent)}
 .player .pc{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line2);font-family:var(--mono);font-size:12px;color:var(--muted);background:#fff}
-.player .pc button{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-family:var(--mono);font-size:12px;cursor:pointer}
+.player .pc button{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;min-height:44px;font-family:var(--mono);font-size:12px;cursor:pointer}
 .player .pc button:hover{border-color:var(--ink)}
-.player .pc input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+.player .pc input[type=range]{flex:1;accent-color:var(--accent);min-width:0;min-height:44px}
 .player .pc input[type=range]:focus-visible{outline-offset:6px}
 .player .res{margin:0 18px 14px;padding:12px 14px;border:1px solid var(--green);border-radius:8px;font-family:var(--mono);font-size:12.5px;color:var(--green)}
 @media (max-width:900px){.hero-a{grid-template-columns:1fr;gap:28px}.hero-a h1{font-size:clamp(30px,8.5vw,36px)}.sim .body{grid-template-columns:1fr}.sim .tx,.sim .chips{border-right:0}.sim .tx{min-height:0}.sim .chips{border-bottom:1px solid var(--line2)}.two,.rules{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(-n+2){border-bottom:1px solid var(--line2)}nav a:not(.gh):not(.lang){display:none}.hero{padding-top:44px}section{padding-top:64px}main.wrap{padding-bottom:64px}.player .pb{grid-template-columns:1fr}.player .pts{border-right:0;border-bottom:1px solid var(--line2);max-height:280px}}
@@ -264,7 +264,7 @@ ul.fool{list-style:none;padding:0;margin:12px 0 8px}ul.fool li{padding:10px 0;bo
 
   <section id="play">
     <h2>まず遊ぶ。<em>AI同士</em>か、自分が店員になるか。</h2>
-    <p class="prose">シナリオは6本。19時が満席のレストラン（日本語版と英語版）、底値を隠しているホテル、まとめ買いの値引き交渉、シリアル番号の復唱、そして全時間帯が満席で「取れませんでした」と言うのが唯一の正解になる罠。モデル同士を同じ条件で戦わせて、カードにして共有できます。</p>
+    <p class="prose">シナリオは10本。19時が満席のレストラン（日本語版と英語版、同意付きの追加聞き取り版）、底値を隠しているホテル、まとめ買いの値引き交渉、シリアル番号の復唱、全時間帯が満席で「取れませんでした」と言うのが唯一の正解になる罠、そして「たぶん行ける！」が約束にならない友達との会話が3本。モデル同士を同じ条件で戦わせて、カードにして共有できます。</p>
     <div class="two">
       <pre>$ npx oathra battle impossible-hotel \
     --agent scripted --agent openai --agent gemini \
