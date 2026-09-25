@@ -1,5 +1,6 @@
 import { buildWebPhoneDialer } from "./web-phone.js";
 import { execSync, spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { startArena } from "@oathra/arena";
@@ -57,6 +58,84 @@ function openBrowser(url: string): void {
   }
 }
 
+async function startTunnel(port: number, preferred?: string): Promise<{ url: string; close: () => void }> {
+  if (preferred === "ngrok") {
+    const child = spawn("ngrok", ["http", String(port), "--log=stdout"], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+      let output = "";
+      const onData = (data: Buffer | string) => {
+        const text = data.toString();
+        output += text;
+        const match = text.match(/url=(https:\/\/[a-z0-9-]+\.ngrok(?:-free)?\.app)/);
+        if (match && !resolved) {
+          resolved = true;
+          resolve({
+            url: match[1]!,
+            close: () => { try { child.kill("SIGINT"); } catch {} },
+          });
+        }
+      };
+      child.stdout.on("data", onData);
+      child.stderr.on("data", onData);
+      child.on("error", (err) => {
+        if (!resolved) { resolved = true; reject(new Error(`Failed to start ngrok: ${err.message}`)); }
+      });
+      child.on("exit", (code) => {
+        if (!resolved) { resolved = true; reject(new Error(`ngrok exited with code ${code}: ${output}`)); }
+      });
+      setTimeout(() => {
+        if (!resolved) { resolved = true; try { child.kill("SIGINT"); } catch {} reject(new Error("Timeout waiting for ngrok tunnel URL")); }
+      }, 15_000);
+    });
+  }
+
+  const child = spawn("cloudflared", ["tunnel", "--url", `http://127.0.0.1:${port}`], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+    let output = "";
+    const onData = (data: Buffer | string) => {
+      const text = data.toString();
+      output += text;
+      const match = text.match(/https:\/\/(?!api\.)[a-z0-9-]+\.trycloudflare\.com/);
+      if (match && !resolved) {
+        resolved = true;
+        resolve({
+          url: match[0],
+          close: () => {
+            try { child.kill("SIGINT"); } catch {}
+          },
+        });
+      }
+    };
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
+    child.on("error", (err) => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(`Failed to start cloudflared tunnel: ${err.message}. Make sure cloudflared is installed (brew install cloudflared).`));
+      }
+    });
+    child.on("exit", (code) => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(`cloudflared exited with code ${code} without providing a tunnel URL: ${output}`));
+      }
+    });
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        try { child.kill("SIGINT"); } catch {}
+        reject(new Error("Timeout waiting for cloudflared tunnel URL to be generated"));
+      }
+    }, 20_000);
+  });
+}
+
 // ---------------------------------------------------------------------------
 
 export async function cmdDemo(flags: Flags): Promise<void> {
@@ -66,14 +145,49 @@ export async function cmdDemo(flags: Flags): Promise<void> {
   const scenarios = loadScenarioDir(scenariosDir());
   console.log(ok(`Scenarios      ${scenarios.length}`));
   const port = num(flags.port, 4242);
-  const arena = await startArena({ phoneDialer: buildWebPhoneDialer(), scenariosDir: scenariosDir(), publicDir: arenaPublicDir(), brains: flags["allow-models"] ? brains : { scripted: brains.scripted! }, port, host: str(flags.host, "127.0.0.1") ?? "127.0.0.1" });
-  console.log(ok(`Arena          ${arena.url}`));
+  const tunnelWanted = Boolean(flags.tunnel || flags.ngrok);
+  const lanWanted = Boolean(flags["allow-remote"] || flags.remote || flags.host === "0.0.0.0");
+  const allowRemote = tunnelWanted || lanWanted;
+  // A tunnel connects to loopback; only --allow-remote opens the LAN.
+  const host = str(flags.host, lanWanted ? "0.0.0.0" : "127.0.0.1") ?? "127.0.0.1";
+  const remoteToken = allowRemote ? randomBytes(18).toString("base64url") : undefined;
+  const arena = await startArena({
+    phoneDialer: buildWebPhoneDialer(),
+    scenariosDir: scenariosDir(),
+    publicDir: arenaPublicDir(),
+    brains: flags["allow-models"] ? brains : { scripted: brains.scripted! },
+    port,
+    host,
+    allowRemote,
+    ...(remoteToken ? { remoteToken } : {}),
+  });
+  const withToken = (base: string) => (remoteToken ? `${base}/?token=${remoteToken}` : base);
+  console.log(ok(`Arena          ${withToken(arena.url)}`));
   if (flags["allow-models"]) console.log(warn("External models enabled: selecting a provider sends conversation data and may incur API charges."));
-  console.log(`\nOpening Arena...\n\n  ${cyan(arena.url)}\n`);
-  if (!flags["no-open"]) openBrowser(arena.url);
+  if (allowRemote) {
+    console.log(warn("Remote access enabled. Anyone with this URL can place calls, read contacts and call history. Do not share it."));
+    console.log(dim("               The token in the URL becomes a browser cookie; the plain URL without it answers 401."));
+  }
+
+  let tunnel: { url: string; close: () => void } | undefined;
+  if (tunnelWanted) {
+    try {
+      const preferred = flags.ngrok || flags.tunnel === "ngrok" ? "ngrok" : undefined;
+      console.log(dim(`Starting ${preferred === "ngrok" ? "ngrok" : "Cloudflare"} Tunnel for remote access...`));
+      tunnel = await startTunnel(port, preferred);
+      console.log(ok(`Tunnel         ${cyan(withToken(tunnel.url))}`));
+    } catch (err) {
+      console.log(bad(`Tunnel error: ${(err as Error).message}`));
+    }
+  }
+
+  const openUrl = withToken(tunnel ? tunnel.url : arena.url);
+  console.log(`\nOpening Arena...\n\n  ${cyan(openUrl)}\n`);
+  if (!flags["no-open"]) openBrowser(openUrl);
   console.log(dim("Watch two agents on a call, or choose Play and answer the phone yourself. Ctrl+C stops the server.\n"));
   await new Promise<void>((res) => {
     process.on("SIGINT", () => {
+      if (tunnel) tunnel.close();
       void arena.close().then(res);
     });
   });
@@ -380,8 +494,9 @@ export async function cmdDoctor(): Promise<void> {
       }
     }
   };
-  const ffmpeg = has("ffmpeg");
-  console.log(ffmpeg ? ok("ffmpeg") : warn("ffmpeg missing (needed for audio transports)\n    Fix: brew install ffmpeg"));
+  // Twilio direct calling needs a public URL for its media stream; `oathra call` starts ngrok for it.
+  const ngrok = has("ngrok");
+  console.log(ngrok ? ok("ngrok          found (Twilio direct calls need it for the media stream)") : dim("· ngrok          not found. Needed only for `oathra call` over Twilio direct: brew install ngrok"));
   try {
     const n = loadScenarioDir(scenariosDir()).length;
     console.log(ok(`Scenarios      ${n} valid`));
@@ -389,10 +504,8 @@ export async function cmdDoctor(): Promise<void> {
     console.log(bad(`Scenarios      ${(e as Error).message}`));
   }
   const keys: Array<[string, string, string?]> = [
-    ["DEEPGRAM_API_KEY", "Deepgram STT", "https://console.deepgram.com/"],
-    ["ELEVENLABS_API_KEY", "ElevenLabs TTS"],
-    ["OPENAI_API_KEY", "OpenAI brain", "https://platform.openai.com/api-keys"],
-    ["ANTHROPIC_API_KEY", "Anthropic brain"],
+    ["OPENAI_API_KEY", "OpenAI (GPT-Live, brain, TTS)", "https://platform.openai.com/api-keys"],
+    ["DEEPGRAM_API_KEY", "Deepgram STT (Pipeline engine)", "https://console.deepgram.com/"],
     ["GEMINI_API_KEY", "Gemini brain", "https://aistudio.google.com/apikey"],
     ["LIVEKIT_URL", "LiveKit URL", "https://cloud.livekit.io/"],
     ["LIVEKIT_API_KEY", "LiveKit API key", "https://cloud.livekit.io/"],
@@ -404,9 +517,9 @@ export async function cmdDoctor(): Promise<void> {
   ];
   console.log("");
   for (const [env, label, url] of keys) {
-    if (process.env[env]) console.log(ok(`${label.padEnd(18)} configured`));
+    if (process.env[env]) console.log(ok(`${label.padEnd(30)} configured`));
     else {
-      console.log(dim(`· ${label.padEnd(18)} not configured (${env})`));
+      console.log(dim(`· ${label.padEnd(30)} not configured (${env})`));
       if (url) console.log(dim(`  Get it at: ${url}`));
     }
   }
@@ -457,6 +570,7 @@ ${bold("Oathra")}  ${dim("Give AI agents a phone, and proof of what happened.")}
 
 ${bold("Try it")}
   oathra demo                        open the Arena: two agents on a simulated call, no API key
+                                     ${dim("--tunnel (token-protected public URL via cloudflared/ngrok)  --allow-remote (LAN)  --port <n>")}
   oathra play [scenario]             run one scenario in the terminal        ${dim("--brain scripted|openai|gemini|ollama  --fast  --seed <n>  --json")}
   oathra battle [scenario]           several brains, same scenario, one card ${dim("--agent <brain> …  --markdown  --svg <file>  --png <file>")}
 
@@ -484,6 +598,7 @@ ${bold("Extend")}
 
 ${bold("Check")}
   oathra doctor                      runtime, keys, brains, phone readiness
+  oathra --version                   print the CLI version
 
 ${dim("Docs   https://github.com/FORIFOR/oathra")}
 `;

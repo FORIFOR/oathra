@@ -58,6 +58,8 @@ python3 -m http.server 4380 --directory site
 | Plivo 発信 | `PLIVO_AUTH_ID` / `PLIVO_AUTH_TOKEN` | [Plivo Console](https://console.plivo.com/) |
 | Plivo / Custom SIP のゲートウェイ | `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | [LiveKit Cloud](https://cloud.livekit.io/) |
 
+Twilio 直結の発信は、電話会社から Oathra の PC へ音声を届けるために公開 URL が必要です。`oathra call` が [ngrok](https://ngrok.com/) を自動起動するので、事前に `brew install ngrok` と `ngrok config add-authtoken` を済ませてください（`oathra doctor` が導入の有無を表示します）。
+
 キーは Oathra のリポジトリではなく、プロジェクトごとの `.env` に保存します。`.env.example` をコピーしてもよく、ウィザードに入力して自動作成してもかまいません。
 
 ```bash

@@ -25,6 +25,10 @@ async function main(): Promise<void> {
   const [cmd, ...rest] = positional;
   // Transcript checks and the MCP server are local: no provider credentials or .env loading.
   if (cmd !== "verify" && cmd !== "mcp") loadDotEnv();
+  if (flags.version || cmd === "version") {
+    console.log(process.env.OATHRA_VERSION ?? "dev");
+    return;
+  }
   if (!cmd || flags.help || cmd === "help") {
     console.log(help());
     return;

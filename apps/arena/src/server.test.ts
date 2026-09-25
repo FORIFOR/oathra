@@ -94,4 +94,75 @@ describe("Arena API", () => {
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect((await get("/api/brains")).status).toBe(200);
   });
+
+  it("enforces local-only host by default and rejects non-local host", async () => {
+    const u = new URL(base);
+    const { status, body } = await new Promise<{ status: number; body: string }>((res, rej) => {
+      const { request } = import("node:http") as unknown as typeof import("node:http");
+      const req = (import.meta.dirname ? (globalThis as any).process : null);
+      import("node:http").then(({ request: reqFn }) => {
+        const client = reqFn({ hostname: u.hostname, port: u.port, path: "/api/brains", headers: { Host: "remote.example.com" } }, (r) => {
+          let str = "";
+          r.on("data", (c) => str += c);
+          r.on("end", () => res({ status: r.statusCode ?? 500, body: str }));
+        });
+        client.on("error", rej);
+        client.end();
+      });
+    });
+    expect(status).toBe(403);
+    expect(JSON.parse(body).code).toBe("LOCAL_ONLY");
+  });
+
+  it("allowRemote refuses to start without a token", () => {
+    expect(() => createArenaServer({ scenariosDir: resolve(import.meta.dirname, "../../../scenarios"), brains: { scripted: () => new ScriptedAgent() }, publicDir, callsDir, allowRemote: true })).toThrow(/remoteToken/);
+  });
+
+  it("allowRemote: every request needs the token; ?token= becomes a same-site cookie; origins must match", async () => {
+    const token = "test-remote-token-123";
+    const remoteServer = createArenaServer({ scenariosDir: resolve(import.meta.dirname, "../../../scenarios"), brains: { scripted: () => new ScriptedAgent() }, publicDir, callsDir, allowRemote: true, remoteToken: token });
+    await new Promise<void>((r) => remoteServer.listen(0, "127.0.0.1", r));
+    const remotePort = (remoteServer.address() as AddressInfo).port;
+    const { request: reqFn } = await import("node:http");
+    const call = (path: string, headers: Record<string, string>, method = "GET", body?: string) =>
+      new Promise<{ status: number; body: string; headers: Record<string, string | string[] | undefined> }>((res, rej) => {
+        const client = reqFn({ hostname: "127.0.0.1", port: remotePort, path, method, headers: { Host: "demo.oathra.ai", ...headers } }, (r) => {
+          let str = "";
+          r.on("data", (c) => str += c);
+          r.on("end", () => res({ status: r.statusCode ?? 500, body: str, headers: r.headers }));
+        });
+        client.on("error", rej);
+        if (body) client.write(body);
+        client.end();
+      });
+    try {
+      // No token: the API and the page are closed, even with a matching origin.
+      expect((await call("/api/brains", { Origin: "https://demo.oathra.ai" })).status).toBe(401);
+      expect(JSON.parse((await call("/api/brains", {})).body).code).toBe("REMOTE_TOKEN_REQUIRED");
+      expect((await call("/", {})).status).toBe(401);
+      // An origin-less POST (curl) cannot prepare or place a call.
+      expect((await call("/api/phone/prepare", { "content-type": "application/json" }, "POST", "{}")).status).toBe(401);
+      expect((await call("/api/contacts", { "content-type": "application/json" }, "POST", JSON.stringify({ name: "x" }))).status).toBe(401);
+      // A wrong token is refused.
+      expect((await call(`/?token=nope`, {})).status).toBe(403);
+      // The printed URL sets the cookie and redirects to a clean path.
+      const login = await call(`/?token=${token}`, {});
+      expect(login.status).toBe(302);
+      expect(login.headers.location).toBe("/");
+      const cookie = String(login.headers["set-cookie"]);
+      expect(cookie).toMatch(/oathra_remote=/);
+      expect(cookie).toMatch(/HttpOnly/);
+      expect(cookie).toMatch(/SameSite=Strict/);
+      // The cookie (what the page's own fetches send) and a Bearer header both open the API.
+      expect((await call("/api/brains", { Cookie: `oathra_remote=${token}`, Origin: "https://demo.oathra.ai" })).status).toBe(200);
+      expect((await call("/api/brains", { Authorization: `Bearer ${token}` })).status).toBe(200);
+      // A mismatched origin is still denied, token or not.
+      const badRes = await call("/api/brains", { Cookie: `oathra_remote=${token}`, Origin: "https://attacker.com" });
+      expect(badRes.status).toBe(403);
+      expect(JSON.parse(badRes.body).code).toBe("ORIGIN_DENIED");
+    } finally {
+      remoteServer.closeAllConnections();
+      await new Promise((r) => remoteServer.close(r));
+    }
+  });
 });

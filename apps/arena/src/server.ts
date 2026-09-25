@@ -15,6 +15,7 @@
  *   GET  /api/replays/:id               a saved call (events, result, metrics)
  */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,7 +43,34 @@ export type ArenaOptions = {
   phoneHistoryDir?: string;
   /** Persist finished calls to disk (default true). */
   save?: boolean;
+  /** Allow remote access (from LAN, VPN, or reverse proxy / tunnel). Default false. Requires `remoteToken`. */
+  allowRemote?: boolean;
+  /**
+   * Shared secret for remote access. Every request must carry it (cookie set by `GET /?token=…`, or
+   * `Authorization: Bearer …`); without it the phone dialer, contacts and call history would be public.
+   */
+  remoteToken?: string;
 };
+
+const REMOTE_COOKIE = "oathra_remote";
+const MAX_BODY_BYTES = 256 * 1024;
+
+function cookieValue(req: IncomingMessage, name: string): string | undefined {
+  const header = req.headers.cookie;
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const [k, ...rest] = part.trim().split("=");
+    if (k === name) return decodeURIComponent(rest.join("="));
+  }
+  return undefined;
+}
+
+function tokenMatches(given: string | undefined, expected: string): boolean {
+  if (!given) return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 type LiveCall = {
   id: string;
@@ -80,7 +108,12 @@ class InvalidInputError extends Error {}
 
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(c as Buffer);
+  let size = 0;
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > MAX_BODY_BYTES) throw new InvalidInputError("request body too large");
+    chunks.push(c as Buffer);
+  }
   const text = Buffer.concat(chunks).toString("utf8");
   if (!text.trim()) return {};
   let body: unknown;
@@ -126,6 +159,8 @@ function publicScenario(s: Scenario) {
 export type ArenaServer = { server: Server; url: string; close: () => Promise<void> };
 
 export function createArenaServer(opts: ArenaOptions): Server {
+  const remoteToken = opts.allowRemote ? opts.remoteToken : undefined;
+  if (opts.allowRemote && !remoteToken) throw new Error("allowRemote requires remoteToken: without it the phone dialer, contacts and call history would be public");
   const publicDir = opts.publicDir ?? resolve(fileURLToPath(new URL("../public/", import.meta.url)));
   const callsDir = opts.callsDir ?? defaultCallsDir();
   const contacts = new ContactStore(opts.contactsDir ?? join(dirname(callsDir), "contacts"), callsDir);
@@ -192,10 +227,43 @@ export function createArenaServer(opts: ArenaOptions): Server {
       const path = url.pathname;
       const method = req.method ?? "GET";
 
-      // Reject browser cross-origin access and DNS rebinding. This is a local tool, not a multi-user API.
+      // Reject browser cross-origin access and DNS rebinding. This is a local tool by default.
       const host = req.headers.host ?? "";
-      if (!/^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host)) return json(res, 403, { error: "local host required", code: "LOCAL_ONLY" });
-      if (req.headers.origin && req.headers.origin !== `http://${host}`) return json(res, 403, { error: "same origin required", code: "ORIGIN_DENIED" });
+      if (!opts.allowRemote) {
+        if (!/^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host)) return json(res, 403, { error: "local host required", code: "LOCAL_ONLY" });
+        if (req.headers.origin && req.headers.origin !== `http://${host}`) return json(res, 403, { error: "same origin required", code: "ORIGIN_DENIED" });
+      } else {
+        if (req.headers.origin) {
+          try {
+            const originHost = new URL(req.headers.origin).host;
+            if (originHost !== host) return json(res, 403, { error: "same origin required", code: "ORIGIN_DENIED" });
+          } catch {
+            return json(res, 403, { error: "invalid origin", code: "ORIGIN_DENIED" });
+          }
+        }
+        // Remote access is token-gated: the URL is the key. `GET /?token=…` turns it into a same-site cookie so
+        // the page's own fetches and EventSource carry it; anything else needs the cookie or a Bearer header.
+        const token = remoteToken!;
+        const queryToken = url.searchParams.get("token");
+        if (queryToken !== null && method === "GET" && path === "/") {
+          if (!tokenMatches(queryToken, token)) return json(res, 403, { error: "invalid access token", code: "REMOTE_TOKEN_INVALID" });
+          const secure = (req.headers["x-forwarded-proto"] ?? "").toString().split(",")[0]?.trim() === "https";
+          res.writeHead(302, {
+            location: "/",
+            "cache-control": "no-store",
+            "set-cookie": `${REMOTE_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 3600}${secure ? "; Secure" : ""}`,
+          });
+          return res.end();
+        }
+        const bearer = /^Bearer\s+(.+)$/i.exec((req.headers.authorization ?? "").toString())?.[1]?.trim();
+        if (!tokenMatches(cookieValue(req, REMOTE_COOKIE), token) && !tokenMatches(bearer, token)) {
+          if (method === "GET" && path === "/") {
+            res.writeHead(401, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+            return res.end("<!doctype html><meta charset=\"utf-8\"><title>Oathra</title><p style=\"font: 16px system-ui; margin: 2em\">このサーバーはリモートアクセス用のトークンで保護されています。<code>oathra demo</code> の起動時に表示された、<code>?token=</code> 付きのURLで開いてください。<br>This server is protected by an access token. Open the URL printed by <code>oathra demo</code>, which includes <code>?token=</code>.</p>");
+          }
+          return json(res, 401, { error: "remote access token required", code: "REMOTE_TOKEN_REQUIRED" });
+        }
+      }
 
       if (path === "/api/contacts" && method === "GET") return json(res, 200, contacts.list());
       if (path === "/api/contacts" && method === "POST") return json(res, 201, { contact: contacts.save(await readBody(req)) });
@@ -359,12 +427,13 @@ export function createArenaServer(opts: ArenaOptions): Server {
       }
 
       // Static files
-      if (method === "GET") {
+      if (method === "GET" || method === "HEAD") {
         const rel = path === "/" ? "/index.html" : normalize(path);
         const file = join(publicDir, rel);
         if (file.startsWith(publicDir) && existsSync(file) && statSync(file).isFile()) {
           res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream", "cache-control": "no-store" });
-          res.end(readFileSync(file));
+          if (method === "HEAD") res.end();
+          else res.end(readFileSync(file));
           return;
         }
       }

@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oathra Desktop</title>
+  <style>
+    :root {
+      --bg: #0c0e12;
+      --card-bg: #14171f;
+      --bar-bg: #10131a;
+      --border: #232734;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --success: #3fb950;
+      --error: #f85149;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-sans); }
+
+    #app { display: flex; flex-direction: column; width: 100%; height: 100%; }
+
+    /* Top bar */
+    .titlebar {
+      height: 44px;
+      background: var(--bar-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand .logo-badge {
+      background: #232734;
+      color: var(--accent);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .status-pill:hover { border-color: var(--accent); }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--error);
+    }
+    .status-pill.online .status-dot {
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(63, 185, 80, 0.6);
+    }
+
+    .btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn:hover {
+      background: #1c212c;
+      border-color: var(--accent);
+    }
+    .btn-primary {
+      background: #1f6feb;
+      border-color: #388bfd;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #388bfd;
+    }
+
+    /* Main viewport */
+    .viewport {
+      flex: 1;
+      width: 100%;
+      height: calc(100% - 44px);
+      position: relative;
+    }
+
+    iframe#web-view {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: var(--bg);
+      display: none;
+    }
+    iframe#web-view.active { display: block; }
+
+    /* Offline / Setup Card */
+    .offline-card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 30%, #161b24 0%, #0c0e12 70%);
+    }
+
+    .card-box {
+      max-width: 480px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 28px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+      text-align: left;
+    }
+
+    .card-box h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .card-box p {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .code-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #7ee787;
+      margin-bottom: 16px;
+      user-select: all;
+    }
+
+    /* Modal for switching server */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .modal h3 { font-size: 16px; margin-bottom: 12px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Titlebar / Header -->
+    <header class="titlebar">
+      <div class="brand">
+        <span>Oathra</span>
+        <span class="logo-badge">DESKTOP</span>
+      </div>
+      <div class="controls">
+        <div class="status-pill" id="status-pill" title="クリックして接続サーバーを変更">
+          <span class="status-dot"></span>
+          <span id="status-label">確認中…</span>
+        </div>
+        <button class="btn" id="btn-reload" title="ページを再読み込み">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          更新
+        </button>
+        <button class="btn" id="btn-change-server">
+          接続先変更
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <main class="viewport">
+      <iframe id="web-view" src="about:blank"></iframe>
+
+      <div class="offline-card" id="offline-view">
+        <div class="card-box">
+          <h2>サーバーに接続できません</h2>
+          <p>Oathra サーバーが停止しているか、入力されたアドレスに到達できません。ローカルまたはリモート（トンネル）のサーバーを起動してください。</p>
+
+          <div class="form-group">
+            <label>ローカルで起動する場合 (ターミナル):</label>
+            <div class="code-block">pnpm demo</div>
+          </div>
+
+          <div class="form-group">
+            <label>リモートからどこでもアクセスする場合:</label>
+            <div class="code-block">pnpm demo --tunnel</div>
+          </div>
+
+          <div class="form-group">
+            <label for="server-input">接続先 URL:</label>
+            <div class="input-row">
+              <input type="text" id="server-input" placeholder="http://127.0.0.1:4242">
+              <button class="btn btn-primary" id="btn-connect">接続</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Switch Server Modal -->
+  <div class="modal-overlay" id="server-modal">
+    <div class="modal">
+      <h3>接続先サーバーの変更</h3>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+        ローカルのサーバー、または外出先からアクセスするリモートURL（Cloudflare Tunnel 等）を入力してください。
+      </p>
+      <div class="form-group">
+        <label for="modal-server-input">サーバー URL:</label>
+        <input type="text" id="modal-server-input" style="width: 100%;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="btn-modal-cancel">キャンセル</button>
+        <button class="btn btn-primary" id="btn-modal-save">保存して接続</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_SERVER = "http://127.0.0.1:4242";
+    const iframe = document.getElementById("web-view");
+    const offlineView = document.getElementById("offline-view");
+    const statusPill = document.getElementById("status-pill");
+    const statusLabel = document.getElementById("status-label");
+    const serverInput = document.getElementById("server-input");
+    const modalInput = document.getElementById("modal-server-input");
+    const serverModal = document.getElementById("server-modal");
+
+    function getServerUrl() {
+      return localStorage.getItem("oathra_server_url") || DEFAULT_SERVER;
+    }
+
+    function setServerUrl(url) {
+      const clean = url.trim().replace(/\/+$/, "");
+      localStorage.setItem("oathra_server_url", clean);
+      return clean;
+    }
+
+    async function checkServer(url) {
+      // The Arena rejects cross-origin API calls (its own guard), so this only checks that something answers.
+      // The iframe below is same-site for the server, so the page itself works normally.
+      try {
+        await fetch(`${url}/api/brains`, { method: "GET", mode: "no-cors", cache: "no-store" });
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    async function connect(url) {
+      statusLabel.textContent = "接続確認中…";
+      statusPill.classList.remove("online");
+
+      const ok = await checkServer(url);
+      if (ok) {
+        statusPill.classList.add("online");
+        statusLabel.textContent = new URL(url).host;
+        offlineView.style.display = "none";
+        iframe.classList.add("active");
+        if (iframe.src !== url && iframe.src !== url + "/") {
+          iframe.src = url;
+        }
+      } else {
+        statusPill.classList.remove("online");
+        statusLabel.textContent = "オフライン";
+        iframe.classList.remove("active");
+        offlineView.style.display = "flex";
+      }
+    }
+
+    document.getElementById("btn-connect").addEventListener("click", () => {
+      const target = setServerUrl(serverInput.value || DEFAULT_SERVER);
+      connect(target);
+    });
+
+    serverInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const target = setServerUrl(serverInput.value || DEFAULT_SERVER);
+        connect(target);
+      }
+    });
+
+    document.getElementById("btn-reload").addEventListener("click", () => {
+      const current = getServerUrl();
+      connect(current);
+      if (iframe.classList.contains("active")) {
+        iframe.contentWindow?.location.reload();
+      }
+    });
+
+    function openModal() {
+      modalInput.value = getServerUrl();
+      serverModal.classList.add("open");
+      modalInput.focus();
+    }
+    function closeModal() {
+      serverModal.classList.remove("open");
+    }
+
+    document.getElementById("btn-change-server").addEventListener("click", openModal);
+    statusPill.addEventListener("click", openModal);
+    document.getElementById("btn-modal-cancel").addEventListener("click", closeModal);
+    document.getElementById("btn-modal-save").addEventListener("click", () => {
+      const target = setServerUrl(modalInput.value || DEFAULT_SERVER);
+      serverInput.value = target;
+      closeModal();
+      connect(target);
+    });
+
+    // Initial boot
+    const initialUrl = getServerUrl();
+    serverInput.value = initialUrl;
+    connect(initialUrl);
+
+    // Periodic heartbeat (every 10s)
+    setInterval(() => {
+      checkServer(getServerUrl()).then(ok => {
+        if (ok) {
+          statusPill.classList.add("online");
+          statusLabel.textContent = new URL(getServerUrl()).host;
+        } else {
+          statusPill.classList.remove("online");
+          statusLabel.textContent = "オフライン";
+        }
+      });
+    }, 10000);
+  </script>
+</body>
+</html>
