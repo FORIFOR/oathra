@@ -33,7 +33,11 @@ export type GeminiLiveAgentOptions = {
   persona?: string;
   /** Hang up after this much silence from both sides (ms). */
   inactivityMs?: number;
-  /** Let the model match its tone to the other person's (affective dialog). Default true. */
+  /**
+   * Ask for affective dialog. Off by default: measured 2026-09-26, `gemini-3.8-live` accepts the setup with
+   * `generationConfig.enableAffectiveDialog` (v1beta and v1alpha) and then closes the session with 1007
+   * "invalid argument" as soon as it would speak — every call would be silent.
+   */
   affectiveDialog?: boolean;
   url?: string;
   /** Silence (ms) that closes a transcript segment. */
@@ -156,7 +160,7 @@ export class GeminiLiveAgent {
     this.send({
       setup: {
         model: `models/${this.model}`,
-        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } }, ...(this.opts.affectiveDialog === false ? {} : { enableAffectiveDialog: true }) },
+        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } }, ...(this.opts.affectiveDialog === true ? { enableAffectiveDialog: true } : {}) },
         systemInstruction: { parts: [{ text: this.instructions() }] },
         tools: [{ functionDeclarations: tools }],
         inputAudioTranscription: {},
