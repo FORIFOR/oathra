@@ -212,7 +212,7 @@ body.focused-task .local-wrap { display: none; }
   body.focused-task .topbar-right .btn, body.focused-task .tt-btn { padding: 8px 4px; min-height: 44px; font-size: 12px; justify-content: center; }
   body.focused-task .tt-btn .dot { display: none; }
 }
-#phone-template { width: 100%; min-height: 44px; font: inherit; padding: 10px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+#phone-template, #phone-engine, #phone-voice { width: 100%; min-height: 44px; font: inherit; padding: 10px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .phone-consent { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0; line-height: 1.7; }
 .phone-consent input { flex: none; width: 20px; height: 20px; margin-top: 4px; }
 #phone-dial { min-height: 48px; margin-bottom: 16px; }

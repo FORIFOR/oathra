@@ -93,9 +93,21 @@ export const DEFAULT_PHONE_VOICE = "marin";
 /** Speech-to-speech engines a request may ask for. Absent keeps the server's configured engine. */
 export const PHONE_ENGINES = ["gpt-live", "gemini-live"] as const;
 export type PhoneEngine = (typeof PHONE_ENGINES)[number];
-/** Gemini Live prebuilt voices; the first is the default. */
-export const GEMINI_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Puck", "Charon", "Fenrir", "Orus"] as const;
+/** Gemini Live accepts every prebuilt TTS voice (30). Custom Voice Design voices are TTS-only and not accepted by Live. */
+export const GEMINI_VOICES = [
+  "Kore", "Zephyr", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe", "Autonoe",
+  "Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar",
+  "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat",
+] as const;
 export const DEFAULT_GEMINI_VOICE = "Kore";
+/** Google's one-word character for each voice, in Japanese, for the voice picker. Not a measurement. */
+export const GEMINI_VOICE_TRAITS: Record<(typeof GEMINI_VOICES)[number], string> = {
+  Kore: "しっかり", Zephyr: "明るい", Puck: "元気", Charon: "説明向き", Fenrir: "弾む", Leda: "若々しい", Orus: "しっかり", Aoede: "軽やか",
+  Callirrhoe: "ゆったり", Autonoe: "明るい", Enceladus: "息まじり", Iapetus: "はっきり", Umbriel: "気さく", Algieba: "なめらか", Despina: "なめらか",
+  Erinome: "明るい", Algenib: "ハスキー", Rasalgethi: "説明向き", Laomedeia: "元気", Achernar: "やわらか", Alnilam: "しっかり", Schedar: "落ち着いた",
+  Gacrux: "大人っぽい", Pulcherrima: "前向き", Achird: "親しみやすい", Zubenelgenubi: "くだけた", Vindemiatrix: "やさしい", Sadachbia: "生き生き",
+  Sadaltager: "知的", Sulafat: "あたたかい",
+};
 export const ENGINE_VOICES: Record<PhoneEngine, readonly string[]> = { "gpt-live": PHONE_VOICES, "gemini-live": GEMINI_VOICES };
 export const ENGINE_DEFAULT_VOICE: Record<PhoneEngine, string> = { "gpt-live": DEFAULT_PHONE_VOICE, "gemini-live": DEFAULT_GEMINI_VOICE };
 

@@ -12,16 +12,16 @@
  */
 import WebSocket from "ws";
 import type { Action, CallContract } from "@oathra/contract";
-import { requiredFields } from "@oathra/contract";
+import { DEFAULT_GEMINI_VOICE, GEMINI_VOICES, requiredFields } from "@oathra/contract";
 import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler } from "@oathra/audio-kit";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import { callInstructions, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 import type { AgentBridge } from "./index.js";
 
 export const DEFAULT_GEMINI_LIVE_MODEL = "gemini-3.8-live";
-/** Prebuilt Live voices. The first is the default; the model picks the language from the audio itself. */
-export const GEMINI_LIVE_VOICES = ["Kore", "Aoede", "Leda", "Zephyr", "Puck", "Charon", "Fenrir", "Orus"] as const;
-export const DEFAULT_GEMINI_LIVE_VOICE = "Kore";
+/** Prebuilt Live voices (the same 30 as TTS). The model picks the language from the audio itself. */
+export const GEMINI_LIVE_VOICES = GEMINI_VOICES;
+export const DEFAULT_GEMINI_LIVE_VOICE = DEFAULT_GEMINI_VOICE;
 
 export type GeminiLiveAgentOptions = {
   contract: CallContract;
@@ -33,6 +33,8 @@ export type GeminiLiveAgentOptions = {
   persona?: string;
   /** Hang up after this much silence from both sides (ms). */
   inactivityMs?: number;
+  /** Let the model match its tone to the other person's (affective dialog). Default true. */
+  affectiveDialog?: boolean;
   url?: string;
   /** Silence (ms) that closes a transcript segment. */
   segmentGapMs?: number;
@@ -147,12 +149,14 @@ export class GeminiLiveAgent {
     const tools: Json[] = [
       { name: "end_call", description: "Hang up the phone. Call this right after saying goodbye, when the other person says goodbye or asks you to hang up, on voicemail, or when the conversation is over.", parameters: { type: "object", properties: { reason: { type: "string" } }, required: ["reason"] } },
     ];
-    if (!casual) tools.push({ name: "request_action", description: "Ask for permission before an action outside your permitted list (payment, cancel, share_address, share_phone, modify).", parameters: { type: "object", properties: { action: { type: "string" }, detail: { type: "string" } }, required: ["action", "detail"] } });
-    if (this.desk) tools.push(...(DESK_TOOLS as unknown as Json[]).map(functionDeclaration));
+    // A permission or a booking must be answered before the model goes on talking: without BLOCKING, 3.8 Live
+    // keeps speaking while the call is pending and can say 「予約できました」 before book_table has returned.
+    if (!casual) tools.push({ name: "request_action", behavior: "BLOCKING", description: "Ask for permission before an action outside your permitted list (payment, cancel, share_address, share_phone, modify).", parameters: { type: "object", properties: { action: { type: "string" }, detail: { type: "string" } }, required: ["action", "detail"] } });
+    if (this.desk) tools.push(...(DESK_TOOLS as unknown as Json[]).map((tool) => ({ ...functionDeclaration(tool), behavior: "BLOCKING" })));
     this.send({
       setup: {
         model: `models/${this.model}`,
-        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } } },
+        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } }, ...(this.opts.affectiveDialog === false ? {} : { enableAffectiveDialog: true }) },
         systemInstruction: { parts: [{ text: this.instructions() }] },
         tools: [{ functionDeclarations: tools }],
         inputAudioTranscription: {},

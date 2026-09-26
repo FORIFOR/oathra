@@ -92,3 +92,14 @@ describe("audit 2026-09-26: names and farewells", () => {
     for (const text of ["じゃあね、バイバイ", "はーい、失礼します", "また今度ね", "ok bye"]) expect(GOODBYE_RE.test(text), text).toBe(true);
   });
 });
+
+describe("chat speaking style", () => {
+  it("asks for a relaxed, unscripted delivery in both languages, and only for chat", () => {
+    const chat = (language: "ja" | "en") => new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language, input: { request: "近況を話す", conversationMode: "chat" } }) }).instructions();
+    expect(chat("ja")).toContain("【話し方】");
+    expect(chat("ja")).toContain("アナウンサー");
+    expect(chat("en")).toContain("Speaking style:");
+    const message = new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language: "ja", input: { request: "遅れると伝えて" } }) }).instructions();
+    expect(message).not.toContain("【話し方】隣に座った");
+  });
+});

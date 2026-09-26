@@ -1,5 +1,5 @@
 import { phoneMemory } from '../../../packages/core/dist/index.js';
-import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE } from '../../../packages/contract/dist/index.js';
+import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
 
@@ -48,7 +48,7 @@ export function phoneReadiness(service,config,user) {
   issues.push('運営者の設定が整えば、利用者はこの画面から発信できます。');
  }
  // Each engine has its own voices; the measured details only exist for GPT-Live's.
- const engines=(config.voiceEngines??[{id:'gpt-live',label:'GPT-Live',ready:true}]).map(e=>({...e,voices:e.id==='gemini-live'?[...GEMINI_VOICES]:[...PHONE_VOICES],defaultVoice:e.id==='gemini-live'?DEFAULT_GEMINI_VOICE:DEFAULT_PHONE_VOICE}));
+ const engines=(config.voiceEngines??[{id:'gpt-live',label:'GPT-Live',ready:true}]).map(e=>({...e,voices:e.id==='gemini-live'?[...GEMINI_VOICES]:[...PHONE_VOICES],defaultVoice:e.id==='gemini-live'?DEFAULT_GEMINI_VOICE:DEFAULT_PHONE_VOICE,...(e.id==='gemini-live'?{voiceTraits:{...GEMINI_VOICE_TRAITS}}:{})}));
  const defaultEngine=config.defaultVoiceEngine??'gpt-live';
  return {ready,reception:config.inbound?.restaurant&&config.inbound.owner===user?.id?config.inbound.restaurant.name:null,provider:'Twilio',engine:defaultEngine==='gemini-live'?'Google':'OpenAI',recording:false,voices:[...PHONE_VOICES],defaultVoice:DEFAULT_PHONE_VOICE,voiceDetails:VOICE_DETAILS,engines,defaultEngine,newsAvailable:config.newsAvailable===true,
   issues,

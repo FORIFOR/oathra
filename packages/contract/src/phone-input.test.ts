@@ -91,3 +91,13 @@ it("a request may name the engine, and a voice belongs to one engine", () => {
   expect(() => preparePhoneRequest({ ...base, engine: "gpt-live", voice: "Kore" })).toThrow();
   expect(() => preparePhoneRequest({ ...base, engine: "realtime" as never })).toThrow();
 });
+
+it("every prebuilt Gemini voice is accepted with the Gemini engine, and each has a described character", async () => {
+  const { GEMINI_VOICES, GEMINI_VOICE_TRAITS } = await import("./phone-input.js");
+  const base = { phone: "+819012345678", name: "田中", instruction: "明日の集合時間を伝えてください。" };
+  expect(GEMINI_VOICES).toHaveLength(30);
+  for (const voice of GEMINI_VOICES) {
+    expect(preparePhoneRequest({ ...base, engine: "gemini-live", voice }).voice).toBe(voice);
+    expect(GEMINI_VOICE_TRAITS[voice]).toBeTruthy();
+  }
+});

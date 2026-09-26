@@ -66,6 +66,9 @@ describe("geminiLiveEngine (VoiceEngine adapter)", () => {
     expect(setup?.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName).toBe("Aoede");
     expect(setup?.setup.inputAudioTranscription).toEqual({});
     expect(setup?.setup.tools[0]?.functionDeclarations.map((f) => f.name)).toEqual(["end_call", "request_action"]);
+    // A permission must be answered before the model goes on talking.
+    expect((setup?.setup.tools[0]?.functionDeclarations.find((f) => f.name === "request_action") as { behavior?: string } | undefined)?.behavior).toBe("BLOCKING");
+    expect((setup?.setup.generationConfig as { enableAffectiveDialog?: boolean }).enableAffectiveDialog).toBe(true);
     const audioIn = received.find((m) => m.realtimeInput) as { realtimeInput: { audio: { data: string; mimeType: string } } } | undefined;
     expect(audioIn?.realtimeInput.audio.mimeType).toBe("audio/pcm;rate=16000");
     // 480 samples at 24 kHz -> 160 μ-law at 8 kHz at the adapter boundary -> 320 PCM16 samples at 16 kHz = 640 bytes.

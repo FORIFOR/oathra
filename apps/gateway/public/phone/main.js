@@ -110,7 +110,7 @@ import { renderNews } from './news.js';
     const engineChoices = () => readiness?.engines ?? [], currentEngine = () => engineSelect.value || readiness?.defaultEngine || 'gpt-live', engineOf = id => engineChoices().find(e => e.id === id);
     // How high and how fast, from the measured sample. Not who: a recording cannot say that.
     const pitchWord = { low: '低めの声（男性に多い高さ）', mid: '中くらいの高さの声', high: '高めの声（女性に多い高さ）', 'very-high': 'かなり高めの声' }, paceWord = { fast: 'やや速め', medium: 'ふつうの速さ', slow: 'ゆっくりめ' };
-    const describeVoice = v => { const d = readiness?.voiceDetails?.[v]; return d ? `${d.recommended ? '★ 推奨 ' : ''}${v} — ${pitchWord[d.pitch]}・${paceWord[d.pace]}${d.quiet ? '・音量は小さめ' : ''}` : v; };
+    const describeVoice = v => { const trait = engineOf(currentEngine())?.voiceTraits?.[v]; if (trait) return `${v} — ${trait}`; const d = currentEngine() === 'gpt-live' ? readiness?.voiceDetails?.[v] : undefined; return d ? `${d.recommended ? '★ 推奨 ' : ''}${v} — ${pitchWord[d.pitch]}・${paceWord[d.pace]}${d.quiet ? '・音量は小さめ' : ''}` : v; };
     let previewAudio = null;
     voicePreview.addEventListener('click', () => {
         const sample = readiness?.voiceDetails?.[voiceSelect.value]?.sample;
