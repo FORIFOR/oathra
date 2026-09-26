@@ -42,7 +42,12 @@ export function configuration(env=process.env){
     const name=String(env.OATHRA_INBOUND_NAME??'').trim();assert(restaurant||(name.length>0&&name.length<=40&&!/[\d@<>{}]/.test(name)),'configure_inbound_name',500);
     inbound={owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
   }
-  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',
+  // Metered billing prices one voice model per minute (billing.mjs), so a second engine is only offered under the fixed per-call policy.
+  const geminiReady=!!env.GEMINI_API_KEY&&billing.policy!==METERED;
+  const voiceEngines=[{id:'gpt-live',label:`GPT-Live (${env.OATHRA_VOICE_MODEL??'gpt-live-1'})`,ready:!!env.OPENAI_API_KEY&&!!env.OATHRA_VOICE_MODEL},{id:'gemini-live',label:`Gemini Live (${env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live'})`,ready:geminiReady}];
+  assert(['gpt-live','gemini-live',undefined].includes(env.OATHRA_VOICE_ENGINE),'unsupported_voice_engine',500);
+  const defaultVoiceEngine=env.OATHRA_VOICE_ENGINE==='gemini-live'&&geminiReady?'gemini-live':'gpt-live';
+  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
     dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,0,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0,1000),
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),

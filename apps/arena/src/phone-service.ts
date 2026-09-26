@@ -7,7 +7,12 @@ import { renderCallSummary, saveCall } from "@oathra/replay";
 import type { CallOutcome } from "@oathra/runtime";
 
 /** Experimental local Web telephone adapter. inspect MUST have no external side effects. */
-export type PhoneReadiness = { ready: boolean; issues: string[]; provider: string; engine: string; recording: boolean; disclosure: string; configurationId?: string };
+export type PhoneEngineChoice = { id: string; label: string; ready: boolean; issues: string[]; voices: string[]; defaultVoice: string; voiceTraits?: Record<string, string>; presetVoices?: Record<string, string> };
+export type PhoneReadiness = {
+  ready: boolean; issues: string[]; provider: string; engine: string; recording: boolean; disclosure: string; configurationId?: string;
+  /** Speech-to-speech engines this server can use, so the form can offer a choice. */
+  engines?: PhoneEngineChoice[]; defaultEngine?: string;
+};
 export interface PhoneDialer {
   inspect(request?: PhoneRequest): PhoneReadiness | Promise<PhoneReadiness>;
   execute(request: PhoneRequest, ctx: { callId: string; reviewedConfigurationId?: string; signal: AbortSignal; onEvent: (event: CallEvent) => void }): Promise<CallOutcome>;
@@ -19,10 +24,20 @@ export type PhoneCallRecord = {
   transcript: { source: "caller" | "callee"; text: string; turnId: string; startMs: number; endMs: number }[];
   ownerPid?: number; resolvedAt?: string; summary?: string; error?: string; endReason?: string; persistence?: "saved" | "failed";
 };
+/** The dialer refused before contacting the carrier: nothing rang, so the outcome is known. */
+export class PhoneNotDialedError extends Error {}
 export class PhoneServiceError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
 const idPattern = /^phone_[0-9a-f-]{36}$/;
+
+/** A carrier or engine failure, in words the caller can act on. The original message stays in the events. */
+export function phoneFailureText(message: string): string {
+  if (/media stream/i.test(message)) return "通話先へ音声をつなげられませんでした。公開接続先（OATHRA_PUBLIC_WS_URL）に届いていません。相手の電話は短く鳴って切れた可能性があります。トンネルを起動し直し、設定を確認してから発信してください。";
+  if (/call (busy|no-answer)/i.test(message)) return "相手が応答しませんでした（話し中または不在）。";
+  if (/call (failed|canceled)/i.test(message)) return "通信会社で発信が完了しませんでした。番号と通信会社の設定を確認してください。";
+  return `通話処理でエラーが発生しました: ${message.slice(0, 200)}`;
+}
 const activeStates: PhoneCallState[] = ["starting", "running", "stopping"];
 const STALE_LOCK_MS = 60_000;
 const unavailable: PhoneReadiness = { ready: false, issues: ["このサーバーでは実電話の接続が設定されていません。"], provider: "unconfigured", engine: "unconfigured", recording: false, disclosure: "発信は設定完了後の明示的な確認が必要です。" };
@@ -137,6 +152,8 @@ export class PhoneService {
         onEvent: event => {
           record.events.push(event);
           if (event.type === "call.connected" && record.state === "starting") record.state = "running";
+          // The reason a call failed belongs on the record the screen shows, not only in the event log.
+          if (event.type === "error" && event.fatal !== false && !record.error) record.error = phoneFailureText(event.message);
           if (event.type === "transcript.final") record.transcript.push({ source: event.source, text: event.text, turnId: event.turnId, startMs: event.startMs, endMs: event.endMs });
           record.updatedAt = new Date().toISOString();
           try { this.write(record); } catch { record.error = "通話途中の履歴を保存できません。通話を停止し結果を確認しています。"; controller.abort(); }
@@ -147,9 +164,15 @@ export class PhoneService {
       record.state = outcome.endReason === "error" ? "failed" : "ended";
       try { saveCall(outcome, this.callsDir); record.persistence = "saved"; }
       catch { record.persistence = "failed"; record.error = "通話は終了しましたが成果物を保存できませんでした。履歴の内容を確認してください。"; }
-    } catch {
-      record.state = "unknown";
-      record.error = "通信処理が途絶えたため発信・終了結果を確認できません。通信事業者の履歴で確認してください。自動再発信はしません。";
+    } catch (error) {
+      if (error instanceof PhoneNotDialedError) {
+        record.state = "failed";
+        record.error = `発信していません。${error.message}`;
+      } else {
+        record.state = "unknown";
+        // Keep a reason already reported during the call (「音声をつなげられませんでした」) ahead of the generic one.
+        record.error = `${record.error ? record.error + " " : ""}通信処理が途絶えたため発信・終了結果を確認できません。通信事業者の履歴で確認してください。自動再発信はしません。`;
+      }
     } finally {
       record.updatedAt = new Date().toISOString();
       let persisted = false;

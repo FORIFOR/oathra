@@ -18,6 +18,6 @@ export type AgentBridge = {
 };
 
 export { createNewsSearch, NEWS_TOPICS, type NewsSearch, type NewsResult, type NewsLookupEvent } from "./news.js";
-export { DESK_TOOLS, deskTool, notReadBack, receptionGreeting, restaurantReceptionInstructions, type DeskEvent, type DeskToolResult, type ReservationDesk } from "./reception.js";
+export { DESK_TOOLS, deskTool, notReadBack, receptionGreeting, restaurantReceptionInstructions, type DeskEvent, type DeskToolResult, type ReservationDesk } from "@oathra/voice-kit";
 export { OpenAILiveAgent, type LiveAgentOptions } from "./live.js";
 export { gptLiveEngine, type GptLiveEngineOptions } from "./engines.js";

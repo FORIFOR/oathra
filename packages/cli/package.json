@@ -57,7 +57,9 @@
     "@oathra/phone-plivo": "workspace:*",
     "@oathra/phone-sip": "workspace:*",
     "@oathra/gateway-livekit": "workspace:*",
-    "@oathra/voice-pipeline": "workspace:*"
+    "@oathra/voice-pipeline": "workspace:*",
+    "@oathra/voice-kit": "workspace:*",
+    "@oathra/gemini-live": "workspace:*"
   },
   "repository": {
     "type": "git",

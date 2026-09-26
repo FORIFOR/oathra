@@ -39,3 +39,18 @@ describe("Web phone local inspection", () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 });
+
+describe("the public media URL is checked before anyone is rung", () => {
+  const reply = (status: number, headers: Record<string, string> = {}) => (async () => new Response("", { status, headers })) as unknown as typeof fetch;
+  it("an offline ngrok endpoint, a dead quick tunnel or an unreachable host is a reason not to dial", async () => {
+    const { probePublicMediaUrl } = await import("./web-phone.js");
+    expect(await probePublicMediaUrl("wss://gone.ngrok-free.app", reply(404, { "ngrok-error-code": "ERR_NGROK_3200" }))).toContain("停止");
+    expect(await probePublicMediaUrl("wss://gone.trycloudflare.com", reply(530))).toContain("停止");
+    expect(await probePublicMediaUrl("wss://nowhere.invalid", (async () => { throw new TypeError("fetch failed"); }) as unknown as typeof fetch)).toContain("接続できません");
+  });
+  it("a live tunnel with nothing listening yet is fine: the media server only starts when the call is placed", async () => {
+    const { probePublicMediaUrl } = await import("./web-phone.js");
+    expect(await probePublicMediaUrl("wss://live.ngrok-free.app", reply(502, { "ngrok-error-code": "ERR_NGROK_8012" }))).toBeUndefined();
+    expect(await probePublicMediaUrl("wss://live.example.com", reply(426))).toBeUndefined();
+  });
+});

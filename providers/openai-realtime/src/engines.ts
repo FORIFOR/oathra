@@ -4,71 +4,11 @@
  * while each OpenAI agent uses its own native WebSocket format internally, then
  * publish model audio, clears and session events on the engine's output queue.
  */
-import type { Action } from "@oathra/contract";
-import type { MissionView } from "@oathra/core";
-import { convert, MULAW_8K, OutputQueue, type AudioChunk, type VoiceEngine, type VoiceOutput, type VoiceSession, type VoiceSessionContext } from "@oathra/voice";
+import { MULAW_8K, type VoiceEngine, type VoiceSessionContext } from "@oathra/voice";
+import { S2SVoiceSession } from "@oathra/voice-kit";
 import { OpenAILiveAgent } from "./live.js";
 import type { NewsSearch, NewsLookupEvent } from "./news.js";
-import type { DeskEvent, ReservationDesk } from "./reception.js";
-
-type AgentLike = {
-  pushAudio(mulaw: Uint8Array): void;
-  updateContext(view: MissionView): void;
-  resolveAction(action: Action, approved: boolean): void;
-  close(): void | Promise<void>;
-  interrupt?(): void;
-  connect(bridge: { sendAudio(mulaw: Uint8Array): void; clearAudio(): void; emit(event: VoiceOutput extends { type: "event"; event: infer E } ? E : never): void; now(): number }): Promise<void>;
-};
-
-class S2SVoiceSession implements VoiceSession {
-  readonly output: AsyncIterable<VoiceOutput>;
-  private readonly queue = new OutputQueue<VoiceOutput>();
-  private closed = false;
-
-  constructor(
-    private readonly agent: AgentLike,
-    private readonly clock: { now(): number },
-  ) {
-    this.output = this.queue;
-  }
-
-  async start(): Promise<void> {
-    await this.agent.connect({
-      sendAudio: (mulaw) => this.queue.push({ type: "audio", chunk: { ...MULAW_8K, data: mulaw } }),
-      clearAudio: () => this.queue.push({ type: "clear" }),
-      emit: (event) => this.queue.push({ type: "event", event }),
-      now: () => this.clock.now(),
-    });
-  }
-
-  input(chunk: AudioChunk): void {
-    if (this.closed) return;
-    this.agent.pushAudio(convert(chunk, MULAW_8K).data);
-  }
-
-  updateContext(view: MissionView): void {
-    this.agent.updateContext(view);
-  }
-
-  resolveAction(action: Action, approved: boolean): void {
-    this.agent.resolveAction(action, approved);
-  }
-
-  interrupt(): void {
-    this.agent.interrupt?.();
-  }
-
-  async close(): Promise<void> {
-    if (this.closed) return;
-    this.closed = true;
-    await this.agent.close();
-    this.queue.close();
-  }
-
-  now(): number {
-    return this.clock.now();
-  }
-}
+import type { DeskEvent, ReservationDesk } from "@oathra/voice-kit";
 
 export type GptLiveEngineOptions = { model?: string; voice?: string; delegateTo?: string; webSearch?: boolean; apiKey?: string; url?: string; newsSearch?: NewsSearch | false; onNews?: (event: NewsLookupEvent) => void; desk?: ReservationDesk; onDesk?: (event: DeskEvent) => void };
 

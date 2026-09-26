@@ -80,3 +80,38 @@ it("a request may say on whose behalf the call is: a name, never contact details
   expect(preparePhoneRequest(base).callerName).toBeUndefined();
   for (const callerName of ["", " ", "x".repeat(41), "090-1234-5678", "a@example.com", "https://example.com", "<b>名前</b>"]) expect(() => preparePhoneRequest({ ...base, callerName })).toThrow();
 });
+
+it("a request may name the engine, and a voice belongs to one engine", () => {
+  const base = { phone: "+819012345678", name: "田中", instruction: "明日の集合時間を伝えてください。" };
+  expect(preparePhoneRequest({ ...base, engine: "gemini-live" }).engine).toBe("gemini-live");
+  expect(preparePhoneRequest({ ...base, engine: "gemini-live", voice: "Kore" }).voice).toBe("Kore");
+  // A Gemini voice without an engine implies Gemini; a GPT-Live voice with the Gemini engine is refused.
+  expect(preparePhoneRequest({ ...base, voice: "Kore" }).voice).toBe("Kore");
+  expect(() => preparePhoneRequest({ ...base, engine: "gemini-live", voice: "vesper" })).toThrow();
+  expect(() => preparePhoneRequest({ ...base, engine: "gpt-live", voice: "Kore" })).toThrow();
+  expect(() => preparePhoneRequest({ ...base, engine: "realtime" as never })).toThrow();
+});
+
+it("every prebuilt Gemini voice is accepted with the Gemini engine, and each has a described character", async () => {
+  const { GEMINI_VOICES, GEMINI_VOICE_TRAITS } = await import("./phone-input.js");
+  const base = { phone: "+819012345678", name: "田中", instruction: "明日の集合時間を伝えてください。" };
+  expect(GEMINI_VOICES).toHaveLength(30);
+  for (const voice of GEMINI_VOICES) {
+    expect(preparePhoneRequest({ ...base, engine: "gemini-live", voice }).voice).toBe(voice);
+    expect(GEMINI_VOICE_TRAITS[voice]).toBeTruthy();
+  }
+});
+
+it("a voice preset is optional, from a fixed list, and resolves to a per-engine voice that an explicit voice overrides", async () => {
+  const { resolvePhoneVoice, PRESET_VOICES, VOICE_PRESETS } = await import("./phone-input.js");
+  const base = { phone: "+819012345678", name: "田中", instruction: "明日の集合時間を伝えてください。" };
+  for (const voicePreset of VOICE_PRESETS) expect(preparePhoneRequest({ ...base, voicePreset }).voicePreset).toBe(voicePreset);
+  expect(() => preparePhoneRequest({ ...base, voicePreset: "villain" as never })).toThrow();
+  expect(resolvePhoneVoice("gemini-live", { voicePreset: "character-female" })).toBe(PRESET_VOICES["gemini-live"]["character-female"]);
+  expect(resolvePhoneVoice("gpt-live", { voicePreset: "sales-male" })).toBe("meridian");
+  expect(resolvePhoneVoice("gemini-live", { voicePreset: "character-female", voice: "Sulafat" })).toBe("Sulafat");
+  expect(resolvePhoneVoice("gpt-live", {})).toBeUndefined();
+  expect(resolvePhoneVoice("pipeline", { voicePreset: "sales-male" })).toBeUndefined();
+  expect(VOICE_PRESETS).toHaveLength(6);
+  expect(resolvePhoneVoice("gemini-live", { voicePreset: "guide-female" })).toBe(PRESET_VOICES["gemini-live"]["guide-female"]);
+});

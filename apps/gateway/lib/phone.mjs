@@ -218,13 +218,18 @@ export class Phone {
     this.store.audit(saved.owner,'contact.suppressed',saved.mission,{mission:saved.mission,target:this.store.phoneRef(saved.phone),source:'dtmf_without_session'});
   }
   async execute(m,hooks) {
-    const [{CallRuntime},{PhoneTransport},{defineCall,definePhoneRequest,definePhoneInbound,defineRestaurantReception},{gptLiveEngine,createNewsSearch},voice]=await Promise.all([
+    const [{CallRuntime},{PhoneTransport},{defineCall,definePhoneRequest,definePhoneInbound,defineRestaurantReception,resolvePhoneVoice},{gptLiveEngine,createNewsSearch},voice]=await Promise.all([
       import('../../../packages/runtime/dist/index.js'),import('../../../packages/phone/dist/index.js'),import('../../../packages/contract/dist/index.js'),
       import('../../../providers/openai-realtime/dist/index.js'),import('../../../packages/voice/dist/index.js')]);
     assert(!hooks.signal.aborted,'cancelled_before_dial',409);
-    const carrier=new PhoneSession(this,m,hooks,voice); const transport=new PhoneTransport({providerId:'twilio',path:'direct',describe:()=> 'Authenticated Twilio Media Streams',dial:async()=>{await carrier.dial();return carrier;}},
-      gptLiveEngine({model:this.env.OATHRA_VOICE_MODEL,apiKey:this.env.OPENAI_API_KEY,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest?.voice?{voice:m.phoneRequest.voice}:{}),onNews:e=>hooks.onEvent(e),
-        ...(m.creditQuote?.tariff?.settlement===USAGE_RATE?{newsSearch:createNewsSearch({apiKey:this.env.OPENAI_API_KEY,model:m.creditQuote.tariff.search.model,onUsage:e=>hooks.onEvent({type:'billing.search',...e})})}:{})}));
+    // The request may name its engine; otherwise the deployment's default speaks. Metered billing only knows GPT-Live (server.mjs).
+    const engineId=m.phoneRequest?.engine??this.config.defaultVoiceEngine??'gpt-live';
+    assert(engineId==='gpt-live'||(this.config.voiceEngines??[]).some(e=>e.id===engineId&&e.ready),'voice_engine_unavailable',409);
+    const engine=engineId==='gemini-live'
+      ?(await import('../../../providers/gemini-live/dist/index.js')).geminiLiveEngine({model:this.config.geminiLiveModel,apiKey:this.env.GEMINI_API_KEY,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest&&resolvePhoneVoice(engineId,m.phoneRequest)?{voice:resolvePhoneVoice(engineId,m.phoneRequest)}:{})})
+      :gptLiveEngine({model:this.env.OATHRA_VOICE_MODEL,apiKey:this.env.OPENAI_API_KEY,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest&&resolvePhoneVoice(engineId,m.phoneRequest)?{voice:resolvePhoneVoice(engineId,m.phoneRequest)}:{}),onNews:e=>hooks.onEvent(e),
+        ...(m.creditQuote?.tariff?.settlement===USAGE_RATE?{newsSearch:createNewsSearch({apiKey:this.env.OPENAI_API_KEY,model:m.creditQuote.tariff.search.model,onUsage:e=>hooks.onEvent({type:'billing.search',...e})})}:{})});
+    const carrier=new PhoneSession(this,m,hooks,voice); const transport=new PhoneTransport({providerId:'twilio',path:'direct',describe:()=> 'Authenticated Twilio Media Streams',dial:async()=>{await carrier.dial();return carrier;}},engine);
     const restaurant=m.inbound?.reception?this.config.inbound?.restaurant:null;assert(!m.inbound?.reception||restaurant,'restaurant_not_configured',409);
     const contract=restaurant?defineRestaurantReception({restaurantName:restaurant.name,callerPhone:m.target.phone,callerName:m.target.name,today:tokyoDate(this.store.now()),seatings:Object.keys(restaurant.slots).sort(),maxParty:restaurant.maxParty,
         ...(restaurant.closedWeekdays?.length||restaurant.closedDates?.length?{closedNote:[restaurant.closedWeekdays?.length?'毎週'+restaurant.closedWeekdays.map(d=>'日月火水木金土'[d]+'曜').join('・'):'',...(restaurant.closedDates??[]).filter(d=>d>=tokyoDate(this.store.now())).slice(0,6)].filter(Boolean).join('、')}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})

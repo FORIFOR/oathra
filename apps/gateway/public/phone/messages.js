@@ -5,6 +5,7 @@ export const stateLabel = {
     draft: '下書き（未発信）', starting: '発信準備中', running: '通話中', stopping: '終了を確認中', ended: '通話終了', failed: '通話は完了しませんでした', unknown: '結果未確認'
 };
 export const errorText = {
+    voice_engine_unavailable: 'この音声AIはこのサーバーでは使えません。別の音声AIを選んでください。',
     contact_name_or_company_required: '名前か会社名を入力してください。',
     execution_failed: '通話を実行できませんでした。保存された会話と状況を確認してください。',
     call_time_limit_reached: '通話時間の上限に達しました。',

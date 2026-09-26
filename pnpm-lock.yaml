@@ -90,6 +90,9 @@ importers:
       '@oathra/gemini':
         specifier: workspace:*
         version: link:../../providers/gemini
+      '@oathra/gemini-live':
+        specifier: workspace:*
+        version: link:../../providers/gemini-live
       '@oathra/ollama':
         specifier: workspace:*
         version: link:../../providers/ollama
@@ -126,6 +129,9 @@ importers:
       '@oathra/voice':
         specifier: workspace:*
         version: link:../voice
+      '@oathra/voice-kit':
+        specifier: workspace:*
+        version: link:../../providers/voice-kit
       '@oathra/voice-pipeline':
         specifier: workspace:*
         version: link:../../providers/voice-pipeline
@@ -310,6 +316,31 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  providers/gemini-live:
+    dependencies:
+      '@oathra/audio-kit':
+        specifier: workspace:*
+        version: link:../audio-kit
+      '@oathra/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
+      '@oathra/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@oathra/voice':
+        specifier: workspace:*
+        version: link:../../packages/voice
+      '@oathra/voice-kit':
+        specifier: workspace:*
+        version: link:../voice-kit
+      ws:
+        specifier: ^8.18.0
+        version: 8.21.3
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+
   providers/ollama:
     dependencies:
       '@oathra/brain-kit':
@@ -351,6 +382,9 @@ importers:
       '@oathra/voice':
         specifier: workspace:*
         version: link:../../packages/voice
+      '@oathra/voice-kit':
+        specifier: workspace:*
+        version: link:../voice-kit
       ws:
         specifier: ^8.18.0
         version: 8.21.3
@@ -444,6 +478,21 @@ importers:
       '@oathra/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+
+  providers/voice-kit:
+    dependencies:
+      '@oathra/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
+      '@oathra/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@oathra/evidence':
+        specifier: workspace:*
+        version: link:../../packages/evidence
+      '@oathra/voice':
+        specifier: workspace:*
+        version: link:../../packages/voice
 
   providers/voice-pipeline:
     dependencies:

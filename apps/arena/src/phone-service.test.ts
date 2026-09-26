@@ -113,3 +113,27 @@ it("recovers from a lock left by a dead process, keeps a fresh one, and frees a 
     expect(service.get(first.id).state).toBe("unknown");
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+it("keeps the reason a call failed on the record, and a refusal before dialing is a known failure, not an unknown outcome", async () => {
+  const { PhoneNotDialedError, phoneFailureText } = await import("./phone-service.js");
+  const ready = { ready: true, issues: [], provider: "fake", engine: "fake", recording: false, disclosure: "test", configurationId: "cfg" };
+  const settle = async (service: PhoneService, id: string) => { for (let i = 0; i < 100; i++) { const r = await service.get(id); if (!["starting", "running", "stopping"].includes(r.state)) return r; await new Promise((res) => setTimeout(res, 20)); } throw new Error("still running"); };
+
+  const refused = new PhoneService(join(root, "not-dialed"), join(root, "calls"), { inspect: () => ready, execute: async () => { throw new PhoneNotDialedError("公開接続先のトンネルが停止しています。"); } });
+  const a = await refused.prepare(preparePhoneRequest(input));
+  await refused.start(a.id, true);
+  const aDone = await settle(refused, a.id);
+  expect(aDone.state).toBe("failed");
+  expect(aDone.error).toContain("発信していません");
+  expect(aDone.error).toContain("トンネルが停止");
+
+  const noStream = new PhoneService(join(root, "no-stream"), join(root, "calls"), { inspect: () => ready, execute: async (_request, ctx) => {
+    ctx.onEvent({ t: 1, type: "error", message: "Twilio ended the call before the media stream connected (is wss://x reachable?)", fatal: true } as never);
+    throw new Error("runtime ended");
+  } });
+  const b = await noStream.prepare(preparePhoneRequest(input));
+  await noStream.start(b.id, true);
+  const bDone = await settle(noStream, b.id);
+  expect(bDone.error?.startsWith(phoneFailureText("Twilio ended the call before the media stream connected"))).toBe(true);
+  expect(bDone.error).toContain("OATHRA_PUBLIC_WS_URL");
+});

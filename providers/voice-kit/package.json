@@ -1,7 +1,7 @@
 {
-  "name": "@oathra/openai-realtime",
+  "name": "@oathra/voice-kit",
   "version": "0.1.0",
-  "description": "GPT-Live (speech-to-speech) agent for Oathra: Twilio \u03bc-law in, model audio out, transcripts to the evidence engine",
+  "description": "Prompts, tools and farewell detection shared by every speech-to-speech voice engine (GPT-Live, Gemini Live)",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,15 +20,9 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@oathra/audio-kit": "workspace:*",
     "@oathra/contract": "workspace:*",
     "@oathra/core": "workspace:*",
     "@oathra/evidence": "workspace:*",
-    "ws": "^8.18.0",
-    "@oathra/voice": "workspace:*",
-    "@oathra/voice-kit": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/ws": "^8.18.1"
+    "@oathra/voice": "workspace:*"
   }
 }

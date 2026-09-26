@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defineCall } from "@oathra/contract";
 import { GOODBYE_RE, OpenAILiveAgent } from "./live.js";
-import { extractCallerName } from "./phone-message.js";
+import { extractCallerName } from "@oathra/voice-kit";
 
 // Exercise actual instruction generation only; constructors do not open sockets.
 describe("reviewed phone message voice instructions", () => {
@@ -90,5 +90,56 @@ describe("audit 2026-09-26: names and farewells", () => {
   it("farewells end the call; conjunctions do not", () => {
     for (const text of ["それじゃ、明日の件なんだけど", "ではでは本題ですが", "それじゃあ何時に集合ですか", "では確認しますね"]) expect(GOODBYE_RE.test(text), text).toBe(false);
     for (const text of ["じゃあね、バイバイ", "はーい、失礼します", "また今度ね", "ok bye"]) expect(GOODBYE_RE.test(text), text).toBe(true);
+  });
+});
+
+describe("chat speaking style", () => {
+  it("asks for a relaxed, unscripted delivery in both languages, and only for chat", () => {
+    const chat = (language: "ja" | "en") => new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language, input: { request: "近況を話す", conversationMode: "chat" } }) }).instructions();
+    expect(chat("ja")).toContain("【話し方】");
+    expect(chat("ja")).toContain("アナウンサー");
+    expect(chat("en")).toContain("Speaking style:");
+    const message = new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language: "ja", input: { request: "遅れると伝えて" } }) }).instructions();
+    expect(message).not.toContain("【話し方】隣に座った");
+  });
+});
+
+describe("voice presets reach the prompt both engines actually send", () => {
+  it("character replaces the restrained default delivery; business adds a calm polite line; nothing else changes", async () => {
+    const { definePhoneRequest, preparePhoneRequest } = await import("@oathra/contract");
+    const req = (extra: Record<string, unknown>) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "田中", instruction: "近況を話す", ...extra }));
+    const chatCharacter = req({ conversationMode: "chat", voicePreset: "character-female" });
+    expect(chatCharacter.input.voicePreset).toBe("character-female");
+    for (const text of [new OpenAILiveAgent({ contract: chatCharacter }).instructions()]) {
+      expect(text).toContain("【話し方：キャラクター風】");
+      expect(text).not.toContain("大げさな演技や過剰な明るさは避けて");
+      expect(text).toContain("最初にAIによる代理電話");
+    }
+    const messageSales = new OpenAILiveAgent({ contract: req({ voicePreset: "sales-male" }) }).instructions();
+    expect(messageSales).toContain("【話し方：営業・相談】");
+    expect(messageSales).toContain("【聞き取りやすさ】");
+    expect(messageSales).toContain("完了したと主張しないでください");
+    const plain = new OpenAILiveAgent({ contract: req({ conversationMode: "chat" }) }).instructions();
+    expect(plain).toContain("【話し方】隣に座った");
+    expect(plain).not.toContain("【話し方：");
+  });
+});
+
+describe("voice presets: register defaults and the guidance style", () => {
+  it("business and guidance default to polite and drop the frank-friend line in chat; character defaults to casual", async () => {
+    const { definePhoneRequest, preparePhoneRequest } = await import("@oathra/contract");
+    const req = (extra: Record<string, unknown>) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "田中", instruction: "近況を話す", conversationMode: "chat", ...extra }));
+    for (const voicePreset of ["sales-female", "guide-male"]) {
+      const text = new OpenAILiveAgent({ contract: req({ voicePreset }) }).instructions();
+      expect(text).toContain("依頼で口調の指定がなければ自然な敬語");
+      expect(text).not.toContain("友達と話すようにフランクに雑談してください");
+      expect(text).toContain("日時・金額・固有名詞・否定");
+    }
+    const guide = new OpenAILiveAgent({ contract: req({ voicePreset: "guide-female" }) }).instructions();
+    expect(guide).toContain("【話し方：案内・受付】");
+    const character = new OpenAILiveAgent({ contract: req({ voicePreset: "character-female" }) }).instructions();
+    expect(character).toContain("依頼で口調の指定がなければタメ口");
+    expect(character).toContain("友達と話すようにフランクに雑談してください");
+    expect(character).not.toContain("【聞き取りやすさ】");
   });
 });

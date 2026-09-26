@@ -84,8 +84,9 @@ API キーの取得先、`.env` の扱い、Twilio / Plivo / Custom SIP の違�
 | 電話会社 | | 音声モデル | |
 |--|--|--|--|
 | Twilio（直結） | 実通話で検証済み | GPT-Live | 推奨。全二重、$0.05/分 |
-| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | Pipeline | Deepgram + 任意の LLM + OpenAI TTS |
-| Custom SIP | 任意のトランク | LLM | OpenAI · Gemini · Ollama · 組み込み |
+| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | Gemini Live | `gemini-3.8-live`、全二重。`--engine gemini-live`。実回線は未検証 |
+| Custom SIP | 任意のトランク | Pipeline | Deepgram + 任意の LLM + OpenAI TTS |
+| | | LLM | OpenAI · Gemini · Ollama · 組み込み |
 | Telnyx · Wavix · Sinch | v0.2 | | |
 
 人の操作が必要な手順（発信元番号の本人確認、海外発信の許可）はリンク付きの一手順として案内し、終わるまで待ちます。「ワンクリック」とは言いません。
@@ -161,7 +162,7 @@ Oathra を「電話アプリ」ではなく、どこからでも呼び出せる 
 contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
 ```
 
-依存の向きは `pnpm lint:deps` が CI で検査します。電話会社（`providers/phone-*`）と音声モデル（`providers/openai-realtime`、`providers/voice-pipeline`）は互いを知らず、`packages/phone` のブリッジが音声形式を変換します。LiveKit は SIP ゲートウェイの最初の実装であって仕様ではありません。詳しくは [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+依存の向きは `pnpm lint:deps` が CI で検査します。電話会社（`providers/phone-*`）と音声モデル（`providers/openai-realtime`、`providers/gemini-live`、`providers/voice-pipeline`）は互いを知らず（共通のプロンプトは `providers/voice-kit`）、`packages/phone` のブリッジが音声形式を変換します。LiveKit は SIP ゲートウェイの最初の実装であって仕様ではありません。詳しくは [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## シナリオを書く
 
@@ -234,7 +235,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 - [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
 - [x] Phone Layer：`setup phone`、`phone doctor`、3 段階テスト、フォールバック付きルーティング
 - [x] Twilio 直結（実通話で検証済み）、Plivo と Custom SIP（LiveKit 経由、ドキュメント準拠で実装、PSTN 未検証）
-- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、Deepgram + LLM + TTS
+- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、Gemini Live（`gemini-3.8-live`、実回線は未検証）、Deepgram + LLM + TTS
 - [ ] Telnyx、Wavix、Sinch、ElevenLabs TTS
 - [ ] 金額・番号の二重 ASR、パイプライン 650 ms 目標
 - [x] MCP サーバ `oathra mcp`（simulate_call · verify_transcript · inspect_call · list_calls · list_scenarios）。ローカルだけで動き、実電話は発信しない
@@ -303,7 +304,7 @@ Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や
 
 ## 改善に参加する
 
-[判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [質問と導入相談の案内](SUPPORT.md) · [参加ガイド](CONTRIBUTING.md)。日本語・英語どちらでもどうぞ。
+[判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [質問と導入相談の案内](SUPPORT.md) · [参加ガイド](CONTRIBUTING.md)。 変更履歴は [CHANGELOG.md](CHANGELOG.md)。日本語・英語どちらでもどうぞ。
 
 ## ソース版の Arena（v0.1.18 の配布物には未収録）
 
