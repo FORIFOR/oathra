@@ -133,3 +133,13 @@ describe("GeminiLiveAgent", () => {
     expect(events.some((e) => e.type === "hangup")).toBe(true);
   });
 });
+
+describe("voice presets", () => {
+  it("the preset speaking style reaches Gemini's system instruction", async () => {
+    const { definePhoneRequest, preparePhoneRequest } = await import("@oathra/contract");
+    const contract = definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "田中", instruction: "近況を話す", conversationMode: "chat", voicePreset: "character-male" }));
+    const text = new GeminiLiveAgent({ contract, apiKey: "x" }).instructions();
+    expect(text).toContain("【話し方：キャラクター風】");
+    expect(text).not.toContain("大げさな演技や過剰な明るさは避けて");
+  });
+});

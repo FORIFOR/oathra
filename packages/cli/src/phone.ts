@@ -8,7 +8,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { defineCall, parsePhoneRequest, type CallContract, type PhoneRequest } from "@oathra/contract";
+import { defineCall, parsePhoneRequest, resolvePhoneVoice, type CallContract, type PhoneRequest } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
 import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
@@ -639,7 +639,7 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
   const reg = buildRegistry();
   const config = loadPhoneConfig();
   const engineSpec = parseEngineSpec(flags.engine, flags.brain, config.voice.engine);
-  const engine = buildEngine(engineSpec, process.env, request?.voice);
+  const engine = buildEngine(engineSpec, process.env, request ? resolvePhoneVoice(engineSpec.id, request) : undefined);
 
   // Direct media-stream providers need a public URL while their transport is
   // constructed. Prepare the tunnel before routing so a ready Twilio route is

@@ -111,6 +111,27 @@ export const GEMINI_VOICE_TRAITS: Record<(typeof GEMINI_VOICES)[number], string>
 export const ENGINE_VOICES: Record<PhoneEngine, readonly string[]> = { "gpt-live": PHONE_VOICES, "gemini-live": GEMINI_VOICES };
 export const ENGINE_DEFAULT_VOICE: Record<PhoneEngine, string> = { "gpt-live": DEFAULT_PHONE_VOICE, "gemini-live": DEFAULT_GEMINI_VOICE };
 
+/**
+ * Voice presets: a base voice per engine plus a speaking style, chosen together. They change how the agent
+ * sounds, never what it may do: permissions, disclosure and the completion verdict are the same for all four.
+ */
+export const VOICE_PRESETS = ["character-female", "character-male", "sales-female", "sales-male"] as const;
+export type VoicePreset = (typeof VOICE_PRESETS)[number];
+export const VOICE_PRESET_LABELS: Record<VoicePreset, string> = {
+  "character-female": "キャラクター風・女性声", "character-male": "キャラクター風・男性声", "sales-female": "営業・案内・女性声", "sales-male": "営業・案内・男性声",
+};
+/** Starting choices, not yet chosen by listening: Google lists Leda/Kore as female and Puck/Orus as male; OpenAI lists gleam as feminine and meridian as masculine. */
+export const PRESET_VOICES: Record<PhoneEngine, Record<VoicePreset, string>> = {
+  "gemini-live": { "character-female": "Leda", "character-male": "Puck", "sales-female": "Kore", "sales-male": "Orus" },
+  "gpt-live": { "character-female": "gleam", "character-male": "meridian", "sales-female": "gleam", "sales-male": "meridian" },
+};
+/** The voice a call speaks with: an explicit voice wins, then the preset's voice for this engine, else the engine's own default. */
+export function resolvePhoneVoice(engine: string, request: { voice?: string | undefined; voicePreset?: VoicePreset | undefined }): string | undefined {
+  if (request.voice) return request.voice;
+  if (request.voicePreset && (engine === "gpt-live" || engine === "gemini-live")) return PRESET_VOICES[engine][request.voicePreset];
+  return undefined;
+}
+
 /** Experimental v1 handoff file: preparing/parsing it does not approve a call. */
 /** The fields of a phone request. `PhoneRequestSchema` adds the engine/voice consistency check on top. */
 export const PhoneRequestFieldsSchema = z.object({
@@ -127,6 +148,8 @@ export const PhoneRequestFieldsSchema = z.object({
   engine: z.enum(PHONE_ENGINES).optional(),
   // Optional: which voice speaks. Absent keeps the engine's default. A voice belongs to one engine.
   voice: z.enum([...PHONE_VOICES, ...GEMINI_VOICES]).optional(),
+  // Optional: a base voice and a speaking style chosen together. Never changes permissions or the verdict.
+  voicePreset: z.enum(VOICE_PRESETS).optional(),
   instruction: z.string().trim().min(1).max(2000).refine(value => !/\{\{[^{}]+\}\}/.test(value), "テンプレートの {{項目}} を具体的な内容に書き換えてください。"),
 }).strict();
 
@@ -137,7 +160,7 @@ export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, c
 });
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

@@ -107,6 +107,12 @@ import { renderNews } from './news.js';
     engineField.id = 'phone-engine-field'; engineLabel.htmlFor = 'phone-engine'; engineSelect.id = 'phone-engine'; engineSelect.name = 'engine'; engineNote.className = 'note'; engineNote.id = 'phone-engine-note';
     engineSelect.setAttribute('aria-describedby', 'phone-engine-note');
     engineField.append(engineLabel, engineSelect, engineNote);
+    // Voice and speaking style chosen together; permissions and the verdict are the same for every preset.
+    const presetField = element('div'), presetLabelEl = element('label', '話し方プリセット'), presetSelect = element('select'), presetNote = element('p', '声と話し方をまとめて設定します。AIにできることや結果の判定は変わりません。下の「AIの声」を選ぶと、声だけ上書きできます。');
+    presetField.id = 'phone-preset-field'; presetLabelEl.htmlFor = 'phone-preset'; presetSelect.id = 'phone-preset'; presetSelect.name = 'voicePreset'; presetNote.className = 'note'; presetNote.id = 'phone-preset-note';
+    presetSelect.setAttribute('aria-describedby', 'phone-preset-note');
+    presetField.append(presetLabelEl, presetSelect, presetNote);
+    const presetVoiceFor = () => presetSelect.value ? engineOf(currentEngine())?.presetVoices?.[presetSelect.value] : undefined;
     const engineChoices = () => readiness?.engines ?? [], currentEngine = () => engineSelect.value || readiness?.defaultEngine || 'gpt-live', engineOf = id => engineChoices().find(e => e.id === id);
     // How high and how fast, from the measured sample. Not who: a recording cannot say that.
     const pitchWord = { low: '低めの声（男性に多い高さ）', mid: '中くらいの高さの声', high: '高めの声（女性に多い高さ）', 'very-high': 'かなり高めの声' }, paceWord = { fast: 'やや速め', medium: 'ふつうの速さ', slow: 'ゆっくりめ' };
@@ -124,7 +130,8 @@ import { renderNews } from './news.js';
     });
     // After the template's own undo, so that control stays beside the field it belongs to.
     callerField.after(engineField);
-    engineField.after(voiceField);
+    engineField.after(presetField);
+    presetField.after(voiceField);
     const voiceKey = () => account ? 'oathra:phone-voice:' + account.user.id : null;
     const voices = () => engineOf(currentEngine())?.voices ?? readiness?.voices ?? [], defaultVoice = () => engineOf(currentEngine())?.defaultVoice ?? readiness?.defaultVoice ?? voices()[0] ?? '';
     function setVoice(value) {
@@ -133,7 +140,8 @@ import { renderNews } from './news.js';
     function rememberedVoice() {
         try { return voiceKey() ? localStorage.getItem(voiceKey()) : null; } catch { return null; }
     }
-    engineSelect.addEventListener('change', () => { rebuildVoices(); setVoice(defaultVoice()); invalidate(); saveDraft(); });
+    engineSelect.addEventListener('change', () => { rebuildVoices(); setVoice(presetVoiceFor() ?? defaultVoice()); invalidate(); saveDraft(); });
+    presetSelect.addEventListener('change', () => { setVoice(presetVoiceFor() ?? defaultVoice()); invalidate(); saveDraft(); });
     voiceSelect.addEventListener('change', () => {
         try { if (voiceKey()) localStorage.setItem(voiceKey(), voiceSelect.value); } catch { /* A private window still uses the choice for this call. */ }
         invalidate(); saveDraft();
@@ -294,6 +302,9 @@ import { renderNews } from './news.js';
             engineSelect.value = engineOf(keepEngine)?.ready ? keepEngine : (r.defaultEngine ?? engineChoices()[0]?.id ?? '');
         }
         engineField.hidden = engineChoices().length < 2;
+        if (!presetSelect.options.length && r.voicePresets) presetSelect.replaceChildren(element('option', '指定しない'), ...Object.entries(r.voicePresets).map(([id, label]) => { const o = element('option', label); o.value = id; return o; }));
+        if (presetSelect.options.length) presetSelect.options[0].value = '';
+        presetField.hidden = !r.voicePresets;
         rebuildVoices();
         voiceField.hidden = voices().length < 2;
         if (!callerInput.value) callerInput.value = rememberedCaller();
@@ -316,7 +327,7 @@ import { renderNews } from './news.js';
         purpose.className = 'phone-review-purpose';
         const fields = $('#phone-review-fields');
         fields.replaceChildren();
-        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')], ['音声AI', engineOf(m.phoneRequest.engine ?? review.readiness.defaultEngine)?.label ?? m.phoneRequest.engine ?? 'GPT-Live']])
+        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')], ['音声AI', engineOf(m.phoneRequest.engine ?? review.readiness.defaultEngine)?.label ?? m.phoneRequest.engine ?? 'GPT-Live'], ...(m.phoneRequest.voicePreset ? [['話し方プリセット', review.readiness.voicePresets?.[m.phoneRequest.voicePreset] ?? m.phoneRequest.voicePreset]] : [])])
             fields.append(element('dt', label), element('dd', value));
         fields.append(element('dt', '目的'), purpose);
         if (m.request.length > 90) {
@@ -653,7 +664,7 @@ import { renderNews } from './news.js';
         const values = {
             phone: $('#phone-number').value, name: $('#phone-name').value, instruction: $('#phone-instruction').value, ...(conversationMode === 'chat' ? {
                 conversationMode: 'chat'
-            } : {}), ...(engineSelect.value && engineSelect.value !== (readiness?.defaultEngine ?? 'gpt-live') ? { engine: engineSelect.value } : {}), ...(voiceSelect.value && voiceSelect.value !== defaultVoice() ? { voice: voiceSelect.value } : {}), ...(callerInput.value.trim() ? { callerName: callerInput.value.trim() } : {})
+            } : {}), ...(engineSelect.value && engineSelect.value !== (readiness?.defaultEngine ?? 'gpt-live') ? { engine: engineSelect.value } : {}), ...(presetSelect.value ? { voicePreset: presetSelect.value } : {}), ...(voiceSelect.value && voiceSelect.value !== (presetVoiceFor() ?? defaultVoice()) ? { voice: voiceSelect.value } : {}), ...(callerInput.value.trim() ? { callerName: callerInput.value.trim() } : {})
         }, session = generation;
         preparing = true;
         const button = $('#phone-form button[type=submit]');

@@ -103,3 +103,23 @@ describe("chat speaking style", () => {
     expect(message).not.toContain("【話し方】隣に座った");
   });
 });
+
+describe("voice presets reach the prompt both engines actually send", () => {
+  it("character replaces the restrained default delivery; business adds a calm polite line; nothing else changes", async () => {
+    const { definePhoneRequest, preparePhoneRequest } = await import("@oathra/contract");
+    const req = (extra: Record<string, unknown>) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "田中", instruction: "近況を話す", ...extra }));
+    const chatCharacter = req({ conversationMode: "chat", voicePreset: "character-female" });
+    expect(chatCharacter.input.voicePreset).toBe("character-female");
+    for (const text of [new OpenAILiveAgent({ contract: chatCharacter }).instructions()]) {
+      expect(text).toContain("【話し方：キャラクター風】");
+      expect(text).not.toContain("大げさな演技や過剰な明るさは避けて");
+      expect(text).toContain("最初にAIによる代理電話");
+    }
+    const messageSales = new OpenAILiveAgent({ contract: req({ voicePreset: "sales-male" }) }).instructions();
+    expect(messageSales).toContain("【話し方：営業・案内】");
+    expect(messageSales).toContain("完了したと主張しないでください");
+    const plain = new OpenAILiveAgent({ contract: req({ conversationMode: "chat" }) }).instructions();
+    expect(plain).toContain("【話し方】隣に座った");
+    expect(plain).not.toContain("【話し方：");
+  });
+});

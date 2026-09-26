@@ -1,7 +1,7 @@
 /** Local Web adapter. Inspection never contacts a carrier or starts a tunnel. */
 import { createHmac, randomBytes } from "node:crypto";
 import { PhoneNotDialedError, type PhoneDialer, type PhoneEngineChoice, type PhoneReadiness } from "@oathra/arena";
-import { ENGINE_DEFAULT_VOICE, ENGINE_VOICES, GEMINI_VOICE_TRAITS, parsePhoneRequest, type PhoneEngine, type PhoneRequest } from "@oathra/contract";
+import { ENGINE_DEFAULT_VOICE, ENGINE_VOICES, GEMINI_VOICE_TRAITS, PRESET_VOICES, parsePhoneRequest, resolvePhoneVoice, type PhoneEngine, type PhoneRequest } from "@oathra/contract";
 import { loadPhoneConfig, PhoneRouter, PhoneTransport, type CarrierMediaSession, type CarrierTransport } from "@oathra/phone";
 import { CallRuntime } from "@oathra/runtime";
 import { buildEngine, buildRegistry, parseEngineSpec, phoneRequestContract, type EngineSpec } from "./phone.js";
@@ -30,7 +30,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
   /** Which speech-to-speech engines this machine can run, from the keys in its environment. */
   function engineChoices(configured: string | undefined): { engines: PhoneEngineChoice[]; defaultEngine: PhoneEngine } {
     const list: Array<[PhoneEngine, string, string[]]> = [["gpt-live", "GPT-Live (gpt-live-1)", ["OPENAI_API_KEY"]], ["gemini-live", "Gemini Live (gemini-3.8-live)", ["GEMINI_API_KEY"]]];
-    const engines = list.map(([id, label, keys]) => ({ id, label, voices: [...ENGINE_VOICES[id]], defaultVoice: ENGINE_DEFAULT_VOICE[id], ...(id === "gemini-live" ? { voiceTraits: { ...GEMINI_VOICE_TRAITS } } : {}), issues: keys.filter((k) => !env[k]).map((k) => `${k} が未設定です。`), ready: keys.every((k) => !!env[k]) }));
+    const engines = list.map(([id, label, keys]) => ({ id, label, voices: [...ENGINE_VOICES[id]], defaultVoice: ENGINE_DEFAULT_VOICE[id], ...(id === "gemini-live" ? { voiceTraits: { ...GEMINI_VOICE_TRAITS } } : {}), presetVoices: { ...PRESET_VOICES[id] }, issues: keys.filter((k) => !env[k]).map((k) => `${k} が未設定です。`), ready: keys.every((k) => !!env[k]) }));
     const defaultEngine: PhoneEngine = configured === "gemini-live" ? "gemini-live" : "gpt-live";
     return { engines, defaultEngine };
   }
@@ -101,7 +101,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
       const unreachable = await reachability(current.publicWsUrl ?? "");
       if (unreachable) throw new PhoneNotDialedError(unreachable);
       ctx.signal.throwIfAborted();
-      const engine = buildEngine(current.spec, env, request.voice);
+      const engine = buildEngine(current.spec, env, resolvePhoneVoice(current.spec.id, request));
       const original = current.route.transport;
       let media: CarrierMediaSession | undefined;
       let ending: Promise<void> | undefined;

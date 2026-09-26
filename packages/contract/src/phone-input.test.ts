@@ -101,3 +101,15 @@ it("every prebuilt Gemini voice is accepted with the Gemini engine, and each has
     expect(GEMINI_VOICE_TRAITS[voice]).toBeTruthy();
   }
 });
+
+it("a voice preset is optional, from a fixed list, and resolves to a per-engine voice that an explicit voice overrides", async () => {
+  const { resolvePhoneVoice, PRESET_VOICES, VOICE_PRESETS } = await import("./phone-input.js");
+  const base = { phone: "+819012345678", name: "田中", instruction: "明日の集合時間を伝えてください。" };
+  for (const voicePreset of VOICE_PRESETS) expect(preparePhoneRequest({ ...base, voicePreset }).voicePreset).toBe(voicePreset);
+  expect(() => preparePhoneRequest({ ...base, voicePreset: "villain" as never })).toThrow();
+  expect(resolvePhoneVoice("gemini-live", { voicePreset: "character-female" })).toBe(PRESET_VOICES["gemini-live"]["character-female"]);
+  expect(resolvePhoneVoice("gpt-live", { voicePreset: "sales-male" })).toBe("meridian");
+  expect(resolvePhoneVoice("gemini-live", { voicePreset: "character-female", voice: "Sulafat" })).toBe("Sulafat");
+  expect(resolvePhoneVoice("gpt-live", {})).toBeUndefined();
+  expect(resolvePhoneVoice("pipeline", { voicePreset: "sales-male" })).toBeUndefined();
+});

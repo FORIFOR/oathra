@@ -20,6 +20,11 @@ export {
   PHONE_ENGINES,
   GEMINI_VOICES,
   GEMINI_VOICE_TRAITS,
+  VOICE_PRESETS,
+  VOICE_PRESET_LABELS,
+  PRESET_VOICES,
+  resolvePhoneVoice,
+  type VoicePreset,
   DEFAULT_GEMINI_VOICE,
   ENGINE_VOICES,
   ENGINE_DEFAULT_VOICE,
@@ -389,7 +394,7 @@ export function defineRestaurantReception(call: { restaurantName: string; caller
 export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
   const parsed = parsePhoneRequest(request);
   return defineCall({ goal: "phone.message", language: "ja",
-    input: { request: parsed.instruction, ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), policy: "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
+    input: { request: parsed.instruction, ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), ...(parsed.voicePreset ? { voicePreset: parsed.voicePreset } : {}), policy: "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
     permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
     target: { phone: parsed.phone, name: parsed.name },
   });

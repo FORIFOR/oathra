@@ -1,5 +1,5 @@
 import { phoneMemory } from '../../../packages/core/dist/index.js';
-import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS } from '../../../packages/contract/dist/index.js';
+import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
 
@@ -48,9 +48,9 @@ export function phoneReadiness(service,config,user) {
   issues.push('運営者の設定が整えば、利用者はこの画面から発信できます。');
  }
  // Each engine has its own voices; the measured details only exist for GPT-Live's.
- const engines=(config.voiceEngines??[{id:'gpt-live',label:'GPT-Live',ready:true}]).map(e=>({...e,voices:e.id==='gemini-live'?[...GEMINI_VOICES]:[...PHONE_VOICES],defaultVoice:e.id==='gemini-live'?DEFAULT_GEMINI_VOICE:DEFAULT_PHONE_VOICE,...(e.id==='gemini-live'?{voiceTraits:{...GEMINI_VOICE_TRAITS}}:{})}));
+ const engines=(config.voiceEngines??[{id:'gpt-live',label:'GPT-Live',ready:true}]).map(e=>({...e,voices:e.id==='gemini-live'?[...GEMINI_VOICES]:[...PHONE_VOICES],defaultVoice:e.id==='gemini-live'?DEFAULT_GEMINI_VOICE:DEFAULT_PHONE_VOICE,...(e.id==='gemini-live'?{voiceTraits:{...GEMINI_VOICE_TRAITS}}:{}),presetVoices:{...PRESET_VOICES[e.id]}}));
  const defaultEngine=config.defaultVoiceEngine??'gpt-live';
- return {ready,reception:config.inbound?.restaurant&&config.inbound.owner===user?.id?config.inbound.restaurant.name:null,provider:'Twilio',engine:defaultEngine==='gemini-live'?'Google':'OpenAI',recording:false,voices:[...PHONE_VOICES],defaultVoice:DEFAULT_PHONE_VOICE,voiceDetails:VOICE_DETAILS,engines,defaultEngine,newsAvailable:config.newsAvailable===true,
+ return {ready,reception:config.inbound?.restaurant&&config.inbound.owner===user?.id?config.inbound.restaurant.name:null,provider:'Twilio',engine:defaultEngine==='gemini-live'?'Google':'OpenAI',recording:false,voices:[...PHONE_VOICES],defaultVoice:DEFAULT_PHONE_VOICE,voiceDetails:VOICE_DETAILS,engines,defaultEngine,voicePresets:{...VOICE_PRESET_LABELS},newsAvailable:config.newsAvailable===true,
   issues,
   disclosure:'AI代理であることを相手に伝えます。電話番号・音声・文字起こしはTwilioとOpenAIへ送信し、会話と結果をサービスに保存します。音声ファイルは保存しません。'+(config.billing?.settlement==='usage-rate-v1'?'残高の範囲で上限額を確保し、使用額が上限に達すると通話を終了します。使用量の通知や停止の遅れによる超過は運営者負担です。終了時に回線時間・音声AI・検索の使用量と単価で精算、余剰を返却します。後日の追加徴収なし。文字起こし・税等と計測できなかった費用は運営者負担。':service.credits.quote(config.mode).policy==='provider-cost-v1'?'最大額を一時確保し、終了後に電話回線の料金と音声AIの使用量で精算・差額返却します。文字起こし・音声中継・税等は運営者負担。料金未取得時は精算待ちです。':'発信処理の実行確定時にクレジットを消費し、接続前の障害・不応答も対象です。実行前の取消は返却します。'),
   creditQuote:service.credits.quote(config.mode)};
