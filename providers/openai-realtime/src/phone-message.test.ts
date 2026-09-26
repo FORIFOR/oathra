@@ -116,10 +116,30 @@ describe("voice presets reach the prompt both engines actually send", () => {
       expect(text).toContain("最初にAIによる代理電話");
     }
     const messageSales = new OpenAILiveAgent({ contract: req({ voicePreset: "sales-male" }) }).instructions();
-    expect(messageSales).toContain("【話し方：営業・案内】");
+    expect(messageSales).toContain("【話し方：営業・相談】");
+    expect(messageSales).toContain("【聞き取りやすさ】");
     expect(messageSales).toContain("完了したと主張しないでください");
     const plain = new OpenAILiveAgent({ contract: req({ conversationMode: "chat" }) }).instructions();
     expect(plain).toContain("【話し方】隣に座った");
     expect(plain).not.toContain("【話し方：");
+  });
+});
+
+describe("voice presets: register defaults and the guidance style", () => {
+  it("business and guidance default to polite and drop the frank-friend line in chat; character defaults to casual", async () => {
+    const { definePhoneRequest, preparePhoneRequest } = await import("@oathra/contract");
+    const req = (extra: Record<string, unknown>) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "田中", instruction: "近況を話す", conversationMode: "chat", ...extra }));
+    for (const voicePreset of ["sales-female", "guide-male"]) {
+      const text = new OpenAILiveAgent({ contract: req({ voicePreset }) }).instructions();
+      expect(text).toContain("依頼で口調の指定がなければ自然な敬語");
+      expect(text).not.toContain("友達と話すようにフランクに雑談してください");
+      expect(text).toContain("日時・金額・固有名詞・否定");
+    }
+    const guide = new OpenAILiveAgent({ contract: req({ voicePreset: "guide-female" }) }).instructions();
+    expect(guide).toContain("【話し方：案内・受付】");
+    const character = new OpenAILiveAgent({ contract: req({ voicePreset: "character-female" }) }).instructions();
+    expect(character).toContain("依頼で口調の指定がなければタメ口");
+    expect(character).toContain("友達と話すようにフランクに雑談してください");
+    expect(character).not.toContain("【聞き取りやすさ】");
   });
 });

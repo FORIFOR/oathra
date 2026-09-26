@@ -115,15 +115,21 @@ export const ENGINE_DEFAULT_VOICE: Record<PhoneEngine, string> = { "gpt-live": D
  * Voice presets: a base voice per engine plus a speaking style, chosen together. They change how the agent
  * sounds, never what it may do: permissions, disclosure and the completion verdict are the same for all four.
  */
-export const VOICE_PRESETS = ["character-female", "character-male", "sales-female", "sales-male"] as const;
+export const VOICE_PRESETS = ["character-female", "character-male", "sales-female", "sales-male", "guide-female", "guide-male"] as const;
 export type VoicePreset = (typeof VOICE_PRESETS)[number];
 export const VOICE_PRESET_LABELS: Record<VoicePreset, string> = {
-  "character-female": "キャラクター風・女性声", "character-male": "キャラクター風・男性声", "sales-female": "営業・案内・女性声", "sales-male": "営業・案内・男性声",
+  "character-female": "キャラクター風・女性声", "character-male": "キャラクター風・男性声",
+  "sales-female": "営業・相談・女性声", "sales-male": "営業・相談・男性声",
+  "guide-female": "案内・受付・女性声", "guide-male": "案内・受付・男性声",
 };
-/** Starting choices, not yet chosen by listening: Google lists Leda/Kore as female and Puck/Orus as male; OpenAI lists gleam as feminine and meridian as masculine. */
+/**
+ * Starting choices, not yet chosen by listening: Google lists Leda/Kore as female and Puck/Orus as male;
+ * OpenAI lists gleam as feminine and meridian as masculine. Business and guide share a base voice so that
+ * listening compares the speaking style, not a different voice.
+ */
 export const PRESET_VOICES: Record<PhoneEngine, Record<VoicePreset, string>> = {
-  "gemini-live": { "character-female": "Leda", "character-male": "Puck", "sales-female": "Kore", "sales-male": "Orus" },
-  "gpt-live": { "character-female": "gleam", "character-male": "meridian", "sales-female": "gleam", "sales-male": "meridian" },
+  "gemini-live": { "character-female": "Leda", "character-male": "Puck", "sales-female": "Kore", "sales-male": "Orus", "guide-female": "Kore", "guide-male": "Orus" },
+  "gpt-live": { "character-female": "gleam", "character-male": "meridian", "sales-female": "gleam", "sales-male": "meridian", "guide-female": "gleam", "guide-male": "meridian" },
 };
 /** The voice a call speaks with: an explicit voice wins, then the preset's voice for this engine, else the engine's own default. */
 export function resolvePhoneVoice(engine: string, request: { voice?: string | undefined; voicePreset?: VoicePreset | undefined }): string | undefined {

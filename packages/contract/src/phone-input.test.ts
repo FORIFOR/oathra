@@ -112,4 +112,6 @@ it("a voice preset is optional, from a fixed list, and resolves to a per-engine 
   expect(resolvePhoneVoice("gemini-live", { voicePreset: "character-female", voice: "Sulafat" })).toBe("Sulafat");
   expect(resolvePhoneVoice("gpt-live", {})).toBeUndefined();
   expect(resolvePhoneVoice("pipeline", { voicePreset: "sales-male" })).toBeUndefined();
+  expect(VOICE_PRESETS).toHaveLength(6);
+  expect(resolvePhoneVoice("gemini-live", { voicePreset: "guide-female" })).toBe(PRESET_VOICES["gemini-live"]["guide-female"]);
 });
