@@ -68,7 +68,7 @@ describe("geminiLiveEngine (VoiceEngine adapter)", () => {
     expect(setup?.setup.tools[0]?.functionDeclarations.map((f) => f.name)).toEqual(["end_call", "request_action"]);
     // A permission must be answered before the model goes on talking.
     expect((setup?.setup.tools[0]?.functionDeclarations.find((f) => f.name === "request_action") as { behavior?: string } | undefined)?.behavior).toBe("BLOCKING");
-    // Not sent by default: 3.8 Live accepts it at setup and then closes the session when it would speak.
+    // Never sent: removed from the API for 3.8 Live; sending it silences the call.
     expect((setup?.setup.generationConfig as { enableAffectiveDialog?: boolean }).enableAffectiveDialog).toBeUndefined();
     const audioIn = received.find((m) => m.realtimeInput) as { realtimeInput: { audio: { data: string; mimeType: string } } } | undefined;
     expect(audioIn?.realtimeInput.audio.mimeType).toBe("audio/pcm;rate=16000");
