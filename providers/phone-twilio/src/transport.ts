@@ -31,7 +31,12 @@ export type TwilioDirectOptions = {
   placeCall?: boolean;
   /** Give up if Twilio has not connected the stream after this long. */
   connectTimeoutMs?: number;
+  /** While waiting for the stream, how often to ask Twilio whether the call already ended (ms). */
+  statusPollMs?: number;
 };
+
+/** Call states after which Twilio will never connect a media stream. */
+const TERMINAL_CALL_STATUS = new Set(["completed", "busy", "failed", "no-answer", "canceled"]);
 
 type TwilioMessage =
   | { event: "connected"; protocol?: string }
@@ -132,6 +137,30 @@ export class TwilioDirectSession implements CarrierMediaSession {
       }
     }, timeout);
     timer.unref();
+    // Twilio ends a call within seconds when it cannot reach the media URL (the callee hears the phone ring and
+    // stop). Watch the call itself so that is reported at once instead of after the whole timeout.
+    if (this.callSid && this.opts.placeCall !== false) this.watchCallStatus(timer);
+  }
+
+  private watchCallStatus(timeoutTimer: NodeJS.Timeout): void {
+    const every = this.opts.statusPollMs ?? 2000;
+    const poll = setInterval(async () => {
+      if (this.streamSid || this.ended) { clearInterval(poll); return; }
+      let status: string | undefined;
+      try {
+        const res = await this.fetchImpl(`https://api.twilio.com/2010-04-01/Accounts/${this.opts.accountSid}/Calls/${this.callSid}.json`, { headers: { authorization: this.authHeader }, signal: AbortSignal.timeout(5000) });
+        if (res.ok) status = ((await res.json()) as { status?: string }).status;
+      } catch { /* a status read failing is not a call failing; the timeout still stands */ }
+      if (!status || !TERMINAL_CALL_STATUS.has(status) || this.streamSid || this.ended) return;
+      clearInterval(poll);
+      clearTimeout(timeoutTimer);
+      const why = status === "completed"
+        ? `Twilio ended the call before the media stream connected (is ${this.opts.publicWsUrl} reachable?)`
+        : `Twilio call ${status} before the media stream connected`;
+      this.queue.push({ type: "error", message: why, fatal: true });
+      void this.hangup("no_media_stream").catch(() => undefined);
+    }, every);
+    poll.unref();
   }
 
   private attach(socket: WsSocket): void {

@@ -122,3 +122,21 @@ describe("TwilioDirectTransport (fake Twilio media stream)", () => {
     await expect(transport.dial({ to: "+818000000000", language: "ja", contract: defineCall({ goal: "chat.casual" }) })).rejects.toThrow(/Twilio 401/);
   });
 });
+
+describe("a call Twilio ends before the media stream connects", () => {
+  it("is reported within seconds from the call status, not after the whole connect timeout", async () => {
+    let statusReads = 0;
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST" && String(url).endsWith("/Calls.json")) return new Response(JSON.stringify({ sid: "CA9" }), { status: 201 });
+      if (!init?.method || init.method === "GET") { statusReads++; return new Response(JSON.stringify({ status: statusReads < 2 ? "in-progress" : "completed" }), { status: 200 }); }
+      return new Response("{}", { status: 200 });
+    }) as unknown as typeof fetch;
+    const started = Date.now();
+    const session = await new TwilioDirectTransport({ accountSid: "AC", authToken: "t", from: "+10000000000", publicWsUrl: "wss://example.test", port: 47131, fetchImpl, connectTimeoutMs: 60_000, statusPollMs: 50 }).dial({ to: "+818000000000", language: "ja", contract: defineCall({ goal: "chat.casual" }) });
+    const first = (await session.events[Symbol.asyncIterator]().next()).value as CarrierEvent;
+    expect(first).toMatchObject({ type: "error", fatal: true });
+    expect((first as { message: string }).message).toContain("before the media stream connected");
+    expect(Date.now() - started).toBeLessThan(3000);
+    await session.hangup().catch(() => undefined);
+  });
+});
