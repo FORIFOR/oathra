@@ -56,3 +56,5 @@ export class GeminiBrain implements BrainProvider {
     return withUsage(parseBrainJson(content), this.model, usage);
   }
 }
+
+export { DEFAULT_GEMINI_TTS_MODEL, GeminiTTS, type GeminiTTSOptions } from "./tts.js";

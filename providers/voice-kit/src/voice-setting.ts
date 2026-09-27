@@ -18,10 +18,12 @@ export type VoiceSettingRecord = {
   styleApplied: string | null;
   language: string;
   capturedAt: string;
+  /** Acting direction sent to a TTS voice with every utterance (pipeline calls only), verbatim. */
+  ttsStyle?: string;
 };
 
-export function voiceSettingRecord(engine: string, model: string, voiceSent: string | undefined, contract: CallContract, now: Date = new Date()): VoiceSettingRecord {
+export function voiceSettingRecord(engine: string, model: string, voiceSent: string | undefined, contract: CallContract, now: Date = new Date(), extra: { ttsStyle?: string } = {}): VoiceSettingRecord {
   const preset = typeof contract.input.voicePreset === "string" ? contract.input.voicePreset : null;
   const style = preset ? presetSpeakingStyle(preset, contract.language) ?? null : null;
-  return { engine, model, voiceSent: voiceSent ?? null, voicePreset: preset, presetVersion: preset ? VOICE_PRESET_VERSION : null, styleApplied: style, language: contract.language, capturedAt: now.toISOString() };
+  return { engine, model, voiceSent: voiceSent ?? null, voicePreset: preset, presetVersion: preset ? VOICE_PRESET_VERSION : null, styleApplied: style, language: contract.language, capturedAt: now.toISOString(), ...(extra.ttsStyle ? { ttsStyle: extra.ttsStyle } : {}) };
 }

@@ -309,6 +309,9 @@ importers:
 
   providers/gemini:
     dependencies:
+      '@oathra/audio-kit':
+        specifier: workspace:*
+        version: link:../audio-kit
       '@oathra/brain-kit':
         specifier: workspace:*
         version: link:../brain-kit

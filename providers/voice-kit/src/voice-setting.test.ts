@@ -15,6 +15,11 @@ describe("voice setting record", () => {
   it("without a preset there is no version and no style; without a voice nothing was sent", () => {
     const r = voiceSettingRecord("gpt-live", "gpt-live-1", undefined, req({}));
     expect(r).toMatchObject({ voiceSent: null, voicePreset: null, presetVersion: null, styleApplied: null });
+    expect("ttsStyle" in r).toBe(false);
+  });
+  it("a TTS call keeps the acting style it sent, verbatim", () => {
+    const r = voiceSettingRecord("pipeline", "gemini-3.8-flash-lite-tts", "Leda", req({ voicePreset: "character-female" }), new Date(), { ttsStyle: "日本語のアニメの会話シーンとして演じる。" });
+    expect(r).toMatchObject({ engine: "pipeline", model: "gemini-3.8-flash-lite-tts", voiceSent: "Leda", ttsStyle: "日本語のアニメの会話シーンとして演じる。" });
   });
 });
 

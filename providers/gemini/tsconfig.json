@@ -17,6 +17,9 @@
     },
     {
       "path": "../../providers/brain-kit"
+    },
+    {
+      "path": "../../providers/audio-kit"
     }
   ]
 }

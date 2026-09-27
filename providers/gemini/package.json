@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@oathra/core": "workspace:*",
-    "@oathra/brain-kit": "workspace:*"
+    "@oathra/brain-kit": "workspace:*",
+    "@oathra/audio-kit": "workspace:*"
   }
 }

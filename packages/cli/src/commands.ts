@@ -251,7 +251,7 @@ export async function cmdPhone(positional: string[], flags: Flags): Promise<void
       return;
     }
     case "test":
-      return phoneTest({ ...(str(flags.level) ? { level: str(flags.level)! } : {}), ...(str(flags.provider) ? { provider: str(flags.provider)! } : {}), ...(str(flags.to) ? { to: str(flags.to)! } : {}), ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}), ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}) });
+      return phoneTest({ ...(str(flags.level) ? { level: str(flags.level)! } : {}), ...(str(flags.provider) ? { provider: str(flags.provider)! } : {}), ...(str(flags.to) ? { to: str(flags.to)! } : {}), ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}), ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}), ...(str(flags.tts) ? { tts: str(flags.tts)! } : {}), ...(str(flags["voice-preset"]) ? { voicePreset: str(flags["voice-preset"])! } : {}) });
     default:
       throw new Error(`unknown phone subcommand "${sub}" (add | list | doctor | test | remove)`);
   }
@@ -580,6 +580,7 @@ ${bold("Real phone")}
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
+                                     ${dim("prototype: --level local --engine pipeline --tts gemini-lite --voice-preset character-female|character-male")}
   oathra call --request-file <json> --dry-run  review a saved phone request without dialing
   oathra call --request-file <json> --approve-request  explicitly place the reviewed call
   oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|gemini-live|pipeline  --provider <id>")}
