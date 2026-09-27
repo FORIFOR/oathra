@@ -15,14 +15,20 @@ export type PhoneReadiness = {
 };
 export interface PhoneDialer {
   inspect(request?: PhoneRequest): PhoneReadiness | Promise<PhoneReadiness>;
-  execute(request: PhoneRequest, ctx: { callId: string; reviewedConfigurationId?: string; signal: AbortSignal; onEvent: (event: CallEvent) => void }): Promise<CallOutcome>;
+  execute(request: PhoneRequest, ctx: { callId: string; reviewedConfigurationId?: string; signal: AbortSignal; onEvent: (event: CallEvent) => void; onVoiceSetting?: (setting: PhoneVoiceSetting) => void }): Promise<CallOutcome>;
 }
+/**
+ * The voice a call was set up with, copied when the call starts (engine, model, the voice name sent, preset,
+ * preset version, the style text used). Absent on calls saved before this existed: their version is unknown.
+ */
+export type PhoneVoiceSetting = { engine: string; model: string; voiceSent: string | null; voicePreset: string | null; presetVersion: string | null; styleApplied: string | null; language: string; capturedAt: string };
 export type PhoneCallState = "draft" | "starting" | "running" | "stopping" | "ended" | "failed" | "unknown";
 export type PhoneCallRecord = {
   id: string; request: PhoneRequest; state: PhoneCallState; createdAt: string; updatedAt: string;
   expiresAt: string; readiness: PhoneReadiness; events: CallEvent[];
   transcript: { source: "caller" | "callee"; text: string; turnId: string; startMs: number; endMs: number }[];
   ownerPid?: number; resolvedAt?: string; summary?: string; error?: string; endReason?: string; persistence?: "saved" | "failed";
+  voiceSetting?: PhoneVoiceSetting;
 };
 /** The dialer refused before contacting the carrier: nothing rang, so the outcome is known. */
 export class PhoneNotDialedError extends Error {}
@@ -158,6 +164,7 @@ export class PhoneService {
           record.updatedAt = new Date().toISOString();
           try { this.write(record); } catch { record.error = "通話途中の履歴を保存できません。通話を停止し結果を確認しています。"; controller.abort(); }
         },
+        onVoiceSetting: setting => { record.voiceSetting = setting; },
       });
       record.endReason = outcome.endReason;
       record.summary = renderCallSummary(outcome);

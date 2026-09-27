@@ -73,21 +73,32 @@ const COMMON_NOUN_RE =
  * acting) instead of being appended to it, so the two never pull in opposite directions. Each preset sets a
  * default register; a register the request itself asks for (「タメ口で」「敬語で」) still wins.
  */
+/**
+ * The version of the preset speaking styles below. Bump it whenever any preset text changes, so a saved call
+ * says which wording it was spoken with; older recordings stay samples of the older version.
+ */
+export const VOICE_PRESET_VERSION = "2026-09-27.1";
+
 export function presetSpeakingStyle(preset: unknown, language: string): string | undefined {
   const ja = language === "ja";
+  // One person throughout the call; only the delivery follows the moment. (Dates and negations are covered by
+  // the clarity line for business presets and by the character line itself, so they are not repeated here.)
+  const scenes = ja
+    ? "【場面に合わせる】相手が困っている・不満を伝えているときは、明るさや笑いを抑えて落ち着いて受け止め、相手の怒りをまねしないでください。感謝やよい知らせには自然な温かみを込めますが、毎回は笑いません。声の個性と人柄は通話の最後まで変えないでください。"
+    : "Adapt to the moment: when they are troubled or unhappy, drop the brightness and laughter and respond calmly; never mirror anger. Let thanks and good news sound warm, without laughing every time. Keep the same voice and personality to the end of the call.";
   // Business and guide calls carry dates, prices and refusals: those must survive the phone line.
   const clarity = ja
     ? "【聞き取りやすさ】語尾まで聞こえる音量を保ち、意味のまとまりごとに短く区切ってください。日時・金額・固有名詞・否定（「まだ確定していません」など）ははっきり伝え、弱めたり省いたりしないでください。聞き返されたら、必要な部分だけを少しゆっくり言い直してください。"
     : "Clarity: keep your voice audible to the end of each sentence and pause between units of meaning. Say dates, amounts, names and negations (\"not confirmed yet\") clearly; never soften or drop them. When asked to repeat, repeat only what was asked, a little more slowly.";
   if (preset === "character-female" || preset === "character-male") return ja
-    ? "【話し方：キャラクター風】日本語の会話キャラクターとして、喜び・驚き・照れなどの気持ちを、声の抑揚、間、話す速さにはっきり表してください。台詞を平板に読まず、相手の言葉にすぐ反応してください。依頼で口調の指定がなければタメ口で話してください。実在の人物のまねや、体験していない出来事の作り話はしないでください。"
-    : "Speaking style (character): let joy, surprise and embarrassment show in your intonation, pauses and pace. Never read lines flatly; react to what they say at once. Speak casually unless the request asks otherwise. Do not imitate real people or invent experiences.";
+    ? ["【話し方：キャラクター風】日本語の会話キャラクターとして、喜び・驚き・照れなどの気持ちを、声の抑揚、間、話す速さにはっきり表してください。台詞を平板に読まず、相手の言葉にすぐ反応してください。楽しい雑談でも、叫び声や笑いを決まった調子で入れないでください。日時・金額・否定・条件を伝えるときは、個性より聞き取りやすさを優先し、語尾まで伝えてください。依頼で口調の指定がなければタメ口で話してください。実在の人物のまねや、体験していない出来事の作り話はしないでください。", scenes].join("\n")
+    : ["Speaking style (character): let joy, surprise and embarrassment show in your intonation, pauses and pace. Never read lines flatly; react to what they say at once. Even in fun small talk, do not drop in shouts or laughter by rote. When giving dates, amounts, negations or conditions, put clarity before personality and finish every sentence. Speak casually unless the request asks otherwise. Do not imitate real people or invent experiences.", scenes].join("\n");
   if (preset === "sales-female" || preset === "sales-male") return [ja
     ? "【話し方：営業・相談】落ち着いた接客担当者として話してください。依頼で口調の指定がなければ自然な敬語にしてください。適度な温かみを保ち、相手の発言に短く反応してから要点を伝えます。質問をしたら説明を継ぎ足さず、相手の返答を待ってください。押しの強い広告口調、過剰な笑い、なれなれしさは避けてください。"
-    : "Speaking style (consultation): speak like a calm, attentive service person, politely unless the request asks otherwise. Keep some warmth, react briefly to what they said, then make the point. After asking a question, stop and wait for the answer. No pushy advertising tone, no excessive laughter, no over-familiarity.", clarity].join("\n");
+    : "Speaking style (consultation): speak like a calm, attentive service person, politely unless the request asks otherwise. Keep some warmth, react briefly to what they said, then make the point. After asking a question, stop and wait for the answer. No pushy advertising tone, no excessive laughter, no over-familiarity.", clarity, scenes].join("\n");
   if (preset === "guide-female" || preset === "guide-male") return [ja
     ? "【話し方：案内・受付】案内の要点が一度で分かるように話してください。依頼で口調の指定がなければ自然な敬語にしてください。日時・場所・料金・手順はまとめて流さず、項目ごとに区切ってください。重要な言葉だけを軽く強調し、否定や条件は最後まで伝えてください。復唱を求められたら、その項目だけを簡潔に繰り返してください。"
-    : "Speaking style (guidance): make each point understandable in one hearing, politely unless the request asks otherwise. Give dates, places, prices and steps one item at a time, stress only the key words, and always finish negations and conditions. When asked to repeat, repeat just that item briefly.", clarity].join("\n");
+    : "Speaking style (guidance): make each point understandable in one hearing, politely unless the request asks otherwise. Give dates, places, prices and steps one item at a time, stress only the key words, and always finish negations and conditions. When asked to repeat, repeat just that item briefly.", clarity, scenes].join("\n");
   return undefined;
 }
 

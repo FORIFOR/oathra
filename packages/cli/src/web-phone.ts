@@ -5,6 +5,7 @@ import { ENGINE_DEFAULT_VOICE, ENGINE_VOICES, GEMINI_VOICE_TRAITS, PRESET_VOICES
 import { loadPhoneConfig, PhoneRouter, PhoneTransport, type CarrierMediaSession, type CarrierTransport } from "@oathra/phone";
 import { CallRuntime } from "@oathra/runtime";
 import { buildEngine, buildRegistry, parseEngineSpec, phoneRequestContract, type EngineSpec } from "./phone.js";
+import { voiceSettingRecord } from "@oathra/voice-kit";
 
 /**
  * Whether the public URL Twilio will stream to answers at all. Before dialing nothing listens behind it yet,
@@ -101,7 +102,11 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
       const unreachable = await reachability(current.publicWsUrl ?? "");
       if (unreachable) throw new PhoneNotDialedError(unreachable);
       ctx.signal.throwIfAborted();
-      const engine = buildEngine(current.spec, env, resolvePhoneVoice(current.spec.id, request));
+      const voiceSent = resolvePhoneVoice(current.spec.id, request);
+      const engine = buildEngine(current.spec, env, voiceSent);
+      // What this call is set up to sound like, copied now so a later preset change never rewrites it.
+      const model = current.spec.model ?? (current.spec.id === "gemini-live" ? "gemini-3.8-live" : "gpt-live-1");
+      ctx.onVoiceSetting?.(voiceSettingRecord(current.spec.id, model, voiceSent, phoneRequestContract(request)));
       const original = current.route.transport;
       let media: CarrierMediaSession | undefined;
       let ending: Promise<void> | undefined;

@@ -119,3 +119,11 @@ test('phone notes persist requested and changed conditions from the worker witho
  assert.equal(record.memory.bookingStatus,'not_authorized');assert.equal(record.memory.notes.find(n=>n.field==='time').value,'19:00');assert.equal(record.memory.notes.find(n=>n.field==='time').requested,'19:00');assert.ok(record.memory.history.some(n=>n.value==='19:30'));
  const original=record.memory;delete saved.memory;f.store.put('mission',saved);assert.deepEqual(phoneRecord(f.service,f.store.get('mission',m.id)).memory,original);
 }));
+
+test('a call record returns the voice setting captured as its first event, and null for calls from before',using(f=>{
+ const m=f.draft();
+ assert.equal(phoneRecord(f.service,m).voiceSetting,null);
+ const setting={engine:'gemini-live',model:'gemini-3.8-live',voiceSent:'Kore',voicePreset:'sales-female',presetVersion:'v-test',styleApplied:'【話し方：営業・相談】…',language:'ja',capturedAt:'2026-09-27T00:00:00.000Z'};
+ f.store.event(m,{type:'voice.setting',setting});
+ assert.deepEqual(phoneRecord(f.service,m).voiceSetting,setting);
+}));

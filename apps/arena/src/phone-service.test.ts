@@ -137,3 +137,16 @@ it("keeps the reason a call failed on the record, and a refusal before dialing i
   expect(bDone.error?.startsWith(phoneFailureText("Twilio ended the call before the media stream connected"))).toBe(true);
   expect(bDone.error).toContain("OATHRA_PUBLIC_WS_URL");
 });
+
+it("keeps the voice setting the dialer captured at dial time on the saved record", async () => {
+  const ready = { ready: true, issues: [], provider: "fake", engine: "fake", recording: false, disclosure: "test", configurationId: "cfg" };
+  const setting = { engine: "gemini-live", model: "gemini-3.8-live", voiceSent: "Kore", voicePreset: "guide-female", presetVersion: "test-version", styleApplied: "【話し方：案内・受付】…", language: "ja", capturedAt: "2026-09-27T00:00:00.000Z" };
+  const { PhoneNotDialedError } = await import("./phone-service.js");
+  const dir = join(root, "voice-setting");
+  const service = new PhoneService(dir, join(root, "calls"), { inspect: () => ready, execute: async (_request, ctx) => { ctx.onVoiceSetting?.(setting); throw new PhoneNotDialedError("テスト用に発信前で止める"); } });
+  const draft = await service.prepare(preparePhoneRequest(input));
+  await service.start(draft.id, true);
+  for (let i = 0; i < 100 && ["starting", "running", "stopping"].includes((await service.get(draft.id)).state); i++) await new Promise((r) => setTimeout(r, 20));
+  const saved = JSON.parse(readFileSync(join(dir, `${draft.id}.json`), "utf8"));
+  expect(saved.voiceSetting).toEqual(setting);
+});

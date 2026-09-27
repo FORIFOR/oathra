@@ -221,6 +221,7 @@ export class Phone {
     const [{CallRuntime},{PhoneTransport},{defineCall,definePhoneRequest,definePhoneInbound,defineRestaurantReception,resolvePhoneVoice},{gptLiveEngine,createNewsSearch},voice]=await Promise.all([
       import('../../../packages/runtime/dist/index.js'),import('../../../packages/phone/dist/index.js'),import('../../../packages/contract/dist/index.js'),
       import('../../../providers/openai-realtime/dist/index.js'),import('../../../packages/voice/dist/index.js')]);
+    const {voiceSettingRecord}=await import('../../../providers/voice-kit/dist/index.js');
     assert(!hooks.signal.aborted,'cancelled_before_dial',409);
     // The request may name its engine; otherwise the deployment's default speaks. Metered billing only knows GPT-Live (server.mjs).
     const engineId=m.phoneRequest?.engine??this.config.defaultVoiceEngine??'gpt-live';
@@ -240,6 +241,8 @@ export class Phone {
         forbidden:m.product.forbidden,caller_identity:this.env.OATHRA_BUSINESS_NAME},
       require:m.goal==='meeting'?{date:true,time:true,confirmed:true}:{confirmed:true},...(m.goal==='meeting'?{confirmation:'callee_acceptance'}:{}),permissions:{ask:true,reserve:m.goal==='meeting',share_name:true},
       budget:{maxDurationMs:m.maxSeconds*1000,maxTurns:80,maxCostUsd:m.maxUsd}});
+    // What this call is set up to sound like, as the first event: sealed, append-only, never rewritten by a later preset change.
+    if(m.phoneRequest){const voiceSent=resolvePhoneVoice(engineId,m.phoneRequest);this.store.event(m,{type:'voice.setting',setting:voiceSettingRecord(engineId,engineId==='gemini-live'?this.config.geminiLiveModel:this.env.OATHRA_VOICE_MODEL,voiceSent,contract)});}
     const runtime=new CallRuntime({contract,transport,...(m.kind==='phone-request'?{now:phoneReferenceDate(m.approvedAt??m.createdAt)}:{}),brain:{name:'voice',respond:async()=>{throw new Error('voice_engine_handles_speech');}},callId:m.id,
       onEvent:hooks.onEvent,permissionGate:{ask:async()=>({approved:false,by:'policy'})},openingTimeoutMs:4000});
     const abort=()=>{runtime.cancel();void carrier.hangup();}; hooks.signal.addEventListener('abort',abort,{once:true});
