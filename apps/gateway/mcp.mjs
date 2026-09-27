@@ -1,29 +1,20 @@
-import { createInterface } from 'node:readline';
-/** Read/draft-only stdio MCP surface. Agents never approve calls or follow-up messages. */
-const tools=[
- {name:'oathra_list',description:'List this account’s products, contacts and missions. Does not call anyone.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true}},
- {name:'oathra_draft',description:'Prepare one telephone mission for a human to review in Web/iOS/LINE. Does not grant approval or dial.',inputSchema:{type:'object',properties:{request:{type:'string'},productId:{type:'string'},contactId:{type:'string'},testOnMe:{type:'boolean'},goal:{type:'string',enum:['meeting','materials','introduce']}},required:['request'],additionalProperties:false},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false}},
- {name:'oathra_status',description:'Read evidence and canonical status for an existing mission.',inputSchema:{type:'object',properties:{id:{type:'string'}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:true}}
-];
-const base=(process.env.OATHRA_GATEWAY_URL??'').replace(/\/$/,''),token=process.env.OATHRA_GATEWAY_TOKEN??'';
-const validURL=()=>{const u=new URL(base);if(u.protocol!=='https:'&&!['http://localhost:4244','http://127.0.0.1:4244'].includes(base))throw Error('Use HTTPS');if(u.username||u.password||u.search||u.hash||u.pathname!=='/')throw Error('Use an origin URL');};
-async function call(name,args){
- validURL();if(!token)throw Error('Gateway token is required');
- let path='/bootstrap',method='GET',body;
- if(name==='oathra_draft'){path='/missions/draft';method='POST';body=JSON.stringify(args);}
- else if(name==='oathra_status'){if(!/^[a-f0-9-]{36}$/.test(args.id??''))throw Error('Invalid mission ID');path='/missions/'+args.id;}
- else if(name!=='oathra_list')throw Error('Unknown tool');
- const response=await fetch(base+'/v1'+path,{method,headers:{authorization:'Bearer '+token,...(body?{'content-type':'application/json'}:{})},...(body?{body}:{}),redirect:'error',signal:AbortSignal.timeout(20000)});
- const value=await response.json();if(!response.ok)throw Error(value.error??'Gateway request failed');
- if(name==='oathra_list')return {products:value.products,contacts:value.contacts,missions:value.missions};return value;
+import { createAgentMcp } from './lib/agent-mcp.mjs';
+/** Newline-delimited stdio only. Never forward the parent's other credentials. */
+const server = createAgentMcp({ baseUrl: process.env.OATHRA_GATEWAY_URL ?? '', token: process.env.OATHRA_GATEWAY_TOKEN ?? '' });
+const limit = 65536;
+let buffer = Buffer.alloc(0);
+for await (const chunk of process.stdin) {
+  buffer = Buffer.concat([buffer, chunk]);
+  let newline;
+  while ((newline = buffer.indexOf(10)) !== -1) {
+    const line = buffer.subarray(0, newline); buffer = buffer.subarray(newline + 1);
+    if (line.length > limit) { process.stderr.write('MCP input limit exceeded\n'); process.exit(1); }
+    if (!line.toString('utf8').trim()) continue;
+    let message;
+    try { message = JSON.parse(line.toString('utf8')); }
+    catch { process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }) + '\n'); continue; }
+    const result = await server.handle(message);
+    if (result) process.stdout.write(JSON.stringify(result) + '\n');
+  }
+  if (buffer.length > limit) { process.stderr.write('MCP input limit exceeded\n'); process.exit(1); }
 }
-async function handle(m){
- if(m.jsonrpc!=='2.0')throw Error('Invalid JSON-RPC');
- if(m.method==='initialize')return {protocolVersion:'2025-03-26',capabilities:{tools:{}},serverInfo:{name:'oathra-gateway',version:'0.2.0'}};
- if(m.method==='ping')return {};
- if(m.method==='tools/list')return {tools};
- if(m.method==='tools/call'){try{return {content:[{type:'text',text:JSON.stringify(await call(m.params?.name,m.params?.arguments??{}))}]};}catch(e){return {isError:true,content:[{type:'text',text:e.message}]};}}
- throw Error('Method not found');
-}
-const rl=createInterface({input:process.stdin,crlfDelay:Infinity});
-for await(const line of rl){let m;try{if(Buffer.byteLength(line)>65536)throw Error('Message too large');m=JSON.parse(line);if(m.id===undefined)continue;const result=await handle(m);process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\n');}catch{if(m?.id!==undefined)process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,error:{code:-32600,message:'Invalid request'}})+'\n');}}
