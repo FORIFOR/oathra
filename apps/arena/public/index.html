@@ -158,31 +158,47 @@
       <div class="start-inner narrow">
         <h2 class="panel-h" data-i18n="phoneTitle">Prepare a phone call</h2>
         <div class="availability" id="phone-readiness" role="status" data-i18n="phoneChecking"></div>
-        <button type="button" class="btn" id="phone-pick-contact" data-i18n="contactPick">Choose a contact</button>
         <form id="phone-form">
-          <label for="phone-number" data-i18n="phoneNumber">Phone number</label>
-          <input id="phone-number" type="tel" inputmode="tel" autocomplete="off" required maxlength="80" aria-describedby="phone-help" />
-          <label for="phone-name" data-i18n="phoneName">Recipient name</label>
-          <input id="phone-name" type="text" autocomplete="off" required maxlength="100" />
-          <label for="phone-caller-name" data-i18n="phoneCallerName">Your name (optional, told to callee)</label>
-          <input id="phone-caller-name" type="text" autocomplete="name" maxlength="40" />
-          <label for="phone-engine" data-i18n="phoneEngine">Voice AI</label>
-          <select id="phone-engine" aria-describedby="phone-engine-note"></select>
-          <p id="phone-engine-note" class="note" data-i18n="phoneEngineNote"></p>
-          <label for="phone-preset" data-i18n="phonePreset">Speaking preset</label>
-          <select id="phone-preset" aria-describedby="phone-preset-note"></select>
-          <p id="phone-preset-note" class="note" data-i18n="phonePresetNote"></p>
-          <label for="phone-voice" data-i18n="phoneVoice">AI voice</label>
-          <select id="phone-voice" aria-describedby="phone-voice-note"></select>
-          <p id="phone-voice-note" class="note" data-i18n="phoneVoiceNote"></p>
-          <label for="phone-template" data-i18n="phoneTemplate">Start from a purpose template</label>
-          <select id="phone-template"><option value="" data-i18n="phoneTemplateBlank">Write your own purpose</option></select>
-          <label for="phone-instruction" data-i18n="phoneInstruction">What should the AI say?</label>
-          <textarea id="phone-instruction" rows="3" required maxlength="2000"></textarea>
-          <details class="phone-input-help"><summary data-i18n="phoneInputHelp">Input help</summary><p id="phone-help" class="note" data-i18n="phoneHelp"></p><p class="note" data-i18n="phoneTemplateHint"></p></details>
+          <fieldset class="phone-step">
+            <legend data-i18n="phoneStepWho">Who</legend>
+            <button type="button" class="btn" id="phone-pick-contact" data-i18n="contactPick">Choose a contact</button>
+            <div class="phone-row2">
+              <div class="phone-field"><label for="phone-number" data-i18n="phoneNumber">Phone number</label>
+              <input id="phone-number" type="tel" inputmode="tel" autocomplete="off" required maxlength="80" aria-describedby="phone-help" /></div>
+              <div class="phone-field"><label for="phone-name" data-i18n="phoneName">Recipient name</label>
+              <input id="phone-name" type="text" autocomplete="off" required maxlength="100" /></div>
+            </div>
+            <div class="phone-field"><label for="phone-caller-name" data-i18n="phoneCallerName">Your name (optional)</label>
+            <input id="phone-caller-name" type="text" autocomplete="name" maxlength="40" aria-describedby="phone-caller-hint" />
+            <p id="phone-caller-hint" class="note" data-i18n="phoneCallerHint"></p></div>
+          </fieldset>
+          <fieldset class="phone-step">
+            <legend data-i18n="phoneStepWhat">What to say</legend>
+            <div class="phone-field"><label for="phone-template" data-i18n="phoneTemplate">Start from a purpose template</label>
+            <select id="phone-template"><option value="" data-i18n="phoneTemplateBlank">Write your own purpose</option></select></div>
+            <div class="phone-field"><label for="phone-instruction" data-i18n="phoneInstruction">What should the AI say?</label>
+            <textarea id="phone-instruction" rows="3" required maxlength="2000"></textarea></div>
+            <details class="phone-input-help"><summary data-i18n="phoneInputHelp">Input help</summary><p id="phone-help" class="note" data-i18n="phoneHelp"></p><p class="note" data-i18n="phoneTemplateHint"></p></details>
+          </fieldset>
+          <fieldset class="phone-step" id="phone-voice-choice" aria-describedby="phone-voice-cards-note">
+            <legend data-i18n="phoneStepVoice">Voice</legend>
+            <div id="phone-voice-cards" class="phone-voice-cards"></div>
+            <p id="phone-voice-cards-note" class="note" data-i18n="phoneVoiceCardsNote"></p>
+            <details id="phone-voice-advanced"><summary data-i18n="phoneVoiceAdvanced">More settings</summary>
+              <div class="phone-field"><label for="phone-engine" data-i18n="phoneEngine">Voice AI</label>
+              <select id="phone-engine" aria-describedby="phone-engine-note"></select>
+              <p id="phone-engine-note" class="note" data-i18n="phoneEngineNote"></p></div>
+              <input type="hidden" id="phone-preset" value="" />
+              <div class="phone-field"><label for="phone-voice" data-i18n="phoneVoice">AI voice</label>
+              <select id="phone-voice" aria-describedby="phone-voice-note"></select>
+              <p id="phone-voice-note" class="note" data-i18n="phoneVoiceNote"></p></div>
+            </details>
+          </fieldset>
           <p id="phone-error" role="alert" hidden></p>
-          <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
-          <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
+          <div class="phone-form-actions">
+            <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
+            <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
+          </div>
         </form>
         <section id="phone-review" hidden aria-labelledby="phone-review-title" tabindex="-1">
           <h3 id="phone-review-title" data-i18n="phoneReviewTitle">Call draft · not sent</h3>

@@ -115,3 +115,14 @@ it("a voice preset is optional, from a fixed list, and resolves to a per-engine 
   expect(VOICE_PRESETS).toHaveLength(6);
   expect(resolvePhoneVoice("gemini-live", { voicePreset: "guide-female" })).toBe(PRESET_VOICES["gemini-live"]["guide-female"]);
 });
+
+it("character-tts takes Gemini voices, speaks Leda/Puck for the character presets, and refuses the business presets", async () => {
+  const { resolvePhoneVoice } = await import("./phone-input.js");
+  const base = { phone: "+819012345678", name: "田中", instruction: "近況を話してください。" };
+  expect(preparePhoneRequest({ ...base, engine: "character-tts", voicePreset: "character-female" }).engine).toBe("character-tts");
+  expect(resolvePhoneVoice("character-tts", { voicePreset: "character-female" })).toBe("Leda");
+  expect(resolvePhoneVoice("character-tts", { voicePreset: "character-male" })).toBe("Puck");
+  expect(preparePhoneRequest({ ...base, engine: "character-tts", voice: "Sulafat" }).voice).toBe("Sulafat");
+  expect(() => preparePhoneRequest({ ...base, engine: "character-tts", voice: "marin" })).toThrow();
+  expect(() => preparePhoneRequest({ ...base, engine: "character-tts", voicePreset: "sales-female" })).toThrow(/キャラクター風/);
+});

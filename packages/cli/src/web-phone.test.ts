@@ -40,6 +40,25 @@ describe("Web phone local inspection", () => {
   });
 });
 
+describe("the acting voice (character-tts) on the web phone", () => {
+  it("is offered for the character presets, says it is slower, and names each missing key", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "oathra-web-phone-"));
+    try {
+      const dialer = buildWebPhoneDialer({ configPath: join(dir, "phone.yaml"), env: { OPENAI_API_KEY: "x", GEMINI_API_KEY: "y" } });
+      const state = await dialer.inspect({ schemaVersion: 1, kind: "oathra.phone-request", phone: "+819012345678", name: "田中", instruction: "近況を話す", engine: "character-tts", voicePreset: "character-male" });
+      const choice = state.engines?.find((e) => e.id === "character-tts");
+      expect(choice?.presets).toEqual(["character-female", "character-male"]);
+      expect(choice?.presetVoices?.["character-male"]).toBe("Puck");
+      expect(choice?.note).toContain("2〜3秒");
+      expect(choice?.ready).toBe(false);
+      expect(choice?.issues).toEqual(["DEEPGRAM_API_KEY が未設定です。"]);
+      expect(state.issues).toContain("DEEPGRAM_API_KEY が未設定です。");
+      expect(state.engine).toBe("character-tts");
+      expect(state.disclosure).toContain("Deepgram・OpenAI・Google");
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
 describe("the public media URL is checked before anyone is rung", () => {
   const reply = (status: number, headers: Record<string, string> = {}) => (async () => new Response("", { status, headers })) as unknown as typeof fetch;
   it("an offline ngrok endpoint, a dead quick tunnel or an unreachable host is a reason not to dial", async () => {

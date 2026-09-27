@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { GeminiTTS } from "@oathra/gemini";
 import { OpenAITTS } from "@oathra/openai";
-import { CHARACTER_TTS_STYLE, pipelineTTS } from "./phone.js";
+import { definePhoneRequest, preparePhoneRequest } from "@oathra/contract";
+import { buildEngine, CHARACTER_TTS_STYLE, engineBrain, parseEngineSpec, phoneRequestSystemPrompt, pipelineTTS } from "./phone.js";
 
 describe("pipeline TTS choice (character prototype)", () => {
   it("gemini-lite speaks with the character preset's voice and the approved style", () => {
@@ -19,5 +20,33 @@ describe("pipeline TTS choice (character prototype)", () => {
   it("the default pipeline voice is unchanged", () => {
     expect(pipelineTTS(undefined).tts).toBeInstanceOf(OpenAITTS);
     expect(pipelineTTS("openai", "character-female").tts).toBeInstanceOf(OpenAITTS);
+  });
+});
+
+describe("character-tts engine (acting voice on a real call)", () => {
+  const request = (extra: Record<string, unknown> = {}) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "ゆき", callerName: "田中", instruction: "近況を話す", conversationMode: "chat", engine: "character-tts", voicePreset: "character-male", ...extra }));
+  it("parses, speaks with the preset's Gemini voice, and has no fixed acknowledgements", () => {
+    const spec = parseEngineSpec("character-tts");
+    expect(spec).toEqual({ id: "character-tts" });
+    const engine = buildEngine(spec, { GEMINI_API_KEY: "g" }, undefined, "character-male");
+    expect(engine.id).toBe("character-tts");
+    expect(engine.speaksItself).toBe(false);
+    expect(engine.label).toContain("Gemini TTS (Puck)");
+    expect(engine.requires).toEqual(["DEEPGRAM_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"]);
+    expect(buildEngine(spec, {}, "Sulafat", "character-female").label).toContain("Gemini TTS (Sulafat)");
+  });
+  it("its brain gets the same call instructions as the Live engines, adapted to written replies", () => {
+    const engine = buildEngine(parseEngineSpec("character-tts"), {}, undefined, "character-male");
+    expect(engineBrain(parseEngineSpec("character-tts"), engine).name).toContain("openai");
+    const prompt = phoneRequestSystemPrompt({ contract: request(), language: "ja", transcript: [], mission: { verified: {}, pending: {}, missing: [], violations: [] }, permitted: [], elapsedMs: 0, turnIndex: 0 } as never);
+    expect(prompt).toContain("最初にAIによる代理電話であることを伝え");
+    expect(prompt).toContain("田中");
+    expect(prompt).toContain("【話し方：キャラクター風】");
+    expect(prompt).toContain('action を "hangup"');
+    expect(prompt).toContain('{"text": string, "action": "continue" | "hangup"}');
+  });
+  it("speech-to-speech engines still write their own replies", async () => {
+    const engine = buildEngine(parseEngineSpec("gpt-live"), {});
+    await expect(engineBrain(parseEngineSpec("gpt-live"), engine).respond({} as never)).rejects.toThrow(/speaks itself/);
   });
 });

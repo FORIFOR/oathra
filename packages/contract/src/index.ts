@@ -23,6 +23,7 @@ export {
   VOICE_PRESETS,
   VOICE_PRESET_LABELS,
   PRESET_VOICES,
+  CHARACTER_TTS_PRESETS,
   resolvePhoneVoice,
   type VoicePreset,
   DEFAULT_GEMINI_VOICE,

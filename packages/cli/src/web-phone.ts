@@ -1,11 +1,12 @@
 /** Local Web adapter. Inspection never contacts a carrier or starts a tunnel. */
 import { createHmac, randomBytes } from "node:crypto";
 import { PhoneNotDialedError, type PhoneDialer, type PhoneEngineChoice, type PhoneReadiness } from "@oathra/arena";
-import { ENGINE_DEFAULT_VOICE, ENGINE_VOICES, GEMINI_VOICE_TRAITS, PRESET_VOICES, parsePhoneRequest, resolvePhoneVoice, type PhoneEngine, type PhoneRequest } from "@oathra/contract";
+import { CHARACTER_TTS_PRESETS, ENGINE_DEFAULT_VOICE, ENGINE_VOICES, GEMINI_VOICE_TRAITS, PRESET_VOICES, parsePhoneRequest, resolvePhoneVoice, type PhoneEngine, type PhoneRequest } from "@oathra/contract";
 import { loadPhoneConfig, PhoneRouter, PhoneTransport, type CarrierMediaSession, type CarrierTransport } from "@oathra/phone";
 import { CallRuntime } from "@oathra/runtime";
-import { buildEngine, buildRegistry, parseEngineSpec, phoneRequestContract, type EngineSpec } from "./phone.js";
+import { buildEngine, buildRegistry, CHARACTER_TTS_STYLE, engineBrain, parseEngineSpec, phoneRequestContract, type EngineSpec } from "./phone.js";
 import { voiceSettingRecord } from "@oathra/voice-kit";
+import { DEFAULT_GEMINI_TTS_MODEL } from "@oathra/gemini";
 
 /**
  * Whether the public URL Twilio will stream to answers at all. Before dialing nothing listens behind it yet,
@@ -28,11 +29,19 @@ export async function probePublicMediaUrl(wsUrl: string, fetchImpl: typeof fetch
 export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch } = {}): PhoneDialer {
   const env = options.env ?? process.env;
   const key = randomBytes(32);
-  /** Which speech-to-speech engines this machine can run, from the keys in its environment. */
+  /** Which voice engines this machine can run, from the keys in its environment. */
   function engineChoices(configured: string | undefined): { engines: PhoneEngineChoice[]; defaultEngine: PhoneEngine } {
-    const list: Array<[PhoneEngine, string, string[]]> = [["gpt-live", "GPT-Live (gpt-live-1)", ["OPENAI_API_KEY"]], ["gemini-live", "Gemini Live (gemini-3.8-live)", ["GEMINI_API_KEY"]]];
-    const engines = list.map(([id, label, keys]) => ({ id, label, voices: [...ENGINE_VOICES[id]], defaultVoice: ENGINE_DEFAULT_VOICE[id], ...(id === "gemini-live" ? { voiceTraits: { ...GEMINI_VOICE_TRAITS } } : {}), presetVoices: { ...PRESET_VOICES[id] }, issues: keys.filter((k) => !env[k]).map((k) => `${k} が未設定です。`), ready: keys.every((k) => !!env[k]) }));
-    const defaultEngine: PhoneEngine = configured === "gemini-live" ? "gemini-live" : "gpt-live";
+    const list: Array<[PhoneEngine, string, string[]]> = [
+      ["gpt-live", "GPT-Live (gpt-live-1)", ["OPENAI_API_KEY"]],
+      ["gemini-live", "Gemini Live (gemini-3.8-live)", ["GEMINI_API_KEY"]],
+      ["character-tts", "演技する声 (Gemini TTS)", ["DEEPGRAM_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"]],
+    ];
+    const engines = list.map(([id, label, keys]) => ({
+      id, label, voices: [...ENGINE_VOICES[id]], defaultVoice: ENGINE_DEFAULT_VOICE[id], ...(id !== "gpt-live" ? { voiceTraits: { ...GEMINI_VOICE_TRAITS } } : {}), presetVoices: { ...PRESET_VOICES[id] },
+      ...(id === "character-tts" ? { presets: [...CHARACTER_TTS_PRESETS], note: "感情をこめて演じます。返事まで2〜3秒かかります。" } : {}),
+      issues: keys.filter((k) => !env[k]).map((k) => `${k} が未設定です。`), ready: keys.every((k) => !!env[k]),
+    }));
+    const defaultEngine: PhoneEngine = configured === "gemini-live" || configured === "character-tts" ? configured : "gpt-live";
     return { engines, defaultEngine };
   }
   function inspectConfig(request?: PhoneRequest) {
@@ -52,7 +61,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
     let spec: EngineSpec | undefined;
     try { spec = parseEngineSpec(request?.engine ?? undefined, undefined, config.voice.engine); }
     catch { issues.push("音声AI設定を確認してください。"); }
-    if (spec?.id === "pipeline") issues.push("画面からの依頼は gpt-live か gemini-live を設定してください。");
+    if (spec?.id === "pipeline") issues.push("画面からの依頼は gpt-live・gemini-live・character-tts のいずれかを設定してください。");
     const chosen = choices.engines.find((e) => e.id === spec?.id);
     for (const issue of chosen?.issues ?? []) issues.push(issue);
     if (provider?.id === "twilio") {
@@ -68,8 +77,8 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
       route = new PhoneRouter(registry, { ...config, routing: { strategy: "preferred", providers: [provider.id] } }, env).candidates()[0];
       if (!route) issues.push("通信会社の設定が不足しています。oathra setup phone で確認してください。");
     }
-    const configurationId = createHmac("sha256", key).update(JSON.stringify({ config, engine: spec?.id, env: Object.fromEntries(Object.entries(env).filter(([name]) => /^(OPENAI_|GEMINI_|TWILIO_|OATHRA_PUBLIC_WS_URL)/.test(name))) })).digest("hex");
-    const vendor = spec?.id === "gemini-live" ? "Google" : "OpenAI";
+    const configurationId = createHmac("sha256", key).update(JSON.stringify({ config, engine: spec?.id, env: Object.fromEntries(Object.entries(env).filter(([name]) => /^(OPENAI_|GEMINI_|DEEPGRAM_|TWILIO_|OATHRA_PUBLIC_WS_URL)/.test(name))) })).digest("hex");
+    const vendor = spec?.id === "gemini-live" ? "Google" : spec?.id === "character-tts" ? "Deepgram・OpenAI・Google" : "OpenAI";
     const readiness: PhoneReadiness = {
       ready: issues.length === 0, issues, provider: provider?.label ?? "未設定", engine: spec ? `${spec.id}${spec.model ? `:${spec.model}` : ""}` : "未設定",
       recording: false, configurationId, engines: choices.engines, defaultEngine: choices.defaultEngine,
@@ -103,10 +112,11 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
       if (unreachable) throw new PhoneNotDialedError(unreachable);
       ctx.signal.throwIfAborted();
       const voiceSent = resolvePhoneVoice(current.spec.id, request);
-      const engine = buildEngine(current.spec, env, voiceSent);
+      const engine = buildEngine(current.spec, env, voiceSent, request.voicePreset);
       // What this call is set up to sound like, copied now so a later preset change never rewrites it.
-      const model = current.spec.model ?? (current.spec.id === "gemini-live" ? "gemini-3.8-live" : "gpt-live-1");
-      ctx.onVoiceSetting?.(voiceSettingRecord(current.spec.id, model, voiceSent, phoneRequestContract(request)));
+      const character = current.spec.id === "character-tts";
+      const model = current.spec.model ?? (current.spec.id === "gemini-live" ? "gemini-3.8-live" : character ? DEFAULT_GEMINI_TTS_MODEL : "gpt-live-1");
+      ctx.onVoiceSetting?.(voiceSettingRecord(current.spec.id, model, voiceSent ?? (character ? ENGINE_DEFAULT_VOICE["character-tts"] : undefined), phoneRequestContract(request), new Date(), character ? { ttsStyle: CHARACTER_TTS_STYLE } : {}));
       const original = current.route.transport;
       let media: CarrierMediaSession | undefined;
       let ending: Promise<void> | undefined;
@@ -124,7 +134,7 @@ export function buildWebPhoneDialer(options: { configPath?: string; env?: NodeJS
           return { audio: media.audio, events: media.events, send: chunk => media!.send(chunk), clear: () => media!.clear(), now: () => media!.now(), hangup: end, ...(media.mark ? { mark: (name: string) => media!.mark!(name) } : {}) };
         },
       };
-      const runtime = new CallRuntime({ contract: phoneRequestContract(request), transport: new PhoneTransport(carrier, engine, { transcriptNotice: true }), brain: { name: engine.id, respond: async () => { throw new Error("voice engine supplies responses"); } }, callId: ctx.callId, onEvent: ctx.onEvent, openingTimeoutMs: 4000 });
+      const runtime = new CallRuntime({ contract: phoneRequestContract(request), transport: new PhoneTransport(carrier, engine, { transcriptNotice: true }), brain: engineBrain(current.spec, engine), callId: ctx.callId, onEvent: ctx.onEvent, openingTimeoutMs: 4000 });
       const abort = () => { runtime.cancel(); void end("cancelled"); };
       ctx.signal.addEventListener("abort", abort, { once: true });
       const durationLimit = setTimeout(abort, 180000);

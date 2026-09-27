@@ -7,7 +7,13 @@ import { renderCallSummary, saveCall } from "@oathra/replay";
 import type { CallOutcome } from "@oathra/runtime";
 
 /** Experimental local Web telephone adapter. inspect MUST have no external side effects. */
-export type PhoneEngineChoice = { id: string; label: string; ready: boolean; issues: string[]; voices: string[]; defaultVoice: string; voiceTraits?: Record<string, string>; presetVoices?: Record<string, string> };
+export type PhoneEngineChoice = {
+  id: string; label: string; ready: boolean; issues: string[]; voices: string[]; defaultVoice: string; voiceTraits?: Record<string, string>; presetVoices?: Record<string, string>;
+  /** The presets this engine accepts; absent = all. */
+  presets?: string[];
+  /** One short line on what choosing it means (e.g. slower replies). */
+  note?: string;
+};
 export type PhoneReadiness = {
   ready: boolean; issues: string[]; provider: string; engine: string; recording: boolean; disclosure: string; configurationId?: string;
   /** Speech-to-speech engines this server can use, so the form can offer a choice. */
@@ -21,7 +27,7 @@ export interface PhoneDialer {
  * The voice a call was set up with, copied when the call starts (engine, model, the voice name sent, preset,
  * preset version, the style text used). Absent on calls saved before this existed: their version is unknown.
  */
-export type PhoneVoiceSetting = { engine: string; model: string; voiceSent: string | null; voicePreset: string | null; presetVersion: string | null; styleApplied: string | null; language: string; capturedAt: string };
+export type PhoneVoiceSetting = { engine: string; model: string; voiceSent: string | null; voicePreset: string | null; presetVersion: string | null; styleApplied: string | null; language: string; capturedAt: string; ttsStyle?: string };
 export type PhoneCallState = "draft" | "starting" | "running" | "stopping" | "ended" | "failed" | "unknown";
 export type PhoneCallRecord = {
   id: string; request: PhoneRequest; state: PhoneCallState; createdAt: string; updatedAt: string;

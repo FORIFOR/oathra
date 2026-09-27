@@ -16,6 +16,13 @@ export function phonePage() {
     const parts = [hint, error, dial].map(slot => { const found = inside.match(slot); if (!found) throw new Error('Managed phone markup slot is missing: ' + slot); inside = inside.replace(slot, ''); return found[0]; });
     return inside + '<div class="phone-review-actions">' + parts.join('') + '<button type="button" class="btn" id="phone-edit">戻って編集</button></div>';
   };
+  // Arena's three-step phone form and its voice cards need Arena's script; the managed page builds its own voice
+  // fields (credits, engines this deployment runs) and keeps its flat form, so the steps are unwrapped here.
+  patch(/<fieldset class="phone-step" id="phone-voice-choice"[\s\S]*?<\/fieldset>/, '');
+  patch(/<fieldset class="phone-step">\s*<legend[^>]*>[^<]*<\/legend>/g, '');
+  patch(/<\/fieldset>/g, '');
+  patch(/<p id="phone-caller-hint"[^>]*><\/p>/, '');
+  patch(' aria-describedby="phone-caller-hint"', '');
   patch('href="style.css"', 'href="/phone-style/style.css"');
   patch('</head>', '<link rel="stylesheet" href="/managed-phone.css"></head>');
   patch(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');

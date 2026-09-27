@@ -90,8 +90,12 @@ const PhoneNumberSchema = z.string().transform((value, ctx) => {
  */
 export const PHONE_VOICES = ["marin", "quartz", "ripple", "vesper", "willow", "stone", "gleam", "meridian", "bossa", "tempo", "beacon", "delta", "cinder"] as const;
 export const DEFAULT_PHONE_VOICE = "marin";
-/** Speech-to-speech engines a request may ask for. Absent keeps the server's configured engine. */
-export const PHONE_ENGINES = ["gpt-live", "gemini-live"] as const;
+/**
+ * Engines a request may ask for. Absent keeps the server's configured engine. `gpt-live` and `gemini-live` are
+ * speech-to-speech; `character-tts` hears with speech recognition, writes each reply as text and speaks it with
+ * Gemini TTS acting direction — slower to answer (about 2–3 s), for the character presets only.
+ */
+export const PHONE_ENGINES = ["gpt-live", "gemini-live", "character-tts"] as const;
 export type PhoneEngine = (typeof PHONE_ENGINES)[number];
 /** Gemini Live accepts every prebuilt TTS voice (30). Custom Voice Design voices are TTS-only and not accepted by Live. */
 export const GEMINI_VOICES = [
@@ -108,8 +112,9 @@ export const GEMINI_VOICE_TRAITS: Record<(typeof GEMINI_VOICES)[number], string>
   Gacrux: "大人っぽい", Pulcherrima: "前向き", Achird: "親しみやすい", Zubenelgenubi: "くだけた", Vindemiatrix: "やさしい", Sadachbia: "生き生き",
   Sadaltager: "知的", Sulafat: "あたたかい",
 };
-export const ENGINE_VOICES: Record<PhoneEngine, readonly string[]> = { "gpt-live": PHONE_VOICES, "gemini-live": GEMINI_VOICES };
-export const ENGINE_DEFAULT_VOICE: Record<PhoneEngine, string> = { "gpt-live": DEFAULT_PHONE_VOICE, "gemini-live": DEFAULT_GEMINI_VOICE };
+// Gemini TTS speaks the same 30 prebuilt voices as Gemini Live.
+export const ENGINE_VOICES: Record<PhoneEngine, readonly string[]> = { "gpt-live": PHONE_VOICES, "gemini-live": GEMINI_VOICES, "character-tts": GEMINI_VOICES };
+export const ENGINE_DEFAULT_VOICE: Record<PhoneEngine, string> = { "gpt-live": DEFAULT_PHONE_VOICE, "gemini-live": DEFAULT_GEMINI_VOICE, "character-tts": "Leda" };
 
 /**
  * Voice presets: a base voice per engine plus a speaking style, chosen together. They change how the agent
@@ -130,11 +135,15 @@ export const VOICE_PRESET_LABELS: Record<VoicePreset, string> = {
 export const PRESET_VOICES: Record<PhoneEngine, Record<VoicePreset, string>> = {
   "gemini-live": { "character-female": "Leda", "character-male": "Puck", "sales-female": "Kore", "sales-male": "Orus", "guide-female": "Kore", "guide-male": "Orus" },
   "gpt-live": { "character-female": "gleam", "character-male": "meridian", "sales-female": "gleam", "sales-male": "meridian", "guide-female": "gleam", "guide-male": "meridian" },
+  // Leda/Puck with acting direction were chosen by listening (2026-09-27). The engine refuses the business presets.
+  "character-tts": { "character-female": "Leda", "character-male": "Puck", "sales-female": "Kore", "sales-male": "Orus", "guide-female": "Kore", "guide-male": "Orus" },
 };
+/** The presets `character-tts` accepts: its acting direction is a character's. */
+export const CHARACTER_TTS_PRESETS: readonly VoicePreset[] = ["character-female", "character-male"];
 /** The voice a call speaks with: an explicit voice wins, then the preset's voice for this engine, else the engine's own default. */
 export function resolvePhoneVoice(engine: string, request: { voice?: string | undefined; voicePreset?: VoicePreset | undefined }): string | undefined {
   if (request.voice) return request.voice;
-  if (request.voicePreset && (engine === "gpt-live" || engine === "gemini-live")) return PRESET_VOICES[engine][request.voicePreset];
+  if (request.voicePreset && (PHONE_ENGINES as readonly string[]).includes(engine)) return PRESET_VOICES[engine as PhoneEngine][request.voicePreset];
   return undefined;
 }
 
@@ -160,6 +169,7 @@ export const PhoneRequestFieldsSchema = z.object({
 }).strict();
 
 export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, ctx) => {
+  if (value.engine === "character-tts" && value.voicePreset && !CHARACTER_TTS_PRESETS.includes(value.voicePreset)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["voicePreset"], message: "演技する声はキャラクター風の話し方で使えます。" });
   if (!value.voice) return;
   const engine: PhoneEngine = value.engine ?? ((GEMINI_VOICES as readonly string[]).includes(value.voice) ? "gemini-live" : "gpt-live");
   if (!ENGINE_VOICES[engine].includes(value.voice)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["voice"], message: `この声は ${engine} では使えません。` });

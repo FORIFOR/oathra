@@ -9,12 +9,12 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { defineCall, parsePhoneRequest, PRESET_VOICES, resolvePhoneVoice, type CallContract, type PhoneRequest } from "@oathra/contract";
-import type { BrainProvider } from "@oathra/core";
+import type { BrainContext, BrainProvider } from "@oathra/core";
 import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { GeminiTTS } from "@oathra/gemini";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
-import { OpenAITTS } from "@oathra/openai";
+import { OpenAIBrain, OpenAITTS } from "@oathra/openai";
 import { gptLiveEngine } from "@oathra/openai-realtime";
 import { geminiLiveEngine } from "@oathra/gemini-live";
 import {
@@ -39,7 +39,7 @@ import { defaultCallsDir, saveCall } from "@oathra/replay";
 import { runCall } from "@oathra/runtime";
 import { contractFromScenario, loadScenarioDir, loadScenarioFile, type Scenario } from "@oathra/scenario";
 import { MULAW_8K, type VoiceEngine } from "@oathra/voice";
-import { voiceSettingRecord } from "@oathra/voice-kit";
+import { callInstructions, voiceSettingRecord } from "@oathra/voice-kit";
 import { pipelineEngine } from "@oathra/voice-pipeline";
 import { liveModelOf, resolveBrain } from "./brains.js";
 import { scenariosDir } from "./paths.js";
@@ -58,7 +58,7 @@ export function buildRegistry(env: NodeJS.ProcessEnv = process.env): PhoneRegist
   return reg;
 }
 
-export type EngineSpec = { id: "gpt-live" | "gemini-live" | "pipeline"; model?: string; brain?: string; tts?: PipelineTTSChoice };
+export type EngineSpec = { id: "gpt-live" | "gemini-live" | "character-tts" | "pipeline"; model?: string; brain?: string; tts?: PipelineTTSChoice };
 
 /** Pipeline voices. `gemini-lite` is the character-call prototype: Flash-Lite TTS with the character preset's voice. */
 export type PipelineTTSChoice = "openai" | "gemini-lite";
@@ -67,7 +67,7 @@ export type PipelineTTSChoice = "openai" | "gemini-lite";
  * style was written for one line and would give every reply the same emotional arc).
  */
 export const CHARACTER_TTS_STYLE = "日本語のアニメの会話シーンとして演じる。";
-const CHARACTER_TTS_VOICES: Record<string, string> = { "character-female": PRESET_VOICES["gemini-live"]["character-female"], "character-male": PRESET_VOICES["gemini-live"]["character-male"] };
+const CHARACTER_TTS_VOICES: Record<string, string> = { "character-female": PRESET_VOICES["character-tts"]["character-female"], "character-male": PRESET_VOICES["character-tts"]["character-male"] };
 
 /** The pipeline's TTS; `gemini-lite` only for the character presets, since the style is a character's. */
 export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?: string): { tts: OpenAITTS | GeminiTTS; voice?: string; style?: string } {
@@ -77,7 +77,40 @@ export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?:
   return { tts: new GeminiTTS({ voice, style: CHARACTER_TTS_STYLE }), voice, style: CHARACTER_TTS_STYLE };
 }
 
-/** Accepts `--engine gpt-live|gemini-live|pipeline[:model]` and the legacy `--brain` spellings. */
+/**
+ * How the text brain replies on a phone-request call spoken by TTS: the same call instructions the
+ * speech-to-speech engines get (AI disclosure, on whose behalf, chat rules, the preset's speaking style), plus
+ * what changes when replies are written and read aloud. The verdict still comes from the runtime's evidence.
+ */
+export function phoneRequestSystemPrompt(ctx: BrainContext): string {
+  const ja = ctx.language === "ja";
+  return [
+    callInstructions({ contract: ctx.contract, view: ctx.mission }),
+    "",
+    ja ? "## この通話での返し方" : "## How you reply on this call",
+    ...(ja ? [
+      "- あなたの返答は文字で書かれ、そのまま声で読み上げられます。1回の返答は短く（1〜2文）。記号・絵文字・括弧書き・ト書きは書かないでください。",
+      "- end_call や検索などの道具は使えません。上の指示で end_call を使う場面では、別れの挨拶を text に書き、action を \"hangup\" にしてください。",
+      "- 通話が完了したかどうかはあなたではなく、相手の発言から判定されます。",
+    ] : [
+      "- Your reply is written and then read aloud. Keep each reply short (one or two sentences). No symbols, emoji, brackets or stage directions.",
+      "- You have no tools such as end_call or search. Where the instructions above say to use end_call, write the goodbye in text and set action to \"hangup\".",
+      "- Whether the call is complete is decided from what the callee says, not by you.",
+    ]),
+    ...(ctx.hints?.length ? ["", "## Runtime hints", ...ctx.hints.map((h) => `- ${h}`)] : []),
+    "",
+    'Respond ONLY with a JSON object, no prose, no code fences: {"text": string, "action": "continue" | "hangup"}',
+  ].join("\n");
+}
+
+/** The brain the runtime runs for this engine. Speech-to-speech engines write their own replies. */
+export function engineBrain(spec: EngineSpec, engine: VoiceEngine): BrainProvider {
+  if (engine.speaksItself) return { name: engine.id, respond: async () => { throw new Error("engine speaks itself"); } };
+  if (spec.id === "character-tts") return new OpenAIBrain({ ...(spec.brain ? { model: spec.brain } : {}), systemPrompt: phoneRequestSystemPrompt });
+  return resolveBrain(spec.brain ?? "openai");
+}
+
+/** Accepts `--engine gpt-live|gemini-live|character-tts|pipeline[:model]` and the legacy `--brain` spellings. */
 export function parseEngineSpec(engine?: string, brain?: string, configDefault = "gpt-live"): EngineSpec {
   const spec = engine ?? (brain ? undefined : configDefault);
   if (spec) {
@@ -85,10 +118,11 @@ export function parseEngineSpec(engine?: string, brain?: string, configDefault =
     const model = rest.length ? rest.join(":") : undefined;
     if (id === "gpt-live" || id === "live") return { id: "gpt-live", ...(model ? { model } : {}) };
     if (id === "gemini-live" || id === "gemini") return { id: "gemini-live", ...(model ? { model } : {}) };
+    if (id === "character-tts") return { id: "character-tts", ...(model ? { brain: model } : {}) };
     if (id === "pipeline") return { id: "pipeline", ...(model ? { brain: model } : {}) };
     if (/^gpt-live/.test(spec)) return { id: "gpt-live", model: spec };
     if (/^gemini-.*live/.test(spec)) return { id: "gemini-live", model: spec };
-    throw new Error(`Unknown voice engine "${spec}". Use gpt-live, gemini-live or pipeline[:brain]`);
+    throw new Error(`Unknown voice engine "${spec}". Use gpt-live, gemini-live, character-tts or pipeline[:brain]`);
   }
   // legacy --brain
   const live = brain ? liveModelOf(brain) : undefined;
@@ -99,6 +133,12 @@ export function parseEngineSpec(engine?: string, brain?: string, configDefault =
 export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env, voice?: string, voicePreset?: string): VoiceEngine {
   if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
   if (spec.id === "gemini-live") return geminiLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}) });
+  if (spec.id === "character-tts") {
+    // The acting voice: the request's voice (or the character preset's), always with the character style.
+    // Acknowledgements are off: the pipeline's fixed 「はい。」「ええ。」 do not fit a character's casual register.
+    const tts = new GeminiTTS({ voice: voice ?? (voicePreset ? CHARACTER_TTS_VOICES[voicePreset] : undefined) ?? "Leda", style: CHARACTER_TTS_STYLE, ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}) });
+    return { ...pipelineEngine({ brain: engineBrainPlaceholder, stt: new DeepgramSTT(), tts, acknowledgements: false, ttsLabel: `Gemini TTS (${tts.voice})` }), id: "character-tts", requires: ENGINE_CREDENTIALS["character-tts"] };
+  }
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
   return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: pipelineTTS(spec.tts, voicePreset).tts });
 }
@@ -107,6 +147,7 @@ export function engineChoices(): Array<{ id: string; label: string; note: string
   return [
     { id: "gpt-live", label: "GPT-Live", note: "Recommended · needs OPENAI_API_KEY · $0.05/min session" },
     { id: "gemini-live", label: "Gemini Live", note: "gemini-3.8-live · needs GEMINI_API_KEY · not yet verified on a real line" },
+    { id: "character-tts", label: "Character voice (acting)", note: "Gemini TTS acting · replies ~2–3 s · needs DEEPGRAM + OPENAI + GEMINI keys" },
     { id: "pipeline", label: "Pipeline", note: "needs DEEPGRAM_API_KEY + OPENAI_API_KEY · customizable" },
   ];
 }
@@ -135,8 +176,12 @@ const CREDENTIAL_GUIDES: Record<string, CredentialGuide> = {
 const ENGINE_CREDENTIALS: Record<EngineSpec["id"], string[]> = {
   "gpt-live": ["OPENAI_API_KEY"],
   "gemini-live": ["GEMINI_API_KEY"],
+  "character-tts": ["DEEPGRAM_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"],
   pipeline: ["DEEPGRAM_API_KEY", "OPENAI_API_KEY"],
 };
+
+/** The pipeline engine needs a brain for its label only; the runtime runs `engineBrain()`. */
+const engineBrainPlaceholder: BrainProvider = { name: "openai (phone request)", respond: async () => { throw new Error("the runtime supplies the brain"); } };
 
 const SIP_GATEWAY_CREDENTIALS = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"];
 
@@ -668,7 +713,7 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
   const reg = buildRegistry();
   const config = loadPhoneConfig();
   const engineSpec = parseEngineSpec(flags.engine, flags.brain, config.voice.engine);
-  const engine = buildEngine(engineSpec, process.env, request ? resolvePhoneVoice(engineSpec.id, request) : undefined);
+  const engine = buildEngine(engineSpec, process.env, request ? resolvePhoneVoice(engineSpec.id, request) : undefined, request?.voicePreset);
 
   // Direct media-stream providers need a public URL while their transport is
   // constructed. Prepare the tunnel before routing so a ready Twilio route is
@@ -753,7 +798,7 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
       const outcome = await runCall({
         contract,
         transport,
-        brain: engine.speaksItself ? { name: engine.id, respond: async () => { throw new Error("engine speaks itself"); } } : resolveBrain(engineSpec.brain ?? "openai"),
+        brain: engineBrain(engineSpec, engine),
         callId,
         scenarioId: scenario.id,
         onEvent: liveRenderer(scenario),

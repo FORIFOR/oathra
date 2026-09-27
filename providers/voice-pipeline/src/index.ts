@@ -29,6 +29,10 @@ export type PipelineEngineOptions = {
   keywords?: string[];
   /** Ahead-of-real-time budget for streamed playback (ms). */
   leadMs?: number;
+  /** Short spoken acknowledgements while the brain thinks (default on). Off when their fixed words would not fit the voice. */
+  acknowledgements?: boolean;
+  /** How the engine names its voice in labels, e.g. "Gemini TTS (Leda)". Default "OpenAI TTS". */
+  ttsLabel?: string;
 };
 
 const BACKCHANNEL_RE = /^(?:はい|ええ|うん|ん|あ|え|あー|えー|えっと|そう|そうですね|なるほど|おー|お|はいはい|ok|okay|yes|yeah|yep|uh|um|mm|hmm|right|sure)+$/i;
@@ -78,7 +82,7 @@ class PipelineVoiceSession implements VoiceSession {
     this.stt = this.opts.stt.live(context);
     this.stt.on((e) => this.onStt(e));
     await this.stt.open();
-    void this.prepareFillers();
+    if (this.opts.acknowledgements !== false) void this.prepareFillers();
   }
 
   private async prepareFillers(): Promise<void> {
@@ -280,7 +284,7 @@ export function pipelineEngine(opts: PipelineEngineOptions): VoiceEngine {
   const tts = opts.tts ?? new OpenAITTS();
   return {
     id: "pipeline",
-    label: `Pipeline (Deepgram + ${opts.brain.name} + OpenAI TTS)`,
+    label: `Pipeline (Deepgram + ${opts.brain.name} + ${opts.ttsLabel ?? "OpenAI TTS"})`,
     speaksItself: false,
     nativeAudio: MULAW_8K,
     requires: ["DEEPGRAM_API_KEY", "OPENAI_API_KEY"],

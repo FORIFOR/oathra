@@ -184,3 +184,5 @@
 /* Where you are, in the header: the open ledger reads as selected. */
 .managed-phone #bookings-open[aria-pressed=true] { background:#151515; border-color:#151515; color:#fff; }
 @media(max-width:640px) { body.managed-phone .topbar-right:has(#bookings-open:not([hidden])) .transport-toggle { display:flex; min-height:44px; border:1px solid var(--line-2,var(--line)); border-radius:var(--radius,6px); } body.managed-phone .topbar-right:has(#bookings-open:not([hidden])) .transport-toggle .tt-btn[data-transport=real] { flex:1; justify-content:center; border:0; } }
+/* The shared form's step wrappers (Arena) are layout-neutral here: fields stay direct items of the form grid. */
+.managed-phone #phone-form .phone-row2, .managed-phone #phone-form .phone-field, .managed-phone .phone-form-actions { display: contents; }
