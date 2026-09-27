@@ -54,7 +54,7 @@
 
   const FIELD_LABELS = {
     ja: { date: "日付", time: "時刻", partySize: "人数", confirmed: "確定", price: "金額", breakfast: "朝食", smoking: "喫煙", serial: "シリアル番号", phone: "電話番号", name: "名前" },
-    en: { date: "date", time: "time", partySize: "party size", confirmed: "confirmed", price: "price", breakfast: "breakfast", smoking: "smoking", serial: "serial", phone: "phone", name: "name" },
+    en: { date: "Date", time: "Time", partySize: "Party size", confirmed: "Confirmed", price: "Price", breakfast: "Breakfast", smoking: "Smoking", serial: "Serial number", phone: "Phone", name: "Name" },
   };
   const END_LABELS = {
     ja: { agent_hangup: "AIが通話を終了", callee_hangup: "相手が通話を終了", voicemail: "留守番電話を検出して終了", completed: "完了", budget_exceeded: "上限に達して終了", cancelled: "中止", error: "エラー", inactivity: "無音のため終了" },
@@ -78,32 +78,32 @@
       unknownRequest: "This server has no record of the start request. Check Past calls before starting again; a restarted server may have lost an unsaved result.",
       sampleTitle: "Edit a practice response", sampleLabel: "Restaurant response (editable)", sampleText: "Probably, but it is not confirmed yet.", sampleRun: "Open practice with this response",
       practice: "Practice locally → inspect evidence → save a result. No real booking. Default agent: no API fees or uploads.", saved: "Saved locally. Available in Past calls.", saveFailed: "Not saved. Download the result or retry saving; do not repeat the call.", saveUnknown: "Saving has not been confirmed.", saveDisabled: "Automatic saving is off. Download to keep this result.", saveRetry: "Retry saving", download: "Download evidence JSON", recover: "Check this call again", unconfirmed: "Connection interrupted. The outcome is unconfirmed. Check the same call; do not start another.", starting: "Starting…", assessmentUnknown: "False completion: not independently assessed", external: "External model: conversation data is sent to the selected provider; API charges may apply.",
-      skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Practice", realPhone: "Call preparation", local: "Local",
+      skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Practice", realPhone: "Call preparation", local: "Running on this computer",
       popTitle: "Running locally.", popSub: "Everything is yours.", popNeed: "Need:", popNumbers: "phone numbers", popSip: "managed SIP", popTeam: "team deployment", popHosted: "hosted inference",
-      startTitle: "Pick a call. It starts right away.", emptyTitle: "Pick a call on the left. It starts here.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
+      startTitle: "Practice calls", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "replay (recorded call)", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
       agentSelect: "Agent", missions: "Missions", loadingMissions: "Loading missions…", noMissions: "No missions found in scenarios/.", loadMissionsFailed: "Could not load missions: {msg}",
       replays: "Past calls", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
       connectProvider: "Connect a phone provider", provider: "Phone provider", customSip: "Custom SIP", v02: "v0.2",
       realNote: "Real calls run from the CLI today: <code>oathra setup phone</code>, then <code>oathra call --to +81…</code>. Dialing from the Arena comes next.", back: "Back", backToMissions: "Back to missions",
-      partyAgent: "AGENT", partyCallee: "CALLEE", transcript: "Transcript", you: "You", agent: "Agent", system: "system",
-      live: "LIVE", ended: "ENDED", error: "ERROR", offline: "OFFLINE", replay: "REPLAY",
+      partyAgent: "Agent", partyCallee: "Callee", transcript: "Transcript", you: "You", agent: "Agent", system: "system",
+      live: "Live", ended: "Ended", error: "Error", offline: "Offline", replay: "Replay",
       idle: "Idle", listening: "Listening", understanding: "Understanding", acting: "Acting", speaking: "Speaking",
       dialing: "Dialing…", replaying: "Replaying…", noTranscript: "No transcript.",
-      yourMission: "YOUR MISSION", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up", endCall: "End call", endingCall: "Ending…", callCancelled: "Call stopped", endUnknown: "The call status could not be confirmed. Reconnect and check its status before trying again.",
-      foolTitle: "TRY TO FOOL IT", foolHint: "Say one of these as the shop. None of them should count as booked.",
-      mission: "MISSION", evidence: "EVIDENCE", intake: "OPTIONAL INTAKE", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool", saidBy: "said by {who}", whyAgreed: "the agent proposed it; the callee agreed", whyAccepted: "the callee offered it; the agent accepted", whyCallee: "settled by the callee's own words", waitCallee: "waiting for the callee to agree", waitCaller: "the agent has not accepted this yet", sameSettled: "the same value was settled through another utterance", evidenceCount: "{v} verified / {n}",
+      yourMission: "Your mission", playLabel: "You are {name}. Answer the phone.", playPlaceholder: "Type what you say…", send: "Send", hangUp: "Hang up", endCall: "End call", endingCall: "Ending…", callCancelled: "Call stopped", endUnknown: "The call status could not be confirmed. Reconnect and check its status before trying again.",
+      foolTitle: "Try to fool it", foolHint: "Say one of these as the shop. None of them should count as booked.",
+      mission: "Verdict", evidence: "Evidence", intake: "Optional intake", noRequired: "no required fields", noEvidence: "No evidence yet.", verified: "verified", pending: "pending", srcCallee: "callee", srcCaller: "agent", srcTool: "tool", saidBy: "said by {who}", whyAgreed: "the agent proposed it; the callee agreed", whyAccepted: "the callee offered it; the agent accepted", whyCallee: "settled by the callee's own words", waitCallee: "waiting for the callee to agree", waitCaller: "the agent has not accepted this yet", sameSettled: "the same value was settled through another utterance", evidenceCount: "{v} verified / {n}",
       intakeNoAnswers: "No explicit answers recorded.", intakePurpose: "Purpose: {purpose}", intakeQuestions: "Questions: {asked} / {max}", intakeConsent: "Consent: {status}", intakeStopped: "Stopped without inferring a profile.", intakeAnswer: "explicit answer", intakeDeclined: "declined", intakeSkipped: "skipped (dependency not met)",
       latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
       yes: "yes", no: "no",
-      stCompleted: "MISSION COMPLETE", stIncomplete: "INCOMPLETE", stViolation: "CONSTRAINT VIOLATION", stFailed: "FAILED", stFalse: "FALSE COMPLETION", stUnknown: "UNKNOWN",
-      badgeOk: "VERIFIED", badgeNo: "NOT VERIFIED", missing: "(missing)",
+      stCompleted: "Mission complete", stIncomplete: "Incomplete", stViolation: "Constraint violation", stFailed: "Failed", stFalse: "False completion", stUnknown: "Unknown",
+      badgeOk: "Verified", badgeNo: "Not verified", missing: "(missing)",
       evidenceN: "Verified evidence: {n}", confidence: "Confidence: {v}", latencyP50: "Latency p50: {v}", last: "{v} ms (last)", turns: "Turns: {n}", endedReason: "Ended: {r}",
       scOutcome: "Outcome", scEvidence: "Evidence", scConversation: "Conversation", scLatency: "Latency", scEfficiency: "Efficiency", scOverall: "Overall",
       fc0: "False Completion: 0", fc1: "False Completion: 1 — reported fields disagree with the callee ({f})",
       runAgain: "Run again", newMission: "New mission", copyMd: "Copy result as Markdown", copied: "Copied", copyPrompt: "Copy:",
       startFailed: "Could not start call: {msg}", connLost: "Connection lost: {msg}", sendFailed: "Could not send: {msg}", hangupFailed: "Could not hang up: {msg}", replayFailed: "Could not load replay: {msg}", unknownScenario: "Unknown scenario \"{id}\"",
       permReq: "Permission requested: {a} — {d}", permDec: "Permission {r} ({by}): {a}", approved: "approved", denied: "denied", errLine: "Error: {msg}",
-      ttTitle: "TIME TRAVEL · {t}", ttState: "agent state", ttVerified: "verified", ttPending: "pending", ttLast: "last ttfa", ttTranscript: "TRANSCRIPT SO FAR",
+      ttTitle: "Time travel · {t}", ttState: "agent state", ttVerified: "verified", ttPending: "pending", ttLast: "last ttfa", ttTranscript: "Transcript so far",
       diffEasy: "easy", diffNormal: "normal", diffHard: "hard", diffExtreme: "extreme", builtin: "Built-in agent",
       mdVerified: "VERIFIED", mdNotVerified: "NOT VERIFIED", mdScore: "Oathra Score",
     },
@@ -121,9 +121,9 @@
       unknownRequest: "このサーバーに開始要求の記録がありません。過去の通話を確認してから新しく始めてください。再起動で未保存の結果を失った可能性があります。",
       sampleTitle: "練習の例文を編集", sampleLabel: "店員役の返答（編集できます）", sampleText: "たぶん大丈夫ですが、まだ確定ではありません。", sampleRun: "この返答で練習を開く",
       practice: "ローカルで練習 → 発話の証拠を確認 → 結果を保存。実予約は行いません。既定のエージェントはAPI費用・外部送信なし。", saved: "ローカルに保存済み。「過去の通話」から再確認できます。", saveFailed: "未保存です。結果をダウンロードするか、保存だけ再試行してください。", saveUnknown: "保存の完了は未確認です。", saveDisabled: "自動保存は無効です。結果をダウンロードしてください。", saveRetry: "保存だけ再試行", download: "証拠JSONを保存", recover: "この通話の状態を再確認", unconfirmed: "接続が途切れ、結果は未確認です。新しい通話を始めず、この通話の状態を再確認してください。", starting: "開始しています…", assessmentUnknown: "誤完了：独立した照合は未実施", external: "外部モデル：会話データが選択した提供元に送信され、API料金が発生する場合があります。",
-      skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "電話の練習", realPhone: "電話をかける", local: "ローカル実行",
+      skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "電話の練習", realPhone: "電話をかける", local: "このパソコンで実行中",
       popTitle: "この Mac の中だけで動いています。", popSub: "データも通話記録も、あなたの手元にあります。", popNeed: "次が必要になったら Oathra Cloud:", popNumbers: "電話番号", popSip: "マネージド SIP", popTeam: "チームでの運用", popHosted: "推論のホスティング",
-      startTitle: "電話を選ぶと、すぐ始まります。", emptyTitle: "左から電話を選ぶと、ここで始まります。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
+      startTitle: "練習する電話", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "再生（録画した通話）", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
       agentSelect: "エージェント", missions: "ミッション", loadingMissions: "ミッションを読み込んでいます…", noMissions: "scenarios/ にミッションがありません。", loadMissionsFailed: "ミッションを読み込めませんでした: {msg}",
       replays: "過去の通話", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
       connectProvider: "電話会社をつなぐ", provider: "電話会社", customSip: "自前の SIP", v02: "v0.2 で対応",
@@ -134,7 +134,7 @@
       dialing: "発信中…", replaying: "再生中…", noTranscript: "会話はありません。",
       yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る", endCall: "通話を終了", endingCall: "終了を確認中…", callCancelled: "通話を中断しました", endUnknown: "終了したか確認できません。通信が戻ったら通話の状態を確認してください。",
       foolTitle: "誤完了を誘ってみる", foolHint: "店側としてこの中のどれかを言ってみてください。どれも「予約できた」にはならないはずです。",
-      mission: "ミッション", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール", saidBy: "{who}の発言", whyAgreed: "AIの提案を、相手が了承して確定", whyAccepted: "相手の提示を、AIが受けて確定", whyCallee: "相手自身の言葉で確定", waitCallee: "相手の了承待ち", waitCaller: "AIはまだ受けていません", sameSettled: "同じ内容が、別の発言で確定しています", evidenceCount: "検証済み {v} / 全 {n}",
+      mission: "判定", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール", saidBy: "{who}の発言", whyAgreed: "AIの提案を、相手が了承して確定", whyAccepted: "相手の提示を、AIが受けて確定", whyCallee: "相手自身の言葉で確定", waitCallee: "相手の了承待ち", waitCaller: "AIはまだ受けていません", sameSettled: "同じ内容が、別の発言で確定しています", evidenceCount: "検証済み {v} / 全 {n}",
       intakeNoAnswers: "明示回答はまだありません。", intakePurpose: "目的: {purpose}", intakeQuestions: "質問数: {asked} / {max}", intakeConsent: "同意: {status}", intakeStopped: "推測によるプロファイル化はせず終了しました。", intakeAnswer: "明示回答", intakeDeclined: "回答なし", intakeSkipped: "省略（前提未成立）",
       latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
       yes: "はい", no: "いいえ",
@@ -332,6 +332,8 @@
       list.replaceChildren(el("p", { class: "muted mono", text: t("noMissions") }));
       return;
     }
+    const count = $("#scenario-count");
+    if (count) count.textContent = t("countItems", { n: app.scenarios.length });
     list.replaceChildren(
       ...app.scenarios.map((s, i) => {
         const btn = el("button", { type: "button", class: "scenario-btn", title: briefOf(s), style: `animation-delay:${60 + i * 50}ms` }, [
@@ -1057,6 +1059,9 @@
     $("#call-title").textContent = c.scenario ? scenarioTitle(c.scenario) : c.id;
     $("#agent-name").textContent = brainLabel(c.brain);
     $("#callee-name").textContent = c.mode === "play" ? t("you") : c.calleeName;
+    // Who is talking to whom, and that nothing rings: 「組み込みエージェント → ミカ · 練習（電話はかかりません）」
+    const sub = $("#call-sub");
+    if (sub) sub.textContent = `${brainLabel(c.brain)} → ${c.mode === "play" ? t("you") : c.calleeName || "—"} · ${t(c.replay ? "replayNote" : "practiceNoCall")}`;
     const avatar = c.scenario && c.scenario.callee && c.scenario.callee.avatar;
     $("#callee-avatar").textContent = c.mode === "play" ? "◉" : (avatar || "◉");
     $("#transcript").replaceChildren(el("p", { class: "transcript-empty", text: c.replay ? t("replaying") : t("dialing") }));
@@ -1192,6 +1197,7 @@
       box.appendChild(el("div", { class: `line ${cls}`, "data-turn": l.turnId }, [
         el("div", { class: "who", text: who }),
         el("div", { class: "say", text: l.text }),
+        el("div", { class: "t", text: typeof l.t === "number" ? mmss(l.t) : "" }),
       ]));
     }
     if (atBottom || c.transcript.length <= 2) box.scrollTop = box.scrollHeight;
@@ -1247,28 +1253,42 @@
     const pending = latestPending(c);
     const constraints = (c.scenario && c.scenario.constraints) || {};
     const fields = missionFields(c);
+    // The words that settled each field: the latest verified evidence for it.
+    // Prefer the callee's own words (the accepting utterance is its own evidence node); fall back to whatever settled it.
+    const settledBy = {};
+    for (const e of c.evidence) if (e.verified && (e.source !== "caller" || !settledBy[e.field] || settledBy[e.field].source === "caller")) settledBy[e.field] = e;
+    let confirmed = 0;
     const rows = fields.map((f) => {
-      let cls = "missing", mark = "·", val = "";
+      let cls = "missing", mark = "·", val = "", status = "fieldMissing";
       if (verified[f] !== undefined) {
-        cls = "verified"; mark = "✓"; val = fmtVal(verified[f]);
-        if (violates(constraints[f], verified[f])) { cls = "violation"; mark = "✗"; }
+        cls = "verified"; mark = "✓"; val = fmtVal(verified[f]); status = "fieldVerified";
+        if (violates(constraints[f], verified[f])) { cls = "violation"; mark = "✗"; status = "fieldViolation"; }
       } else if (pending[f] !== undefined) {
-        cls = "pending"; mark = "○"; val = fmtVal(pending[f]);
+        cls = "pending"; mark = "○"; val = fmtVal(pending[f]); status = "fieldPending";
       }
+      if (cls === "verified") confirmed++;
       const prev = missionState.get(f);
       const tick = prev !== undefined && prev !== cls && cls === "verified" ? " tick" : "";
       missionState.set(f, cls);
+      const e = cls === "verified" || cls === "violation" ? settledBy[f] : null;
       return el("li", { class: `mrow ${cls}${tick}`, "data-field": f }, [
         el("span", { class: "mk", "aria-hidden": "true", text: mark }),
-        el("span", {}, [
+        el("span", { class: "mlabel" }, [
           el("span", { text: fieldLabel(f) }),
           constraints[f] ? el("span", { class: "mc", text: `  ${constraintText(constraints[f])}` }) : null,
           el("span", { class: "sr", hidden: true, text: cls }),
         ]),
+        el("span", { class: "mstatus", text: t(status) }),
         el("span", { class: "mv", text: val }),
+        e ? el("span", { class: "mquote", text: `「${e.span || e.transcript || ""}」` }) : null,
+        e ? el("span", { class: "msrc", text: `${e.source === "caller" ? t("whyAgreed") : t("saidBy", { who: srcLabel(e.source) })} · ${mmss(e.t)}` }) : null,
       ]);
     });
     ul.replaceChildren(...(rows.length ? rows : [el("li", { class: "mrow missing" }, [el("span", { class: "mk", text: "·" }), el("span", { text: t("noRequired") }), el("span")])]));
+    const count = $("#mission-count");
+    if (count) count.textContent = fields.length ? t("verdictCount", { n: confirmed, total: fields.length }) : "";
+    const bar = $("#mission-progress");
+    if (bar) bar.replaceChildren(...fields.map((f) => el("i", { class: missionState.get(f) === "verified" ? "on" : "" })));
   }
 
   function renderIntake() {
@@ -1451,13 +1471,13 @@
           try { await api(`/api/calls/${encodeURIComponent(c.id)}/save`, { method: "POST", body: "{}" }); } catch { /* status is read from the same call below */ }
           await resync(c.id);
         } }) : null,
-        el("a", { class: "btn", text: t("download"), href: c.replay ? `/api/replays/${encodeURIComponent(c.id)}/artifact` : `/api/calls/${encodeURIComponent(c.id)}/artifact`, download: `${c.id}.json` }),
         !c.replay ? el("button", { type: "button", class: "btn primary", text: t("runAgain"), onclick: () => startCall(c.scenario) }) : null,
-        el("button", { type: "button", class: "btn", text: t("newMission"), onclick: () => { closeStream(); show("start"); } }),
+        el("a", { class: "btn", text: t("download"), href: c.replay ? `/api/replays/${encodeURIComponent(c.id)}/artifact` : `/api/calls/${encodeURIComponent(c.id)}/artifact`, download: `${c.id}.json` }),
         el("button", { type: "button", class: "btn", text: t("copyMd"), onclick: async () => {
           const md = resultMarkdown();
           try { await navigator.clipboard.writeText(md); toast(t("copied")); } catch { window.prompt(t("copyPrompt"), md); }
         } }),
+        el("button", { type: "button", class: "link-btn", text: t("newMission"), onclick: () => { closeStream(); show("start"); } }),
       ]),
     ]);
     wrap.replaceChildren(card);
@@ -1705,7 +1725,8 @@
 
   // ------------------------------------------------------------------ boot
   // URL params: ?lang=ja|en  ?theme=dark|light  ?present=1  ?autostart=<scenarioId>&mode=watch|play  ?replay=<callId>
-  const theme = params.get("theme");
+  let theme = params.get("theme");
+  try { if (theme === "dark" || theme === "light") localStorage.setItem("oathra.theme", theme); else theme = localStorage.getItem("oathra.theme"); } catch { /* storage may be off */ }
   if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
   if (params.get("present") === "1") document.body.classList.add("present");
   else document.documentElement.classList.add("board");

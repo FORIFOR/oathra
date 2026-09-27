@@ -72,7 +72,10 @@ try {
     if (board) {
       c.ok(await fits(), "result: the board still fits the window");
       const r = await box("#result-wrap"), p = await box(".panels"), a = await box(".result-actions");
-      c.ok(r.x >= t.x + t.width - 1 && r.y + r.height <= p.y + 1, "the result sits on top of the evidence, beside the transcript");
+      // UI v2: the result is the foot of the verdict column (beside the transcript), below the field blocks it sums up.
+      const v = await box("#mission-list");
+      c.ok(r.x >= t.x + t.width - 1 && r.x >= p.x - 1 && r.x + r.width <= p.x + p.width + 1 && r.y + r.height <= p.y + p.height + 1 && r.y >= v.y, "the result follows the field blocks in the verdict column, beside the transcript");
+      c.ok(r.y >= v.y + v.height - 1, "the result never covers the field blocks (each value, quote and source stays readable)", `result top ${Math.round(r.y)}, fields end ${Math.round(v.y + v.height)}`);
       c.ok(a.y + a.height <= height, "the result's actions are on screen without scrolling", `bottom ${Math.round(a.y + a.height)} of ${height}`);
       await page.screenshot(join(out, `arena-${name}.png`));
       await page.click("#drawer-toggle");
@@ -99,6 +102,8 @@ try {
       c.ok(!(await page.visible("#drawer-body")), "play: details left open on the last call do not cover the new one");
       const input = await box("#play-text");
       c.ok(await fits() && input.y + input.height <= height, "play: the answer box is on screen, the page does not scroll", `bottom ${Math.round(input.y + input.height)} of ${height}`);
+      const toggle = await page.js("(()=>{const n=document.querySelector('.mode-toggle');const r=n.getBoundingClientRect();return {h:Math.round(r.height),clipped:[...n.querySelectorAll('.mode-btn')].some(b=>b.scrollHeight>b.clientHeight+1)}})()");
+      c.ok(toggle.h >= 36 && !toggle.clipped, "play: the watch/play toggle keeps its height while a call can be resumed", JSON.stringify(toggle));
       const stage = await box("#transcript");
       c.ok(stage.height >= 240, "play: the conversation keeps most of the column", `${Math.round(stage.height)}px`);
       await page.click("#play-text"); await page.type("はい、お電話ありがとうございます。"); await page.press("Enter");

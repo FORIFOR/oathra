@@ -24,6 +24,8 @@ export function phonePage() {
   patch(/<p id="phone-caller-hint"[^>]*><\/p>/, '');
   patch(' aria-describedby="phone-caller-hint"', '');
   patch('href="style.css"', 'href="/phone-style/style.css"');
+  // Arena's v2 look is Arena-only for now; the managed page keeps its current styles until it is redesigned.
+  patch(/\s*<link rel="stylesheet" href="v2.css" \/>/, '');
   patch('</head>', '<link rel="stylesheet" href="/managed-phone.css"></head>');
   patch(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   patch(/<section id="phone-review"([\s\S]*?)<\/section>/, (_, inside) =>

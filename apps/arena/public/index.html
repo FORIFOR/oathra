@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="light dark" />
   <title>Oathra Arena</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="v2.css" />
 </head>
 <body>
   <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
@@ -14,6 +15,7 @@
     <button type="button" class="btn" id="navigation-back" disabled><span aria-hidden="true">← </span><span data-i18n="back">Back</span></button>
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-icon" aria-hidden="true"></span>
       <span class="brand-name">Oathra</span>
       <span class="brand-sub" data-i18n="arena">Arena</span>
     </div>
@@ -65,7 +67,10 @@
     <!-- ============ START SCREEN ============ -->
     <section class="screen" id="screen-start">
       <div class="start-inner">
-        <h1 class="start-title" data-i18n-html="startTitle">Give your agent<br />a mission.</h1>
+        <div class="rail-head">
+          <h1 class="start-title" data-i18n-html="startTitle">Give your agent<br />a mission.</h1>
+          <span class="rail-count" id="scenario-count"></span>
+        </div>
 
         <p class="practice-note" data-i18n="practice"></p>
         <button type="button" class="btn" id="resume-call" hidden data-i18n="resumeCall"></button>
@@ -237,7 +242,10 @@
         <div class="call-head">
           <div class="call-title-wrap">
             <button type="button" class="back-btn" id="call-back" data-i18n-aria="backToMissions" aria-label="Back to missions">←</button>
-            <h2 class="call-title" id="call-title">—</h2>
+            <div class="call-title-text">
+              <h2 class="call-title" id="call-title">—</h2>
+              <p class="call-sub" id="call-sub"></p>
+            </div>
           </div>
           <div class="call-controls"><button type="button" class="btn" id="call-hangup" hidden data-i18n="endCall">End call</button><span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span></div>
         </div>
@@ -284,7 +292,8 @@
 
         <div class="panels">
           <section class="panel" aria-labelledby="mission-h">
-            <h3 class="panel-title mono" id="mission-h" data-i18n="mission">MISSION</h3>
+            <h3 class="panel-title mono" id="mission-h"><span data-i18n="mission">MISSION</span> <span class="count" id="mission-count"></span></h3>
+            <div class="verdict-progress" id="mission-progress" aria-hidden="true"></div>
             <ul class="mission-list" id="mission-list"></ul>
           </section>
           <section class="panel" aria-labelledby="evidence-h">
@@ -298,6 +307,7 @@
             <ul class="intake-list" id="intake-list"></ul>
             <p class="intake-note" id="intake-note"></p>
           </section>
+          <div class="result-wrap" id="result-wrap" hidden></div>
         </div>
 
         <div class="metrics mono" id="metrics">
@@ -308,7 +318,6 @@
           <span><b id="m-elapsed">00:00</b></span>
         </div>
 
-        <div class="result-wrap" id="result-wrap" hidden></div>
 
         <div class="drawer">
           <button type="button" class="drawer-toggle mono" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-body" data-i18n="details">Details</button>
