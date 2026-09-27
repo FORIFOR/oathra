@@ -1,4 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
+import { handleAgentRequest } from './lib/agent-handoff.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
@@ -55,6 +56,8 @@ export function configuration(env=process.env){
     trustProxy:env.OATHRA_TRUST_PROXY==='true'};
 }
 const assets=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/managed-phone.js',['managed-phone.js','text/javascript; charset=utf-8']],['/managed-phone.css',['managed-phone.css','text/css; charset=utf-8']]]);
+// Static, authenticated human handoff UI. Loading it never approves or dials.
+for (const [name,type] of [['agent-review.html','text/html; charset=utf-8'],['agent-review.js','text/javascript; charset=utf-8'],['agent-review.css','text/css; charset=utf-8']]) assets.set('/'+name,[name,type]);
 for (const name of ['main','dom','messages','receipt','news','client','contacts','account','bookings']) assets.set(`/phone/${name}.js`,[`phone/${name}.js`,'text/javascript; charset=utf-8']);
 // One short recorded sample per voice, from the fixed voice list only; never a path taken from the request.
 for (const voice of PHONE_VOICES) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
@@ -141,6 +144,8 @@ export async function createGateway(config,options={}){
       if(!auth&&req.headers['x-oathra-account'])assert(req.headers['x-oathra-account']===u.id,'session_account_changed',409);
       if(req.headers.origin)assert(req.headers.origin===config.publicUrl,'cross_origin_request_denied',403);
       const data=['POST','PATCH'].includes(method)?await jsonBody(req):{};
+      const agentResponse=handleAgentRequest({method,path,data,user:u,service,config,preparePhone:prepareManagedPhone,readPhone:phoneRecord,readiness:phoneReadiness});
+      if(agentResponse)return send(res,agentResponse.status,agentResponse.body);
       if(path==='/v1/auth/password'&&method==='POST'){
         sessions.sameOrigin(req);const version=await service.passwords.change(u,data,clientIp(req,config.trustProxy));
         sessions.create(req,res,u,version);return send(res,200,{changed:true});

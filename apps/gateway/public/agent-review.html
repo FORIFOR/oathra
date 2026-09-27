@@ -1,0 +1,7 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>電話依頼の確認 — Oathra</title><link rel="stylesheet" href="/agent-review.css">
+<main><p class="eyebrow">OATHRA / AIから受け取った電話依頼</p><h1>発信前に、内容を確認</h1><p>このページを開いただけでは電話はかかりません。発信の承認は、利用者ご本人が行ってください。</p>
+<p id="status" role="status">読み込み中…</p><p><a href="/" target="_blank" rel="noopener">Oathraへログイン</a> · <button id="refresh" type="button">状態を再確認</button></p>
+<dl id="details"></dl><pre id="instruction"></pre><p id="disclosure"></p><pre id="billing"></pre>
+<button id="review" type="button" hidden>発信内容と料金を確認</button>
+<section id="approval" hidden><h2>最終確認</h2><p>この承認は、この相手・依頼・音声設定に限ります。接続できなくても料金が発生する場合があります。</p><label><input id="consent" type="checkbox">相手・目的・データの送信先・保存・料金上限を確認しました</label><button id="start" type="button" disabled>同意して電話する</button></section>
+<details><summary>結果の読み方</summary><p>通話終了と予約・購入の成立は別です。会話の根拠は、相手の業務システムへの登録を証明しません。結果不明の場合は再発信せず、状態を確認してください。</p></details></main><script type="module" src="/agent-review.js"></script></html>
