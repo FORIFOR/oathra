@@ -70,8 +70,18 @@ try {
   await page.goto(arena.url + "/?lang=ja&phone=1");
   await page.until("document.querySelectorAll('.voice-card').length===7");
   await page.js(pick("character-female"));
-  c.ok(await page.js(state) === "gpt-live/gleam/character-female", "acting voice not set up: the character speaks in real time", await page.js(state));
-  c.ok(/Deepgram の API キー/.test(await page.text("#phone-voice-cards-note")) && !/_API_KEY/.test(await page.text("#phone-voice-cards-note")), "…and the note names the missing service in words");
+  c.ok(await page.js(state) === "character-tts/Leda/character-female", "acting voice not set up: the character card stays the acting voice (no silent switch to real time)", await page.js(state));
+  c.ok(/設定が必要/.test(await page.text("input[name=phone-voice-card]:checked + .voice-card-body")), "…the card says it needs setup");
+  const note = await page.text("#phone-voice-cards-note");
+  c.ok(/Deepgram の API キー/.test(note) && /発信できません/.test(note) && !/_API_KEY/.test(note), "…the note names the missing service in words and that it cannot call");
+  c.ok(/目安/.test(note) && /未確認/.test(note), "…and the wait is marked as an estimate not yet measured on a real call");
+  await page.js("{const set=(id,v)=>{const n=document.querySelector(id);n.value=v;n.dispatchEvent(new Event('input',{bubbles:true}))};set('#phone-number','+819012345678');set('#phone-name','ゆき');set('#phone-instruction','最近どうしてるか聞いて、気軽に雑談してください。')}");
+  await page.click("#phone-form button[type=submit]"); await page.until("!document.querySelector('#phone-review').hidden");
+  c.ok(await page.js("document.querySelector('#phone-dial').disabled") && /DEEPGRAM_API_KEY/.test(await page.js("document.querySelector('#phone-readiness').textContent")), "the reviewed acting-voice draft cannot be placed and the setup details name the key");
+  // Real time is the user's explicit choice.
+  await page.js("document.querySelector('#phone-voice-advanced').open=true;{const e=document.querySelector('#phone-engine');e.value='gpt-live';e.dispatchEvent(new Event('change',{bubbles:true}))}");
+  c.ok(await page.js(state) === "gpt-live/gleam/character-female" && /リアルタイム/.test(await page.text("input[name=phone-voice-card]:checked + .voice-card-body")), "choosing a real-time voice AI by hand makes the character real time, and the card says so", await page.js(state));
+  await page.click("#phone-clear"); await sleep(150); await page.js(pick("character-female"));
   await page.js("document.querySelector('#phone-voice-choice').scrollIntoView({block:'start'})"); await sleep(200);
   await page.screenshot(join(out, "phone-voice-unconfigured-mobile.png"));
 } finally {

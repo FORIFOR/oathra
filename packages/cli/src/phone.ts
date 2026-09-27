@@ -582,12 +582,13 @@ export async function phoneDoctor(flags: { provider?: string; to?: string; engin
 // phone test — Local (telephony ¥0, model API usage) / Gateway (¥0) / PSTN (paid)
 // ---------------------------------------------------------------------------
 
-export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string; tts?: string; voicePreset?: string }): Promise<void> {
+export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string; tts?: string; voicePreset?: string; out?: string; maxUsd?: string }): Promise<void> {
   const config = loadPhoneConfig();
   const level =
     flags.level ??
     (await choose("Choose test level", [
       { id: "local", label: "Local", note: "telephony ¥0 · uses model APIs with synthesized audio" },
+      { id: "conversation", label: "Conversation", note: "telephony ¥0 · a whole scripted phone-request call through the real runtime and brain (paid APIs)" },
       { id: "gateway", label: "Gateway", note: "¥0 · SIP gateway loopback, no PSTN" },
       { id: "pstn", label: "PSTN", note: "paid · real phone call (carrier rate applies)" },
     ]));
@@ -597,6 +598,10 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
     if (engineSpec.id !== "pipeline") throw new Error("--tts applies to --engine pipeline");
     if (level !== "local") throw new Error("--tts is a prototype: only --level local for now");
     engineSpec.tts = flags.tts;
+  }
+  if (level === "conversation") {
+    await localConversationTest(flags);
+    return;
   }
   if (level === "local") {
     await localLoopback(engineSpec, flags.voicePreset);
@@ -615,6 +620,44 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
   }
   if (!flags.to) throw new Error("PSTN test needs --to +81... (or set OATHRA_TEST_PHONE)");
   await runPhoneCall({ to: flags.to, ...(flags.provider ? { provider: flags.provider } : {}), ...(flags.engine ? { engine: flags.engine } : {}), scenario: flags.scenario ?? "friend-chat" });
+}
+
+/**
+ * A whole phone-request call with no carrier: the Arena web phone's path (request → contract → CallRuntime →
+ * engine + engineBrain) against a scripted callee that waits for each reply, with one deliberate cut-in.
+ * Real, paid voice APIs; stops at --max-usd (default $0.05). Saves the audio and a report.
+ */
+async function localConversationTest(flags: { engine?: string; voicePreset?: string; out?: string; maxUsd?: string }): Promise<void> {
+  if (!flags.engine) throw new Error("--level conversation needs an explicit --engine (e.g. character-tts)");
+  const spec = parseEngineSpec(flags.engine);
+  if (spec.id === "pipeline") throw new Error("--level conversation runs the phone-request engines: gpt-live, gemini-live or character-tts");
+  const maxUsd = flags.maxUsd === undefined ? 0.05 : Number(flags.maxUsd);
+  if (!(maxUsd > 0 && maxUsd <= 1)) throw new Error("--max-usd must be between 0 and 1");
+  const request = parsePhoneRequest({ schemaVersion: 1, kind: "oathra.phone-request", phone: "+819000000000", name: "ゆき", callerName: "田中", conversationMode: "chat", engine: spec.id, ...(flags.voicePreset ? { voicePreset: flags.voicePreset } : {}), instruction: "最近どうしてるか聞いて、気軽に雑談してください。" });
+  await ensureEnvKeys(ENGINE_CREDENTIALS[spec.id]);
+  const voice = resolvePhoneVoice(spec.id, request);
+  const engine = buildEngine(spec, process.env, voice, request.voicePreset);
+  const contract = phoneRequestContract(request);
+  const character = spec.id === "character-tts";
+  const ttsModel = character ? (await import("@oathra/gemini")).DEFAULT_GEMINI_TTS_MODEL : undefined;
+  const voiceSetting = voiceSettingRecord(spec.id, spec.model ?? ttsModel ?? (spec.id === "gemini-live" ? "gemini-3.8-live" : "gpt-live-1"), voice ?? (character ? "Leda" : undefined), contract, new Date(), character ? { ttsStyle: CHARACTER_TTS_STYLE } : {});
+  const brain = engineBrain(spec, engine);
+  console.log(`\n${bold("Local conversation")}  ${dim(engine.label)}  ${dim(`(no carrier · paid APIs · stops at $${maxUsd})`)}\n`);
+  const { runLocalConversation, wavBytes } = await import("./local-conversation.js");
+  const report = await runLocalConversation({ request, contract, engine, brain, callee: new OpenAITTS(), maxUsd, ...(character ? { systemPrompt: phoneRequestSystemPrompt } : {}) });
+  let commit = "unknown";
+  try { commit = (await import("node:child_process")).execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a checkout */ }
+  const dir = resolve(flags.out ?? join(defaultCallsDir(), "..", "local-conversations", new Date().toISOString().replace(/[:.]/g, "-")));
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "call-mixed-8k.wav"), wavBytes(report.mixedAudio));
+  writeFileSync(join(dir, "agent-8k.wav"), wavBytes(report.agentAudio));
+  const { agentAudio, mixedAudio, ...rest } = report;
+  writeFileSync(join(dir, "report.json"), JSON.stringify({ createdAt: new Date().toISOString(), commit, engine: spec.id, models: { brain: brain.name, stt: character ? "deepgram:nova-3" : null, tts: ttsModel ?? null, callee: "openai-tts (script)" }, voiceSetting, request, ...rest }, null, 2));
+  for (const r of report.replies) console.log(`  ${r.replyAudioAfterMs === null ? red("✗") : green("✓")} 「${r.line}」 → reply heard after ${r.replyAudioAfterMs ?? "—"} ms ${dim(`(recognized ${r.sttFinalAfterMs ?? "—"} · text ${r.replyTextAfterMs ?? "—"} · brain ${r.brainLatencyMs ?? "—"} ms)`)}`);
+  const cut = report.interruption;
+  if (cut) console.log(`  ${cut.stoppedAfterMs !== null && !cut.staleAudioAfterStop ? green("✓") : red("✗")} cut-in: ${cut.agentWasSpeaking ? "while the agent spoke" : "agent was quiet"}, stopped after ${cut.stoppedAfterMs ?? "—"} ms${cut.staleAudioAfterStop ? red(", old reply kept playing") : ""}`);
+  console.log(`  ${dim("end")} ${report.endReason ?? report.error ?? "?"}${report.stoppedForBudget ? red(" (stopped at the budget)") : ""}  ${dim("estimated cost")} $${report.usage.estimatedUsd}`);
+  console.log(`\n${dim("Saved:")} ${dir}\n${dim("The line is local: no transcript notice is played, and a real line adds carrier latency.")}`);
 }
 
 /** Engine loopback: synthesized callee speech → engine → expect agent audio + transcripts. Costs a few yen of API, no telephony. */
