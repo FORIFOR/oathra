@@ -18,12 +18,18 @@ with sync_playwright() as p:
             context=browser.new_context(viewport={'width':width,'height':900},color_scheme=scheme,reduced_motion='reduce')
             page=context.new_page(); errors=[]; page.on('pageerror',lambda e:errors.append(str(e)))
             page.goto(base,wait_until='networkidle')
+            # The Arena opens on the task chooser; practice is one of its choices.
+            page.locator('#screen-home').wait_for(state='visible')
+            page.locator('#home-practice').click()
             page.locator('#scenario-list button').first.wait_for()
             assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'), 'Start screen overflows'
             page.locator('[data-transport="real"]').click()
             page.locator('#screen-real').wait_for(state='visible')
-            assert page.locator('#screen-real input:disabled').count()>0, 'Real providers unexpectedly enabled'
+            # Drafting stays editable by design; placing the call is what must stay locked without setup and consent.
+            assert page.locator('#screen-real #phone-dial:disabled').count()==1, 'Real call unexpectedly placeable'
             page.locator('#real-back').click()
+            page.locator('#screen-home').wait_for(state='visible')
+            page.locator('#home-practice').click()
             page.locator('#scenario-list button').first.click()
             page.locator('#screen-call').wait_for(state='visible')
             # The initial "Dialing" paragraph is not a conversation.
