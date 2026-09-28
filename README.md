@@ -68,7 +68,8 @@ pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemi
 - `--tunnel`：外から開ける https の URL を作ります（cloudflared / ngrok）。同じくログイン用リンクで開きます。
 - `--allow-models`：練習で電話する AI に OpenAI・Gemini・Ollama を選べます。会話がその会社に送られ、あなたの API キーに料金がかかります。
 - `--live --tunnel`：このパソコンのキー（電話会社・音声AI）で実際に電話をかけます。準備の状態は起動時と「設定」に出ます。
-- `--arena`：前の画面（Arena）。v0.1.18 の配布物の `oathra demo` は Arena を開きます。
+
+v0.1.18 の配布物の `oathra demo` は、以前の画面（Arena）を開きます。Arena は 2026-09-29 にこのアプリへ統合し、ソースからは削除しました。
 
 同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
 
@@ -165,7 +166,7 @@ Oathra を「電話アプリ」ではなく、どこからでも呼び出せる 
 ## 設計
 
 ```text
-contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
+contract → evidence → core → scenario → runtime → providers → replay / eval → cli（アプリ apps/gateway は dist を使う別枠）
 ```
 
 依存の向きは `pnpm lint:deps` が CI で検査します。電話会社（`providers/phone-*`）と音声モデル（`providers/openai-realtime`、`providers/gemini-live`、`providers/voice-pipeline`）は互いを知らず（共通のプロンプトは `providers/voice-kit`）、`packages/phone` のブリッジが音声形式を変換します。LiveKit は SIP ゲートウェイの最初の実装であって仕様ではありません。詳しくは [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
@@ -238,7 +239,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 ## 正直な現状（v0.1.18）
 
 - [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
-- [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
+- [x] シミュレータ、アプリの練習（見る／自分が相手役）、Battle カード、Replay、時点への巻き戻し
 - [x] Phone Layer：`setup phone`、`phone doctor`、3 段階テスト、フォールバック付きルーティング
 - [x] Twilio 直結（実通話で検証済み）、Plivo と Custom SIP（LiveKit 経由、ドキュメント準拠で実装、PSTN 未検証）
 - [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、Gemini Live（`gemini-3.8-live`、実回線は未検証）、Deepgram + LLM + TTS
@@ -289,7 +290,6 @@ const contract = defineCall({
 
 ## クレジット
 
-Arena の AI 側のアバター（液体ガラスのオーブ）は [LerSent001/orb](https://github.com/LerSent001/orb)（MIT）のシェーダーを同梱しています（`apps/arena/public/orb/`）。WebGPU が使えないブラウザでは従来の記号表示に戻ります。
 
 ## 参加する
 
@@ -312,26 +312,12 @@ Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や
 
 [判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [質問と導入相談の案内](SUPPORT.md) · [参加ガイド](CONTRIBUTING.md)。 変更履歴は [CHANGELOG.md](CHANGELOG.md)。日本語・英語どちらでもどうぞ。
 
-## ソース版の Arena（v0.1.18 の配布物には未収録）
+## アプリでできること
 
-練習通話はミッション一覧に戻っても保持されます。別の通話を始める前に終話してください。レストランの練習は再現性のため日付を 2026-09-12 に固定しています。
-
-### 電話をかける
-
-Arena の「電話をかける」で、電話番号・相手・目的を入力し、送信先と費用の説明を確認してから発信できます。目的は「雑談」を含む13種類の編集可能なテンプレート、または保存済み履歴から再利用できます。Web発信は experimental（Twilio + GPT-Live と、公開された WSS の設定が必要）で、未設定のときは下書きの保存と不足設定の表示までです。JSON保存とCLI引き継ぎも利用できます。LINE/Slackの汎用依頼は引き続き下書き受付までです。[Web発信の設定と契約](docs/quality/web-phone.md)、[Gatewayで実行した電話の記録](docs/quality/user-ui-call.md)。
-
-「雑談」は近況・趣味・日常の会話を続けるテンプレートです。ニュースや公開情報の調べもの（会社、株価、商品など）を頼まれた際にはOpenAIのWeb検索で確認し、日付と出典を添えます。検索へ送るのは公開カテゴリか公開されている短い検索語だけで、通話の当事者の名前・電話番号・会話の文は送りません（1通話8回まで）。確認できない内容は未確認と伝えます。サービス版の `usage-rate-v1` では検索の回数・token使用量も精算（旧契約は運営者負担）し、参照したニュースを履歴から確認できます。OSS版では自身のOpenAI APIに検索料金が発生します。[設定・互換性と検証範囲](docs/quality/chat-news.md)。
-
-### 連絡先
-
-Arena の「連絡先」から名前または会社名で登録できます。電話番号とメールは任意。会社名、前回の電話内容（手入力）、その他メモを保存・編集し、同じ電話番号の保存済み通話も確認できます。電話番号を後から追加すると「電話の依頼を作成」へ進めます。登録自体で発信や外部送信は行いません。
-
-連絡先は `.oathra/contacts` に、所有者だけが読める権限の平文 JSON として保存されます。Gateway の連絡先は別の保存先で、自動同期はありません。[連絡先の契約と検証](docs/quality/general-contacts.md)。
-
-Arena の最初の画面は「電話をかける」「連絡先」「練習」の 3 択です。`?practice=1` を付けるとシミュレータを直接開けます。従来の `call`・`replay`・`autostart` の URL もそのまま使えます。
+`oathra demo` で開くアプリ（`apps/gateway`）には、ホーム・依頼・予定・練習・連絡先・設定があります。「電話を頼む」では相手・番号・目的（「雑談」を含むテンプレート、または履歴）を入力し、送信先と費用の説明を確認してから発信します（実際の電話は `--live --tunnel` か、サーバーとしての Gateway）。「雑談」でニュースや公開情報を頼まれたときは、OpenAI の Web 検索で確かめ、日付と出典を添えます。詳しくは [apps/gateway/README.md](apps/gateway/README.md)。
 
 ### OSSとサービス運営
 
-OSS版は利用者自身が電話会社・AIのAPIを設定します。サービス版は認証付きGatewayの `managed` モードで、運営者のAPIを使い、利用者のクレジットを確保・消費・返却できます（experimental）。元のArenaと共通の電話画面で、番号・相手・目的、テンプレート・履歴を使えます。メールとパスワードのログイン（初回は管理者の設定リンク）、残高・台帳・管理者付与APIを実装。通話時間と回線・音声AI・検索の使用量から、終了時のクレジット消費・余剰返却・内訳表示に対応（`usage-rate-v1`、旧契約も互換維持）。販売価格・購入決済・サービス公開・実回線での会計検証は未設定/未実施です。[導入とAPI](apps/gateway/README.md#ossとサービス版のクレジットexperimental)。
+OSS版は利用者自身が電話会社・AIのAPIを設定します。サービス版は認証付きGatewayの `managed` モードで、運営者のAPIを使い、利用者のクレジットを確保・消費・返却できます（experimental）。以前の Arena の電話画面を引き継いだ画面で、番号・相手・目的、テンプレート・履歴を使えます。メールとパスワードのログイン（初回は管理者の設定リンク）、残高・台帳・管理者付与APIを実装。通話時間と回線・音声AI・検索の使用量から、終了時のクレジット消費・余剰返却・内訳表示に対応（`usage-rate-v1`、旧契約も互換維持）。販売価格・購入決済・サービス公開・実回線での会計検証は未設定/未実施です。[導入とAPI](apps/gateway/README.md#ossとサービス版のクレジットexperimental)。
 
 サービス版の電話入力は同じタブで再読込して復元でき、未完了通話へ再発信せず戻れます。連絡先の保存・履歴・料金表示とサーバーの認可/会計処理を分離しています。[構造と復帰・互換性の検証](docs/quality/implementation-review.md)。

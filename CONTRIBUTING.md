@@ -6,7 +6,7 @@ Contributions can start with a real observation, a question, or a proposed chang
 ## 試して報告する / Try and report
 
 - [ブラウザの証拠ラボ / Browser evidence lab](https://forifor.github.io/oathra/#sim): インストール不要。文字からの判定を試せます。Input text stays in your browser; it is not an actual phone call.
-- [CLIとArena / CLI and Arena](https://github.com/FORIFOR/oathra/releases/latest): 修正版はGitHub Releaseから導入できます。Check the release notes for the package version and command.
+- [CLIとアプリ / CLI and app](https://github.com/FORIFOR/oathra/releases/latest): 修正版はGitHub Releaseから導入できます。Check the release notes for the package version and command.
 - [判定の不具合 / Unexpected evidence result](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml): 発言の順序、話者、必要条件、期待結果、実際の結果を記載してください。
 - [起動・操作の不具合 / Startup or UI error](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml): 導入方法・環境・操作とエラーを記載してください。
 
@@ -53,6 +53,6 @@ CI additionally validates the bundled scenarios, runs the existing simulator eva
 | 合意・訂正・失効 / Evidence state | `packages/evidence/src/engine.ts` |
 | 完了条件 / Completion check | `packages/evidence/src/evaluate.ts` |
 | ブラウザ体験 / Browser evidence lab | `site/src/playground.ts` |
-| ローカル画面 / Local Arena | `apps/arena/` |
+| アプリ（ローカルとサーバー） / App (local and server) | `apps/gateway/` |
 
 [Readiness and known limits / 検証範囲と未達事項](docs/READINESS.md) · [Open issues / 未解決の不具合](https://github.com/FORIFOR/oathra/issues)

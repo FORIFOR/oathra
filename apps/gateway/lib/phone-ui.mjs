@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { repoUrl } from './paths.mjs';
 
-/** Reuse Arena's phone/contacts view; detect contract drift before serving a broken screen. */
+/** The managed service's phone/contacts page, built from the former Arena markup (public/phone/base); detect drift before serving a broken screen. */
 export function phonePage() {
-  let html = readFileSync(repoUrl('apps/arena/public/index.html'), 'utf8');
+  let html = readFileSync(repoUrl('apps/gateway/public/phone/base/index.html'), 'utf8');
   const account = readFileSync(repoUrl('apps/gateway/public/phone/account.html'), 'utf8');
   const bookings = readFileSync(repoUrl('apps/gateway/public/phone/bookings.html'), 'utf8');
   const patch = (slot, replacement) => {

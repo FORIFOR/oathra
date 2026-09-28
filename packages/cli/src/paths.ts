@@ -21,18 +21,6 @@ export function scenariosDir(): string {
   throw new Error("scenarios directory not found; run from the Oathra repo or pass a path");
 }
 
-/** Locate the Arena static files (index.html, app.js, style.css). */
-export function arenaPublicDir(): string {
-  const h = here();
-  const candidates = [
-    resolve(h, "../assets/arena"),
-    resolve(h, "../../assets/arena"),
-    resolve(h, "../../../apps/arena/public"),
-  ];
-  for (const c of candidates) if (existsSync(c)) return c;
-  throw new Error("arena assets not found");
-}
-
 /**
  * Locate the Gateway app that `oathra demo` starts. Published: dist/bundle/gateway.js, with its runtime files in
  * assets/gateway-root (same layout as the repository). Repo: apps/gateway/demo.mjs, reading the checkout itself.

@@ -168,7 +168,7 @@ async function route() {
 window.addEventListener('hashchange', () => { route(); $('#view').focus({ preventScroll: true }); window.scrollTo(0, 0); });
 
 // ---------------------------------------------------------------- voice samples
-// Recorded samples of GPT-Live's voices (the same files Arena plays; served with Range for Safari). One plays at a time.
+// Recorded samples of GPT-Live's voices (served with Range for Safari). One plays at a time.
 let sampleAudio = null;
 function sampleButton(url, label = '声を聞く') {
   const b = el('button', { class: 'btn small sample', type: 'button', 'aria-pressed': 'false', text: '▶ ' + label });
@@ -765,6 +765,22 @@ function runView(run, { back, again = false, animate = true }) {
   drawFields();
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (still || !animate) { run.transcript.forEach((_, i) => show(i)); finish(); }
+  if (!again) {
+    // Seek a saved call to a moment of the call clock: postMessage {type:"oathra.seek", ms, id} → {type:"oathra.seeked", id, ok}.
+    // The video templates (video/*.html) drive the record view in an iframe with it.
+    const end = Math.max(0, ...run.transcript.map(t => t.t ?? 0));
+    const onSeek = e => {
+      const d = e.data; if (!d || d.type !== 'oathra.seek') return;
+      if (location.hash !== here) { window.removeEventListener('message', onSeek); return; }
+      lines.replaceChildren(); settled.clear();
+      run.transcript.forEach((t, i) => { if ((t.t ?? 0) <= d.ms) show(i); });
+      drawFields();
+      if (d.ms >= end) finish(); else { stateLine.className = 'state-line state-live'; stateLine.replaceChildren(el('span', { class: 'dot' }), '練習中'); headline.textContent = `${run.scenario.callee || '相手'}と話しています`; }
+      e.source?.postMessage?.({ type: 'oathra.seeked', ms: d.ms, id: d.id, ok: true }, '*');
+    };
+    window.addEventListener('message', onSeek);
+  }
+  else if (still || !animate) { /* shown above */ }
   else { let i = 0; const tick = () => { if (location.hash !== here) return; if (i < run.transcript.length) { show(i++); app.timer = setTimeout(tick, 1100); } else finish(); }; app.timer = setTimeout(tick, 300); }
   const main = el('section', { class: 'call-main' },
     el('div', { class: 'crumb' }, el('a', { href: '#/practice', text: '練習' }), ' › ', el('b', { text: run.scenario.title }), el('span', { class: 'tag', text: again ? '練習' : '練習の記録' }), run.brain && run.brain !== 'scripted' ? el('span', { class: 'tag', text: run.brain }) : ''),

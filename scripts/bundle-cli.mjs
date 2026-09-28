@@ -1,5 +1,5 @@
 // Bundle the CLI (and every @oathra/* workspace package) into one file so
-// `npx oathra demo` needs a single npm package. Copies Arena assets + scenarios.
+// `npx oathra demo` needs a single npm package. Copies the app (apps/gateway) + scenarios.
 import { build } from "esbuild";
 import { cpSync, mkdirSync, rmSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -71,15 +71,13 @@ for (const file of ["evidence", "transcript"]) {
 
 const assets = resolve(cli, "assets");
 rmSync(assets, { recursive: true, force: true });
-cpSync(resolve(root, "apps/arena/public"), resolve(assets, "arena"), { recursive: true });
 cpSync(resolve(root, "scenarios"), resolve(assets, "scenarios"), { recursive: true });
 const gatewayRoot = resolve(assets, "gateway-root");
 cpSync(resolve(root, "apps/gateway/public"), resolve(gatewayRoot, "apps/gateway/public"), { recursive: true });
 cpSync(resolve(root, "apps/gateway/lib/phone.mjs"), resolve(gatewayRoot, "apps/gateway/lib/phone.mjs")); // plugin identity digest
 cpSync(resolve(root, "plugins"), resolve(gatewayRoot, "plugins"), { recursive: true, filter: (f) => !/\.test\.|node_modules/.test(f) });
 cpSync(resolve(root, "scenarios"), resolve(gatewayRoot, "scenarios"), { recursive: true });
-mkdirSync(resolve(gatewayRoot, "apps/arena/public"), { recursive: true });
-for (const f of readdirSync(resolve(root, "apps/arena/public"))) if (f === "index.html" || f.endsWith(".css")) cpSync(resolve(root, "apps/arena/public", f), resolve(gatewayRoot, "apps/arena/public", f));
+
 cpSync(resolve(root, "README.md"), resolve(cli, "README.md"));
 cpSync(resolve(root, "LICENSE"), resolve(cli, "LICENSE"));
 writeFileSync(resolve(out, ".gitkeep"), "");

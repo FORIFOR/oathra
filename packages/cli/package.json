@@ -37,7 +37,6 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@oathra/arena": "workspace:*",
     "@oathra/contract": "workspace:*",
     "@oathra/core": "workspace:*",
     "@oathra/deepgram": "workspace:*",

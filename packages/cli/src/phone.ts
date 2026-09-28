@@ -595,7 +595,7 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
 }
 
 /**
- * A whole phone-request call with no carrier: the Arena web phone's path (request → contract → CallRuntime →
+ * A whole phone-request call with no carrier: a real call's path (request → contract → CallRuntime →
  * engine + engineBrain) against a scripted callee that waits for each reply, with one deliberate cut-in.
  * Real, paid voice APIs; stops at --max-usd (default $0.05). Saves the audio and a report.
  */

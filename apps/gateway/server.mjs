@@ -130,7 +130,7 @@ export async function createGateway(config,options={}){
       if(config.deployment==='managed'&&method==='GET'&&path==='/')return send(res,200,phonePage(),'text/html; charset=utf-8');
       if(method==='GET'&&path==='/sales')return send(res,200,readFileSync(repoUrl('apps/gateway/public/index.html')),'text/html; charset=utf-8');
       const sharedStyle=/^\/phone-style\/(style|style-base|workspace|quiet-cinema|one-page|board)\.css$/.exec(path);
-      if(method==='GET'&&sharedStyle)return send(res,200,readFileSync(repoUrl('apps/arena/public/'+sharedStyle[1]+'.css')),'text/css; charset=utf-8');
+      if(method==='GET'&&sharedStyle)return send(res,200,readFileSync(repoUrl('apps/gateway/public/phone/base/'+sharedStyle[1]+'.css')),'text/css; charset=utf-8');
       if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return sendAsset(req,res,readFileSync(repoUrl('apps/gateway/public/'+file)),type);}
       if(method==='GET'&&path==='/healthz')return send(res,200,{ok:true,mode:config.mode});
       const channelHook=path.match(/^\/hooks\/(?:channels\/)?([a-z][a-z0-9-]{0,47})$/);

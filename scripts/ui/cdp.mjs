@@ -1,4 +1,4 @@
-// Drives the locally installed Google Chrome over CDP. No dependencies, like scripts/qa-arena.mjs.
+// Drives the locally installed Google Chrome over CDP. No dependencies.
 // Shared by the UI flow checks: they operate the real page, assert, and save PNGs a person (or reviewer) then opens.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

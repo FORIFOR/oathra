@@ -1,18 +1,16 @@
 import type { BrainProvider } from "@oathra/core";
-import { buildWebPhoneDialer } from "./web-phone.js";
 import { execSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { startArena } from "@oathra/arena";
 import { battle, COMPLETABLE, evalScenarios, MUTATIONS, renderBattleMarkdown, renderBattleSvg, runAdversarial, runScenario } from "@oathra/eval";
 import { listCalls, loadCall, renderTimeline, saveCall, snapshotAt } from "@oathra/replay";
 import { loadScenarioDir, loadScenarioFile, parseScenario, type Scenario } from "@oathra/scenario";
 import { brains, listBrains, resolveBrain } from "./brains.js";
 import { resolveCallee } from "./callee.js";
 import { phoneDoctor, phoneAdd, phoneList, phoneRemove, phoneTest, providerCreate, runPhoneCall, setupPhone } from "./phone.js";
-import { arenaPublicDir, gatewayDemo, scenariosDir } from "./paths.js";
+import { gatewayDemo, scenariosDir } from "./paths.js";
 import { liveRenderer, resultBox } from "./render.js";
 import { bad, bold, box, cyan, dim, green, mmss, ok, table, warn, yellow } from "./ui.js";
 
@@ -150,10 +148,8 @@ type GatewayDemo = {
  * `oathra demo`: the Oathra app (the Gateway) on this computer. Practice mode by default: nothing dials, no key, no
  * sign-in from this computer. --allow-remote (LAN) and --tunnel open it to other devices with a sign-in link;
  * --allow-models adds external practice AIs; --live (with --tunnel) places real calls with this machine's keys.
- * --arena opens the previous screen.
  */
 export async function cmdDemo(flags: Flags): Promise<void> {
-  if (flags.arena) return cmdArena(flags);
   console.log(`\n${bold("Oathra")}\n`);
   console.log(ok(`Runtime        Node ${process.version}`));
   const port = num(flags.port, 4242);
@@ -168,8 +164,8 @@ export async function cmdDemo(flags: Flags): Promise<void> {
   catch (err) {
     // The app keeps its data in node:sqlite (Node 22.13+ without a flag). Older Node still gets the previous screen.
     if ((err as { code?: string }).code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw err;
-    console.log(warn(`The app needs Node 22.13 or later (this is ${process.version}); opening Arena instead.`));
-    return cmdArena(flags);
+    console.log(bad(`The app needs Node 22.13 or later (this is ${process.version}). Update Node and run oathra demo again.`));
+    process.exitCode = 1; return;
   }
   let tunnel: { url: string; close: () => void } | undefined;
   if (tunnelWanted) {
@@ -190,61 +186,6 @@ export async function cmdDemo(flags: Flags): Promise<void> {
   if (!flags["no-open"]) openBrowser(openUrl);
   console.log(dim("練習: AIの電話を見る、または「自分が相手役」でAIからの電話に答える。データは .oathra/demo/ に、練習の記録は .oathra/calls/ に残ります。Ctrl+C で止めます。\n"));
   await new Promise<void>((res) => { for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => { tunnel?.close(); void demo.close().then(res); }); });
-}
-
-async function cmdArena(flags: Flags): Promise<void> {
-  console.log(`\n${bold("Oathra")}\n`);
-  console.log(ok(`Runtime        Node ${process.version}`));
-  console.log(ok("Simulator      built-in characters, no API key needed"));
-  const scenarios = loadScenarioDir(scenariosDir());
-  console.log(ok(`Scenarios      ${scenarios.length}`));
-  const port = num(flags.port, 4242);
-  const tunnelWanted = Boolean(flags.tunnel || flags.ngrok);
-  const lanWanted = Boolean(flags["allow-remote"] || flags.remote || flags.host === "0.0.0.0");
-  const allowRemote = tunnelWanted || lanWanted;
-  // A tunnel connects to loopback; only --allow-remote opens the LAN.
-  const host = str(flags.host, lanWanted ? "0.0.0.0" : "127.0.0.1") ?? "127.0.0.1";
-  const remoteToken = allowRemote ? randomBytes(18).toString("base64url") : undefined;
-  const arena = await startArena({
-    phoneDialer: buildWebPhoneDialer(),
-    scenariosDir: scenariosDir(),
-    publicDir: arenaPublicDir(),
-    brains: flags["allow-models"] ? brains : { scripted: brains.scripted! },
-    port,
-    host,
-    allowRemote,
-    ...(remoteToken ? { remoteToken } : {}),
-  });
-  const withToken = (base: string) => (remoteToken ? `${base}/?token=${remoteToken}` : base);
-  console.log(ok(`Arena          ${withToken(arena.url)}`));
-  if (flags["allow-models"]) console.log(warn("External models enabled: selecting a provider sends conversation data and may incur API charges."));
-  if (allowRemote) {
-    console.log(warn("Remote access enabled. Anyone with this URL can place calls, read contacts and call history. Do not share it."));
-    console.log(dim("               The token in the URL becomes a browser cookie; the plain URL without it answers 401."));
-  }
-
-  let tunnel: { url: string; close: () => void } | undefined;
-  if (tunnelWanted) {
-    try {
-      const preferred = flags.ngrok || flags.tunnel === "ngrok" ? "ngrok" : undefined;
-      console.log(dim(`Starting ${preferred === "ngrok" ? "ngrok" : "Cloudflare"} Tunnel for remote access...`));
-      tunnel = await startTunnel(port, preferred);
-      console.log(ok(`Tunnel         ${cyan(withToken(tunnel.url))}`));
-    } catch (err) {
-      console.log(bad(`Tunnel error: ${(err as Error).message}`));
-    }
-  }
-
-  const openUrl = withToken(tunnel ? tunnel.url : arena.url);
-  console.log(`\nOpening Arena...\n\n  ${cyan(openUrl)}\n`);
-  if (!flags["no-open"]) openBrowser(openUrl);
-  console.log(dim("Watch two agents on a call, or choose Play and answer the phone yourself. Ctrl+C stops the server.\n"));
-  await new Promise<void>((res) => {
-    process.on("SIGINT", () => {
-      if (tunnel) tunnel.close();
-      void arena.close().then(res);
-    });
-  });
 }
 
 export async function cmdPlay(positional: string[], flags: Flags): Promise<void> {
@@ -624,7 +565,7 @@ ${bold("Oathra")}  ${dim("Give AI agents a phone, and proof of what happened.")}
 
 ${bold("Try it")}
   oathra demo                        open the app in practice mode: watch the AI call, or answer it yourself; no API key
-                                     ${dim("--allow-remote (other devices, sign-in link)  --tunnel  --allow-models  --live (real calls, with --tunnel)  --port <n>  --arena")}
+                                     ${dim("--allow-remote (other devices, sign-in link)  --tunnel  --allow-models  --live (real calls, with --tunnel)  --port <n>")}
   oathra play [scenario]             run one scenario in the terminal        ${dim("--brain scripted|openai|gemini|ollama  --fast  --seed <n>  --json")}
   oathra battle [scenario]           several brains, same scenario, one card ${dim("--agent <brain> …  --markdown  --svg <file>  --png <file>")}
 

@@ -1,5 +1,5 @@
 // Re-enacts the calls of a saved `oathra battle --json` run through the real runtime, so the
-// Arena can replay them with real evidence/mission events. The caller lines and the callee lines
+// app (練習 › 記録, `oathra demo`) can replay them with real evidence/mission events. The caller lines and the callee lines
 // are the recorded ones; the evidence engine is the real one; nothing is generated. ¥0.
 // usage: pnpm build && node scripts/battle-to-calls.mjs video/.work/battle.json scenarios/hotel/impossible-hotel.yaml
 import { readFileSync } from "node:fs";

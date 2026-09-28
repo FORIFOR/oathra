@@ -34,6 +34,10 @@ try {
   await page.until("/練習の記録/.test(document.querySelector('.crumb')?.textContent ?? '')", { label: "record view" });
   c.ok(await page.js("document.querySelector('.ring text')?.textContent") === "4/4" && await page.js("document.querySelectorAll('mark.proof').length") >= 1, "a record: the ring and the callee's words, marked");
   await page.screenshot(join(out, "local-app-record.png"));
+  // The video templates seek a record by the call clock (postMessage oathra.seek → oathra.seeked).
+  const seek = (ms) => page.js(`new Promise(r => { const on = e => { if (e.data?.type === 'oathra.seeked' && e.data.id === ${ms + 1}) { removeEventListener('message', on); r([document.querySelectorAll('.transcript .line').length, document.querySelector('.ring text')?.textContent]); } }; addEventListener('message', on); postMessage({ type: 'oathra.seek', ms: ${ms}, id: ${ms + 1} }, '*'); })`);
+  const [early, ringEarly] = await seek(0), [all, ringAll] = await seek(10_000_000);
+  c.ok(early < all && ringEarly !== "4/4" && ringAll === "4/4", "a record seeks: early shows fewer lines and an open ring, the end shows all", `${early}/${all} ${ringEarly}→${ringAll}`);
   await page.close(); page = null;
 
   const lan = demo.lanUrls[0];

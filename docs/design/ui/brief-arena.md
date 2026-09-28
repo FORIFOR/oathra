@@ -1,3 +1,5 @@
+> **Retired 2026-09-29.** Arena was folded into the app (apps/gateway, `oathra demo`); see brief-gateway.md. Kept for the record.
+
 # Design brief — Arena
 
 | 項目 | 内容 |

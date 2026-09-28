@@ -1,4 +1,4 @@
-// Practice in the app: the same scenarios and built-in characters as Arena, run on this server with the offline scripted
+// Practice in the app: the scenarios and built-in characters of scenarios/, run on this server with the offline scripted
 // agent. Nothing dials, no provider is reached, nothing is charged. The verdict is the evidence engine's, as always.
 import { fileURLToPath } from 'node:url';
 import { statSync } from 'node:fs';
@@ -7,7 +7,7 @@ import { assert } from './security.mjs';
 import { repoUrl } from './paths.mjs';
 
 const scenariosDir = () => fileURLToPath(repoUrl('scenarios/'));
-// The practice list in Japanese (the scenario files carry English titles; Arena keeps the same names).
+// The practice list in Japanese (the scenario files carry English titles).
 const TITLE_JA = {
   'restaurant-reservation': 'レストラン予約', 'impossible-hotel': '無理難題ホテル', 'bulk-buy': 'まとめ買い交渉', 'serial-number': 'シリアル番号の復唱',
   'false-completion-trap': '満席の罠', 'friend-chat': '友達と雑談', 'friend-hype': '友達とテンション高めの電話', 'restaurant-reservation-intake': 'レストラン予約・追加の聞き取り',
@@ -163,7 +163,7 @@ export async function practiceRecord(id) {
   assert(recordsDir && RECORD_ID.test(String(id)), 'unknown_practice_record', 404);
   const { loadCall, transcriptFromEvents } = await import('../../../packages/replay/dist/index.js');
   let c; try { c = loadCall(String(id), recordsDir); } catch { assert(false, 'unknown_practice_record', 404); }
-  const started = c.events.find(e => e.type === 'call.started'), transcript = transcriptFromEvents(c.events).map(t => ({ id: t.id, source: t.source, text: t.text }));
+  const started = c.events.find(e => e.type === 'call.started'), transcript = transcriptFromEvents(c.events).map(t => ({ id: t.id, source: t.source, text: t.text, t: t.t }));
   const scenario = (await scenarios()).find(s => s.id === started?.scenario);
   return { id: String(id), scenario: { id: started?.scenario ?? null, title: scenario ? TITLE_JA[scenario.id] ?? scenario.title : c.contract?.target?.name ?? '練習', callee: scenario?.callee?.persona?.name ?? c.contract?.target?.name ?? '' },
     brain: started?.brain ?? '', require: Object.keys(c.contract?.require ?? scenario?.mission?.require ?? {}), transcript, settled: settledFrom(c.result ?? {}, transcript),

@@ -331,7 +331,7 @@
     }
 
     async function checkServer(url) {
-      // The Arena rejects cross-origin API calls (its own guard), so this only checks that something answers.
+      // The app rejects cross-origin API calls (its own guard), so this only checks that something answers.
       // The iframe below is same-site for the server, so the page itself works normally.
       try {
         await fetch(`${url}/api/brains`, { method: "GET", mode: "no-cors", cache: "no-store" });

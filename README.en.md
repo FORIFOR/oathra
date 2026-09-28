@@ -116,7 +116,7 @@ After trying it, [star the repository](https://github.com/FORIFOR/oathra) to fol
 ```bash
 git clone https://github.com/FORIFOR/oathra && cd oathra
 pnpm install && pnpm build
-pnpm demo                                      # http://localhost:4242
+pnpm demo                                      # http://localhost:4242 — the app in practice mode (no sign-in, no key)
 
 pnpm oathra play restaurant-reservation        # same call in the terminal
 pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # consent-based follow-up intake
@@ -204,7 +204,7 @@ Audio Transport ─▶ Turn Stream ─▶ Transcript Stream ─▶ Conversation 
 Dependency direction is enforced in CI (`pnpm lint:deps`):
 
 ```text
-contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
+contract → evidence → core → scenario → runtime → providers → replay / eval → cli (the app, apps/gateway, uses their dist)
 ```
 
 | Package | Responsibility |
@@ -217,7 +217,6 @@ contract → evidence → core → scenario → runtime → providers → replay
 | `@oathra/simulator` | scripted characters (restaurant, hotel, shop, serial), `HumanCharacter`, offline `ScriptedAgent` |
 | `@oathra/replay` | save/load call directories, time-travel snapshots |
 | `@oathra/eval` | Oathra Score, **false completion detection** against simulator ground truth, Agent Battle |
-| `@oathra/arena` | dependency-free HTTP + SSE server and the browser UI |
 | `oathra` | CLI |
 
 Internal agent states (`LISTENING … VERIFYING … SPEAKING`) are compressed to four UX states: **Listening · Understanding · Acting · Speaking**.
@@ -300,7 +299,7 @@ v0.1.18 (released 2026-09-19):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent
-- [x] Arena (Watch / Play), CLI, Replay, Eval, Battle (SVG/PNG cards)
+- [x] App practice (watch / answer the AI yourself), CLI, Replay, Eval, Battle (SVG/PNG cards)
 - [x] Scenario DSL + CI gate; 0 / 10,000 adversarial simulator runs
 - [x] Consent-based, contract-declared follow-up intake with utterance-linked `intake.json` and `summary.md`; unclear consent, holds and non-answers stop immediately
 - [x] Provisional, pending-approval and post-confirmation-change guards; 500 regression cases cover Japanese provisional phrases
@@ -332,7 +331,6 @@ If you find a phrasing that slips through, open an issue. That is the most usefu
 
 ## Credits
 
-The agent avatar in the Arena (a liquid-glass orb) vendors the shader from [LerSent001/orb](https://github.com/LerSent001/orb) (MIT) under `apps/arena/public/orb/`. Browsers without WebGPU fall back to the text glyph.
 
 ## Contributing
 

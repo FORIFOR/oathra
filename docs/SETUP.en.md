@@ -1,6 +1,6 @@
 # Beginner setup
 
-Source checkout updates (not yet released): [Arena compatibility, local permissions and recovery](quality/arena-contract.md), [first local outcome](FIRST_PROOF.md). Default demo is offline-only; external models require `demo --allow-models`.
+Source checkout updates (not yet released): [first local outcome](FIRST_PROOF.md). Default demo is offline-only; external models require `demo --allow-models`.
 
 Oathra is easiest to try in two stages: verify the evidence rules without an API key, then add a voice engine and a phone carrier only when you need a real call. This guide keeps the stages separate so a missing carrier credential cannot hide a problem in the evidence checker.
 
@@ -127,13 +127,13 @@ When reporting a problem, include the command, the red check and the provider na
 
 Twilio direct calling and the GPT-Live engine have been exercised in development calls. Plivo and Custom SIP are implemented through LiveKit but their PSTN path is not yet verified. The evidence checker validates transcript claims; it does not inspect a carrier's reservation ledger. See the [readiness gates](READINESS.md) before using the project for a production workflow.
 
-Arena preserves the current call when you return to the mission list. Use Return to the current call, then finish or hang up before starting another. Restaurant exercises use the fixed date 2026-09-12.
+Practice starts from **練習** in the app: watch the AI call, or answer it yourself as the shop (text). Records are kept in `.oathra/calls/` and listed under **記録**. Restaurant exercises use a fixed date (2026-09-12) for reproducibility.
 
 
-## Web phone requests (experimental)
+## Phone requests from the app
 
-In Arena, choose **Call a phone**, enter the phone number, recipient, and purpose, then review. Choose from 12 editable purpose templates or reuse saved history. Replace every `{{placeholder}}` before review. Reviewing and reusing history never dials. Read the disclosure and explicitly approve before starting a call.
+In the app, choose **電話を頼む**, enter the recipient, phone number and purpose, then review. Pick a template by kind of call or reuse history, and replace every `{{…}}`. Reviewing or reusing history never dials.
 
-Web calling supports Twilio with gpt-live. Configure Twilio/OpenAI credentials and phone.yaml, plus an existing public `OATHRA_PUBLIC_WS_URL` (`wss://`) forwarding to the Twilio audio listener (default port 4243, configurable in phone.yaml), not Arena's HTTP port. No tunnel is created automatically. Missing configuration disables dialing. Real carrier delivery, hangup, and billing have not been verified.
+Real calls run with `pnpm oathra demo --live --tunnel` (this machine's carrier and voice keys from `.env`) or with the Gateway as a server ([apps/gateway/README.md](../apps/gateway/README.md)). Readiness is shown at start and in 設定.
 
 End an active call with the hangup button. An unconfirmed result blocks another call until you check the carrier and acknowledge termination; it is never retried automatically. Drafts, transcripts, and outcomes persist locally in `.oathra/phone-history`; Web calls do not save audio files. JSON export and CLI handoff remain available. LINE/Slack generic requests remain draft-only. See the [Web contract and evidence](quality/web-phone.md).

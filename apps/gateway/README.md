@@ -189,7 +189,7 @@ const saved = await response.json();
 
 ## OSSとサービス版のクレジット（experimental）
 
-managedのトップ画面はArenaの電話画面とHTML/CSSを共用します。電話番号・相手・目的、12種類のテンプレート、目的の履歴、一般連絡先を使い、ヘッダーに残高を表示します。初回は管理者が発行した設定リンクからメールアドレスとパスワードを設定し、以後はメールでログインします。通常画面にトークン入力はありません。8時間のHttpOnly/SameSite=Strict Cookieで再読込時も認証を保持します。HTTPSではSecureと__Hostプレフィックス、Path=/、Domain指定なし。認証用の元トークンをlocalStorage等へ保存しません。ログアウト、期限切れ、利用者設定の削除、tokenHash変更、パスワード変更・再設定で失効します。営業用Gateway画面は `/sales` に残しています。Arenaのlocalhost APIをサービスとして公開する構成ではありません。
+managedのトップ画面は、以前のArenaの電話画面のHTML/CSS（`public/phone/base/`）を使います。電話番号・相手・目的、12種類のテンプレート、目的の履歴、一般連絡先を使い、ヘッダーに残高を表示します。初回は管理者が発行した設定リンクからメールアドレスとパスワードを設定し、以後はメールでログインします。通常画面にトークン入力はありません。8時間のHttpOnly/SameSite=Strict Cookieで再読込時も認証を保持します。HTTPSではSecureと__Hostプレフィックス、Path=/、Domain指定なし。認証用の元トークンをlocalStorage等へ保存しません。ログアウト、期限切れ、利用者設定の削除、tokenHash変更、パスワード変更・再設定で失効します。営業用Gateway画面は `/sales` に残しています。Arenaのlocalhost APIをサービスとして公開する構成ではありません。
 
 入力後に「電話する」→確認画面の「同意して電話する・Nクレジット」の2操作で承認します。確認には宛先・目的・利用額と条件・送信先・文字保存を表示し、戻って編集できます。同意チェックを別操作にせず、最終ボタンで明示承認を受け取ります。最終ボタンに自動フォーカスせず確認見出しから読み始めます。未接続の環境では「下書きを保存」と表示し、発信ボタンは理由付きで無効です。
 
@@ -395,7 +395,7 @@ if (cost?.basis === 'usage-rate-v1') {
 
 付与APIのキーは永続的に重複検出します。同じキーで違う利用者/額/理由を指定すると409。決済イベントと接続する場合、サービス側で決済事業者の署名と支払完了を検証してから、決済イベントの一意IDをキーに管理者APIを呼びます。**決済接続・クレジット購入UI・自動ユーザー登録/SSOは含みません。** 管理者キーをブラウザーへ渡さず、通常利用者にはoperator権限の個別トークンを発行してください。払い戻し/販売単価/税務の処理を実装済みと扱わないでください。
 
-SDK入口は `sdk/gateway-client/index.mjs`。管理対象は既存Gatewayのmission APIで、localhostのArena `/api/phone/*` を公開する方式ではありません。既存サービスは利用者IDをGatewayのownerへ対応付け、バックエンドで個別トークンを管理できます。
+SDK入口は `sdk/gateway-client/index.mjs`。管理対象は既存Gatewayのmission APIで、ローカルの画面のAPIを公開する方式ではありません。既存サービスは利用者IDをGatewayのownerへ対応付け、バックエンドで個別トークンを管理できます。
 
 ```js
 import { gatewayClient } from '../../sdk/gateway-client/index.mjs';
