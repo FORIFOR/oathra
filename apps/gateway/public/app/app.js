@@ -15,6 +15,18 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) n.append(kid instanceof Node ? kid : String(kid));
   return n;
 };
+// A line with the words that settled a field underlined and numbered (the field's number in 確かめること).
+function marked(text, marks) {
+  const p = el('p'); let rest = String(text);
+  const hits = marks.filter(m => m.quote && m.quote.length < rest.length && rest.includes(m.quote)).sort((a, b) => rest.indexOf(a.quote) - rest.indexOf(b.quote));
+  let at = 0;
+  for (const m of hits) {
+    const i = rest.indexOf(m.quote, at); if (i < 0) continue;
+    p.append(rest.slice(at, i), el('mark', { class: 'proof' }, m.quote, el('sup', { text: String(m.n) }))); at = i + m.quote.length;
+  }
+  p.append(rest.slice(at));
+  return p;
+}
 const SVG = 'http://www.w3.org/2000/svg';
 const svg = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v)); return n; };
 
@@ -300,6 +312,8 @@ async function ask() {
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
     for (const c of purposeChips.children) { const on = c.dataset.purpose === form.purpose; c.setAttribute('aria-pressed', String(on)); c.setAttribute('aria-checked', String(on)); }
     productRow.hidden = !isSales(); voiceField.hidden = isSales();
+    // The purposes write the request; examples only help a request in plain words.
+    template.closest('.two').hidden = form.purpose !== '';
     renderSide();
   }
   // Typing a number by hand means it is not the chosen contact any more.
@@ -428,7 +442,8 @@ async function call(id) {
   main.append(foot);
   const transcript = el('div', { class: 'transcript', 'aria-live': live ? 'polite' : 'off' },
     ...(r.transcript?.length ? r.transcript.map(t => el('div', { class: `line ${t.source === 'callee' ? 'callee' : ''}` },
-      el('div', { class: 'who' }, t.source === 'callee' ? r.request.name : 'AI', typeof t.t === 'number' ? el('time', { text: mmss(t.t / 1000) }) : null), el('p', { text: t.text })))
+      el('div', { class: 'who' }, t.source === 'callee' ? r.request.name : 'AI', typeof t.t === 'number' ? el('time', { text: mmss(t.t / 1000) }) : null),
+      marked(t.text, t.source === 'callee' ? notes.map((n, k) => ({ quote: n.status === 'verified' ? n.quote : '', n: k + 1 })) : [])))
       : [el('p', { class: 'empty', text: live ? 'つながると、ここに会話が出ます。' : '会話の記録はありません。' })]));
   const side = el('aside', { class: 'call-side', 'aria-label': '会話' }, el('div', { class: 'side-top' }, el('b', { text: '会話' }), el('span', { class: 'muted small', text: '文字起こしは自動・音声は保存しません' })), transcript);
   if (live) app.timer = setTimeout(async () => { if (location.hash.startsWith(`#/call/${r.id}`)) { const y = window.scrollY; const t = $('.transcript'); const atEnd = t && t.scrollHeight - t.scrollTop - t.clientHeight < 40; await route(); window.scrollTo(0, y); if (atEnd) { const n = $('.transcript'); if (n) n.scrollTop = n.scrollHeight; } } }, 1500);
@@ -496,7 +511,8 @@ async function practiceRun(sel) {
   };
   const show = i => {
     const t = run.transcript[i];
-    lines.append(el('div', { class: `line ${t.source === 'callee' ? 'callee' : ''}` }, el('div', { class: 'who', text: t.source === 'callee' ? run.scenario.callee || '相手' : 'AI' }), el('p', { text: t.text })));
+    const marks = t.source === 'callee' ? (byTurn.get(t.id) ?? []).map(s => ({ quote: s.quote, n: fields.indexOf(s.field) + 1 })) : [];
+    lines.append(el('div', { class: `line ${t.source === 'callee' ? 'callee' : ''}` }, el('div', { class: 'who', text: t.source === 'callee' ? run.scenario.callee || '相手' : 'AI' }), marked(t.text, marks)));
     for (const s of byTurn.get(t.id) ?? []) settled.set(s.field, s);
     drawFields(); lines.scrollTop = lines.scrollHeight;
   };

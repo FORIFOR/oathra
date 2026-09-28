@@ -207,3 +207,13 @@ main:focus, main:focus-visible { outline: none; }
 .item .grow { flex: 1; min-width: 0; } .item .grow span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* `hidden` wins over the layout rules (.field, .two are grids). */
 [hidden] { display: none !important; }
+/* The words that settled a field, in the conversation (jade: the other party's words only). */
+mark.proof { background: none; color: inherit; text-decoration: underline 2px var(--ok); text-underline-offset: 5px; }
+mark.proof sup { margin-left: 1px; font-size: 10px; font-weight: 700; color: var(--ok); }
+.tab-narrow { display: none !important; }
+@media (max-width: 979px) {
+  /* Two rows on a phone: the mark and the main action, then the menu (設定 joins it). */
+  .tab-narrow { display: flex !important; }
+  .bar-right .plain { display: none; }
+  .live-pill { padding: 4px 10px; }
+}
