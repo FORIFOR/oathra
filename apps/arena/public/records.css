@@ -16,3 +16,4 @@
 @media (min-width: 1100px) and (min-height: 600px) {
   html.board .replays-panel:not([hidden]) { flex: none; margin: 0; padding: 12px 18px 16px; max-height: 46vh; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; }
 }
+.replays-title { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--ink); }

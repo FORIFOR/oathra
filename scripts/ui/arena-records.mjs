@@ -47,7 +47,9 @@ try {
   c.ok(seen.top >= 0 && seen.top < seen.vh - 120 && seen.focus === "all", "「記録」 brings the list into view and puts focus on its filter", JSON.stringify(seen));
   await page.screenshot(join(out, "arena-records-desktop.png"));
   const rows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('#replay-list .replay-btn')].map(b=>b.textContent))"));
-  c.ok(rows.some((r) => /^本番テスト相手雑談/.test(r)) && rows.some((r) => /^練習/.test(r)), "real and practice in one list; the real call shows its person and purpose", JSON.stringify(rows));
+  c.ok(rows.some((r) => /^本番テスト相手\d+\/\d+ \d\d:\d\d · 雑談 · 話しました/.test(r)) && rows.some((r) => /^練習友達とテンション高めの電話\d+\/\d+ \d\d:\d\d · /.test(r)), "real and practice in one list, each with its date; the real call shows its person, purpose and a real-call outcome (not the practice score)", JSON.stringify(rows));
+  c.ok(await page.text("#replays-title") === "記録" && await page.js("document.querySelector('#replay-list').getAttribute('aria-labelledby')") === "replays-title" && await page.text("#replays-link") === "記録", "the list has the heading 「記録」 and the link has the same name (one entry, one name)");
+  c.ok(/記録を選ぶと、判定と証拠が開きます/.test(await page.text("#stage-empty")), "the empty centre says what to do while the list is open");
   c.ok(!/phone\.|phone_/.test(await page.text("#replays-panel")), "no internal ids (goal, record id) on screen for the real call");
   const count = () => page.js("document.querySelectorAll('#replay-list .replay-btn').length");
   await page.click("#replay-filter [data-filter=real]"); await sleep(150);

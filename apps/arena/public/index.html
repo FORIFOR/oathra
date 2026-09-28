@@ -25,7 +25,7 @@
     <div class="topbar-right">
       <button type="button" class="btn" id="home-open" data-i18n="home">Home</button>
       <button type="button" class="btn" id="contacts-open" data-i18n="contacts">Contacts</button>
-      <button type="button" class="btn" id="records-open">Records</button>
+      <button type="button" class="btn" id="records-open" aria-controls="replays-panel" aria-expanded="false">Records</button>
       <div class="transport-toggle" role="group" data-i18n-aria="transport" aria-label="Transport">
         <button type="button" class="tt-btn is-on" data-transport="simulator" aria-pressed="true">
           <span class="dot" aria-hidden="true"></span><span data-i18n="simulator">Simulator</span>
@@ -107,12 +107,13 @@
           <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel" data-i18n="replays">Replays</button>
         </div>
         <div class="replays-panel" id="replays-panel" hidden>
+          <h3 class="replays-title" id="replays-title" data-i18n="replays">Records</h3>
           <div class="replay-filter" id="replay-filter" role="group">
             <button type="button" class="rf-btn is-on" data-filter="all" aria-pressed="true">All</button>
             <button type="button" class="rf-btn" data-filter="real" aria-pressed="false">Real</button>
             <button type="button" class="rf-btn" data-filter="practice" aria-pressed="false">Practice</button>
           </div>
-          <ul class="replay-list" id="replay-list"></ul>
+          <ul class="replay-list" id="replay-list" aria-labelledby="replays-title"></ul>
         </div>
       </div>
     </section>

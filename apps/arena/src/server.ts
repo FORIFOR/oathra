@@ -400,13 +400,15 @@ export function createArenaServer(opts: ArenaOptions): Server {
       }
 
       if (path === "/api/replays" && method === "GET") {
+        // When the call was saved (its result file's time): the list shows it so a record can be found by date.
+        const savedAt = (id: string): string | null => { try { return statSync(join(callsDir, id, "result.json")).mtime.toISOString(); } catch { return null; } };
         return json(res, 200, listCalls(callsDir).map((id) => {
           try {
             const c = loadCall(id, callsDir);
             const started = c.events.find((e) => e.type === "call.started");
             const contract = (c as { contract?: { goal?: string; target?: { name?: string }; input?: { conversationMode?: unknown } } }).contract;
             // Real phone calls are saved under their phone record id, so the list can tell them from practice.
-            return { id, scenario: started && started.type === "call.started" ? started.scenario ?? null : null, status: c.result.status, durationMs: c.metrics.durationMs, real: id.startsWith("phone_"), target: contract?.target?.name ?? null, goal: contract?.goal ?? null, chat: contract?.input?.conversationMode === "chat" };
+            return { id, scenario: started && started.type === "call.started" ? started.scenario ?? null : null, status: c.result.status, durationMs: c.metrics.durationMs, real: id.startsWith("phone_"), target: contract?.target?.name ?? null, goal: contract?.goal ?? null, chat: contract?.input?.conversationMode === "chat", endedAt: savedAt(id) };
           } catch {
             return { id, status: "unreadable" };
           }

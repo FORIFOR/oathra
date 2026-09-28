@@ -440,3 +440,7 @@ body:not(.managed-phone) #phone-form label.voice-card { position: relative; disp
 .voice-sample:hover::before { border-color: var(--muted); }
 .voice-sample:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 50%; }
 .voice-card.playing::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: calc(var(--sample, 0) * 100%); background: var(--accent); }
+/* No mono for UI labels (handoff): the scenario cards' English subtitle and meta on narrow windows too. */
+.scenario-btn .s-title-en, .scenario-btn .s-meta, .scenario-btn .s-diff { font-family: var(--sans); letter-spacing: 0; }
+/* Japanese headings break between phrases, not inside one. */
+#empty-h { word-break: auto-phrase; text-wrap: balance; }

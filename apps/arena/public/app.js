@@ -75,14 +75,14 @@
       phonePrivacy: "This draft stays on this device. The downloaded file contains personal information. A real call sends the number to your carrier and conversation data to your voice provider; usage charges apply.",
       phoneNext: "After configuring your phone service, review the saved draft without calling:", phoneApprove: "Only after checking the recipient, recording policy and provider charges, explicitly place the call:", phoneInvalid: "Check the number, recipient and purpose, and replace every {{field}} in the template.",
       resumeCall: "Return to the current call", activeCall: "A call is still in progress. Finish or hang up before starting another.",
-      unknownRequest: "This server has no record of the start request. Check Past calls before starting again; a restarted server may have lost an unsaved result.",
+      unknownRequest: "This server has no record of the start request. Check Records before starting again; a restarted server may have lost an unsaved result.",
       sampleTitle: "Edit a practice response", sampleLabel: "Restaurant response (editable)", sampleText: "Probably, but it is not confirmed yet.", sampleRun: "Open practice with this response",
-      practice: "Practice locally → inspect evidence → save a result. No real booking. Default agent: no API fees or uploads.", saved: "Saved locally. Available in Past calls.", saveFailed: "Not saved. Download the result or retry saving; do not repeat the call.", saveUnknown: "Saving has not been confirmed.", saveDisabled: "Automatic saving is off. Download to keep this result.", saveRetry: "Retry saving", download: "Save evidence", recover: "Check this call again", unconfirmed: "Connection interrupted. The outcome is unconfirmed. Check the same call; do not start another.", starting: "Starting…", assessmentUnknown: "False completion: not independently assessed", external: "External model: conversation data is sent to the selected provider; API charges may apply.",
+      practice: "Practice locally → inspect evidence → save a result. No real booking. Default agent: no API fees or uploads.", saved: "Saved locally. Available in Records.", saveFailed: "Not saved. Download the result or retry saving; do not repeat the call.", saveUnknown: "Saving has not been confirmed.", saveDisabled: "Automatic saving is off. Download to keep this result.", saveRetry: "Retry saving", download: "Save evidence", recover: "Check this call again", unconfirmed: "Connection interrupted. The outcome is unconfirmed. Check the same call; do not start another.", starting: "Starting…", assessmentUnknown: "False completion: not independently assessed", external: "External model: conversation data is sent to the selected provider; API charges may apply.",
       skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Practice", realPhone: "Call preparation", local: "Running on this computer",
       popTitle: "Running locally.", popSub: "Everything is yours.", popNeed: "Need:", popNumbers: "phone numbers", popSip: "managed SIP", popTeam: "team deployment", popHosted: "hosted inference",
-      startTitle: "Practice calls", meterAgent: "AI", statusSpeaking: "{who} is speaking", statusInCall: "In call", statusEnded: "Call ended", proofLegend: "Underlined: the words the verdict rests on", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "replay (recorded call)", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
+      startTitle: "Practice calls", meterAgent: "AI", statusSpeaking: "{who} is speaking", statusInCall: "In call", statusEnded: "Call ended", proofLegend: "Underlined: the words the verdict rests on", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "replay (recorded call)", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", recordsTitle: "Pick a record on the left to open its verdict and evidence.", recordsLead: "Practice and real calls, judged only by what the other side said. Nothing is dialled again.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
       agentSelect: "Agent", missions: "Missions", loadingMissions: "Loading missions…", noMissions: "No missions found in scenarios/.", loadMissionsFailed: "Could not load missions: {msg}",
-      replays: "Past calls", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
+      replays: "Records", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
       connectProvider: "Connect a phone provider", provider: "Phone provider", customSip: "Custom SIP", v02: "v0.2",
       realNote: "Real calls run from the CLI today: <code>oathra setup phone</code>, then <code>oathra call --to +81…</code>. Dialing from the Arena comes next.", back: "Back", backToMissions: "Back to missions",
       partyAgent: "Agent", partyCallee: "Callee", transcript: "Transcript", you: "You", agent: "Agent", system: "system",
@@ -118,14 +118,14 @@
       phonePrivacy: "確認した下書きはこの端末内で扱います。保存ファイルには個人情報が含まれます。実発信時は電話会社へ番号、音声AIへ会話データが送信され、利用料金がかかります。",
       phoneNext: "電話サービスの設定後、保存した依頼を発信せずに確認できます：", phoneApprove: "宛先・録音設定・サービスの料金を確認し、実際に発信するときだけ実行してください：", phoneInvalid: "電話番号・相手・目的を確認し、テンプレートの {{項目}} を書き換えてください。",
       resumeCall: "進行中の通話に戻る", activeCall: "進行中の通話があります。終了するか「切る」を押してから次の練習を始めてください。",
-      unknownRequest: "このサーバーに開始要求の記録がありません。過去の通話を確認してから新しく始めてください。再起動で未保存の結果を失った可能性があります。",
+      unknownRequest: "このサーバーに開始要求の記録がありません。「記録」を確認してから新しく始めてください。再起動で未保存の結果を失った可能性があります。",
       sampleTitle: "練習の例文を編集", sampleLabel: "店員役の返答（編集できます）", sampleText: "たぶん大丈夫ですが、まだ確定ではありません。", sampleRun: "この返答で練習を開く",
-      practice: "ローカルで練習 → 発話の証拠を確認 → 結果を保存。実予約は行いません。既定のエージェントはAPI費用・外部送信なし。", saved: "ローカルに保存済み。「過去の通話」から再確認できます。", saveFailed: "未保存です。結果をダウンロードするか、保存だけ再試行してください。", saveUnknown: "保存の完了は未確認です。", saveDisabled: "自動保存は無効です。結果をダウンロードしてください。", saveRetry: "保存だけ再試行", download: "証拠を保存", recover: "この通話の状態を再確認", unconfirmed: "接続が途切れ、結果は未確認です。新しい通話を始めず、この通話の状態を再確認してください。", starting: "開始しています…", assessmentUnknown: "誤完了：独立した照合は未実施", external: "外部モデル：会話データが選択した提供元に送信され、API料金が発生する場合があります。",
+      practice: "ローカルで練習 → 発話の証拠を確認 → 結果を保存。実予約は行いません。既定のエージェントはAPI費用・外部送信なし。", saved: "ローカルに保存済み。「記録」から再確認できます。", saveFailed: "未保存です。結果をダウンロードするか、保存だけ再試行してください。", saveUnknown: "保存の完了は未確認です。", saveDisabled: "自動保存は無効です。結果をダウンロードしてください。", saveRetry: "保存だけ再試行", download: "証拠を保存", recover: "この通話の状態を再確認", unconfirmed: "接続が途切れ、結果は未確認です。新しい通話を始めず、この通話の状態を再確認してください。", starting: "開始しています…", assessmentUnknown: "誤完了：独立した照合は未実施", external: "外部モデル：会話データが選択した提供元に送信され、API料金が発生する場合があります。",
       skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "電話の練習", realPhone: "電話をかける", local: "このパソコンで実行中",
       popTitle: "この Mac の中だけで動いています。", popSub: "データも通話記録も、あなたの手元にあります。", popNeed: "次が必要になったら Oathra Cloud:", popNumbers: "電話番号", popSip: "マネージド SIP", popTeam: "チームでの運用", popHosted: "推論のホスティング",
-      startTitle: "練習する電話", meterAgent: "AI", statusSpeaking: "{who}が話しています", statusInCall: "通話中", statusEnded: "通話終了", proofLegend: "下線 = 判定の根拠になった言葉", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "再生（録画した通話）", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
+      startTitle: "練習する電話", meterAgent: "AI", statusSpeaking: "{who}が話しています", statusInCall: "通話中", statusEnded: "通話終了", proofLegend: "下線 = 判定の根拠になった言葉", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "再生（録画した通話）", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", recordsTitle: "左の一覧から記録を選ぶと、判定と証拠が開きます。", recordsLead: "練習も本番も、相手の言葉だけで判定した結果が残っています。電話はかけ直しません。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
       agentSelect: "エージェント", missions: "ミッション", loadingMissions: "ミッションを読み込んでいます…", noMissions: "scenarios/ にミッションがありません。", loadMissionsFailed: "ミッションを読み込めませんでした: {msg}",
-      replays: "過去の通話", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
+      replays: "記録", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
       connectProvider: "電話会社をつなぐ", provider: "電話会社", customSip: "自前の SIP", v02: "v0.2 で対応",
       realNote: "実電話は今日から CLI で使えます。<code>oathra setup phone</code> で設定し、<code>oathra call --to +81…</code> で発信します。Arena からの発信は次の版で対応します。", back: "戻る", backToMissions: "ミッション一覧へ戻る",
       partyAgent: "AI", partyCallee: "相手", transcript: "会話", you: "あなた", agent: "AI", system: "システム",
@@ -250,6 +250,14 @@
     : { all: "All", real: "Real", practice: "Practice", open: "View verdict and evidence", records: "Records", filter: "Record type" };
   // A real call opens in the verdict view only once it has ended and its artifacts are saved (never an unknown outcome).
   const recordOpenable = (record) => record.persistence === "saved" && ["ended", "failed"].includes(record.state);
+  // A real call's outcome in the words the gateway uses, not the practice score's; a chat decides nothing.
+  const recordVerdict = (r) => {
+    const ja = LANG === "ja";
+    if (r.status === "failed") return ja ? "つながらなかった・途中で終了" : "Not connected or cut short";
+    if (r.chat) return ja ? "話しました" : "Talked";
+    return ({ completed: ja ? "決まりました" : "Settled", incomplete: ja ? "まだ決まっていません" : "Not settled", constraint_violation: ja ? "条件に合いませんでした" : "Outside the limits" })[r.status] ?? statusTitle(r.status);
+  };
+  const recordWhen = (iso) => { const d = iso ? new Date(iso) : null; return d && !isNaN(d) ? d.toLocaleString(LANG === "ja" ? "ja-JP" : "en-US", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""; };
   // A record's purpose in words; the contract's goal id is internal and never shown.
   const recordPurpose = (r) => r.chat ? (LANG === "ja" ? "雑談" : "Chat")
     : ({ "phone.message": LANG === "ja" ? "電話の依頼" : "Phone request", "phone.inbound": LANG === "ja" ? "着信" : "Incoming call", "phone.reception": LANG === "ja" ? "予約の受付" : "Reservations" })[r.goal] ?? "";
@@ -838,12 +846,14 @@
     const ul = $("#replay-list");
     const list = (replayCache || []).filter((r) => replayFilter === "all" || (replayFilter === "real") === Boolean(r.real));
     if (!list.length) { ul.replaceChildren(el("li", { class: "muted mono", text: t("noReplays") })); return; }
-    ul.replaceChildren(...list.slice().reverse().map((r) => el("li", {}, [
+    // Newest first by the time each call was saved; records without a time keep their saved order at the end.
+    const ordered = list.slice().reverse().sort((a, b) => (b.endedAt || "").localeCompare(a.endedAt || ""));
+    ul.replaceChildren(...ordered.map((r) => el("li", {}, [
       el("button", { type: "button", class: "replay-btn", onclick: () => openReplay(r.id) }, [
         el("span", { class: r.real ? "replay-kind is-real" : "replay-kind", text: r.real ? REC_T.real : REC_T.practice }),
         // Who (real) or which practice, then purpose, verdict and length. Record ids stay internal.
         el("span", { class: "replay-title", text: r.real ? (r.target || REC_T.real) : ((LANG === "ja" && TITLE_JA[r.scenario]) || r.scenario || "?") }),
-        el("span", { class: "muted", text: [r.real ? recordPurpose(r) : "", statusTitle(r.status), r.durationMs ? mmss(r.durationMs) : ""].filter(Boolean).join(" · ") }),
+        el("span", { class: "muted", text: [recordWhen(r.endedAt), r.real ? recordPurpose(r) : "", r.real ? recordVerdict(r) : statusTitle(r.status), r.durationMs ? mmss(r.durationMs) : ""].filter(Boolean).join(" · ") }),
       ]),
     ])));
   }
@@ -853,15 +863,24 @@
     try { replayCache = await api("/api/replays"); renderReplayList(); }
     catch (e) { ul.replaceChildren(el("li", { class: "muted mono", text: t("replaysFailed", { msg: e.message }) })); }
   }
+  // While the list is open the empty centre says what to do with it (wide board only shows that stage).
+  function recordsMode(open) {
+    $("#empty-h").textContent = t(open ? "recordsTitle" : "emptyTitle");
+    $("#empty-h").nextElementSibling.textContent = t(open ? "recordsLead" : "emptyLead");
+    $(".empty-flow").hidden = open;
+    $("#records-open").setAttribute("aria-expanded", String(open));
+  }
   function openReplayPanel() {
     $("#replays-panel").hidden = false;
     $("#replays-link").setAttribute("aria-expanded", "true");
+    recordsMode(true);
     return loadReplayList();
   }
   $("#replays-link").addEventListener("click", () => {
     if ($("#replays-panel").hidden) { openReplayPanel(); return; }
     $("#replays-panel").hidden = true;
     $("#replays-link").setAttribute("aria-expanded", "false");
+    recordsMode(false);
   });
   $("#records-open").textContent = REC_T.records;
   // The list sits under the practice list: bring it into view and put focus on its filter, so the press visibly lands.
