@@ -17,6 +17,8 @@ let server, page;
 // --size=1920x1080 checks one extra window size without touching the reviewed images (implies --no-capture in practice: pass both).
 const extra = process.argv.find((a) => a.startsWith("--size="))?.slice(7).split("x").map(Number);
 const SIZES = extra ? [[`${extra[0]}x${extra[1]}`, extra[0], extra[1]]] : [["desktop", 1440, 900], ["mobile", 390, 844]];
+// OATHRA_UI_THEME=light runs the same flow in the light theme (write it to another OATHRA_UI_ARTIFACTS folder).
+const theme = process.env.OATHRA_UI_THEME;
 const c = checklist("gateway primary flow");
 try {
   // A throwaway workspace: own database, own token, never the developer's .oathra/.
@@ -29,7 +31,7 @@ try {
   for (const [name, width, height] of SIZES) {
     console.log(`\n${name} ${width}x${height}`);
     page = await launch({ width, height });
-    await page.goto(base + "/");
+    await page.goto(base + "/" + (theme ? `?theme=${theme}` : ""));
     c.ok(await page.visible("#login"), "sign-in card is shown first");
     c.ok(await page.visible(".where summary"), "sign-in explains where the token is");
     if (name === "desktop") {
@@ -101,10 +103,13 @@ try {
       // The card scrolls inside itself: the last action must be reachable, not just exist.
       const reachable = await page.js("(()=>{const card=document.querySelector('#current'),b=[...card.querySelectorAll('.actions button')].pop();card.scrollTop=card.scrollHeight;const r=b.getBoundingClientRect(),k=card.getBoundingClientRect();return r.bottom<=k.bottom+1&&r.top>=k.top})()");
       c.ok(reachable, "the last action of a long result can be scrolled into view inside the card");
-      await page.js("document.querySelector('#current').scrollTop=0");
+      // UI v2 lays the result out more compactly, so the short practice transcript may now fit: cap the card's height
+      // for this check so it has to scroll, which is the case the pinning exists for.
+      await page.js("document.querySelector('#current').style.maxHeight='320px';document.querySelector('#current').scrollTop=0"); await sleep(200);
       // ...and with the card scrolled back to the top, the actions are still on screen (pinned to the card's bottom edge).
       const pinned = await page.js("(()=>{const card=document.querySelector('#current'),k=card.getBoundingClientRect();return card.scrollHeight>card.clientHeight+1&&[...card.querySelectorAll('.actions button')].every(b=>{const r=b.getBoundingClientRect();return r.top>=k.top&&r.bottom<=k.bottom+1})})()");
       c.ok(pinned, "with a long transcript open, every action stays visible at the bottom of the card");
+      await page.js("document.querySelector('#current').style.maxHeight=''");
     }
     c.ok(await page.js("document.querySelector('#detail details').open"), "an open transcript survives polling");
     if (width >= 1000) c.ok(await page.noPageScroll(), "the board still fits with a result open");

@@ -121,6 +121,12 @@ const ERRORS = {
   cross_origin_request_denied: 'このページのアドレスが、サーバーの設定と違います。設定されたアドレスで開き直してください。',
 };
 
+// Dark by default (UI v2); ?theme=light (or dark) is remembered in this browser.
+(() => {
+  let theme = new URLSearchParams(location.search).get('theme');
+  try { if (theme === 'light' || theme === 'dark') localStorage.setItem('oathra.theme', theme); else theme = localStorage.getItem('oathra.theme'); } catch { /* storage may be off */ }
+  if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+})();
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = String(text); if (cls) n.className = cls; return n; };
 const when = iso => new Date(iso).toLocaleString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 const goal = () => document.querySelector('input[name="goal"]:checked').value;
@@ -241,11 +247,12 @@ async function refresh() {
   if (!$('request').value.trim()) suggestRequest();
 }
 function suggestRequest() {
-  const name = $('test-me').checked ? '自分' : $('contact').selectedOptions[0]?.textContent ?? '';
+  const name = $('test-me').checked ? '自分' : ($('contact').selectedOptions[0]?.textContent ?? '').replace(/（電話番号未登録）$/, '');
   if (!name || name.startsWith('（')) return;
   $('request').value = GOAL_TEXT[goal()](name); $('request').dataset.suggested = 'true';
 }
 // Keep the suggestion in step with the choices, but never overwrite what the person typed.
+for (const label of document.querySelectorAll('label.choice')) { const v = label.querySelector('input')?.value; if (v && GOAL_HELP[v]) label.append(el('span', GOAL_HELP[v], 'choice-hint')); }
 for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { $('goal-help').textContent = GOAL_HELP[goal()]; if ($('request').dataset.suggested === 'true') suggestRequest(); });
 $('request').addEventListener('input', () => { $('request').dataset.suggested = 'false'; });
 $('test-me').addEventListener('change', () => { $('contact').disabled = $('test-me').checked; });
@@ -279,32 +286,31 @@ function renderDetail(m) {
   const snapshot = JSON.stringify([m, state.followups?.filter(f => f.missionId === m.id), state.integrations]);
   if (snapshot === lastDetail && $('detail').childElementCount) return; lastDetail = snapshot;
   const d = $('detail'); $('detail-empty').hidden = true; d.replaceChildren();
-  d.append(el('p', `${m.target.name} への電話${m.mode === 'simulator' ? '（練習）' : ''}`, 'eyebrow'), el('h2', STATUS[m.status] ?? m.status, 'state-title ' + tone(m.status)));
+  const when = m.createdAt ? new Date(m.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  d.append(el('p', `${m.target.name} への電話${m.mode === 'simulator' ? '（練習）' : ''}${when ? `　${when}` : ''}`, 'eyebrow'), el('h2', STATUS[m.status] ?? m.status, 'state-title ' + tone(m.status)));
 
   if (!FINISHED.includes(m.status) && m.status !== 'DRAFT') {
     const bar = el('ol', undefined, 'progress'), at = PROGRESS.findIndex(([s]) => s === m.status);
     PROGRESS.forEach(([, label], i) => bar.append(el('li', label, i < at ? 'done' : i === at ? 'now' : '')));
     d.append(bar);
   }
-  d.append(el('p', m.request, 'request'));
+  d.append(el('p', `頼んだこと：${m.request}`, 'request'));
   if (m.error) d.append(el('p', ERRORS[m.error] ?? `理由：${m.error}`, 'notice'));
 
   if (m.result) {
+    // One row per kind of fact: what was confirmed, the callee's words it rests on, what is still open.
+    const defs = el('div', undefined, 'defs');
+    const row = (label, ...content) => { const r = el('div', undefined, 'def'); const v = el('div', undefined, 'def-v'); v.append(...content); r.append(el('h3', label, 'def-k'), v); defs.append(r); };
     const verified = Object.entries(m.result.verified ?? {}), stop = m.result.doNotContact;
-    d.append(el('h3', '確認できたこと'));
-    if (!verified.length && !stop) d.append(el('p', '相手の言葉で確認できたことは、まだありません。', 'muted'));
     const list = el('ul', undefined, 'facts');
     if (stop) list.append(el('li', FACTS.do_not_contact(), 'bad'));
     for (const [key, value] of verified) list.append(el('li', (FACTS[key] ?? (v => `${key}：${v}`))(value), 'good'));
-    d.append(list);
-    const missing = (m.result.missing ?? []).filter(() => !stop);
-    if (missing.length) { d.append(el('h3', 'まだ決まっていないこと')); const ul = el('ul', undefined, 'facts'); for (const k of missing) ul.append(el('li', MISSING[k] ?? k, 'open')); d.append(ul); }
+    row('確認できたこと', ...(!verified.length && !stop ? [el('p', '相手の言葉で確認できたことは、まだありません。', 'muted')] : []), list);
     const quotes = (m.result.evidence ?? []).filter(e => e.quote);
-    if (quotes.length) {
-      d.append(el('h3', '根拠になった相手の言葉'));
-      for (const e of quotes) d.append(el('blockquote', `「${e.quote}」${e.confirmedProposal ? `（こちらの提案：「${e.confirmedProposal}」）` : ''}`));
-    }
-    if (m.result.caveat) d.append(el('p', m.result.caveat, 'hint'));
+    if (quotes.length || m.result.caveat) row('根拠になった言葉', ...quotes.map(e => el('blockquote', `「${e.quote}」${e.confirmedProposal ? `（こちらの提案：「${e.confirmedProposal}」）` : ''}`)), ...(m.result.caveat ? [el('p', m.result.caveat, 'hint')] : []));
+    const missing = (m.result.missing ?? []).filter(() => !stop);
+    if (missing.length) { const ul = el('ul', undefined, 'facts'); for (const k of missing) ul.append(el('li', MISSING[k] ?? k, 'open')); row('まだのこと', ul); }
+    d.append(defs);
   }
 
   if(m.creditUsage?.cost?.basis==='usage-rate-v1'){const c=m.creditUsage.cost;d.append(el('p',`通話 ${c.durationSeconds}秒 · Twilio $${((c.carrierNanoUsd+c.mediaNanoUsd)/1e9).toFixed(5)} · ${c.voiceModel} $${(c.aiNanoUsd/1e9).toFixed(5)} · 検索 ${c.searchCalls}回 $${(c.searchNanoUsd/1e9).toFixed(5)}`,'hint'));}

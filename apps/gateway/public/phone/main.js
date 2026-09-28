@@ -327,7 +327,7 @@ import { renderNews } from './news.js';
         purpose.className = 'phone-review-purpose';
         const fields = $('#phone-review-fields');
         fields.replaceChildren();
-        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')], ['音声AI', engineOf(m.phoneRequest.engine ?? review.readiness.defaultEngine)?.label ?? m.phoneRequest.engine ?? 'GPT-Live'], ...(m.phoneRequest.voicePreset ? [['話し方プリセット', review.readiness.voicePresets?.[m.phoneRequest.voicePreset] ?? m.phoneRequest.voicePreset]] : [])])
+        for (const [label, value] of [...(chat ? [['会話', '雑談']] : []), ['電話番号', m.target.phone], ['相手', m.target.name + (m.phoneRequest.callerName ? `（${m.phoneRequest.callerName}さんの代わりと名乗ります）` : '（依頼者の名前は伝えません）')], ...(m.phoneRequest.voicePreset ? [['話し方プリセット', review.readiness.voicePresets?.[m.phoneRequest.voicePreset] ?? m.phoneRequest.voicePreset]] : [])])
             fields.append(element('dt', label), element('dd', value));
         fields.append(element('dt', '目的'), purpose);
         if (m.request.length > 90) {
@@ -343,8 +343,11 @@ import { renderNews } from './news.js';
             fields.append(more);
         }
         // A chosen voice is confirmed on the same line as the length: one more row would push what is being agreed to out of the first view.
+        // The same holds for a voice AI other than the default: it joins that line (by name, without the model id).
         const chosenVoice = m.phoneRequest.voice && m.phoneRequest.voice !== defaultVoice() ? m.phoneRequest.voice : null;
-        fields.append(element('dt', chosenVoice ? '通話の長さ・声' : '通話の長さ'), element('dd', chosenVoice ? `${limit} · AIの声 ${chosenVoice}` : limit));
+        const chosenEngine = m.phoneRequest.engine && m.phoneRequest.engine !== (review.readiness.defaultEngine ?? 'gpt-live') ? (engineOf(m.phoneRequest.engine)?.label ?? m.phoneRequest.engine).replace(/\s*\(.*\)$/, '') : null;
+        const extras = [chosenEngine, chosenVoice ? `AIの声 ${chosenVoice}` : null].filter(Boolean);
+        fields.append(element('dt', extras.length ? '通話の長さ・声' : '通話の長さ'), element('dd', [limit, ...extras].join(' · ')));
         $('#phone-cost-summary')?.remove();
         $('#phone-price-details')?.remove();
         const summary = element('p');
