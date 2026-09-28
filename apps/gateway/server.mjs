@@ -19,6 +19,7 @@ import { billingConfiguration, METERED } from './lib/billing.mjs';
 import { assert, Fault, hash, importProduct, text } from './lib/security.mjs';
 
 function number(env,key,fallback,min,max){const n=Number(env[key]??fallback);assert(Number.isFinite(n)&&n>=min&&n<=max,`invalid_${key}`,500);return n;}
+const isLoopback=a=>/^(127\.|::1$|::ffff:127\.)/.test(String(a??''));
 export function configuration(env=process.env){
   const deployment=env.OATHRA_DEPLOYMENT??'self-hosted';assert(['self-hosted','managed'].includes(deployment),'invalid_deployment',500);
   const billing=billingConfiguration(env);
@@ -51,7 +52,7 @@ export function configuration(env=process.env){
   assert(['gpt-live','gemini-live',undefined].includes(env.OATHRA_VOICE_ENGINE),'unsupported_voice_engine',500);
   const defaultVoiceEngine=env.OATHRA_VOICE_ENGINE==='gemini-live'&&geminiReady?'gemini-live':'gpt-live';
   return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,businessName:env.OATHRA_BUSINESS_NAME??null,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
-    dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
+    localOpen:env.OATHRA_LOCAL_OPEN==='true',dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,0,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0,1000),
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),
     // Only set this when the gateway is reachable exclusively through a reverse proxy that overwrites X-Forwarded-For.
@@ -148,10 +149,16 @@ export async function createGateway(config,options={}){
       if(path==='/v1/session'&&method==='DELETE'){sessions.logout(req,res);return send(res,200,{signedOut:true});}
       const auth=req.headers.authorization;
       if(auth!==undefined)assert(auth.startsWith('Bearer '),'unauthorized',401);
-      const u=auth!==undefined?service.auth(auth.slice(7)):sessions.authenticate(req);
+      // Local practice without signing in (OATHRA_LOCAL_OPEN=true): only in practice mode, only from this machine to a
+      // localhost address, only with no credentials at all. Never on a live server or a public address.
+      const localOpen=!auth&&config.localOpen&&config.mode==='simulator'&&isLoopback(req.socket.remoteAddress)&&/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(String(req.headers.host??''))&&!/(?:^|;\s*)(?:__Host-)?oathra_session=/.test(String(req.headers.cookie??''));
+      if(localOpen&&!['GET','HEAD'].includes(method))sessions.sameOrigin(req);
+      const u=auth!==undefined?service.auth(auth.slice(7)):localOpen?config.users.find(x=>x.role==='admin')??config.users[0]:sessions.authenticate(req);
       if(!auth&&req.headers['x-oathra-account'])assert(req.headers['x-oathra-account']===u.id,'session_account_changed',409);
       if(req.headers.origin)assert(req.headers.origin===config.publicUrl,'cross_origin_request_denied',403);
       const data=['POST','PATCH'].includes(method)?await jsonBody(req):{};
+      // A signed-in person sets up (or resets) email login for their own account: the code opens the setup form.
+      if(path==='/v1/account/password-link'&&method==='POST'){service.write(u);const link=service.passwords.issue(u.id,{reset:service.passwords.profile(u.id).passwordLogin});return send(res,200,{code:new URL(link.url).hash.slice(7),expiresInSeconds:link.expiresInSeconds});}
       if(path==='/v1/auth/password'&&method==='POST'){
         sessions.sameOrigin(req);const version=await service.passwords.change(u,data,clientIp(req,config.trustProxy));
         sessions.create(req,res,u,version);return send(res,200,{changed:true});

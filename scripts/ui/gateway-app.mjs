@@ -41,9 +41,12 @@ try {
 
   page = await launch({ width: 1440, height: 900 });
   await page.goto(base + "/");
-  await page.until("document.querySelector('#token')", { label: "sign in" });
+  await page.until("document.querySelector('#login-email')", { label: "sign in" });
   c.ok(await page.js("!!document.querySelector('link[href=\"/app/style.css\"]')"), "/ is the new app (the previous screen lives at /workspace)");
-  c.ok(!(await page.visible("#tabs")), "before sign-in only the sign-in form shows");
+  c.ok(!(await page.visible("#tabs")) && await page.visible("#login-password") && !(await page.js("!!document.querySelector('#token')")), "before sign-in: email and password, no token field");
+  await page.screenshot(join(out, "gateway-app-login.png"));
+  await page.js("[...document.querySelectorAll('button')].find(b => /管理者のトークン/.test(b.textContent)).click()");
+  await page.until("document.querySelector('#token')", { label: "token form" });
   await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
   catch (e) { console.log("VIEW:", await page.text("#view"), "ERR:", page.pageErrors.join(" | ")); throw e; }
@@ -169,10 +172,30 @@ try {
   await page.close();
 
   // 390: a fresh page at phone width (a viewport change does not reach full-page captures), signed in again.
+  // 390, and the email login: a one-time setup link (what 設定 issues), then sign out and back in with email and password.
+  const link = await api("/account/password-link", {});
+  c.ok(/^[A-Za-z0-9_-]{43}$/.test(link.code ?? ""), "設定 › メールとパスワード: a one-time setup code", JSON.stringify(link).slice(0, 60));
   page = await launch({ width: 390, height: 844 });
-  await page.goto(base + "/app");
-  await page.until("document.querySelector('#token')");
-  await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
+  await page.goto(base + "/app#setup=" + link.code);
+  await page.until("document.querySelector('#login-email') && /ログインの設定/.test(document.querySelector('#view').textContent)", { label: "setup form" });
+  await page.js(`document.querySelector('#login-password').value='short';document.querySelector('#login-email').value='owner@example.com';document.querySelector('form').requestSubmit()`);
+  await page.until("!document.querySelector('.errbox').hidden", { label: "short password" }).catch(() => null);
+  c.ok(await page.js("document.querySelector('#login-password').validity.tooShort || !document.querySelector('.errbox').hidden"), "a password under 8 characters is refused");
+  await page.js(`document.querySelector('#login-password').value='correct horse 9';document.querySelector('form').requestSubmit()`);
+  await page.until("!document.querySelector('#tabs').hidden", { label: "signed in after setup" });
+  c.ok(!/setup=/.test(await page.js("location.hash")), "after setup the code leaves the address bar");
+  await page.js("location.hash='#/settings'"); await sleep(400);
+  await page.js("[...document.querySelectorAll('[role=tab],button')].find(b => b.textContent.trim() === '記録と表示').click()"); await sleep(400);
+  c.ok(/owner@example\.com/.test(await page.text("#view")), "設定 shows the login email");
+  await page.js("[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'ログアウト').click()");
+  await page.until("document.querySelector('#login-email')", { label: "signed out" });
+  await page.js(`document.querySelector('#login-email').value='owner@example.com';document.querySelector('#login-password').value='wrong password';document.querySelector('form').requestSubmit()`);
+  await page.until("!document.querySelector('.errbox').hidden", { label: "wrong password" });
+  c.ok(/違います/.test(await page.text(".errbox")) && !/invalid_login/.test(await page.text(".errbox")), "a wrong password: a plain message, no code", await page.text(".errbox"));
+  await page.js(`document.querySelector('#login-password').value='correct horse 9';document.querySelector('form').requestSubmit()`);
+  await page.until("!document.querySelector('#tabs').hidden", { label: "email sign in" });
+  c.ok(true, "signed in with email and password");
+  await page.goto(base + "/app#/");
   await page.until("!document.querySelector('#tabs').hidden");
   for (const [label, hashv] of [["home", "#/"], ["requests", "#/requests"], ["report", `#/call/${done}`], ["ask", "#/new"]]) {
     await page.js(`location.hash='${hashv}'`); await sleep(900);

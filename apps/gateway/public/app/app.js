@@ -45,6 +45,8 @@ const ERRORS = {
   voice_engine_unavailable: 'この声は、このサーバーではまだ使えません。標準の声を選んでください。',
   invalid_phone_request: '電話番号・相手の名前・頼むことを確かめてください（名前に数字や記号は使えません）。',
   invalid_caller_name: '名乗る名前は、数字や記号を入れずに40文字以内で入力してください。',
+  invalid_login: 'メールアドレスかパスワードが違います。', password_length: 'パスワードは8文字以上にしてください。', login_link_expired: 'このリンクは使えません（期限切れか使用済み）。もう一度発行してください。',
+  email_already_registered: 'このメールアドレスは、ほかのアカウントで使われています。', login_rate_limited: '試行が多すぎます。しばらく待ってからお試しください。', login_changed_retry: 'ログインの設定が変わりました。もう一度お試しください。', invalid_email: 'メールアドレスを確かめてください。',
   phone_service_preview_only: 'このサーバーは練習モードです。実際の電話はかけられません。',
   estimated_cost_exceeds_budget: '見込みの費用が、1回の上限を超えています。',
   insufficient_credits: 'クレジットが足りません。',
@@ -144,6 +146,7 @@ function renderBar() {
 const routes = { '': home, requests, schedule, new: ask, call, practice, contacts, settings };
 async function route() {
   clearTimeout(app.timer);
+  if (/^#setup=/.test(location.hash)) return renderLogin();
   const [name = '', id, sub] = location.hash.split('?')[0].replace(/^#\/?/, '').split('/');
   const view = $('#view');
   for (const a of document.querySelectorAll('[data-tab]')) {
@@ -158,24 +161,46 @@ async function route() {
 window.addEventListener('hashchange', () => { route(); $('#view').focus({ preventScroll: true }); window.scrollTo(0, 0); });
 
 // ---------------------------------------------------------------- sign in
-function renderLogin() {
+// Email and password for everyone; the operator token stays for the administrator (setup, API, channels).
+// A #setup=<code> link (from 設定, or the administrator's login-setup) sets the password.
+async function signIn(path, body, headers = {}) {
+  const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
+  if (!r.ok) { const v = await r.json().catch(() => ({})); throw new Error(ERRORS[v.error] ?? `ログインできませんでした。（問い合わせ用コード：${v.error ?? r.status}）`); }
+}
+function renderLogin(mode = 'email') {
   $('#tabs').hidden = true; $('#bar-right').hidden = true;
-  const input = el('input', { type: 'password', id: 'token', autocomplete: 'current-password', required: true, 'aria-describedby': 'token-help' });
+  const setup = /^#setup=([A-Za-z0-9_-]{43})$/.exec(location.hash)?.[1];
   const err = el('p', { class: 'errbox', role: 'alert', hidden: true });
-  const form = el('form', { class: 'card login stack', onsubmit: async e => {
-    e.preventDefault(); err.hidden = true;
-    try {
-      const r = await fetch('/v1/session', { method: 'POST', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + input.value.trim(), 'Content-Type': 'application/json' }, body: '{}' });
-      if (!r.ok) { const v = await r.json().catch(() => ({})); throw new Error(ERRORS[v.error] ?? `ログインできませんでした。（問い合わせ用コード：${v.error ?? r.status}）`); }
-      input.value = ''; app.boot = null; await route();
-    } catch (error) { err.textContent = error.message; err.hidden = false; }
-  } },
-    el('h1', { class: 'section-h', text: 'Oathra にログイン' }),
-    el('label', { class: 'lbl', for: 'token', text: 'トークン' }), input,
-    el('p', { class: 'note', id: 'token-help', text: 'サーバーの .oathra/operator-token.txt にある文字列です。ログインすると、このブラウザで8時間使えます。' }),
-    err, el('button', { class: 'btn primary big', type: 'submit', text: 'ログイン' }));
+  const fail = e => { err.textContent = e.message; err.hidden = false; };
+  const done = async () => { app.boot = null; history.replaceState(null, '', location.pathname + location.search + '#/'); await route(); };
+  let form;
+  if (setup) {
+    const email = el('input', { type: 'email', id: 'login-email', autocomplete: 'username', required: true }), pw = el('input', { type: 'password', id: 'login-password', autocomplete: 'new-password', required: true, minlength: '8' });
+    form = el('form', { class: 'card login stack', onsubmit: async e => { e.preventDefault(); err.hidden = true; try { await signIn('/v1/auth/setup', { code: setup, email: email.value.trim(), password: pw.value }); await done(); } catch (x) { fail(x); } } },
+      el('h1', { class: 'section-h', text: 'ログインの設定' }), el('p', { class: 'note', text: 'このリンクで、メールアドレスとパスワードを決めます。次からはそれでログインできます。' }),
+      el('label', { class: 'lbl', for: 'login-email', text: 'メールアドレス' }), email,
+      el('label', { class: 'lbl', for: 'login-password', text: 'パスワード（8文字以上）' }), pw, err,
+      el('button', { class: 'btn primary big', type: 'submit', text: '設定してログイン' }));
+  } else if (mode === 'token') {
+    const input = el('input', { type: 'password', id: 'token', autocomplete: 'off', required: true, 'aria-describedby': 'token-help' });
+    form = el('form', { class: 'card login stack', onsubmit: async e => { e.preventDefault(); err.hidden = true; try { await signIn('/v1/session', {}, { Authorization: 'Bearer ' + input.value.trim() }); input.value = ''; await done(); } catch (x) { fail(x); } } },
+      el('h1', { class: 'section-h', text: '管理者のトークンでログイン' }),
+      el('label', { class: 'lbl', for: 'token', text: 'トークン' }), input,
+      el('p', { class: 'note', id: 'token-help', text: 'サーバーの .oathra/operator-token.txt にある文字列です。ログインすると、このブラウザで8時間使えます。' }),
+      err, el('button', { class: 'btn primary big', type: 'submit', text: 'ログイン' }),
+      el('button', { class: 'link', type: 'button', text: 'メールアドレスでログイン', onclick: () => renderLogin('email') }));
+  } else {
+    const email = el('input', { type: 'email', id: 'login-email', autocomplete: 'username', required: true }), pw = el('input', { type: 'password', id: 'login-password', autocomplete: 'current-password', required: true });
+    form = el('form', { class: 'card login stack', onsubmit: async e => { e.preventDefault(); err.hidden = true; try { await signIn('/v1/auth/login', { email: email.value.trim(), password: pw.value }); pw.value = ''; await done(); } catch (x) { fail(x); } } },
+      el('h1', { class: 'section-h', text: 'Oathra にログイン' }),
+      el('label', { class: 'lbl', for: 'login-email', text: 'メールアドレス' }), email,
+      el('label', { class: 'lbl', for: 'login-password', text: 'パスワード' }), pw, err,
+      el('button', { class: 'btn primary big', type: 'submit', text: 'ログイン' }),
+      el('p', { class: 'note', text: 'まだパスワードがない場合は、管理者からログインの設定リンクを受け取ってください。' }),
+      el('button', { class: 'link', type: 'button', text: '管理者のトークンでログイン', onclick: () => renderLogin('token') }));
+  }
   $('#view').replaceChildren(el('div', { class: 'page' }, form));
-  input.focus();
+  form.querySelector('input')?.focus();
 }
 
 // ---------------------------------------------------------------- ホーム
@@ -811,6 +836,7 @@ async function settings(tab) {
       row('表示', '明るい／暗い', el('div', { class: 'chips' }, ...[['light', '明るい'], ['dark', '暗い']].map(([v, l]) => el('button', { class: 'chip', type: 'button', 'aria-pressed': String(cur === v), text: l, onclick: () => { try { localStorage.setItem('oathra.theme', v); } catch { /* off */ } document.documentElement.dataset.theme = v; route(); } })))),
       row('会話の記録', '', el('span', { text: '文字起こしと結果を30日保存します。音声ファイルは保存しません。' })),
       row('連携・転送・番号の確認', 'メールや予定の送信、自分への転送、番号のSMS確認、連絡停止', el('a', { class: 'btn', href: '/workspace', text: '従来の画面で開く' }), el('p', { class: 'note', text: 'これらはまだこの画面に移していません。' })),
+      row('メールとパスワードでログイン', app.boot.login?.passwordLogin ? app.boot.login.email ?? '' : 'まだ設定していません', el('button', { class: 'btn', type: 'button', text: app.boot.login?.passwordLogin ? 'パスワードを設定し直す' : '設定する', onclick: async () => { const r = await api('/account/password-link', { method: 'POST', body: {} }).catch(e => (toast(e.message), null)); if (r) location.hash = '#setup=' + r.code; } })),
       row('ログアウト', '', el('button', { class: 'btn', type: 'button', text: 'ログアウト', onclick: async () => { await api('/session', { method: 'DELETE', body: {} }).catch(() => null); app.boot = null; location.hash = '#/'; renderLogin(); } }))];
   }
   return el('div', { class: 'page' }, el('div', { class: 'split-page' },

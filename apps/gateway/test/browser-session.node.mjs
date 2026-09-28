@@ -54,3 +54,30 @@ test('HTTPS sessions use host-only Secure cookies and reject duplicate cookie va
   const cookie=h.split(';')[0];assert.equal((await fetch(base+'/v1/bootstrap',{headers:{cookie:cookie+'; '+cookie}})).status,401);
  }finally{await app.close()}
 });
+
+test('local open: no sign-in only for the simulator, from this computer, to a localhost address; writes stay same-origin',()=>using(async f=>{
+ const { request: raw } = await import('node:http');
+ const get=(host,{method='GET',origin,body}={})=>new Promise((resolve,reject)=>{const r=raw({host:'127.0.0.1',port:new URL(f.base).port,path:'/v1/bootstrap',method,headers:{host,...(origin?{origin}:{}),...(body?{'content-type':'application/json'}:{})}},res=>{res.resume();resolve(res.statusCode)});r.on('error',reject);r.end(body)});
+ const host=new URL(f.base).host;
+ assert.equal(await get(host),401,'off unless OATHRA_LOCAL_OPEN=true');
+ f.config.localOpen=true;
+ assert.equal(await get(host),200);
+ assert.equal(await get('localhost:'+new URL(f.base).port),200);
+ assert.equal(await get('oathra.example.com'),401,'a public (or rebound) Host name signs nobody in');
+ assert.equal((await f.request('/contacts',{method:'POST',body:{company:'Oathra'}})).status,403,'a write without this page as its origin is refused');
+ assert.equal((await f.request('/contacts',{method:'POST',origin:f.base,body:{company:'Oathra'}})).status,201);
+ const mode=f.config.mode;f.config.mode='live';assert.equal(await get(host),401,'never when the server can dial');f.config.mode=mode;
+ assert.equal((await f.request('/bootstrap',{cookie:'oathra_session=stale'})).status,401,'a session cookie is judged as a session, not waved through');
+}));
+
+test('設定 issues a one-time email login code for the signed-in user; the code sets email and password once',()=>using(async f=>{
+ const r=await f.request('/account/password-link',{method:'POST',auth:f.token,body:{}});assert.equal(r.status,200);
+ const {code,expiresInSeconds}=await r.json();assert.match(code,/^[A-Za-z0-9_-]{43}$/);assert.ok(expiresInSeconds>0);
+ const setup=body=>f.request('/auth/setup',{method:'POST',origin:f.base,body});
+ assert.equal((await setup({code,email:'owner@example.com',password:'short'})).status,400);
+ assert.equal((await setup({code,email:'owner@example.com',password:'correct horse 9'})).status,200);
+ assert.equal((await setup({code,email:'owner@example.com',password:'correct horse 9'})).status,410,'the code works once');
+ const login=await f.request('/auth/login',{method:'POST',origin:f.base,body:{email:'owner@example.com',password:'correct horse 9'}});assert.equal(login.status,200);
+ const cookie=login.headers.get('set-cookie').split(';')[0];
+ const boot=await (await f.request('/bootstrap',{cookie})).json();assert.equal(boot.login.email,'owner@example.com');assert.equal(boot.user.id,f.user.id);
+}));
