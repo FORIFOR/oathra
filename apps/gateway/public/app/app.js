@@ -27,6 +27,8 @@ function marked(text, marks) {
   p.append(rest.slice(at));
   return p;
 }
+// A bar filled to a share (0–1). The width is set through the style object, which the CSP allows (no inline style).
+function meter(share) { const pct = Math.max(0, Math.min(100, Math.round(share * 100))), i = el('i'); i.style.width = `${pct}%`; return el('div', { class: 'bar-meter', role: 'img', 'aria-label': `上限の${pct}%` }, i); }
 const SVG = 'http://www.w3.org/2000/svg';
 const svg = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v)); return n; };
 
@@ -49,6 +51,8 @@ const ERRORS = {
   select_one_contact: '連絡先から相手を選んでください。', contact_phone_required: 'この相手には電話番号がありません。',
   product_facts_require_review: '内容を確かめたことにチェックを入れてください。',
   unknown_practice: 'この練習は見つかりません。',
+  monthly_cap_reached: '今月の上限を超えるので、この電話はかけられません。設定の「費用とクレジット」で上限を見直せます。',
+  invalid_monthly_cap: '月の上限は 0.01 以上の金額（米ドル）で入れてください。空にすると上限なしになります。',
 };
 async function api(path, { method = 'GET', body, headers = {} } = {}) {
   const r = await fetch('/v1' + path, { method, credentials: 'same-origin', cache: 'no-store', redirect: 'error',
@@ -117,8 +121,8 @@ const needsYou = r => (r.state === 'unknown' && !r.resolvedAt) || r.state === 'd
 // ---------------------------------------------------------------- state
 const app = { boot: null, history: [], status: null, templates: [], contactSel: null, settingsTab: 'out', timer: null };
 async function loadAll() {
-  const [boot, history] = await Promise.all([api('/bootstrap'), api('/phone/history')]);
-  app.boot = boot;
+  const [boot, history, month] = await Promise.all([api('/bootstrap'), api('/phone/history'), api('/account/month')]);
+  app.boot = boot; app.month = month;
   app.history = [...history, ...boot.missions.filter(m => m.kind !== 'phone-request').map(fromSales)].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   renderBar();
 }
@@ -181,8 +185,13 @@ async function home() {
   const credit = b.credits?.enabled
     ? el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: 'クレジット残高' })), el('div', { class: 'metric-v', text: String(b.credits.available ?? 0) }),
       el('p', { class: 'note', text: b.credits.held ? `確保中 ${b.credits.held}` : '本番の電話1回ごとに、承認のときに確保して終わったら精算します。' }), el('a', { class: 'btn', href: '#/settings/cost', text: 'クレジットと費用' }))
-    : el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: '費用の上限' })), el('div', { class: 'metric-v', text: `$${b.configuration.maxCallUsd}` }),
-      el('p', { class: 'note', text: `1回の電話あたりの上限（米ドル）。通話は最長${Math.round(b.configuration.maxSeconds / 60)}分で切ります。` }));
+    : app.month.capUsd !== null
+      ? el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: '今月の費用（見込みの上限）' }), el('span', { class: 'num', text: `${new Date(app.month.since).getMonth() + 1}月` })),
+        el('div', { class: 'metric-v' }, `$${app.month.usedUsd.toFixed(2)}`, el('span', { class: 'muted small', text: ` / 上限 $${app.month.capUsd}` })),
+        meter(app.month.usedUsd / app.month.capUsd),
+        el('p', { class: 'note', text: '承認した電話の、費用の見込みの上限の合計です。これを超える電話は承認できません。' }))
+      : el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: '費用の上限' })), el('div', { class: 'metric-v', text: `$${b.configuration.maxCallUsd}` }),
+        el('p', { class: 'note', text: `1回の電話あたりの上限（米ドル）。通話は最長${Math.round(b.configuration.maxSeconds / 60)}分で切ります。月の上限は設定で決められます。` }), el('a', { class: 'btn', href: '#/settings/cost', text: '月の上限を決める' }));
   page.append(el('div', { class: 'grid-3' },
     el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: '本番の電話' })),
       el('div', { class: 'metric-v', text: b.configuration.mode === 'live' && b.configuration.liveReady ? 'かけられます' : b.configuration.mode === 'live' ? '設定待ち' : '練習モード' }),
@@ -374,6 +383,8 @@ async function ask() {
     // The setup details are for whoever runs the server: one line here, the details in 設定.
     if (!st.ready) warns.push(el('p', { class: 'warnbox' }, b.configuration.mode === 'live' ? '本番の電話の設定が終わっていないので、まだかけられません。' : '練習モードなので、実際の電話はかけられません。', el('a', { href: '#/settings', text: '設定で確かめる' })));
     if (blocked) warns.push(el('p', { class: 'warnbox' }, `${blocked.request.name}の電話が終わったか確かめるまで、発信できません。`, el('a', { href: '#/requests', text: '依頼一覧で確かめる' })));
+    if (review && app.month.capUsd !== null && app.month.usedUsd + review.mission.estimatedMaximumUsd > app.month.capUsd + 1e-9)
+      warns.push(el('p', { class: 'warnbox' }, `今月の上限（$${app.month.capUsd}）を超えるので、この電話はかけられません（今月 $${app.month.usedUsd.toFixed(2)}＋この電話 最大 $${review.mission.estimatedMaximumUsd.toFixed(2)}）。`, el('a', { href: '#/settings/cost', text: '上限を見直す' })));
     if (liveNow) warns.push(el('p', { class: 'warnbox' }, 'いまの電話が終わるまで、次の電話はかけられません。', el('a', { href: `#/call/${liveNow.id}`, text: '電話中の画面へ' })));
     // Sales calls also run in practice mode (the scripted partner answers); other requests need a real line.
     const practiceSales = isSales() && b.configuration.mode === 'simulator';
@@ -644,7 +655,13 @@ async function settings(tab) {
       b.credits?.enabled ? row('クレジット残高', '', el('b', { class: 'num', text: `${b.credits.available}` }), el('span', { class: 'note', text: b.credits.held ? ` 確保中 ${b.credits.held}` : '' }))
         : row('費用', 'このサーバーはクレジット制ではありません', el('span', { text: `1回の上限 $${cfg.maxCallUsd}（見込みが上限を超える電話は発信しません）` })),
       ...(ledger.length ? [el('h2', { class: 'section-h', text: '履歴' }), el('div', { class: 'rows' }, ...ledger.slice(-30).reverse().map(e => el('div', { class: 'row' }, el('div', {}, el('div', { class: 'who', text: labels[e.kind] ?? e.kind })), el('div', { class: 'outcome num', text: `${e.amount}` }), el('time', { class: 'num', text: when(new Date(e.created).toISOString()) }))))] : []),
-      el('p', { class: 'note', text: '月ごとの上限は、まだ設定できません（次の段階）。1回の電話の上限は、承認のときに確保する額で守られます。' })];
+      row('月の上限', '承認した電話の見込みの上限の合計（日本時間の月ごと）', (() => {
+        const cap = el('input', { type: 'text', inputmode: 'decimal', value: app.month.capUsd ?? '', placeholder: '例：30（空欄で上限なし）', 'aria-label': '月の上限（米ドル）' });
+        return el('div', {}, el('div', { class: 'two' }, cap, el('button', { class: 'btn', type: 'button', text: '保存する', onclick: async () => {
+          try { await api('/account/monthly-cap', { method: 'POST', body: { capUsd: cap.value.trim() === '' ? null : cap.value.trim() } }); await loadAll(); toast(cap.value.trim() ? '月の上限を保存しました。' : '月の上限をなくしました。'); route(); } catch (e) { toast(e.message); }
+        } })), el('p', { class: 'note', text: `今月 $${app.month.usedUsd.toFixed(2)}${app.month.capUsd !== null ? ` / 上限 $${app.month.capUsd}` : '（上限なし）'}。見込みは実際の請求より多めです。` }));
+      })()),
+      el('p', { class: 'note', text: '1回の電話の上限は、承認のときの見込みで守られます。月の上限を超える電話は、承認の時点で止まります。' })];
   } else if (app.settingsTab === 'voice') {
     body = [el('h2', { text: '声とAI' }), ...(st.engines ?? []).map(e => row(e.label, e.id === st.defaultEngine ? '標準' : '', el('span', { text: e.ready ? '使えます' : '使えません（キー未設定）' })))];
   } else {

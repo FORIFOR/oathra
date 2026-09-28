@@ -202,6 +202,8 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/plugins'){assert(u.role==='admin','administrator_required',403);return send(res,200,{apiVersion:1,plugins:registry.list()});}
       if(method==='POST'&&path==='/v1/consent')return send(res,200,service.saveConsent(u,data.version));
       if(method==='POST'&&path==='/v1/account/caller-name')return send(res,200,service.saveCallerName(u,data.callerName));
+      if(method==='POST'&&path==='/v1/account/monthly-cap')return send(res,200,service.saveMonthlyCap(u,data.capUsd));
+      if(method==='GET'&&path==='/v1/account/month')return send(res,200,service.monthUsage(u));
       if(method==='POST'&&path==='/v1/products/import'){service.write(u);return send(res,200,await importProduct(data.url));}
       if(method==='POST'&&path==='/v1/products')return send(res,201,service.product(u,data));
       if(method==='POST'&&path==='/v1/contacts')return send(res,201,service.contact(u,data,req.headers['idempotency-key']));
