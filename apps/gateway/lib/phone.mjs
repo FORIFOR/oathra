@@ -252,11 +252,13 @@ export class Phone {
       ttsStyle=CHARACTER_TTS_STYLE;
       character={pipelineEngine,tts,stt:new DeepgramSTT({apiKey:this.env.DEEPGRAM_API_KEY})};
     }
+    // The AI's own account of what it decided within 任せる範囲 (outbound requests only); stored with the call's events.
+    const decisions=m.phoneRequest&&m.direction!=='inbound'?{onDecision:e=>hooks.onEvent({...e})}:{};
     const engine=engineId==='character-tts'
       ?{...character.pipelineEngine({brain:textBrain,stt:character.stt,tts:character.tts,acknowledgements:false,ttsLabel:`Gemini TTS (${character.tts.voice})`}),id:'character-tts'}
       :engineId==='gemini-live'
-      ?(await import('../../../providers/gemini-live/dist/index.js')).geminiLiveEngine({model:this.config.geminiLiveModel,apiKey:this.env.GEMINI_API_KEY,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest&&resolvePhoneVoice(engineId,m.phoneRequest)?{voice:resolvePhoneVoice(engineId,m.phoneRequest)}:{})})
-      :gptLiveEngine({model:this.env.OATHRA_VOICE_MODEL,apiKey:this.env.OPENAI_API_KEY,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest&&resolvePhoneVoice(engineId,m.phoneRequest)?{voice:resolvePhoneVoice(engineId,m.phoneRequest)}:{}),onNews:e=>hooks.onEvent(e),
+      ?(await import('../../../providers/gemini-live/dist/index.js')).geminiLiveEngine({model:this.config.geminiLiveModel,apiKey:this.env.GEMINI_API_KEY,...decisions,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest&&resolvePhoneVoice(engineId,m.phoneRequest)?{voice:resolvePhoneVoice(engineId,m.phoneRequest)}:{})})
+      :gptLiveEngine({model:this.env.OATHRA_VOICE_MODEL,apiKey:this.env.OPENAI_API_KEY,...decisions,...(m.inbound?.reception?{desk:this.desk(m),onDesk:e=>hooks.onEvent(e)}:{}),...(m.phoneRequest&&resolvePhoneVoice(engineId,m.phoneRequest)?{voice:resolvePhoneVoice(engineId,m.phoneRequest)}:{}),onNews:e=>hooks.onEvent(e),
         ...(m.creditQuote?.tariff?.settlement===USAGE_RATE?{newsSearch:createNewsSearch({apiKey:this.env.OPENAI_API_KEY,model:m.creditQuote.tariff.search.model,onUsage:e=>hooks.onEvent({type:'billing.search',...e})})}:{})});
     const carrier=new PhoneSession(this,m,hooks,voice); const transport=new PhoneTransport({providerId:'twilio',path:'direct',describe:()=> 'Authenticated Twilio Media Streams',dial:async()=>{await carrier.dial();return carrier;}},engine);
     const restaurant=m.inbound?.reception?this.config.inbound?.restaurant:null;assert(!m.inbound?.reception||restaurant,'restaurant_not_configured',409);

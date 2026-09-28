@@ -475,6 +475,12 @@ async function call(id) {
       el('dl', { class: 'defs left' }, el('dt', { text: '相手' }), el('dd', { text: r.request.name }), el('dt', { text: '番号' }), el('dd', { class: 'num', text: displayPhone(r.request.phone) }),
         el('dt', { text: '頼んだこと' }), el('dd', { text: r.request.instruction }))));
   }
+  // What the AI decided within 任せる範囲, as it reported it: its own account, next to (never instead of) the verdict.
+  if (splitScope(r.request.instruction).ok.length || r.decisions?.length) {
+    main.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'AIが判断したこと' }), el('span', { class: 'sub', text: 'AIの報告です。決まったかどうかは、相手の言葉だけで判定します' })),
+      r.decisions?.length ? el('div', { class: 'rows' }, ...r.decisions.map(d => el('div', { class: 'row decision' }, el('div', {}, el('div', { class: 'who' }, el('span', { class: 'scope-ico', text: '○' }), ' ', d.decision), d.within ? el('div', { class: 'what', text: `任せた範囲「${d.within}」の中です` }) : null))))
+        : el('p', { class: 'muted small', text: live ? 'まだありません。任せた範囲の外の話が出たら、決めずに持ち帰ります。' : 'ありませんでした。' }));
+  }
   if (r.error) main.append(el('p', { class: 'errbox', text: r.error }));
   const foot = el('div', { class: 'call-foot' });
   if (live) foot.append(el('button', { class: 'btn danger', type: 'button', text: '通話を終える', onclick: async e => {

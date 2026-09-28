@@ -28,6 +28,7 @@ try {
   await api("/products", { name: "Oathra ビジネス", facts: "AIが代わりに電話をかけ、決まったことを相手の言葉で確かめて報告します。", reviewed: true });
   const done = await draft("焼肉 たけ", "10月3日の19時に2名で予約を取ってほしい。名前は田中。");
   put(done, "COMPLETED", [["callee", "はい、焼肉たけです。"], ["caller", "10月3日の19時に2名で予約をお願いできますか。"], ["callee", "かしこまりました。10月3日19時、2名様でご予約承りました。"]]);
+  app.store.event(app.store.get("mission", done), { type: "decision.made", decision: "19時が満席だったので、20時半で予約をお願いしました", within: "時間は第一希望から2時間以内" });
   const running = await draft("ミカ", "最近どうしてるか聞いて、気軽に雑談してください。");
   put(running, "ACTIVE", [["caller", "もしもし、田中さんの代わりにお電話しているAIです。"], ["callee", "え、そうなの？どうしたの？"]]);
   const unknown = await draft("さくら歯科", "予約日を変更したいと伝えてください。");
@@ -71,6 +72,7 @@ try {
   const report = await page.text("#view");
   c.ok(/決まりました/.test(report) && await page.js("!!document.querySelector('.ring')") && /ご予約承りました/.test(report), "報告: the ring, the settled fields with the callee's words", report.slice(0, 160));
   c.ok(!/phone\.|phone_|undefined|NaN/.test(report), "no internal ids or undefined on the report");
+  c.ok(/AIが判断したこと/.test(report) && /20時半で予約をお願いしました/.test(report) && /任せた範囲「時間は第一希望から2時間以内」の中です/.test(report) && /AIの報告です/.test(report), "報告: AIが判断したこと, marked as the AI's own account");
   await page.screenshot(join(out, "gateway-app-report.png"));
 
   await page.js("location.hash='#/new'"); await page.until("document.querySelector('#ask-phone')");
@@ -101,6 +103,19 @@ try {
   await page.js("location.hash='#/settings/out'"); await page.until("/かける設定/.test(document.querySelector('#view').textContent)");
   c.ok(/田中の代わりにお電話している/.test(await page.text("#view")) && /常にオン/.test(await page.text("#view")), "設定: the name the AI gives, and approval that cannot be turned off");
   await page.screenshot(join(out, "gateway-app-settings.png"));
+  // かけられた時の設定: saved per account and shown again.
+  await page.js("location.hash='#/settings/in'"); await page.until("/かかってきたとき/.test(document.querySelector('#view').textContent)");
+  c.ok(await page.js("document.querySelector('input[name=inb-mode][value=forward]').disabled"), "あなたにつなぐ needs a verified phone (disabled here)");
+  await page.js("document.querySelector('input[name=inb-mode][value=decline]').click();[...document.querySelectorAll('button')].find(b=>b.textContent==='保存する').click()");
+  await page.until("document.querySelector('input[name=inb-mode][value=decline]')?.checked && /保存しました/.test(document.querySelector('#toast').textContent)", { label: "inbound saved" });
+  c.ok(true, "かけられた時の設定: 出ない is saved and shown again");
+  await page.screenshot(join(out, "gateway-app-inbound.png"));
+  // 月の上限: set in 設定 › 費用とクレジット, shown on ホーム.
+  await page.js("location.hash='#/settings/cost'"); await page.until("/月の上限/.test(document.querySelector('#view').textContent)");
+  await page.js("{const i=document.querySelector('input[aria-label=\"月の上限（米ドル）\"]');i.value='30';[...document.querySelectorAll('button')].find(b=>b.textContent==='保存する'&&b.closest('.set-row')?.textContent.includes('月の上限')).click()}");
+  await page.until("/上限 \\$30/.test(document.querySelector('#view').textContent)", { label: "cap saved" });
+  await page.js("location.hash='#/'"); await page.until("/今月の費用/.test(document.querySelector('#view').textContent)");
+  c.ok(/上限 \$30/.test(await page.text("#view")) && await page.js("!!document.querySelector('.bar-meter i')"), "月の上限: saved in 設定 and shown on ホーム with a meter");
   c.ok(page.pageErrors.length === 0, "no page errors", page.pageErrors.join(" "));
 
   // 練習: the list, the detail, and a practice run that closes the ring only on the callee's words.

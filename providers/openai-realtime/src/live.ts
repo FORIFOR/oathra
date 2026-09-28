@@ -14,7 +14,7 @@ import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler }
 import type { Language } from "@oathra/evidence";
 import type { MissionView, SessionEvent } from "@oathra/core";
 import type { AgentBridge } from "./index.js";
-import { callInstructions, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
+import { callInstructions, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 export { GOODBYE_RE } from "@oathra/voice-kit";
 import { createNewsSearch, NEWS_TOPICS, publicQuery, type NewsSearch, type NewsTopic, type NewsResult, type NewsLookupEvent } from "./news.js";
 
@@ -48,6 +48,8 @@ export type LiveAgentOptions = {
   /** The restaurant's reservation desk. Only a `phone.reception` contract gets the tools that reach it. */
   desk?: ReservationDesk;
   onDesk?: (event: DeskEvent) => void;
+  /** A decision the model made within 任せる範囲 (its own account; never evidence). */
+  onDecision?: (event: DecisionEvent) => void;
   /** The clock used to read dates back ("あさって"); defaults to the wall clock. */
   today?: () => Date;
 };
@@ -215,6 +217,7 @@ export class OpenAILiveAgent {
       });
     }
     if (this.desk) tools.push(...DESK_TOOLS);
+    if (recordsDecisions(this.opts.contract)) tools.push({ type: "function", ...DECISION_TOOL } as unknown as Json);
     if (this.opts.webSearch ?? !this.opts.contract.goal.startsWith("phone.")) tools.push({ type: "web_search" });
     this.send({
       type: "session.start",
@@ -486,6 +489,11 @@ export class OpenAILiveAgent {
       void this.lookupNews(callId, args);
     } else if (name === "check_table" || name === "book_table") {
       void this.askDesk(callId, name, args);
+    } else if (name === "record_decision") {
+      // Kept as the model's own account for the report; it settles nothing. No new response: nothing more to say.
+      const event = decisionEvent(args);
+      if (event) { try { this.opts.onDecision?.(event); } catch { /* observers never break the call */ } }
+      this.send({ type: "response.item.create", event_id: `tool_${callId}`, item: { type: "function_call_output", call_id: callId, output: JSON.stringify({ ok: Boolean(event), note: "記録しました。相手には言わずに、そのまま会話を続けてください。" }) } });
     }
   }
 

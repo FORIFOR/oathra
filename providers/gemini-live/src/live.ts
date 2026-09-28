@@ -15,7 +15,7 @@ import type { Action, CallContract } from "@oathra/contract";
 import { DEFAULT_GEMINI_VOICE, GEMINI_VOICES, requiredFields } from "@oathra/contract";
 import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler } from "@oathra/audio-kit";
 import type { MissionView, SessionEvent } from "@oathra/core";
-import { callInstructions, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
+import { callInstructions, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 import type { AgentBridge } from "./index.js";
 
 export const DEFAULT_GEMINI_LIVE_MODEL = "gemini-3.8-live";
@@ -41,6 +41,8 @@ export type GeminiLiveAgentOptions = {
   /** The restaurant's reservation desk. Only a `phone.reception` contract gets the tools that reach it. */
   desk?: ReservationDesk;
   onDesk?: (event: DeskEvent) => void;
+  /** A decision the model made within 任せる範囲 (its own account; never evidence). */
+  onDecision?: (event: DecisionEvent) => void;
   /** The clock used to read dates back ("あさって"); defaults to the wall clock. */
   today?: () => Date;
 };
@@ -151,6 +153,8 @@ export class GeminiLiveAgent {
     // keeps speaking while the call is pending and can say 「予約できました」 before book_table has returned.
     if (!casual) tools.push({ name: "request_action", behavior: "BLOCKING", description: "Ask for permission before an action outside your permitted list (payment, cancel, share_address, share_phone, modify).", parameters: { type: "object", properties: { action: { type: "string" }, detail: { type: "string" } }, required: ["action", "detail"] } });
     if (this.desk) tools.push(...(DESK_TOOLS as unknown as Json[]).map((tool) => ({ ...functionDeclaration(tool), behavior: "BLOCKING" })));
+    // Recording a decision must not hold the conversation: the model keeps talking and the answer is silent.
+    if (recordsDecisions(this.opts.contract)) tools.push({ ...functionDeclaration(DECISION_TOOL as unknown as Json), behavior: "NON_BLOCKING" });
     this.send({
       setup: {
         model: `models/${this.model}`,
@@ -350,6 +354,12 @@ export class GeminiLiveAgent {
   private onToolCall(id: string, name: string, args: Json): void {
     const b = this.bridge;
     if (!b || !id) return;
+    if (name === "record_decision") {
+      const event = decisionEvent(args);
+      if (event) { try { this.opts.onDecision?.(event); } catch { /* observers never break the call */ } }
+      this.send({ toolResponse: { functionResponses: [{ id, name, response: { ok: Boolean(event), scheduling: "SILENT" } }] } });
+      return;
+    }
     if (name === "end_call") {
       this.endRequested = String(args.reason ?? "agent_hangup");
       const note = this.opts.contract.language === "ja"

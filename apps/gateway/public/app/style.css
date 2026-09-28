@@ -233,3 +233,6 @@ mark.proof sup { margin-left: 1px; font-size: 10px; font-weight: 700; color: var
 .brief mark.hold { background: var(--amber-bg); }
 .bar-meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 8px 0 2px; }
 .bar-meter i { display: block; height: 100%; background: var(--ink); width: 0; }
+.row.decision { grid-template-columns: minmax(0, 1fr); }
+.row.decision .who { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.fields + .page-h, .card + .page-h { margin-top: 28px; }

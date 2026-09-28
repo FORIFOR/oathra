@@ -22,6 +22,7 @@ export function phoneRequestSystemPrompt(ctx: BrainContext): string {
     ja ? "## この通話での返し方" : "## How you reply on this call",
     ...(ja ? [
       "- あなたの返答は文字で書かれ、そのまま声で読み上げられます。1回の返答は短く（1〜2文）。記号・絵文字・括弧書き・ト書きは書かないでください。",
+      "- record_decision も使えません（任せる範囲の中で決めてよいことは同じです）。",
       "- end_call や検索などの道具は使えません。上の指示で end_call を使う場面では、別れの挨拶を text に書き、action を \"hangup\" にしてください。",
       "- 通話が完了したかどうかはあなたではなく、相手の発言から判定されます。",
     ] : [

@@ -111,7 +111,7 @@ export class Worker {
         if(current.kind==='phone-request')current.memory=phoneMemory(current.inbound?.reception?{...current.phoneRequest,conversationMode:'chat'}:current.phoneRequest,turns,current.approvedAt??current.createdAt);
         if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
       }
-      if(['call.connected','carrier.sid','callee.consent','recording.notice','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff','news.lookup'].includes(e.type)) {
+      if(['call.connected','carrier.sid','callee.consent','recording.notice','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff','news.lookup','decision.made'].includes(e.type)) {
         this.store.event(current,e); this.store.put('mission',current);
       }
       checkCredits();
