@@ -48,7 +48,7 @@ try {
   await page.screenshot(join(out, "arena-records-desktop.png"));
   const rows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('#replay-list .replay-btn')].map(b=>b.textContent))"));
   c.ok(rows.some((r) => /^本番テスト相手\d+\/\d+ \d\d:\d\d · 雑談 · 話しました/.test(r)) && rows.some((r) => /^練習友達とテンション高めの電話\d+\/\d+ \d\d:\d\d · /.test(r)), "real and practice in one list, each with its date; the real call shows its person, purpose and a real-call outcome (not the practice score)", JSON.stringify(rows));
-  c.ok(await page.text("#replays-title") === "記録" && await page.js("document.querySelector('#replay-list').getAttribute('aria-labelledby')") === "replays-title" && await page.text("#replays-link") === "記録", "the list has the heading 「記録」 and the link has the same name (one entry, one name)");
+  c.ok(await page.text("#replays-title") === "記録" && await page.js("document.querySelector('#replay-list').getAttribute('aria-labelledby')") === "replays-title" && !(await page.visible("#replays-link")), "the list has the heading 「記録」, and the top bar is its only door (no second link in the rail)");
   c.ok(/記録を選ぶと、判定と証拠が開きます/.test(await page.text("#stage-empty")), "the empty centre says what to do while the list is open");
   c.ok(!/phone\.|phone_/.test(await page.text("#replays-panel")), "no internal ids (goal, record id) on screen for the real call");
   const count = () => page.js("document.querySelectorAll('#replay-list .replay-btn').length");
@@ -58,19 +58,13 @@ try {
   const practiceOnly = await count();
   c.ok(realOnly === 1 && practiceOnly === 1 && await page.js("document.querySelector('#replay-filter [data-filter=practice]').getAttribute('aria-pressed')") === "true", "すべて／本番／練習 filter the list and say which is on", `${realOnly}/${practiceOnly}`);
   await page.click("#replay-filter [data-filter=all]"); await sleep(150);
-  // The real call opens in the practice verdict + evidence view.
+  // The real call opens in the call view as the saved record (the same view that follows a call live).
   await page.js("[...document.querySelectorAll('#replay-list .replay-btn')].find(b=>/本番/.test(b.textContent)).click()");
-  await page.until("document.querySelectorAll('#transcript .line').length>0 && document.querySelector('#mission-list').children.length>0", { timeout: 20_000, label: "replay of the real call" });
-  c.ok(true, "a real call opens in the same verdict and evidence view");
-  // From the phone screen's history: 「判定と証拠を見る」 on a saved, ended call.
-  await page.goto(arena.url + "/?lang=ja&phone=1");
-  await page.until("document.querySelector('#phone-history-section')");
-  await page.js("document.querySelector('#phone-history-section').open=true"); await sleep(400);
-  const open = await page.js("!![...document.querySelectorAll('#phone-history-section button')].find(b=>b.textContent==='判定と証拠を見る')");
-  c.ok(open, "the phone history offers 「判定と証拠を見る」 for a saved call");
-  await page.js("[...document.querySelectorAll('#phone-history-section button')].find(b=>b.textContent==='判定と証拠を見る').click()");
-  await page.until("document.querySelectorAll('#transcript .line').length>0", { timeout: 20_000, label: "replay from history" });
-  c.ok(true, "…and it opens the saved record (no redial)");
+  await page.until("document.body.classList.contains('real-call') && /通話が終わりました/.test(document.querySelector('#result-wrap').textContent)", { timeout: 20_000, label: "the real call's record" });
+  c.ok(/本番の電話の記録/.test(await page.text("#call-sub")) && await page.text("#call-title") === "テスト相手", "a real call opens in the call view, named and marked as the saved record");
+  // The phone screen no longer lists calls: 「記録」 is the one place.
+  await page.goto(arena.url + "/?lang=ja&phone=1"); await sleep(600);
+  c.ok(!(await page.visible("#phone-history-section")), "the phone screen has no second history list");
   // 390: the list and its filter fit.
   await page.viewport(390, 844); await page.goto(arena.url + "/?lang=ja");
   await page.until("document.querySelector('#records-open')"); await page.click("#records-open");

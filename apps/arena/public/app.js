@@ -76,11 +76,11 @@
       phoneNext: "After configuring your phone service, review the saved draft without calling:", phoneApprove: "Only after checking the recipient, recording policy and provider charges, explicitly place the call:", phoneInvalid: "Check the number, recipient and purpose, and replace every {{field}} in the template.",
       resumeCall: "Return to the current call", activeCall: "A call is still in progress. Finish or hang up before starting another.",
       unknownRequest: "This server has no record of the start request. Check Records before starting again; a restarted server may have lost an unsaved result.",
-      sampleTitle: "Edit a practice response", sampleLabel: "Restaurant response (editable)", sampleText: "Probably, but it is not confirmed yet.", sampleRun: "Open practice with this response",
-      practice: "Practice locally → inspect evidence → save a result. No real booking. Default agent: no API fees or uploads.", saved: "Saved locally. Available in Records.", saveFailed: "Not saved. Download the result or retry saving; do not repeat the call.", saveUnknown: "Saving has not been confirmed.", saveDisabled: "Automatic saving is off. Download to keep this result.", saveRetry: "Retry saving", download: "Save evidence", recover: "Check this call again", unconfirmed: "Connection interrupted. The outcome is unconfirmed. Check the same call; do not start another.", starting: "Starting…", assessmentUnknown: "False completion: not independently assessed", external: "External model: conversation data is sent to the selected provider; API charges may apply.",
+      sampleTitle: "Try a different reply", sampleLabel: "Restaurant response (editable)", sampleText: "Probably, but it is not confirmed yet.", sampleRun: "Open practice with this response",
+      practice: "In practice the AI calls a practice partner (a shop or a desk). No real call is made and nothing is charged.", saved: "Saved locally. Available in Records.", saveFailed: "Not saved. Download the result or retry saving; do not repeat the call.", saveUnknown: "Saving has not been confirmed.", saveDisabled: "Automatic saving is off. Download to keep this result.", saveRetry: "Retry saving", download: "Save evidence", recover: "Check this call again", unconfirmed: "Connection interrupted. The outcome is unconfirmed. Check the same call; do not start another.", starting: "Starting…", assessmentUnknown: "False completion: not independently assessed", external: "External model: conversation data is sent to the selected provider; API charges may apply.",
       skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Practice", realPhone: "Call preparation", local: "Running on this computer",
       popTitle: "Running locally.", popSub: "Everything is yours.", popNeed: "Need:", popNumbers: "phone numbers", popSip: "managed SIP", popTeam: "team deployment", popHosted: "hosted inference",
-      startTitle: "Practice calls", meterAgent: "AI", statusSpeaking: "{who} is speaking", statusInCall: "In call", statusEnded: "Call ended", proofLegend: "Underlined: the words the verdict rests on", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "replay (recorded call)", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", recordsTitle: "Pick a record on the left to open its verdict and evidence.", recordsLead: "Practice and real calls, judged only by what the other side said. Nothing is dialled again.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
+      startTitle: "Practice calls", meterAgent: "AI", statusSpeaking: "{who} is speaking", statusInCall: "In call", statusEnded: "Call ended", proofLegend: "Underlined: the words the verdict rests on", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "saved record", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", recordsTitle: "Pick a record on the left to open its verdict and evidence.", recordsLead: "Practice and real calls, judged only by what the other side said. Nothing is dialled again.", emptyLead: "In practice the AI calls a practice partner (a shop or a desk). No real call is made. The AI saying \"it's booked\" completes nothing; a ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch the AI call, or be the other side yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch the AI call", watchSub: "AI vs AI", play: "Be the other side", playSub: "you answer the phone",
       agentSelect: "Agent", missions: "Missions", loadingMissions: "Loading missions…", noMissions: "No missions found in scenarios/.", loadMissionsFailed: "Could not load missions: {msg}",
       replays: "Records", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
       connectProvider: "Connect a phone provider", provider: "Phone provider", customSip: "Custom SIP", v02: "v0.2",
@@ -95,12 +95,12 @@
       intakeNoAnswers: "No explicit answers recorded.", intakePurpose: "Purpose: {purpose}", intakeQuestions: "Questions: {asked} / {max}", intakeConsent: "Consent: {status}", intakeStopped: "Stopped without inferring a profile.", intakeAnswer: "explicit answer", intakeDeclined: "declined", intakeSkipped: "skipped (dependency not met)",
       latency: "Latency", cost: "Cost", details: "Details", timeline: "Timeline", events: "Events", thTurn: "turn", thTtfa: "ttfa", thBrain: "brain",
       yes: "yes", no: "no",
-      stCompleted: "Mission complete", stIncomplete: "Incomplete", stViolation: "Constraint violation", stFailed: "Failed", stFalse: "False completion", stUnknown: "Unknown",
+      stCompleted: "Settled", stIncomplete: "Not settled", stViolation: "Outside the limits", stFailed: "Failed", stFalse: "False completion", stUnknown: "Unknown",
       badgeOk: "Verified", badgeNo: "Not verified", missing: "(missing)",
       evidenceN: "Verified evidence: {n}", confidence: "Confidence: {v}", latencyP50: "Latency p50: {v}", last: "{v} ms (last)", turns: "Turns: {n}", endedReason: "Ended: {r}",
       scOutcome: "Outcome", scEvidence: "Evidence", scConversation: "Conversation", scLatency: "Latency", scEfficiency: "Efficiency", scOverall: "Overall",
       fc0: "False Completion: 0", fc1: "False Completion: 1 — reported fields disagree with the callee ({f})",
-      runAgain: "Run again", newMission: "New mission", copyMd: "Copy result as Markdown", copied: "Copied", copyPrompt: "Copy:",
+      runAgain: "Run again", newMission: "Choose another practice", copyMd: "Copy result as Markdown", copied: "Copied", copyPrompt: "Copy:",
       startFailed: "Could not start call: {msg}", connLost: "Connection lost: {msg}", sendFailed: "Could not send: {msg}", hangupFailed: "Could not hang up: {msg}", replayFailed: "Could not load replay: {msg}", unknownScenario: "Unknown scenario \"{id}\"",
       permReq: "Permission requested: {a} — {d}", permDec: "Permission {r} ({by}): {a}", approved: "approved", denied: "denied", errLine: "Error: {msg}",
       ttTitle: "Time travel · {t}", ttState: "agent state", ttVerified: "verified", ttPending: "pending", ttLast: "last ttfa", ttTranscript: "Transcript so far",
@@ -119,31 +119,31 @@
       phoneNext: "電話サービスの設定後、保存した依頼を発信せずに確認できます：", phoneApprove: "宛先・録音設定・サービスの料金を確認し、実際に発信するときだけ実行してください：", phoneInvalid: "電話番号・相手・目的を確認し、テンプレートの {{項目}} を書き換えてください。",
       resumeCall: "進行中の通話に戻る", activeCall: "進行中の通話があります。終了するか「切る」を押してから次の練習を始めてください。",
       unknownRequest: "このサーバーに開始要求の記録がありません。「記録」を確認してから新しく始めてください。再起動で未保存の結果を失った可能性があります。",
-      sampleTitle: "練習の例文を編集", sampleLabel: "店員役の返答（編集できます）", sampleText: "たぶん大丈夫ですが、まだ確定ではありません。", sampleRun: "この返答で練習を開く",
-      practice: "ローカルで練習 → 発話の証拠を確認 → 結果を保存。実予約は行いません。既定のエージェントはAPI費用・外部送信なし。", saved: "ローカルに保存済み。「記録」から再確認できます。", saveFailed: "未保存です。結果をダウンロードするか、保存だけ再試行してください。", saveUnknown: "保存の完了は未確認です。", saveDisabled: "自動保存は無効です。結果をダウンロードしてください。", saveRetry: "保存だけ再試行", download: "証拠を保存", recover: "この通話の状態を再確認", unconfirmed: "接続が途切れ、結果は未確認です。新しい通話を始めず、この通話の状態を再確認してください。", starting: "開始しています…", assessmentUnknown: "誤完了：独立した照合は未実施", external: "外部モデル：会話データが選択した提供元に送信され、API料金が発生する場合があります。",
+      sampleTitle: "相手の返答を変えて試す", sampleLabel: "店員役の返答（編集できます）", sampleText: "たぶん大丈夫ですが、まだ確定ではありません。", sampleRun: "この返答で練習を開く",
+      practice: "練習では、AIが練習用の相手（お店や窓口の役）に電話します。実際の電話はかからず、費用もかかりません。", saved: "ローカルに保存済み。「記録」から再確認できます。", saveFailed: "未保存です。結果をダウンロードするか、保存だけ再試行してください。", saveUnknown: "保存の完了は未確認です。", saveDisabled: "自動保存は無効です。結果をダウンロードしてください。", saveRetry: "保存だけ再試行", download: "証拠を保存", recover: "この通話の状態を再確認", unconfirmed: "接続が途切れ、結果は未確認です。新しい通話を始めず、この通話の状態を再確認してください。", starting: "開始しています…", assessmentUnknown: "誤完了：独立した照合は未実施", external: "外部モデル：会話データが選択した提供元に送信され、API料金が発生する場合があります。",
       skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "電話の練習", realPhone: "電話をかける", local: "このパソコンで実行中",
       popTitle: "この Mac の中だけで動いています。", popSub: "データも通話記録も、あなたの手元にあります。", popNeed: "次が必要になったら Oathra Cloud:", popNumbers: "電話番号", popSip: "マネージド SIP", popTeam: "チームでの運用", popHosted: "推論のホスティング",
-      startTitle: "練習する電話", meterAgent: "AI", statusSpeaking: "{who}が話しています", statusInCall: "通話中", statusEnded: "通話終了", proofLegend: "下線 = 判定の根拠になった言葉", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "再生（録画した通話）", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", recordsTitle: "左の一覧から記録を選ぶと、判定と証拠が開きます。", recordsLead: "練習も本番も、相手の言葉だけで判定した結果が残っています。電話はかけ直しません。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
-      agentSelect: "エージェント", missions: "ミッション", loadingMissions: "ミッションを読み込んでいます…", noMissions: "scenarios/ にミッションがありません。", loadMissionsFailed: "ミッションを読み込めませんでした: {msg}",
+      startTitle: "練習する電話", meterAgent: "AI", statusSpeaking: "{who}が話しています", statusInCall: "通話中", statusEnded: "通話終了", proofLegend: "下線 = 判定の根拠になった言葉", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "保存した記録", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", recordsTitle: "左の一覧から記録を選ぶと、判定と証拠が開きます。", recordsLead: "練習も本番も、相手の言葉だけで判定した結果が残っています。電話はかけ直しません。", emptyLead: "練習では、AIが練習用の相手（お店や窓口の役）に電話します。実際の電話はかかりません。AIが「決まりました」と言っても完了にはならず、相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "AIの電話を見る（自分が相手役をしてもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AIの電話を見る", watchSub: "AI 同士の練習", play: "自分が相手役", playSub: "相手役で練習",
+      agentSelect: "エージェント", missions: "練習する電話", loadingMissions: "練習を読み込んでいます…", noMissions: "scenarios/ に練習がありません。", loadMissionsFailed: "練習を読み込めませんでした: {msg}",
       replays: "記録", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
       connectProvider: "電話会社をつなぐ", provider: "電話会社", customSip: "自前の SIP", v02: "v0.2 で対応",
-      realNote: "実電話は今日から CLI で使えます。<code>oathra setup phone</code> で設定し、<code>oathra call --to +81…</code> で発信します。Arena からの発信は次の版で対応します。", back: "戻る", backToMissions: "ミッション一覧へ戻る",
+      realNote: "実電話は今日から CLI で使えます。<code>oathra setup phone</code> で設定し、<code>oathra call --to +81…</code> で発信します。Arena からの発信は次の版で対応します。", back: "戻る", backToMissions: "練習の一覧へ戻る",
       partyAgent: "AI", partyCallee: "相手", transcript: "会話", you: "あなた", agent: "AI", system: "システム",
       live: "通話中", ended: "終了", error: "エラー", offline: "接続断", replay: "再生",
       idle: "待機", listening: "聞いています", understanding: "考えています", acting: "実行中", speaking: "話しています",
       dialing: "発信中…", replaying: "再生中…", noTranscript: "会話はありません。",
-      yourMission: "あなたのミッション", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る", endCall: "通話を終了", endingCall: "終了を確認中…", callCancelled: "通話を中断しました", endUnknown: "終了したか確認できません。通信が戻ったら通話の状態を確認してください。",
+      yourMission: "あなたの役", playLabel: "あなたは「{name}」です。電話に出てください。", playPlaceholder: "話す内容を入力…", send: "送信", hangUp: "切る", endCall: "通話を終了", endingCall: "終了を確認中…", callCancelled: "通話を中断しました", endUnknown: "終了したか確認できません。通信が戻ったら通話の状態を確認してください。",
       foolTitle: "誤完了を誘ってみる", foolHint: "店側としてこの中のどれかを言ってみてください。どれも「予約できた」にはならないはずです。",
       mission: "判定", evidence: "証拠", intake: "追加の聞き取り", noRequired: "必須項目はありません", noEvidence: "まだ証拠はありません。", verified: "検証済み", pending: "未確定", srcCallee: "相手", srcCaller: "AI", srcTool: "ツール", saidBy: "{who}の発言", whyAgreed: "AIの提案を、相手が了承して確定", whyAccepted: "相手の提示を、AIが受けて確定", whyCallee: "相手自身の言葉で確定", waitCallee: "相手の了承待ち", waitCaller: "AIはまだ受けていません", sameSettled: "同じ内容が、別の発言で確定しています", evidenceCount: "検証済み {v} / 全 {n}",
       intakeNoAnswers: "明示回答はまだありません。", intakePurpose: "目的: {purpose}", intakeQuestions: "質問数: {asked} / {max}", intakeConsent: "同意: {status}", intakeStopped: "推測によるプロファイル化はせず終了しました。", intakeAnswer: "明示回答", intakeDeclined: "回答なし", intakeSkipped: "省略（前提未成立）",
       latency: "応答", cost: "費用", details: "詳細", timeline: "タイムライン", events: "イベント", thTurn: "ターン", thTtfa: "応答", thBrain: "思考",
       yes: "はい", no: "いいえ",
-      stCompleted: "ミッション完了", stIncomplete: "未完了", stViolation: "制約違反", stFailed: "失敗", stFalse: "誤った完了", stUnknown: "不明",
+      stCompleted: "決まりました", stIncomplete: "まだ決まっていません", stViolation: "条件に合いませんでした", stFailed: "つながらなかった・途中で終了", stFalse: "誤った完了", stUnknown: "不明",
       badgeOk: "検証済み", badgeNo: "未検証", missing: "（未取得）",
       evidenceN: "検証済みの証拠 {n} 件", confidence: "信頼度 {v}", latencyP50: "応答 p50 {v}", last: "{v} ms（直近）", turns: "ターン数 {n}", endedReason: "終了理由 {r}",
       scOutcome: "結果", scEvidence: "証拠", scConversation: "会話", scLatency: "応答速度", scEfficiency: "効率", scOverall: "総合",
-      fc0: "誤った完了: 0", fc1: "誤った完了: 1 — 報告した内容が相手の発言と食い違っています（{f}）",
-      runAgain: "もう一度", newMission: "別のミッション", copyMd: "結果をコピー", copied: "コピーしました", copyPrompt: "コピー:",
+      fc0: "AIの勘違いで「決まった」にした項目：なし", fc1: "AIの勘違いで「決まった」にした項目：あり — 相手の発言と食い違っています（{f}）",
+      runAgain: "もう一度", newMission: "別の練習を選ぶ", copyMd: "結果をコピー", copied: "コピーしました", copyPrompt: "コピー:",
       startFailed: "通話を開始できませんでした: {msg}", connLost: "接続が切れました: {msg}", sendFailed: "送信できませんでした: {msg}", hangupFailed: "切断できませんでした: {msg}", replayFailed: "通話を読み込めませんでした: {msg}", unknownScenario: "シナリオ「{id}」が見つかりません",
       permReq: "許可を求めています: {a} — {d}", permDec: "許可を{r}（{by}）: {a}", approved: "承認", denied: "拒否", errLine: "エラー: {msg}",
       ttTitle: "この時点の状態 · {t}", ttState: "AI の状態", ttVerified: "検証済み", ttPending: "未確定", ttLast: "直近の応答", ttTranscript: "ここまでの会話",
@@ -269,6 +269,7 @@
   // Presentation mode keeps the old one-screen-at-a-time behaviour for recordings.
   let currentScreen = null;
   const screenHistory = [];
+  let realPollTimer = null; // following a real call in the call view (openRealCall)
   function show(name, remember = true) {
     if (remember && currentScreen && currentScreen !== name) screenHistory.push(currentScreen);
     currentScreen = name;
@@ -279,8 +280,12 @@
     }
     if (name === "home") for (const key of ["call", "replay", "autostart"]) viewUrl.searchParams.delete(key);
     history.replaceState(null, "", viewUrl);
+    // A real call shown in the call view belongs to 「電話をかける」, not to practice; leaving it stops following it.
+    const realView = name === "call" && Boolean(app.call && app.call.real);
+    document.body.classList.toggle("real-call", realView);
+    if (!realView) { clearTimeout(realPollTimer); document.body.classList.remove("real-nojudge"); }
     $$(".tt-btn").forEach(button => {
-      const selected = button.dataset.transport === "real" ? name === "real" : ["start", "call"].includes(name);
+      const selected = button.dataset.transport === "real" ? name === "real" || realView : ["start", "call"].includes(name) && !realView;
       button.classList.toggle("is-on", selected);
       button.setAttribute("aria-pressed", String(selected));
     });
@@ -379,7 +384,8 @@
     const t = b.dataset.transport;
     $$(".tt-btn").forEach((x) => { const on = x === b; x.classList.toggle("is-on", on); x.setAttribute("aria-pressed", String(on)); });
     app.transport = t;
-    if (t === "real") show("real"); else if (!screens.call.hidden) { /* stay */ } else show("start");
+    // A practice call on screen stays; a real call on screen belongs to 「電話をかける」, so practice opens its list.
+    if (t === "real") show("real"); else if (!screens.call.hidden && !(app.call && app.call.real)) { /* stay */ } else show("start");
   }));
   $("#home-open").addEventListener("click",()=>show("home"));
   $("#home-phone").addEventListener("click",()=>$(".tt-btn[data-transport=real]").click());
@@ -709,8 +715,8 @@
       ])) : [el("li",{class:"note",text:t("phoneHistoryEmpty")})]));
     } catch(error) { $("#phone-history-error").textContent=t("connLost",{msg:error.message});$("#phone-history-error").hidden=false; }
   }
-  function reusePhoneRequest(request,all) {
-    if($("#phone-instruction").value && !confirm(t("phoneReplace"))) return;
+  function reusePhoneRequest(request,all,ask=true) {
+    if(ask && $("#phone-instruction").value && !confirm(t("phoneReplace"))) return;
     if(all) {$("#phone-number").value=request.phone;$("#phone-name").value=request.name;if($("#phone-caller-name")) $("#phone-caller-name").value=request.callerName||"";}
     $("#phone-instruction").value=request.instruction;setPhoneMode(request.conversationMode,request.conversationMode==="chat"?"chat":"");
     phoneInputChanged();$("#phone-instruction").focus();$("#phone-form").scrollIntoView({block:"start"});
@@ -787,6 +793,75 @@
       $("#phone-live").hidden=false;$("#phone-live-error").hidden=false;$("#phone-live-error").textContent=t("phoneNoStatus")+" "+error.message;
     }
   }
+  // ---- a real call in the call view (the same view as practice): live while it runs, the saved record after.
+  const RT = LANG === "ja"
+    ? { live: "本番の電話", saved: "本番の電話の記録", ended: "通話が終わりました", failed: "つながらなかった・途中で終了", unknown: "終わったか確認できていません", again: "同じ相手にもう一度", reuse: "この内容で別の相手に", records: "記録の一覧へ", resolve: "通話が終わったことを確認した", who: "相手", number: "番号", voice: "声", asked: "頼んだこと", length: "長さ", how: "終わり方", chatNote: "雑談の電話では、決まったかどうかは判定しません。", messageNote: "この電話には、決まったかどうかを判定する項目がありません。", standardVoice: "標準の声" }
+    : { live: "Real call", saved: "Real call record", ended: "The call has ended", failed: "Not connected or cut short", unknown: "Not confirmed as ended", again: "Call them again", reuse: "Same request, someone else", records: "All records", resolve: "I confirmed the call ended", who: "To", number: "Number", voice: "Voice", asked: "Asked", length: "Length", how: "Ended by", chatNote: "A chat call decides nothing, so nothing is judged.", messageNote: "This call has nothing to judge.", standardVoice: "Standard voice" };
+  const realLive = record => ["starting","running","stopping"].includes(record.state);
+  // A Japanese number as people write it (+819012345678 → 09012345678); other countries stay as dialled.
+  const displayPhone = phone => /^\+81\d{9,10}$/.test(phone || "") ? `0${phone.slice(3)}` : phone;
+  async function openRealCall(id) {
+    clearTimeout(realPollTimer);
+    let record;
+    try { record = await api(`/api/phone/calls/${encodeURIComponent(id)}`); }
+    catch (error) { toast(`${t("phoneNoStatus")} ${error.message}`); return; }
+    const live = realLive(record);
+    let c = app.call;
+    if (!c || c.id !== record.id || !c.real || currentScreen !== "call") {
+      closeStream();
+      const req = record.request;
+      c = app.call = newCallModel({ id: record.id, title: req.name, require: {}, constraints: {}, callee: { name: req.name, avatar: null }, brief: "" }, "watch", record.id);
+      c.real = record; c.replay = !live; c.status = live ? "running" : "done";
+      renderCallShell();
+      show("call");
+      for (const ev of record.events || []) ingest(ev, true);
+      c.realSeen = (record.events || []).length;
+      renderAll();
+    } else {
+      // Each poll returns the whole record: take in only the events not seen yet.
+      c.real = record;
+      for (const ev of (record.events || []).slice(c.realSeen || 0)) ingest(ev);
+      c.realSeen = (record.events || []).length;
+    }
+    c.status = live ? "running" : "done";
+    if (!live) { c.speaking = null; c.endReason = record.endReason || c.endReason; setSpeaking(null); finishTyping(); }
+    setLive(live, live ? phoneStateText(record.state) : t("ended"));
+    $("#call-hangup").hidden = !live; $("#call-hangup").disabled = record.state === "stopping";
+    renderMission();
+    if (!live) renderResult();
+    if (live) realPollTimer = setTimeout(() => { if (app.call === c && currentScreen === "call") openRealCall(id); }, 1000);
+  }
+  function realVoiceText(record) {
+    const v = record.voiceSetting, req = record.request;
+    if (req.voicePreset) return `${presetLabel(req.voicePreset)}${v?.voiceSent ? `（${v.voiceSent}）` : ""}`;
+    return v?.voiceSent ? `${RT.standardVoice}（${v.voiceSent}）` : RT.standardVoice;
+  }
+  function realInfo(record) {
+    const req = record.request, dl = el("dl", { class: "real-info" });
+    for (const [k, v] of [[RT.who, req.name], [RT.number, displayPhone(req.phone)], [RT.voice, realVoiceText(record)], [RT.asked, req.instruction]]) dl.append(el("dt", { text: k }), el("dd", { text: v }));
+    return [el("p", { class: "real-note", text: req.conversationMode === "chat" ? RT.chatNote : RT.messageNote }), dl];
+  }
+  function renderRealResult() {
+    const c = app.call, record = c.real;
+    const title = record.state === "unknown" ? RT.unknown : record.state === "failed" ? RT.failed : RT.ended;
+    // The voice is already in 「この電話について」 above: only what the end adds.
+    const lines = [[RT.length, mmss(c.elapsed || 0)], ...(record.endReason ? [[RT.how, endLabel(record.endReason)]] : [])];
+    $("#result-wrap").replaceChildren(el("div", { class: `result ${record.state === "failed" || record.state === "unknown" ? "warn" : ""}`, role: "region", "aria-label": LANG === "ja" ? "結果" : "Result" }, [
+      el("h3", { class: "result-h", text: title }),
+      ...(record.error ? [el("p", { class: "note", text: record.error })] : []),
+      el("dl", { class: "real-info" }, lines.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
+      el("div", { class: "result-actions" }, [
+        ...(record.state === "unknown" && !record.resolvedAt ? [el("button", { type: "button", class: "btn", text: RT.resolve, onclick: async () => {
+          if (!confirm(t("phoneResolveConfirm"))) return;
+          try { await api(`/api/phone/calls/${encodeURIComponent(record.id)}/acknowledge`, { method: "POST", body: JSON.stringify({ confirmedEnded: true }) }); await openRealCall(record.id); } catch (error) { toast(error.message); }
+        } })] : []),
+        el("button", { type: "button", class: "btn primary", text: RT.again, onclick: () => { show("real"); reusePhoneRequest(record.request, true, false); } }),
+        el("button", { type: "button", class: "btn", text: RT.reuse, onclick: () => { show("real"); reusePhoneRequest(record.request, false, false); } }),
+        el("button", { type: "button", class: "link-btn", text: RT.records, onclick: () => $("#records-open").click() }),
+      ]),
+    ]));
+    $("#result-wrap").hidden = false;
+  }
   $("#phone-dial").addEventListener("click",async()=>{
     syncPhoneDial();if($("#phone-dial").disabled || !phoneReviewData) return;
     const reviewed=phoneReviewData;phoneDialPending=true;syncPhoneDial();
@@ -794,13 +869,14 @@
     $("#phone-dial-error").hidden=true;
     try {
       const {record}=await api("/api/phone/calls",{method:"POST",body:JSON.stringify({reviewId:reviewed.reviewId,approved:true})});
-      sessionStorage.setItem("oathra.webPhoneActive",record.id);renderWebPhone(record);clearPhoneReview();await loadWebPhone(record.id,true);
+      // Straight to the call view: the conversation, who is speaking and 「通話を終える」, updating while it runs.
+      sessionStorage.setItem("oathra.webPhoneActive",record.id);clearPhoneReview();await openRealCall(record.id);
     } catch(error) {
       const message=error.status ? error.message : t("phoneNoStatus");
       clearPhoneReview();
       // Status reads are safe; a lost POST response never triggers a second POST.
-      await loadWebPhone(reviewed.reviewId,true);
-      $("#phone-live-error").hidden=false;$("#phone-live-error").textContent=message;
+      toast(message);
+      await openRealCall(reviewed.reviewId);
     } finally {phoneDialPending=false;syncPhoneDial();}
   });
   $("#phone-refresh").addEventListener("click",()=>{const id=sessionStorage.getItem("oathra.webPhoneActive");if(id)loadWebPhone(id);});
@@ -815,7 +891,9 @@
     catch(error){$("#phone-live-error").hidden=false;$("#phone-live-error").textContent=error.message;}
   });
   refreshPhoneResources();
-  const existingPhone=sessionStorage.getItem("oathra.webPhoneActive");if(existingPhone)loadWebPhone(existingPhone);
+  // A call still running in this tab reopens in the call view after a reload.
+  const existingPhone=sessionStorage.getItem("oathra.webPhoneActive");
+  if(existingPhone) api(`/api/phone/calls/${encodeURIComponent(existingPhone)}`).then(record=>{if(["starting","running","stopping"].includes(record.state)) openRealCall(existingPhone);}).catch(()=>{});
 
   // local popover
   const localBtn = $("#local-btn"), localPop = $("#local-pop");
@@ -849,7 +927,7 @@
     // Newest first by the time each call was saved; records without a time keep their saved order at the end.
     const ordered = list.slice().reverse().sort((a, b) => (b.endedAt || "").localeCompare(a.endedAt || ""));
     ul.replaceChildren(...ordered.map((r) => el("li", {}, [
-      el("button", { type: "button", class: "replay-btn", onclick: () => openReplay(r.id) }, [
+      el("button", { type: "button", class: "replay-btn", onclick: () => (r.real ? openRealCall(r.id) : openReplay(r.id)) }, [
         el("span", { class: r.real ? "replay-kind is-real" : "replay-kind", text: r.real ? REC_T.real : REC_T.practice }),
         // Who (real) or which practice, then purpose, verdict and length. Record ids stay internal.
         el("span", { class: "replay-title", text: r.real ? (r.target || REC_T.real) : ((LANG === "ja" && TITLE_JA[r.scenario]) || r.scenario || "?") }),
@@ -1166,7 +1244,7 @@
     $("#callee-name").textContent = c.mode === "play" ? t("you") : c.calleeName;
     // Who is talking to whom, and that nothing rings: 「組み込みエージェント → ミカ · 練習（電話はかかりません）」
     const sub = $("#call-sub");
-    if (sub) sub.textContent = `${brainLabel(c.brain)} → ${c.mode === "play" ? t("you") : c.calleeName || "—"} · ${t(c.replay ? "replayNote" : "practiceNoCall")}`;
+    if (sub) sub.textContent = c.real ? `AI → ${c.calleeName || "—"} · ${c.replay ? RT.saved : RT.live}` : `${brainLabel(c.brain)} → ${c.mode === "play" ? t("you") : c.calleeName || "—"} · ${t(c.replay ? "replayNote" : "practiceNoCall")}`;
     const avatar = c.scenario && c.scenario.callee && c.scenario.callee.avatar;
     $("#callee-avatar").textContent = c.mode === "play" ? "◉" : (avatar || "◉");
     $("#transcript").replaceChildren(el("p", { class: "transcript-empty", text: c.replay ? t("replaying") : t("dialing") }));
@@ -1351,7 +1429,7 @@
       const who = l.source === "caller" ? t("agent") : l.source === "callee" ? (c.mode === "play" ? t("you") : c.calleeName) : t("system");
       const say = el("div", { class: "say" });
       box.appendChild(el("div", { class: `line ${cls}`, "data-turn": l.turnId }, [
-        el("div", { class: "who", text: who }),
+        el("div", { class: "who", text: who, title: who }),
         say,
         el("div", { class: "t", text: typeof l.t === "number" ? mmss(l.t) : "" }),
       ]));
@@ -1465,6 +1543,11 @@
   function renderMission() {
     const c = app.call;
     const ul = $("#mission-list");
+    // A real call with nothing to judge (a chat, a message): the column says so and shows the call instead.
+    document.body.classList.toggle("real-nojudge", Boolean(c && c.real && !missionFields(c).length));
+    const heading = $("#mission-h [data-i18n=mission]");
+    if (heading) heading.textContent = c && c.real && !missionFields(c).length ? (LANG === "ja" ? "この電話について" : "About this call") : t("mission");
+    if (c && c.real && !missionFields(c).length) { ul.replaceChildren(...realInfo(c.real)); return; }
     const verified = latestVerified(c);
     const pending = latestPending(c);
     const constraints = (c.scenario && c.scenario.constraints) || {};
@@ -1644,6 +1727,7 @@
   }
 
   function renderResult() {
+    if (app.call && app.call.real) return renderRealResult();
     const c = app.call;
     const r = c.result;
     const wrap = $("#result-wrap");
@@ -1755,6 +1839,14 @@
   });
   async function endCurrentCall() {
     const c = app.call;
+    if (c && c.real) {
+      // A real call stops through the phone service; the view keeps reading its state (never a second hang-up).
+      $("#call-hangup").disabled = true; $("#call-hangup").textContent = t("endingCall");
+      try { await api(`/api/phone/calls/${encodeURIComponent(c.id)}/hangup`, { method: "POST", body: "{}" }); }
+      catch (error) { toast(`${t("phoneNoStatus")} ${error.message}`); }
+      await openRealCall(c.id);
+      return;
+    }
     if (!c || c.replay || c.status !== "running" || c.ending) return;
     c.ending = true;
     const buttons = [$("#call-hangup"), $("#play-hangup")];
@@ -1805,8 +1897,8 @@
       case "call.started": return `${ev.transport} / ${ev.brain}${ev.scenario ? ` · ${ev.scenario}` : ""}`;
       case "call.connected": return ev.callee || "";
       case "state.changed": return `${ev.from} → ${ev.to}`;
-      case "transcript.final": return `${ev.source}: ${ev.text}`;
-      case "transcript.partial": return `${ev.source}: ${ev.text}`;
+      case "transcript.final": return `${ev.source === "callee" ? app.call.calleeName : "AI"}: ${ev.text}`;
+      case "transcript.partial": return `${ev.source === "callee" ? app.call.calleeName : "AI"}: ${ev.text}`;
       case "agent.speech.started": return ev.text;
       case "evidence.created": return `${ev.evidence.field} = ${fmtVal(ev.evidence.value)} (${ev.evidence.source}${ev.evidence.verified ? ", verified" : ""})`;
       case "evidence.verified": return `${ev.evidence.field} = ${fmtVal(ev.evidence.value)}`;

@@ -444,3 +444,23 @@ body:not(.managed-phone) #phone-form label.voice-card { position: relative; disp
 .scenario-btn .s-title-en, .scenario-btn .s-meta, .scenario-btn .s-diff { font-family: var(--sans); letter-spacing: 0; }
 /* Japanese headings break between phrases, not inside one. */
 #empty-h { word-break: auto-phrase; text-wrap: balance; }
+/* ---- Real calls (2026-09-28): one place for them. Dialling goes straight to the call view, which follows the call
+   live and then shows its record; 「記録」 opens past calls there too. The phone screen only prepares calls. */
+body:not(.managed-phone) #phone-history-section, body:not(.managed-phone) #phone-live { display: none !important; }
+/* The practice list has nothing to do with a real call: the call takes the rail's place. */
+html.board body.real-call main { grid-template-columns: minmax(0, 1fr); }
+body.real-call #screen-start { display: none !important; }
+/* Nothing to judge (a chat): no evidence column, no underline legend; the right column describes the call. */
+body.real-nojudge .panels > .panel[aria-labelledby="evidence-h"], body.real-nojudge .proof-legend { display: none; }
+.real-note { margin: 0 0 14px; font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+.real-info { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 13px; line-height: 1.7; }
+.real-info dt { color: var(--muted); }
+.real-info dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+#mission-list .real-info { list-style: none; }
+/* The practice latency/cost figures are not a real call's: its cost comes from the carrier and the voice service. */
+body.real-call #metrics > span:not(.proof-legend), body.real-call #metrics > .sep { display: none; }
+/* 「記録」 is in the top bar on every screen: the rail's own link to it would be a second door to the same list. */
+#replays-link { display: none; }
+/* A long callee name stays on one line (88px for every row, so the text column lines up; then …) instead of folding into three. The handoff's 52px fits "AI" and short names only. */
+html.board .line { grid-template-columns: 88px minmax(0, 1fr) 44px; }
+html.board .line .who { max-width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
