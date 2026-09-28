@@ -24,7 +24,7 @@ export function phoneMemory(request: PhoneRequest, turns: {id?: string; source: 
     const pending=engine.pending(field), verified=values[field];
     const latest=verified===undefined?pending:engine.latestVerified(field);
     const value=verified??pending?.value;
-    return {field,...(requested[field]!==undefined?{requested:requested[field]}:{}),...(value!==undefined?{value}:{}),status:verified!==undefined?'verified':pending?'proposed':'missing',...(latest?{source:latest.source,quote:latest.transcript}:{})};
+    return {field,...(requested[field]!==undefined?{requested:requested[field]}:{}),...(value!==undefined?{value}:{}),status:verified!==undefined?'verified':pending?'proposed':'missing',...(latest?{source:latest.source,quote:latest.transcript,...(latest.span?{span:latest.span}:{}),turnId:latest.utteranceId}:{})};
   }).filter(n=>n.requested!==undefined||n.value!==undefined);
   return {version:1,timeZone:'Asia/Tokyo',referenceAt:now,turnCount:turns.length,lastTurnId:turns.at(-1)?.id??null,recipient:request.name,originalRequest:request.instruction,bookingStatus:'not_authorized',notes,
     history:engine.graph().nodes.filter(n=>fields.includes(n.field as typeof fields[number])).map(n=>({field:n.field,value:n.value,source:n.source,quote:n.transcript,verified:n.verified,t:n.t}))};

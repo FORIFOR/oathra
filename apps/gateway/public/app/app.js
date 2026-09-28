@@ -29,6 +29,10 @@ function marked(text, marks) {
 }
 // A bar filled to a share (0–1). The width is set through the style object, which the CSP allows (no inline style).
 function meter(share) { const pct = Math.max(0, Math.min(100, Math.round(share * 100))), i = el('i'); i.style.width = `${pct}%`; return el('div', { class: 'bar-meter', role: 'img', 'aria-label': `上限の${pct}%` }, i); }
+// 00:24.310 — where a line sits in the call (the runtime's audio clock).
+const clock = ms => { const t = Math.max(0, Math.round(ms)); return `${String(Math.floor(t / 60000)).padStart(2, '0')}:${String(Math.floor(t / 1000) % 60).padStart(2, '0')}.${String(t % 1000).padStart(3, '0')}`; };
+// The AI saying it is done is never evidence: its lines that claim so are marked on screen (the verdict ignores them anyway).
+const CLAIMS_DONE = /(できました|承りました|お取りしました|決まりました|完了しました|確定しました|booked|confirmed)/;
 const SVG = 'http://www.w3.org/2000/svg';
 const svg = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v)); return n; };
 
@@ -133,7 +137,7 @@ function renderBar() {
   const need = app.history.filter(needsYou).length, live = app.history.find(r => LIVE.includes(r.state));
   $('#attention-badge').hidden = !need; $('#attention-badge').textContent = String(need);
   $('#live-pill').hidden = !live;
-  if (live) { $('#live-pill').href = `#/call/${live.id}`; $('#live-pill-time').textContent = mmss((Date.now() - Date.parse(live.createdAt)) / 1000); }
+  if (live) { $('#live-pill').href = `#/call/${live.id}`; $('#live-pill-time').textContent = `・${live.request.name} ${mmss((Date.now() - Date.parse(live.createdAt)) / 1000)}`; }
 }
 
 // ---------------------------------------------------------------- router
@@ -400,7 +404,10 @@ async function ask() {
 
   consentBox.addEventListener('change', () => { go.disabled = !review || !consentBox.checked; });
 
+  const steps = el('ol', { class: 'steps', 'aria-label': '手順' });
   function renderSide() {
+    const at = review ? 2 : 1;
+    steps.replaceChildren(...['内容', '確認して発信', '報告'].map((l, i) => el('li', { class: i + 1 === at ? 'on' : i + 1 < at ? 'done' : '', 'aria-current': i + 1 === at ? 'step' : null, text: `${'①②③'[i]} ${l}` })));
     const v = values();
     const brief = el('div', { class: 'brief' },
       el('p', { class: 'nomargin' }, el('b', { text: v.name || '（相手）' }), v.phone ? el('span', { class: 'num', text: `（${displayPhone(v.phone)}）` }) : '', ' に電話して、次のことを頼みます。'),
@@ -470,7 +477,7 @@ async function ask() {
   const field = (k, d, ...content) => el('div', { class: 'field' }, el('div', { class: 'k' }, el('b', { text: k }), d ? el('span', { text: d }) : null), el('div', {}, ...content));
   const view = el('div', { class: 'ask' },
     el('section', { class: 'ask-form' },
-      el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'), el('h1', { text: '電話を頼む' }),
+      el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'), el('div', { class: 'ask-h' }, el('h1', { text: '電話を頼む' }), steps),
       field('だれに', contacts.length ? '連絡先から選ぶか、番号を入れます' : '番号と名前を入れます', contacts.length ? chips : null,
         el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-phone', text: '電話番号' }), phone), el('div', {}, el('label', { class: 'lbl', for: 'ask-name', text: '相手の名前' }), name))),
       field('何の電話か', '種類を選ぶと、必要なことを聞きます', purposeChips),
@@ -501,7 +508,25 @@ async function call(id) {
   const main = el('section', { class: 'call-main' },
     el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' › ', el('b', { text: r.request.name }), el('span', { class: 'tag', text: r.direction === 'inbound' ? '着信' : r.practice ? '練習' : '本番' })),
     head);
-  if (notes.length) {
+  const turnOf = id => r.transcript?.find(t => t.id === id);
+  if (notes.length && !live && r.state !== 'unknown') {
+    // The report: when and what it cost, the verdict and a one-line summary, then one row per field with the value,
+    // what was asked for, the callee's words that settled it and where they are in the call.
+    const summary = [r.request.name, ...notes.filter(n => n.status === 'verified' && n.field !== 'confirmed').map(n => fmtValue(n.field, n.value) + (n.field === 'time' ? 'から' : ''))].join(' · ');
+    const meta = [new Date(r.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' }), seconds ? `通話 ${Math.round(seconds)}秒` : '', r.creditUsage?.consumed ? `${r.creditUsage.consumed} クレジット` : ''].filter(Boolean).join(' · ');
+    head.replaceChildren(el('div', { class: 'report-top' },
+      el('div', {}, el('p', { class: 'meta num', text: meta }), el('h1', { class: 'verdict', text: o.text }), el('p', { class: 'summary', text: summary })),
+      ringFor(notes.length, notes.map(n => n.status === 'verified'))));
+    main.append(el('div', { class: 'report-rows' }, ...notes.map(n => {
+      const t = turnOf(n.turnId), words = n.span || n.quote, asked = n.requested !== undefined && n.value !== undefined && String(n.requested) !== String(n.value);
+      return el('div', { class: `rrow ${n.status === 'verified' ? 'ok' : ''}` },
+        el('span', { class: 'rk', text: FIELD[n.field] }),
+        el('div', { class: 'rv' }, el('b', { text: n.value !== undefined ? fmtValue(n.field, n.value) : n.requested !== undefined ? fmtValue(n.field, n.requested) : '—' }), asked ? el('span', { class: 'muted small', text: `頼んだのは ${fmtValue(n.field, n.requested)}` }) : null),
+        el('div', { class: 'rq' }, n.status === 'verified' && words ? [el('span', { class: 'said' }, '「', el('mark', { class: 'proof-fill', text: words }), '」'), t?.startMs !== undefined ? el('span', { class: 'span num', text: `${clock(t.startMs)} – ${clock(t.endMs)}` }) : null] : el('span', { class: 'muted small', text: n.status === 'proposed' ? '提案中・まだ確かめていません' : 'まだ確かめていません' })),
+        n.status === 'verified' ? el('span', { class: 'tick big', text: '✓', 'aria-label': '相手の言葉で確認済み' }) : el('span', { class: 'tick no big' }));
+    })));
+    if (notes.some(n => ['date', 'time'].includes(n.field) && n.status === 'verified')) main.append(el('p', { class: 'caveat', text: '確かめたのは、電話での合意までです。お店や相手のシステムへの登録は、別に確かめてください。' }));
+  } else if (notes.length) {
     main.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: '確かめること' }), el('span', { class: 'sub', text: '相手の言葉で確かめられたら、輪が一区切り閉じます' })),
       el('div', { class: 'fields' }, ...notes.map((n, k) => el('div', { class: `fcard ${n.status === 'verified' ? 'ok' : ''}` },
         el('div', { class: 'k', text: `${k + 1} ${FIELD[n.field]}` }), n.status === 'verified' ? el('span', { class: 'tick', text: '✓', 'aria-label': '相手の言葉で確認済み' }) : null,
@@ -536,10 +561,12 @@ async function call(id) {
   main.append(foot);
   const transcript = el('div', { class: 'transcript', 'aria-live': live ? 'polite' : 'off' },
     ...(r.transcript?.length ? r.transcript.map(t => el('div', { class: `line ${t.source === 'callee' ? 'callee' : ''}` },
-      el('div', { class: 'who' }, t.source === 'callee' ? r.request.name : 'AI', typeof t.t === 'number' ? el('time', { text: mmss(t.t / 1000) }) : null),
-      marked(t.text, t.source === 'callee' ? notes.map((n, k) => ({ quote: n.status === 'verified' ? n.quote : '', n: k + 1 })) : [])))
+      el('div', { class: 'who' }, t.source === 'callee' ? r.request.name : 'AI', typeof t.startMs === 'number' ? el('time', { text: mmss(t.startMs / 1000) }) : typeof t.t === 'number' ? el('time', { text: mmss(t.t / 1000) }) : null),
+      marked(t.text, t.source === 'callee' ? notes.map((n, k) => ({ quote: n.status === 'verified' && n.turnId === t.id ? (n.span || n.quote) : n.status === 'verified' && !n.turnId ? n.quote : '', n: k + 1 })) : []),
+      t.source !== 'callee' && CLAIMS_DONE.test(t.text) ? el('span', { class: 'claim', text: 'AIの発言・判定に数えません' }) : null,
+      !live && typeof t.startMs === 'number' && typeof t.endMs === 'number' ? el('span', { class: 'span num', text: `${clock(t.startMs)} – ${clock(t.endMs)}` }) : null))
       : [el('p', { class: 'empty', text: live ? 'つながると、ここに会話が出ます。' : '会話の記録はありません。' })]));
-  const side = el('aside', { class: 'call-side', 'aria-label': '会話' }, el('div', { class: 'side-top' }, el('b', { text: '会話' }), el('span', { class: 'muted small', text: '文字起こしは自動・音声は保存しません' })), transcript);
+  const side = el('aside', { class: 'call-side', 'aria-label': live ? '会話' : '証拠' }, el('div', { class: 'side-top' }, el('b', { text: live ? '会話' : '証拠' }), el('span', { class: 'muted small', text: live ? '文字起こしは自動・音声は保存しません' : '相手の言葉と、その時刻' })), transcript);
   if (live) app.timer = setTimeout(async () => { if (location.hash.startsWith(`#/call/${r.id}`)) { const y = window.scrollY; const t = $('.transcript'); const atEnd = t && t.scrollHeight - t.scrollTop - t.clientHeight < 40; await route(); window.scrollTo(0, y); if (atEnd) { const n = $('.transcript'); if (n) n.scrollTop = n.scrollHeight; } } }, 1500);
   requestAnimationFrame(() => { transcript.scrollTop = transcript.scrollHeight; });
   renderBar();

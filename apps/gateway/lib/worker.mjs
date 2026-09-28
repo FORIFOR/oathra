@@ -107,7 +107,7 @@ export class Worker {
       if(e.type==='recording.notice') current.recordingNotice={method:e.method,text:e.text};
       if(e.type==='contact.opt_out') { current.optOut=true; this.suppress(m,'dtmf'); shouldAbort=true; }
       if(e.type==='transcript.final') {
-        turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(e.interrupted?{interrupted:true}:{})});
+        turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})});
         if(current.kind==='phone-request')current.memory=phoneMemory(current.inbound?.reception?{...current.phoneRequest,conversationMode:'chat'}:current.phoneRequest,turns,current.approvedAt??current.createdAt);
         if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
       }

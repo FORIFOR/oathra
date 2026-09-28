@@ -56,7 +56,7 @@ export function phoneReadiness(service,config,user) {
   creditQuote:service.credits.quote(config.mode)};
 }
 export function phoneRecord(service,m) {
- const transcript=m.transcript??service.store.events(m.id,m.owner).filter(e=>e.type==='transcript.final').map(e=>({id:e.turnId,source:e.source,text:e.text,t:e.t,...(e.interrupted?{interrupted:true}:{})}));
+ const transcript=m.transcript??service.store.events(m.id,m.owner).filter(e=>e.type==='transcript.final').map(e=>({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})}));
  const reachedTimeLimit=!m.stopReason&&!m.stopNeedsReconciliation&&['INCOMPLETE','COMPLETED'].includes(m.status)&&m.carrierStatus==='completed'&&m.maxSeconds>0&&m.billing?.carrier?.durationSeconds>=m.maxSeconds;
  const map={DRAFT:'draft',QUEUED:'starting',DIALING:'starting',ACTIVE:'running',CANCEL_REQUESTED:'stopping',UNKNOWN:'unknown',FAILED:'failed',CANCELLED:'ended',COMPLETED:'ended',INCOMPLETE:'ended',DECLINED:'ended'};
  const voiceSetting=service.store.events(m.id,m.owner).find(e=>e.type==='voice.setting')?.setting??null;

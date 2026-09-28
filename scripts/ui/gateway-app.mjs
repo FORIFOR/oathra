@@ -18,7 +18,7 @@ const out = resolve("artifacts/ui"); mkdirSync(out, { recursive: true });
 const c = checklist("gateway app");
 const api = (path, body) => fetch(base + "/v1" + path, { method: body ? "POST" : "GET", headers: { authorization: "Bearer " + token, "content-type": "application/json", "idempotency-key": randomUUID() }, ...(body ? { body: JSON.stringify(body) } : {}) }).then((r) => r.json());
 const draft = async (name, instruction) => (await api("/phone/draft", { phone: "+819012345678", name, instruction })).mission.id;
-const put = (id, status, turns) => { const m = app.store.get("mission", id); m.status = status; m.approvedAt = Date.now(); if (status !== "ACTIVE") m.finishedAt = Date.now(); m.transcript = turns.map(([source, text], i) => ({ id: `t-${i}`, source, text, t: (i + 1) * 4000 })); app.store.put("mission", m); };
+const put = (id, status, turns) => { const m = app.store.get("mission", id); m.status = status; m.approvedAt = Date.now(); if (status !== "ACTIVE") m.finishedAt = Date.now(); m.transcript = turns.map(([source, text], i) => ({ id: `t-${i}`, source, text, t: (i + 1) * 4000, startMs: i * 4000 + 310, endMs: i * 4000 + 3180 })); app.store.put("mission", m); };
 let page;
 try {
   await api("/consent", { version: config.consentVersion });
@@ -27,7 +27,7 @@ try {
   await api("/contacts", { name: "佐藤", company: "株式会社サンプル", phone: "+81312345678", relationship: "inquiry", basis: "9/20 に資料請求フォームから問い合わせ" });
   await api("/products", { name: "Oathra ビジネス", facts: "AIが代わりに電話をかけ、決まったことを相手の言葉で確かめて報告します。", reviewed: true });
   const done = await draft("焼肉 たけ", "10月3日の19時に2名で予約を取ってほしい。名前は田中。");
-  put(done, "COMPLETED", [["callee", "はい、焼肉たけです。"], ["caller", "10月3日の19時に2名で予約をお願いできますか。"], ["callee", "かしこまりました。10月3日19時、2名様でご予約承りました。"]]);
+  put(done, "COMPLETED", [["callee", "はい、焼肉たけです。"], ["caller", "10月3日の19時に2名で予約をお願いできますか。"], ["callee", "かしこまりました。10月3日19時、2名様でご予約承りました。"], ["caller", "ありがとうございます。ご予約できましたね。"]]);
   app.store.event(app.store.get("mission", done), { type: "decision.made", decision: "19時が満席だったので、20時半で予約をお願いしました", within: "時間は第一希望から2時間以内" });
   const running = await draft("ミカ", "最近どうしてるか聞いて、気軽に雑談してください。");
   put(running, "ACTIVE", [["caller", "もしもし、田中さんの代わりにお電話しているAIです。"], ["callee", "え、そうなの？どうしたの？"]]);
@@ -56,7 +56,7 @@ try {
 
   await page.js("location.hash='#/requests'"); await page.until("/あなたの確認が必要/.test(document.querySelector('#view').textContent)");
   const req = await page.text("#view");
-  c.ok(/電話が終わったか確かめられていません/.test(req) && /発信前の確認待ち/.test(req) && /進行中/.test(req) && /完了/.test(req), "依頼: needs-you cards, in progress and done");
+  c.ok(/電話が終わったか確かめられていません/.test(req) && /発信前の確認待ち/.test(req) && /進行中/.test(req) && /完了/.test(req), "依頼: needs-you cards, in progress and done", req.slice(0, 300));
   await page.screenshot(join(out, "gateway-app-requests.png"), { fullPage: true });
 
   await page.js(`location.hash='#/call/${running}'`); await page.until("/通話を終える/.test(document.querySelector('#view').textContent)");
@@ -68,10 +68,12 @@ try {
   await page.until("/最近どうしてるかなと思って/.test(document.querySelector('.transcript').textContent)", { timeout: 6000, label: "live update" });
   c.ok(true, "電話中: a new line appears within the poll interval");
 
-  await page.js(`location.hash='#/call/${done}'`); await page.until("/確かめること/.test(document.querySelector('#view').textContent)");
+  await page.js(`location.hash='#/call/${done}'`); await page.until("!!document.querySelector('.report-top')");
   const report = await page.text("#view");
   c.ok(/決まりました/.test(report) && await page.js("!!document.querySelector('.ring')") && /ご予約承りました/.test(report), "報告: the ring, the settled fields with the callee's words", report.slice(0, 160));
   c.ok(!/phone\.|phone_|undefined|NaN/.test(report), "no internal ids or undefined on the report");
+  c.ok(await page.js("!!document.querySelector('.report-top .verdict') && document.querySelectorAll('.rrow').length===4") && /確かめたのは、電話での合意までです/.test(report) && /\d\d:\d\d\.\d{3} – \d\d:\d\d\.\d{3}/.test(report), "報告 as in the film: verdict with summary, one row per field with the callee's words and their time, the caveat");
+  c.ok(/AIの発言・判定に数えません/.test(await page.text(".transcript")) && /証拠/.test(await page.text(".side-top")), "the AI's own 「できました」 is marked as not counted; the side is the evidence");
   c.ok(/AIが判断したこと/.test(report) && /20時半で予約をお願いしました/.test(report) && /任せた範囲「時間は第一希望から2時間以内」の中です/.test(report) && /AIの報告です/.test(report), "報告: AIが判断したこと, marked as the AI's own account");
   await page.screenshot(join(out, "gateway-app-report.png"));
 
@@ -161,7 +163,7 @@ try {
   await page.until("location.hash.startsWith('#/call/') && /佐藤/.test(document.querySelector('#view').textContent)", { label: "sales call view" });
   c.ok(/商談の日時/.test(await page.text("#view")) && /練習/.test(await page.text(".crumb")), "after approval the sales call opens in the call view, marked 練習, with its one field");
 
-  await page.js(`location.hash='#/call/${partial}'`); await page.until("/確かめること/.test(document.querySelector('#view').textContent)");
+  await page.js(`location.hash='#/call/${partial}'`); await page.until("!!document.querySelector('.report-top')");
   c.ok(await page.js("document.querySelector('.ring text')?.textContent") !== "4/4" && !/決まりました/.test(await page.text(".headline")), "a partly confirmed call: the ring stays open and the headline does not say settled", await page.js("document.querySelector('.ring text')?.textContent"));
   await page.screenshot(join(out, "gateway-app-report-partial.png"));
   await page.close();

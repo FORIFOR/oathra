@@ -257,3 +257,31 @@ button.cal-d:hover { background: var(--bg-2); }
 .day { scroll-margin-top: 80px; }
 .day + .day { margin-top: 18px; }
 .grid-2 + .page-h { margin-top: 28px; }
+/* 電話を頼む: where you are in the three steps. */
+.ask-h { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ask-h h1 { margin: 4px 0 24px; }
+.steps { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; font-size: 12px; color: var(--muted); }
+.steps li + li::before { content: "—"; margin-right: 6px; color: var(--line-2); }
+.steps li.on { color: var(--ink); font-weight: 700; }
+/* The report (as in the LP film): meta, the verdict and a summary, the ring on the right; one row per field. */
+.report-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; width: 100%; }
+.report-top .meta { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.report-top .verdict { margin: 0; font-size: 48px; line-height: 1.2; letter-spacing: -.01em; }
+.report-top .summary { margin: 10px 0 0; font-size: 17px; color: var(--ink-2); }
+.head:has(.report-top) { display: block; }
+.report-rows { border-top: 1px solid var(--line); }
+.rrow { display: grid; grid-template-columns: 80px minmax(120px, 190px) minmax(0, 1fr) 30px; align-items: center; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.rrow .rk { font-size: 13px; color: var(--muted); }
+.rrow .rv b { display: block; font-size: 22px; }
+.rrow .rv span { display: block; margin-top: 2px; }
+.rrow .rq { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 14px; }
+mark.proof-fill { background: linear-gradient(transparent 55%, var(--ok-line) 55%); color: inherit; }
+.span { font-size: 11px; color: var(--ok); }
+.tick.big { width: 26px; height: 26px; font-size: 13px; }
+.caveat { margin: 18px 0 0; padding: 14px 16px; border-radius: 10px; background: var(--bg-2); font-size: 13px; color: var(--ink-2); }
+.claim { display: inline-block; margin-top: 6px; padding: 2px 8px; border: 1px dashed var(--line-2); border-radius: 6px; font-size: 11px; color: var(--muted); }
+.line .span { display: block; margin-top: 4px; }
+@media (max-width: 979px) {
+  .report-top .verdict { font-size: 32px; }
+  .rrow { grid-template-columns: 1fr auto; } .rrow .rk { grid-column: 1 / -1; } .rrow .rq { grid-column: 1 / -1; }
+}
