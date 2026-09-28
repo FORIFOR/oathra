@@ -31,7 +31,7 @@ try {
   for (const [name, width, height] of SIZES) {
     console.log(`\n${name} ${width}x${height}`);
     page = await launch({ width, height });
-    await page.goto(base + "/" + (theme ? `?theme=${theme}` : ""));
+    await page.goto(base + "/workspace" + (theme ? `?theme=${theme}` : ""));
     c.ok(await page.visible("#login"), "sign-in card is shown first");
     c.ok(await page.visible(".where summary"), "sign-in explains where the token is");
     if (name === "desktop") {

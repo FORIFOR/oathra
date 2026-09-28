@@ -24,6 +24,8 @@ try {
   await api("/consent", { version: config.consentVersion });
   await api("/account/caller-name", { callerName: "田中" });
   await api("/contacts", { name: "焼肉 たけ", company: "飲食店", phone: "+81355550142" });
+  await api("/contacts", { name: "佐藤", company: "株式会社サンプル", phone: "+81312345678", relationship: "inquiry", basis: "9/20 に資料請求フォームから問い合わせ" });
+  await api("/products", { name: "Oathra ビジネス", facts: "AIが代わりに電話をかけ、決まったことを相手の言葉で確かめて報告します。", reviewed: true });
   const done = await draft("焼肉 たけ", "10月3日の19時に2名で予約を取ってほしい。名前は田中。");
   put(done, "COMPLETED", [["callee", "はい、焼肉たけです。"], ["caller", "10月3日の19時に2名で予約をお願いできますか。"], ["callee", "かしこまりました。10月3日19時、2名様でご予約承りました。"]]);
   const running = await draft("ミカ", "最近どうしてるか聞いて、気軽に雑談してください。");
@@ -35,8 +37,9 @@ try {
   put(partial, "INCOMPLETE", [["caller", "10月5日の18時に3名で予約をお願いできますか。"], ["callee", "10月5日ですね、その日は空いております。お時間は確認しますので少々お待ちください。"]]);
 
   page = await launch({ width: 1440, height: 900 });
-  await page.goto(base + "/app");
+  await page.goto(base + "/");
   await page.until("document.querySelector('#token')", { label: "sign in" });
+  c.ok(await page.js("!!document.querySelector('link[href=\"/app/style.css\"]')"), "/ is the new app (the previous screen lives at /workspace)");
   c.ok(!(await page.visible("#tabs")), "before sign-in only the sign-in form shows");
   await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
@@ -69,7 +72,7 @@ try {
   await page.screenshot(join(out, "gateway-app-report.png"));
 
   await page.js("location.hash='#/new'"); await page.until("document.querySelector('#ask-phone')");
-  await page.js("document.querySelector('.chip').click()");
+  await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='焼肉 たけ').click()");
   await page.js("{const t=document.querySelector('#ask-instruction');t.value='10月10日の19時に2名で予約を取ってほしい。';t.dispatchEvent(new Event('input',{bubbles:true}))}");
   c.ok(/焼肉 たけ/.test(await page.text(".ask-side")) && /10月10日/.test(await page.text(".ask-side")), "電話を頼む: the brief on the right follows the form");
   c.ok(/確かめるまで、発信できません/.test(await page.text(".ask-side")) && await page.js("document.querySelector('.ask-side .btn.big').disabled"), "an unknown outcome blocks a new call, and the side says where to fix it");
@@ -82,6 +85,35 @@ try {
   c.ok(/田中の代わりにお電話している/.test(await page.text("#view")) && /常にオン/.test(await page.text("#view")), "設定: the name the AI gives, and approval that cannot be turned off");
   await page.screenshot(join(out, "gateway-app-settings.png"));
   c.ok(page.pageErrors.length === 0, "no page errors", page.pageErrors.join(" "));
+
+  // 練習: the list, the detail, and a practice run that closes the ring only on the callee's words.
+  await page.emulateReducedMotion();
+  await page.js("location.hash='#/practice'"); await page.until("document.querySelectorAll('.item').length>0", { label: "practice list" });
+  c.ok(await page.js("document.querySelectorAll('.item').length") >= 5 && /レストラン予約/.test(await page.text("#view")), "練習: the practice list in Japanese");
+  await page.js("location.hash='#/practice/restaurant-reservation'"); await sleep(400);
+  await page.js("[...document.querySelectorAll('button')].find(b=>b.textContent==='練習を始める').click()");
+  await page.until("/練習が終わりました/.test(document.querySelector('#view').textContent)", { timeout: 20000, label: "practice run" });
+  c.ok(await page.js("document.querySelector('.ring text')?.textContent") === "4/4" && /決まりました/.test(await page.text(".headline")) && /なし/.test(await page.text(".call-foot")), "練習 run: the ring closes 4/4 on the callee's words, no false completion");
+  await page.screenshot(join(out, "gateway-app-practice.png"));
+  await page.js("location.hash='#/practice/false-completion-trap/run'");
+  await page.until("/練習が終わりました/.test(document.querySelector('#view').textContent)", { timeout: 20000, label: "trap run" });
+  c.ok(/決まりませんでした/.test(await page.text(".headline")), "the full-restaurant trap is not reported as settled");
+
+  // 営業の目的: a registered contact and a reviewed product; practice mode talks to the practice partner.
+  for (const id of [running, unknown]) { const m = app.store.get("mission", id); m.status = "COMPLETED"; m.finishedAt = Date.now(); app.store.put("mission", m); }
+  await page.js("location.hash='#/'"); await sleep(300);
+  await page.js("location.hash='#/new'"); await page.until("document.querySelector('[data-purpose=meeting]')");
+  await page.js("document.querySelector('[data-purpose=meeting]').click()");
+  c.ok(!(await page.js("document.querySelector('#ask-product').closest('.two').hidden")) && /15分の商談/.test(await page.js("document.querySelector('#ask-instruction').value")), "商談: the product appears and the request follows the purpose");
+  await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='佐藤').click()");
+  await page.js("[...document.querySelectorAll('.ask-side button')].find(b=>b.textContent==='内容を確かめる').click()");
+  try { await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "sales review" }); } catch (e) { console.log("SIDE:", await page.text(".ask-side")); throw e; }
+  c.ok(/練習なので0円/.test(await page.text(".ask-side")) && /Oathra ビジネス/.test(await page.text(".ask-side")), "the review names the product and says practice costs nothing");
+  await page.screenshot(join(out, "gateway-app-ask-sales.png"));
+  await page.js("document.querySelector('#ask-ack').click()"); await sleep(100);
+  await page.js("[...document.querySelectorAll('.ask-side button')].find(b=>b.textContent==='この内容で電話をかける').click()");
+  await page.until("location.hash.startsWith('#/call/') && /佐藤/.test(document.querySelector('#view').textContent)", { label: "sales call view" });
+  c.ok(/商談の日時/.test(await page.text("#view")) && /練習/.test(await page.text(".crumb")), "after approval the sales call opens in the call view, marked 練習, with its one field");
 
   await page.js(`location.hash='#/call/${partial}'`); await page.until("/確かめること/.test(document.querySelector('#view').textContent)");
   c.ok(await page.js("document.querySelector('.ring text')?.textContent") !== "4/4" && !/決まりました/.test(await page.text(".headline")), "a partly confirmed call: the ring stays open and the headline does not say settled", await page.js("document.querySelector('.ring text')?.textContent"));

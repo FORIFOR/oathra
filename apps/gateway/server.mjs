@@ -1,4 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
+import { practiceList, practiceRun } from './lib/practice.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
@@ -56,7 +57,7 @@ export function configuration(env=process.env){
     // Only set this when the gateway is reachable exclusively through a reverse proxy that overwrites X-Forwarded-For.
     trustProxy:env.OATHRA_TRUST_PROXY==='true'};
 }
-const assets=new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/managed-phone.js',['managed-phone.js','text/javascript; charset=utf-8']],['/managed-phone.css',['managed-phone.css','text/css; charset=utf-8']],['/oathra-mark.png',['oathra-mark.png','image/png']],['/oathra-mark-original.png',['oathra-mark-original.png','image/png']],['/app',['app/index.html','text/html; charset=utf-8']],['/app/',['app/index.html','text/html; charset=utf-8']],['/app/app.js',['app/app.js','text/javascript; charset=utf-8']],['/app/style.css',['app/style.css','text/css; charset=utf-8']],['/app/mark.png',['app/mark.png','image/png']]]);
+const assets=new Map([['/',['app/index.html','text/html; charset=utf-8']],['/workspace',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/managed-phone.js',['managed-phone.js','text/javascript; charset=utf-8']],['/managed-phone.css',['managed-phone.css','text/css; charset=utf-8']],['/oathra-mark.png',['oathra-mark.png','image/png']],['/oathra-mark-original.png',['oathra-mark-original.png','image/png']],['/app',['app/index.html','text/html; charset=utf-8']],['/app/',['app/index.html','text/html; charset=utf-8']],['/app/app.js',['app/app.js','text/javascript; charset=utf-8']],['/app/style.css',['app/style.css','text/css; charset=utf-8']],['/app/mark.png',['app/mark.png','image/png']]]);
 for (const name of ['main','dom','messages','receipt','news','client','contacts','account','bookings']) assets.set(`/phone/${name}.js`,[`phone/${name}.js`,'text/javascript; charset=utf-8']);
 // One short recorded sample per voice, from the fixed voice list only; never a path taken from the request.
 for (const voice of PHONE_VOICES) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
@@ -208,6 +209,9 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/phone/verify')return send(res,200,await phone.verifyNumber(u,data));
       if(method==='POST'&&path==='/v1/links')return send(res,201,{message:'連携 '+service.linkCode(u),expiresInSeconds:300});
       if(method==='POST'&&path==='/v1/missions/draft')return send(res,201,service.prepare(u,data));
+      // Practice with the built-in characters (lib/practice.mjs): nothing dials and nothing is charged.
+      if(method==='GET'&&path==='/v1/practice/scenarios')return send(res,200,await practiceList());
+      if(method==='POST'&&path==='/v1/practice/run')return send(res,200,await practiceRun(String(data.scenario??'')));
       if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone);store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
       if(method==='POST'&&path==='/v1/followups/preview')return send(res,201,followups.preview(u,data.missionId,data));
       const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh|not-delivered)$/);

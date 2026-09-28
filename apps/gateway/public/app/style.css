@@ -199,3 +199,11 @@ main:focus, main:focus-visible { outline: none; }
   .bar { position: static; }
   .page-h { flex-wrap: wrap; row-gap: 4px; } .page-h .sub { flex-basis: 100%; }
 }
+.gap { height: 10px; }
+.chip.static { display: inline-flex; align-items: center; cursor: default; }
+.option { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.option:has(input:checked) { border-color: var(--ink); }
+.option input { margin-top: 3px; accent-color: var(--ink); } .option b { display: block; font-size: 14px; } .option span.muted { display: block; margin-top: 2px; }
+.item .grow { flex: 1; min-width: 0; } .item .grow span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* `hidden` wins over the layout rules (.field, .two are grids). */
+[hidden] { display: none !important; }

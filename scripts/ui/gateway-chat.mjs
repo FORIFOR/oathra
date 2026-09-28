@@ -26,7 +26,7 @@ async function workspace(keys) {
   return { base, token, stop: () => { server.stop(); rmSync(work, { recursive: true, force: true }); } };
 }
 async function signIn(page, ws) {
-  await page.goto(ws.base + "/");
+  await page.goto(ws.base + "/workspace");
   await page.js(`document.querySelector('#token').value=${JSON.stringify(ws.token)};document.querySelector('#login-form').requestSubmit()`);
   await page.until("!document.querySelector('#workspace').hidden", { label: "workspace" });
   await page.js("document.querySelector('#consent').click()"); await sleep(400);
