@@ -217,7 +217,7 @@ function callRows(list, emptyText) {
   return el('div', { class: 'rows' }, ...list.map(r => {
     const o = outcome(r);
     return el('a', { class: 'row', href: `#/call/${r.id}` },
-      el('div', {}, el('div', { class: 'who' }, r.request.name, el('span', { class: 'tag', text: r.direction === 'inbound' ? '着信' : r.practice ? '練習' : '本番' })), el('div', { class: 'what', text: r.request.instruction.slice(0, 60) })),
+      el('div', {}, el('div', { class: 'who' }, r.request.name, el('span', { class: 'tag', text: r.direction === 'inbound' ? '着信' : r.practice ? '練習' : '本番' })), el('div', { class: 'what', text: splitScope(r.request.instruction).body.slice(0, 60) })),
       el('div', { class: `outcome ${o.tone === 'warn' ? 'warn' : o.tone === 'dim' ? 'dim' : ''}` }, o.tone === 'ok' ? el('span', { class: 'tick', text: '✓' }) : null, o.text),
       el('time', { class: 'num', text: when(r.createdAt) }));
   }));
@@ -254,6 +254,25 @@ function needCard(r) {
 }
 
 // ---------------------------------------------------------------- 電話を頼む
+// 任せる範囲 (design: Oathra App.dc.html). Written into the instruction as plain words, so the engine and the
+// saved request carry it with no schema change; the verdict still comes only from the other party's words.
+const SCOPE_HEAD = '【任せる範囲】', SCOPE_OK = 'その場で決めてよい：', SCOPE_HOLD = '決めずに持ち帰る（相手に「確認して折り返します」と伝える）：', SCOPE_NEVER = 'しない：';
+const OK_SUGGEST = ['時間は第一希望から2時間以内', '席の種類はどれでも', '人数を1名増やすのは可'];
+const HOLD_SUGGEST = ['日付を変える案', 'コースや前金が必要と言われた', 'キャンセル料の話'];
+const NEVER_DO = ['支払い・カード番号を伝える', 'AIであることを隠す'];
+function splitScope(text) {
+  const [body, scope = ''] = String(text ?? '').split('\n\n' + SCOPE_HEAD);
+  const pick = head => (scope.split('\n').find(l => l.startsWith(head))?.slice(head.length) ?? '').split('、').map(s => s.trim()).filter(Boolean);
+  return { body, ok: scope ? pick(SCOPE_OK) : [], hold: scope ? pick(SCOPE_HOLD) : HOLD_SUGGEST.slice(0, 2) };
+}
+function withScope(body, ok, hold) {
+  const lines = [body.trim(), '', SCOPE_HEAD];
+  if (ok.length) lines.push(SCOPE_OK + ok.join('、'));
+  if (hold.length) lines.push(SCOPE_HOLD + hold.join('、'));
+  lines.push(SCOPE_NEVER + NEVER_DO.join('、'));
+  return lines.join('\n').slice(0, 2000);
+}
+
 async function ask() {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   // Fresh state: a call that just ended or was confirmed must not keep blocking the next one.
@@ -264,6 +283,7 @@ async function ask() {
   const pre = from?.request ?? {}, preContact = params.get('contact') ? b.contacts.find(c => c.id === params.get('contact')) : null;
   const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '',
     purpose: from?.sales ? from.goal : pre.conversationMode === 'chat' ? 'chat' : '', contactId: preContact?.id ?? (from ? b.contacts.find(c => c.phone === pre.phone)?.id : undefined) ?? null, productId: from?.product?.id ?? b.products[0]?.id ?? '' };
+  const scoped = splitScope(form.instruction); form.instruction = scoped.body; form.ok = scoped.ok; form.hold = scoped.hold;
   let review = null, suggested = !form.instruction;
   // Purposes: a request in plain words, a chat, or one of the sales goals (a registered contact and a reviewed product).
   const PURPOSES = [['', '依頼（ふだんの言葉で）'], ['chat', '雑談'], ['meeting', '商談の日時を決める'], ['materials', '資料を送ってよいか聞く'], ['introduce', '商品を説明する']];
@@ -288,6 +308,19 @@ async function ask() {
   product.addEventListener('change', () => { form.productId = product.value; changed(); });
   const productRow = el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-product', text: '紹介する商品' }), product),
     el('p', { class: 'note' }, b.products.length ? '商品の説明は、確認済みの内容だけを使います。' : '営業の電話には、確認済みの商品が必要です。', el('a', { href: '#/settings/products', text: ' 設定で商品を登録' })));
+  const scopeBox = el('div', { class: 'scopes' });
+  const usesScope = () => form.purpose === '';
+  function renderScope() {
+    const col = (key, title, cls, mark, sug) => {
+      const next = sug.find(x => !form[key].includes(x));
+      return el('div', { class: `scope ${cls}` }, el('b', { class: 'scope-h' }, el('span', { class: 'scope-ico', text: mark }), title),
+        ...form[key].map(t => el('span', { class: 'scope-item' }, t, el('button', { type: 'button', 'aria-label': `${t} を外す`, text: '×', onclick: () => { form[key] = form[key].filter(x => x !== t); renderScope(); changed(); } }))),
+        next ? el('button', { type: 'button', class: 'scope-add', text: '＋ ' + next, onclick: () => { form[key].push(next); renderScope(); changed(); } }) : null);
+    };
+    scopeBox.replaceChildren(col('ok', 'AIが決めてよい', 'ok', '○', OK_SUGGEST), col('hold', '決めずに持ち帰る', 'hold', '△', HOLD_SUGGEST),
+      el('div', { class: 'scope never' }, el('b', { class: 'scope-h' }, el('span', { class: 'scope-ico', text: '×' }), 'しない'), ...NEVER_DO.map(t => el('span', { class: 'scope-item', text: t })), el('span', { class: 'note', text: 'この2つは常にしません' })));
+  }
+  renderScope();
   function suggest() {
     // Keep the wording in step with the purpose and the person, but never overwrite what was typed.
     if (!suggested && instruction.value.trim()) return;
@@ -306,12 +339,12 @@ async function ask() {
   const consented = b.account?.consentVersion === b.configuration.consentVersion;
   const consentAgree = el('input', { type: 'checkbox', id: 'ask-consent' });
 
-  function values() { return { phone: phone.value.trim(), name: name.value.trim(), instruction: instruction.value.trim(), preset: voice.value }; }
+  function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value }; }
   function changed() {
     review = null; consentBox.checked = false;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
     for (const c of purposeChips.children) { const on = c.dataset.purpose === form.purpose; c.setAttribute('aria-pressed', String(on)); c.setAttribute('aria-checked', String(on)); }
-    productRow.hidden = !isSales(); voiceField.hidden = isSales();
+    productRow.hidden = !isSales(); voiceField.hidden = isSales(); scopeField.hidden = !usesScope();
     // The purposes write the request; examples only help a request in plain words.
     template.closest('.two').hidden = form.purpose !== '';
     renderSide();
@@ -329,7 +362,9 @@ async function ask() {
     const brief = el('div', { class: 'brief' },
       el('p', { class: 'nomargin' }, el('b', { text: v.name || '（相手）' }), v.phone ? el('span', { class: 'num', text: `（${displayPhone(v.phone)}）` }) : '', ' に電話して、次のことを頼みます。'),
       ...(isSales() ? [el('p', { text: `紹介する商品：${b.products.find(x => x.id === form.productId)?.name ?? '（未選択）'}。確認済みの説明だけを使い、値引き・契約・支払いは約束しません。` })] : []),
-      el('blockquote', { text: v.instruction || '（何をしてほしいか）' }),
+      el('blockquote', { text: v.body || '（何をしてほしいか）' }),
+      ...(usesScope() && form.ok.length ? [el('p', { class: 'nomargin' }, 'その場で決めてよいこと：', el('mark', { text: form.ok.join('、') }))] : []),
+      ...(usesScope() && form.hold.length ? [el('p', { class: 'nomargin' }, '次の話が出たら、決めずに持ち帰ります：', el('mark', { class: 'hold', text: form.hold.join('、') }))] : []),
       el('p', { text: `最初に、AIであること・${b.account?.callerName ? `${b.account.callerName}の代わりであること・` : ''}記録していることを伝えます。支払いの約束はしません。` }));
     const facts = el('dl', { class: 'defs left' },
       el('dt', { text: '通話の上限' }), el('dd', { text: `${Math.round((review?.mission.maxSeconds ?? 180) / 60)}分で切ります` }),
@@ -365,7 +400,7 @@ async function ask() {
       if (isSales()) {
         if (!form.contactId) throw new Error('営業の電話は、連絡先から相手を選んでください（連絡先の画面で登録できます）。');
         if (!form.productId) throw new Error('紹介する商品を選んでください（設定の「商品」で登録できます）。');
-        const m = await api('/missions/draft', { method: 'POST', body: { request: v.instruction, productId: form.productId, goal: form.purpose, contactId: form.contactId, maxSeconds: Math.min(180, b.configuration.maxSeconds) } });
+        const m = await api('/missions/draft', { method: 'POST', body: { request: v.body, productId: form.productId, goal: form.purpose, contactId: form.contactId, maxSeconds: Math.min(180, b.configuration.maxSeconds) } });
         review = { ...(await api(`/missions/${m.id}/review`, { method: 'POST', body: {} })), readiness: st };
       } else review = await api('/phone/draft', { method: 'POST', body: { phone: v.phone, name: v.name, instruction: v.instruction,
         ...(form.mode ? { conversationMode: form.mode } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}) } });
@@ -381,7 +416,7 @@ async function ask() {
       app.boot = null; await loadAll(); location.hash = `#/call/${review.mission.id}`;
     } catch (e) { err.textContent = e.message; err.hidden = false; go.disabled = false; }
   });
-  let voiceField;
+  let voiceField, scopeField;
   const field = (k, d, ...content) => el('div', { class: 'field' }, el('div', { class: 'k' }, el('b', { text: k }), d ? el('span', { text: d }) : null), el('div', {}, ...content));
   const view = el('div', { class: 'ask' },
     el('section', { class: 'ask-form' },
@@ -389,6 +424,7 @@ async function ask() {
       field('だれに', contacts.length ? '連絡先から選ぶか、番号を入れます' : '番号と名前を入れます', contacts.length ? chips : null,
         el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-phone', text: '電話番号' }), phone), el('div', {}, el('label', { class: 'lbl', for: 'ask-name', text: '相手の名前' }), name))),
       field('何をしてほしいか', '目的を選び、ふだんの言葉で', purposeChips, el('div', { class: 'gap' }), instruction, el('div', { class: 'two' }, template), productRow),
+      scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
       voiceField = field('声', '話し方と声。判定は、どの声でも同じです', voice,
         el('p', { class: 'note', text: b.account?.callerName ? `AIは「${b.account.callerName}の代わり」と名乗ります。` : 'AIが名乗る名前は、設定の「かける設定」で決められます。' }))),
     side);

@@ -33,6 +33,8 @@ try {
   const unknown = await draft("さくら歯科", "予約日を変更したいと伝えてください。");
   put(unknown, "UNKNOWN", []);
   await draft("デモ担当者", "資料を送ってよいか聞いてください。");
+  // A request saved with its 任せる範囲 (as the app writes it), to check that it reads back.
+  const scopedDraft = await draft("喫茶 ひかり", "10月8日の15時に3名で席を取ってほしい。\n\n【任せる範囲】\nその場で決めてよい：席の種類はどれでも\n決めずに持ち帰る（相手に「確認して折り返します」と伝える）：日付を変える案\nしない：支払い・カード番号を伝える、AIであることを隠す");
   const partial = await draft("焼肉 たけ", "10月5日の18時に3名で予約を取ってほしい。");
   put(partial, "INCOMPLETE", [["caller", "10月5日の18時に3名で予約をお願いできますか。"], ["callee", "10月5日ですね、その日は空いております。お時間は確認しますので少々お待ちください。"]]);
 
@@ -45,7 +47,7 @@ try {
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
   catch (e) { console.log("VIEW:", await page.text("#view"), "ERR:", page.pageErrors.join(" | ")); throw e; }
   const home = await page.text("#view");
-  c.ok(/あなたの確認が必要なものが 2 件/.test(home) && await page.text("#attention-badge") === "2", "ホーム: two things need you (an unknown outcome, a draft), also on the 依頼 tab", home.slice(0, 80));
+  c.ok(/あなたの確認が必要なものが 3 件/.test(home) && await page.text("#attention-badge") === "3", "ホーム: three things need you (an unknown outcome, two drafts), also on the 依頼 tab", home.slice(0, 80));
   c.ok(/前回かけた電話/.test(home) && /焼肉 たけ/.test(home) && /最近の電話/.test(home), "ホーム: the last call and the recent calls");
   c.ok(await page.visible("#live-pill"), "a running call shows 電話中 in the top bar");
   c.ok(await page.noPageScroll() === false || true, "(home may scroll)");
@@ -75,9 +77,24 @@ try {
   await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='焼肉 たけ').click()");
   await page.js("{const t=document.querySelector('#ask-instruction');t.value='10月10日の19時に2名で予約を取ってほしい。';t.dispatchEvent(new Event('input',{bubbles:true}))}");
   c.ok(/焼肉 たけ/.test(await page.text(".ask-side")) && /10月10日/.test(await page.text(".ask-side")), "電話を頼む: the brief on the right follows the form");
+  // 任せる範囲: ○ empty, △ two to start, × fixed; the brief follows; not for a chat.
+  const scope = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.scope')].map(s=>[...s.querySelectorAll('.scope-item')].map(i=>i.firstChild.textContent)))"));
+  c.ok(scope[0].length === 0 && scope[1].length === 2 && scope[2].length === 2, "任せる範囲: nothing decided for the AI by default, two to bring back, two it never does", JSON.stringify(scope));
+  await page.js("document.querySelector('.scope.ok .scope-add').click()");
+  c.ok(/その場で決めてよいこと：時間は第一希望から2時間以内/.test(await page.text(".ask-side")), "adding a ○ item shows in the AI's brief");
+  await page.js("document.querySelector('[data-purpose=chat]').click()");
+  c.ok(await page.js("document.querySelector('.scopes').closest('.field').hidden"), "a chat has no 任せる範囲");
+  await page.js("document.querySelector('[data-purpose=\"\"]').click()");
   c.ok(/確かめるまで、発信できません/.test(await page.text(".ask-side")) && await page.js("document.querySelector('.ask-side .btn.big').disabled"), "an unknown outcome blocks a new call, and the side says where to fix it");
   await page.screenshot(join(out, "gateway-app-ask.png"));
 
+  // A saved request reads its 任せる範囲 back: the text without the block, the choices restored.
+  await page.js(`location.hash='#/new?draft=${scopedDraft}'`); await page.until("document.querySelector('#ask-instruction')");
+  await sleep(300);
+  const back = JSON.parse(await page.js("JSON.stringify({text:document.querySelector('#ask-instruction').value,ok:[...document.querySelectorAll('.scope.ok .scope-item')].map(i=>i.firstChild.textContent),hold:[...document.querySelectorAll('.scope.hold .scope-item')].map(i=>i.firstChild.textContent)})"));
+  c.ok(!/任せる範囲/.test(back.text) && back.ok.join() === "席の種類はどれでも" && back.hold.join() === "日付を変える案", "reopening a request restores its 任せる範囲 and leaves it out of the text", JSON.stringify(back));
+  await page.js("location.hash='#/requests'"); await page.until("/喫茶 ひかり/.test(document.querySelector('#view').textContent)");
+  c.ok(!/【任せる範囲】/.test(await page.text("#view")), "lists show the request without the 任せる範囲 block");
   await page.js("location.hash='#/contacts'"); await page.until("/この相手に電話を頼む/.test(document.querySelector('#view').textContent)");
   c.ok(/03-5555-0142/.test(await page.text("#view")), "連絡先: the list and the selected contact, number as written in Japan");
   await page.screenshot(join(out, "gateway-app-contacts.png"));
