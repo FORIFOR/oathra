@@ -1,5 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
-import { practiceList, practiceRun } from './lib/practice.mjs';
+import { practiceList, practiceRun, practicePlayStart, practicePlayState, practicePlayReply, practicePlayHangup } from './lib/practice.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
@@ -222,6 +222,12 @@ export async function createGateway(config,options={}){
       // Practice with the built-in characters (lib/practice.mjs): nothing dials and nothing is charged.
       if(method==='GET'&&path==='/v1/practice/scenarios')return send(res,200,await practiceList());
       if(method==='POST'&&path==='/v1/practice/run')return send(res,200,await practiceRun(String(data.scenario??'')));
+      // 自分が相手役: the user answers as the shop in text; the scripted agent calls them. Held in memory, per user.
+      if(method==='POST'&&path==='/v1/practice/play')return send(res,201,await practicePlayStart(u.id,String(data.scenario??'')));
+      const playPath=/^\/v1\/practice\/play\/(play_[a-z0-9]{6,20})(?:\/(reply|hangup))?$/.exec(path);
+      if(playPath&&method==='GET'&&!playPath[2])return send(res,200,practicePlayState(u.id,playPath[1]));
+      if(playPath&&method==='POST'&&playPath[2]==='reply')return send(res,200,practicePlayReply(u.id,playPath[1],data.text));
+      if(playPath&&method==='POST'&&playPath[2]==='hangup')return send(res,200,practicePlayHangup(u.id,playPath[1]));
       if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone);store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
       if(method==='POST'&&path==='/v1/followups/preview')return send(res,201,followups.preview(u,data.missionId,data));
       const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh|not-delivered)$/);

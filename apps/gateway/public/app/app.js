@@ -45,6 +45,7 @@ const ERRORS = {
   voice_engine_unavailable: 'この声は、このサーバーではまだ使えません。標準の声を選んでください。',
   invalid_phone_request: '電話番号・相手の名前・頼むことを確かめてください（名前に数字や記号は使えません）。',
   invalid_caller_name: '名乗る名前は、数字や記号を入れずに40文字以内で入力してください。',
+  practice_busy: '練習が混み合っています。しばらくしてからお試しください。', practice_ended: 'この練習は終わっています。', invalid_reply: '答えを500文字以内で入力してください。',
   invalid_login: 'メールアドレスかパスワードが違います。', password_length: 'パスワードは8文字以上にしてください。', login_link_expired: 'このリンクは使えません（期限切れか使用済み）。もう一度発行してください。',
   email_already_registered: 'このメールアドレスは、ほかのアカウントで使われています。', login_rate_limited: '試行が多すぎます。しばらく待ってからお試しください。', login_changed_retry: 'ログインの設定が変わりました。もう一度お試しください。', invalid_email: 'メールアドレスを確かめてください。',
   phone_service_preview_only: 'このサーバーは練習モードです。実際の電話はかけられません。',
@@ -159,6 +160,23 @@ async function route() {
   try { view.replaceChildren(await render(id, sub)); } catch (e) { if (e.status === 401) { app.boot = null; return renderLogin(); } view.replaceChildren(el('div', { class: 'page' }, el('p', { class: 'errbox', text: e.message }))); }
 }
 window.addEventListener('hashchange', () => { route(); $('#view').focus({ preventScroll: true }); window.scrollTo(0, 0); });
+
+// ---------------------------------------------------------------- voice samples
+// Recorded samples of GPT-Live's voices (the same files Arena plays; served with Range for Safari). One plays at a time.
+let sampleAudio = null;
+function sampleButton(url, label = '声を聞く') {
+  const b = el('button', { class: 'btn small sample', type: 'button', 'aria-pressed': 'false', text: '▶ ' + label });
+  const stop = () => { sampleAudio?.pause(); document.querySelectorAll('.sample[aria-pressed="true"]').forEach(n => { n.setAttribute('aria-pressed', 'false'); n.textContent = n.textContent.replace(/^■ 止める/, '▶ ' + (n.dataset.label ?? '声を聞く')); }); sampleAudio = null; };
+  b.dataset.label = label;
+  b.addEventListener('click', () => {
+    const again = sampleAudio?.dataset.url === b.dataset.url; stop(); if (again) return;
+    const audio = new Audio(b.dataset.url); audio.dataset.url = b.dataset.url; sampleAudio = audio;
+    b.setAttribute('aria-pressed', 'true'); b.textContent = '■ 止める';
+    audio.addEventListener('ended', stop); audio.play().catch(() => { stop(); toast('音声を再生できませんでした。'); });
+  });
+  b.dataset.url = url ?? ''; b.hidden = !url;
+  return b;
+}
 
 // ---------------------------------------------------------------- sign in
 // Email and password for everyone; the operator token stays for the administrator (setup, API, channels).
@@ -352,6 +370,9 @@ async function ask() {
   const voice = el('select', { id: 'ask-voice' }, el('option', { value: '', text: '標準の声（すぐ返事）' }),
     ...Object.entries(st.voicePresets ?? {}).map(([id, label]) => el('option', { value: id, text: `${label}${engineFor(id) ? '（演技・返事まで2〜3秒）' : ''}` })));
   voice.value = form.preset;
+  const sampleFor = preset => { const id = engineFor(preset) || st.defaultEngine, eng = (st.engines ?? []).find(e => e.id === id); if (id !== 'gpt-live' || !eng) return ''; const v = (preset && eng.presetVoices?.[preset]) || eng.defaultVoice; return st.voiceDetails?.[v]?.sample ?? ''; };
+  const voiceSample = sampleButton(sampleFor(form.preset));
+  voice.addEventListener('change', () => { sampleAudio?.pause(); voiceSample.dataset.url = sampleFor(voice.value); voiceSample.hidden = !voiceSample.dataset.url; voiceSample.setAttribute('aria-pressed', 'false'); voiceSample.textContent = '▶ 声を聞く'; });
   const chips = el('div', { class: 'chips', role: 'group', 'aria-label': '連絡先から選ぶ' }, ...contacts.slice(0, 8).map(c => el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c.id === form.contactId), 'data-id': c.id, text: c.name || c.company,
     onclick: () => { phone.value = displayPhone(c.phone); name.value = c.name || c.company; form.contactId = c.id; suggest(); changed(); } })));
   let group = GROUPS.find(g => g[2].includes(form.kind))?.[0] ?? 'shop';
@@ -508,7 +529,7 @@ async function ask() {
       field('何の電話か', '種類を選ぶと、必要なことを聞きます', purposeChips),
       field('何をしてほしいか', 'ふだんの言葉で。種類から作った文も書き換えられます', instruction, productRow),
       scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
-      voiceField = field('声', '話し方と声。判定は、どの声でも同じです', voice,
+      voiceField = field('声', '話し方と声。判定は、どの声でも同じです', el('div', { class: 'play-row' }, voice, voiceSample),
         el('p', { class: 'note', text: b.account?.callerName ? `AIは「${b.account.callerName}の代わり」と名乗ります。` : 'AIが名乗る名前は、設定の「かける設定」で決められます。' }))),
     side);
   drawKind();
@@ -665,17 +686,17 @@ async function practice(id, sub) {
   app.practice ??= await api('/practice/scenarios');
   const list = app.practice, sel = list.find(x => x.id === id) ?? list[0];
   if (sub === 'run' && sel) return practiceRun(sel);
+  if (sub === 'play' && sel) return practicePlay(sel);
   let how = 'watch';
   const detail = sel ? el('div', { class: 'card stack' },
     el('span', { class: 'muted small', text: sel.difficulty }), el('h1', { class: 'headline', text: sel.title }),
     el('p', { class: 'about', text: sel.brief }),
     el('h2', { class: 'section-h', text: '確かめること' }), el('div', { class: 'chips' }, ...sel.require.map(f => el('span', { class: 'chip static', text: FIELD[f] ?? f }))),
     el('h2', { class: 'section-h', text: 'やり方' }),
-    el('div', { class: 'two', role: 'radiogroup', 'aria-label': 'やり方' }, ...[['watch', 'AIの電話を見る', `AIが${sel.callee || '練習用の相手'}と話すのを見ます`], ['play', '自分が相手役', 'あなたが相手として答えます（Arena で）']].map(([v, l, d]) =>
+    el('div', { class: 'two', role: 'radiogroup', 'aria-label': 'やり方' }, ...[['watch', 'AIの電話を見る', `AIが${sel.callee || '練習用の相手'}と話すのを見ます`], ['play', '自分が相手役', `あなたが${sel.callee || '相手'}として、文字で答えます`]].map(([v, l, d]) =>
       el('label', { class: 'option' }, el('input', { type: 'radio', name: 'how', value: v, checked: v === how, onchange: () => { how = v; } }), el('span', {}, el('b', { text: l }), el('span', { class: 'muted small', text: d }))))),
     el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', text: '練習を始める', onclick: () => {
-      if (how === 'play') { toast('自分が相手役の練習は、あなたのパソコンの Arena（npx oathra demo）で行えます。'); return; }
-      location.hash = `#/practice/${sel.id}/run`;
+      location.hash = `#/practice/${sel.id}/${how === 'play' ? 'play' : 'run'}`;
     } })),
     el('p', { class: 'note', text: '電話はかからず、費用もかかりません。AIが「決まりました」と言っても、相手の言葉で確かめられるまで完了にはなりません。' }))
     : el('div', { class: 'card' }, el('p', { class: 'muted', text: '練習がありません。' }));
@@ -722,6 +743,65 @@ async function practiceRun(sel) {
     ...(fields.length ? [el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: '確かめること' }), el('span', { class: 'sub', text: '相手の言葉で確かめられたら、輪が一区切り閉じます' })), cards] : []),
     foot);
   return el('div', { class: 'call' }, main, el('aside', { class: 'call-side', 'aria-label': '会話' }, el('div', { class: 'side-top' }, el('b', { text: '会話' }), el('span', { class: 'muted small', text: '練習・電話はかかりません' })), lines));
+}
+
+// 自分が相手役: the AI (the offline scripted agent) calls you, and you answer as the shop in text. The verdict is the
+// evidence engine's, as in every call: the ring closes only on what you, the callee, actually said.
+async function practicePlay(sel) {
+  let st = await api('/practice/play', { method: 'POST', body: { scenario: sel.id } });
+  const fields = st.require, shown = new Set(), who = st.scenario.callee || '相手';
+  const ringBox = el('div'), cards = el('div', { class: 'fields' }), lines = el('div', { class: 'transcript', 'aria-live': 'polite' });
+  const stateLine = el('div', { class: 'state-line state-live' }, el('span', { class: 'dot' }), '練習中'), headline = el('h1', { class: 'headline', text: `AIが${who}に電話しています` });
+  const foot = el('div', { class: 'call-foot' });
+  const text = el('input', { type: 'text', id: 'play-text', autocomplete: 'off', maxlength: '500', 'aria-label': `${who}として答える` });
+  const sendBtn = el('button', { class: 'btn primary', type: 'submit', text: '答える' });
+  const hang = el('button', { class: 'btn', type: 'button', text: '電話を切る', onclick: async () => { hang.disabled = true; await api(`/practice/play/${st.id}/hangup`, { method: 'POST', body: {} }).catch(() => null); } });
+  const form = el('form', { class: 'play-form', onsubmit: async e => {
+    e.preventDefault(); const said = text.value.trim(); if (!said) return;
+    sendBtn.disabled = true;
+    try { await api(`/practice/play/${st.id}/reply`, { method: 'POST', body: { text: said } }); text.value = ''; }
+    catch (err) { toast(err.message); } finally { sendBtn.disabled = false; text.focus(); }
+  } }, el('label', { class: 'lbl', for: 'play-text', text: `${who}として答える（例：「はい、${who}です。」）` }), el('div', { class: 'play-row' }, text, sendBtn));
+  const draw = () => {
+    const settled = new Map(st.settled.map(s => [s.field, s])), byTurn = new Map();
+    for (const s of st.settled) { if (!byTurn.has(s.turnId)) byTurn.set(s.turnId, []); byTurn.get(s.turnId).push(s); }
+    ringBox.replaceChildren(fields.length ? ringFor(fields.length, fields.map(f => settled.has(f))) : '');
+    cards.replaceChildren(...fields.map((f, k) => { const s = settled.get(f); return el('div', { class: `fcard ${s ? 'ok' : ''}` },
+      el('div', { class: 'k', text: `${k + 1} ${FIELD[f] ?? f}` }), s ? el('span', { class: 'tick', text: '✓', 'aria-label': 'あなたの言葉で確認済み' }) : null,
+      el('div', { class: `v ${s ? '' : 'want'}`, text: s ? fmtValue(f, s.value) : '—' }), el('div', { class: 'q', text: s ? `「${s.quote}」` : 'まだ確かめていません' })); }));
+    const key = `${st.transcript.length}:${st.settled.length}`;
+    if (key !== lines.dataset.key) { lines.dataset.key = key; lines.replaceChildren(); shown.clear(); }
+    for (const t of st.transcript) {
+      if (shown.has(t.id)) continue; shown.add(t.id);
+      const marks = t.source === 'callee' ? (byTurn.get(t.id) ?? []).map(s => ({ quote: s.quote, n: fields.indexOf(s.field) + 1 })) : [];
+      lines.append(el('div', { class: `line ${t.source === 'callee' ? 'callee' : ''}` }, el('div', { class: 'who', text: t.source === 'callee' ? `あなた（${who}）` : 'AI' }), marked(t.text, marks)));
+      lines.scrollTop = lines.scrollHeight;
+    }
+    if (st.status !== 'running') {
+      form.hidden = true; hang.hidden = true;
+      stateLine.className = 'state-line'; stateLine.replaceChildren(st.status === 'error' ? '練習を続けられませんでした' : '練習が終わりました');
+      headline.textContent = st.complete ? '決まりました' : '決まりませんでした';
+      foot.replaceChildren(el('a', { class: 'btn primary', href: `#/practice/${sel.id}`, text: 'もう一度' }), el('a', { class: 'btn', href: '#/practice', text: '別の練習を選ぶ' }),
+        el('p', { class: 'note', text: 'AIが「決まりました」と言っても、あなた（相手）の言葉で確かめられた項目だけが決まったことになります。練習の記録は、このサーバーには残しません。' }));
+    }
+  };
+  draw();
+  const here = location.hash;
+  const poll = async () => {
+    if (location.hash !== here) { if (st.status === 'running') api(`/practice/play/${st.id}/hangup`, { method: 'POST', body: {} }).catch(() => null); return; }
+    try { st = await api(`/practice/play/${st.id}`); draw(); } catch { /* next tick */ }
+    if (st.status === 'running') app.timer = setTimeout(poll, 900);
+  };
+  app.timer = setTimeout(poll, 900);
+  foot.replaceChildren(hang);
+  setTimeout(() => text.focus(), 0);
+  const main = el('section', { class: 'call-main' },
+    el('div', { class: 'crumb' }, el('a', { href: '#/practice', text: '練習' }), ' › ', el('b', { text: st.scenario.title }), el('span', { class: 'tag', text: '練習・自分が相手役' })),
+    el('div', { class: 'head' }, ringBox, el('div', {}, stateLine, headline)),
+    el('p', { class: 'note play-note', text: `AIがあなたに電話をかけます。あなたは${who}として、ふつうに答えてください。空きがない・名前を聞くなど、困らせてもかまいません。` }),
+    ...(fields.length ? [el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'AIが確かめること' }), el('span', { class: 'sub', text: 'あなたの言葉で確かめられたら、輪が一区切り閉じます' })), cards] : []),
+    foot);
+  return el('div', { class: 'call' }, main, el('aside', { class: 'call-side', 'aria-label': '会話' }, el('div', { class: 'side-top' }, el('b', { text: '会話' }), el('span', { class: 'muted small', text: '練習・電話はかかりません' })), lines, form));
 }
 
 // ---------------------------------------------------------------- 連絡先
@@ -829,7 +909,11 @@ async function settings(tab) {
       })()),
       el('p', { class: 'note', text: '1回の電話の上限は、承認のときの見込みで守られます。月の上限を超える電話は、承認の時点で止まります。' })];
   } else if (app.settingsTab === 'voice') {
-    body = [el('h2', { text: '声とAI' }), ...(st.engines ?? []).map(e => row(e.label, e.id === st.defaultEngine ? '標準' : '', el('span', { text: e.ready ? '使えます' : '使えません（キー未設定）' })))];
+    const live = (st.engines ?? []).find(e => e.id === 'gpt-live'), PITCH = { low: '低め', mid: 'ふつう', high: '高め', 'very-high': 'かなり高め' }, PACE = { fast: '速め', medium: 'ふつう', slow: 'ゆっくり' };
+    body = [el('h2', { text: '声とAI' }), ...(st.engines ?? []).map(e => row(e.label, e.id === st.defaultEngine ? '標準' : '', el('span', { text: e.ready ? '使えます' : '使えません（キー未設定）' }))),
+      ...(live ? [el('h2', { class: 'section-h', text: 'GPT-Live の声を聞く' }), el('p', { class: 'note', text: '電話で使う前に、声を聞き比べられます。録音済みの見本で、お金はかかりません。' }),
+        el('div', { class: 'voice-list' }, ...live.voices.filter(v => st.voiceDetails?.[v]?.sample).map(v => { const d = st.voiceDetails[v];
+          return el('div', { class: 'voice-item' }, el('span', { class: 'grow' }, el('b', { text: v }), el('span', { class: 'muted small', text: [`高さ ${PITCH[d.pitch] ?? d.pitch}`, `速さ ${PACE[d.pace] ?? d.pace}`, v === live.defaultVoice ? '標準' : ''].filter(Boolean).join(' · ') })), sampleButton(d.sample, '聞く')); }))] : [])];
   } else {
     const cur = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
     body = [el('h2', { text: '記録と表示' }),

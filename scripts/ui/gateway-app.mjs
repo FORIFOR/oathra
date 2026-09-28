@@ -123,6 +123,10 @@ try {
   c.ok(true, "かけられた時の設定: 出ない is saved and shown again");
   await page.screenshot(join(out, "gateway-app-inbound.png"));
   // 月の上限: set in 設定 › 費用とクレジット, shown on ホーム.
+  await page.js("location.hash='#/settings/voice'"); await page.until("/声を聞く/.test(document.querySelector('#view').textContent)", { label: "voice samples" });
+  c.ok(await page.js("document.querySelectorAll('.voice-item .sample').length") >= 5 && await page.js("[...document.querySelectorAll('.voice-item .sample')].every(b=>/^\\/phone\\/voices\\/[a-z]+\\.wav$/.test(b.dataset.url))"), "設定 › 声とAI: recorded samples of the voices, playable");
+  c.ok((await fetch(base + "/phone/voices/marin.wav", { headers: { range: "bytes=0-99" } })).status === 206, "samples answer Range requests (Safari)");
+  await page.screenshot(join(out, "gateway-app-settings-voice.png"));
   await page.js("location.hash='#/settings/cost'"); await page.until("/月の上限/.test(document.querySelector('#view').textContent)");
   await page.js("{const i=document.querySelector('input[aria-label=\"月の上限（米ドル）\"]');i.value='30';[...document.querySelectorAll('button')].find(b=>b.textContent==='保存する'&&b.closest('.set-row')?.textContent.includes('月の上限')).click()}");
   await page.until("/上限 \\$30/.test(document.querySelector('#view').textContent)", { label: "cap saved" });
@@ -149,6 +153,21 @@ try {
   await page.js("location.hash='#/practice/false-completion-trap/run'");
   await page.until("/練習が終わりました/.test(document.querySelector('#view').textContent)", { timeout: 20000, label: "trap run" });
   c.ok(/決まりませんでした/.test(await page.text(".headline")), "the full-restaurant trap is not reported as settled");
+
+  // 自分が相手役: the AI calls you and you answer as the shop in text; the ring closes only on what you said.
+  await page.js("location.hash='#/practice/restaurant-reservation'"); await sleep(400);
+  await page.js("document.querySelector('input[name=how][value=play]').click();[...document.querySelectorAll('button')].find(b=>b.textContent==='練習を始める').click()");
+  await page.until("!!document.querySelector('#play-text')", { label: "play view" });
+  await page.js(`document.querySelector('#play-text').value='はい、さくら亭です。';document.querySelector('.play-form').requestSubmit()`);
+  await page.until("[...document.querySelectorAll('.transcript .line:not(.callee)')].some(n=>/予約/.test(n.textContent))", { timeout: 20000, label: "AI asks" });
+  c.ok(await page.js("document.querySelector('.ring text')?.textContent") === "0/4", "自分が相手役: the AI asking closes nothing", await page.js("document.querySelector('.ring text')?.textContent"));
+  await page.js(`document.querySelector('#play-text').value='はい、9月12日の19時に2名様で空いております。';document.querySelector('.play-form').requestSubmit()`);
+  await page.until("document.querySelectorAll('.fcard.ok').length>=3", { timeout: 20000, label: "fields settle" });
+  c.ok(/あなた（/.test(await page.text(".transcript")) && await page.js("[...document.querySelectorAll('.fcard.ok .q')].every(q=>[...document.querySelectorAll('.transcript .line.callee')].some(l=>l.textContent.includes(q.textContent.replace(/^「|」$/g,''))))"), "each settled field quotes your own line", await page.text(".fields"));
+  await page.screenshot(join(out, "gateway-app-practice-play.png"));
+  await page.js("[...document.querySelectorAll('button')].find(b=>b.textContent==='電話を切る').click()");
+  await page.until("/練習が終わりました/.test(document.querySelector('#view').textContent)", { timeout: 20000, label: "play hangup" });
+  c.ok(!(await page.visible("#play-text")), "after the call the answer box closes");
 
   // 営業の目的: a registered contact and a reviewed product; practice mode talks to the practice partner.
   for (const id of [running, unknown]) { const m = app.store.get("mission", id); m.status = "COMPLETED"; m.finishedAt = Date.now(); app.store.put("mission", m); }
