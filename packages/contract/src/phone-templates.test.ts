@@ -19,4 +19,15 @@ describe('editable purpose templates',()=>{
  it('accepts a user-written purpose without substitution markup',()=>{
    expect(PhoneRequestFieldsSchema.shape.instruction.safeParse('電話の使い方について、説明を聞きたいと伝えてください。').success).toBe(true);
  });
+  it('only the reservation template books, and only its contract may reserve',async()=>{
+   const {definePhoneRequest,preparePhoneRequest}=await import('./index.js');
+   expect(PHONE_PURPOSE_TEMPLATES.filter(t=>(t as {task?:string}).task==='reservation').map(t=>t.id)).toEqual(['reserve']);
+   const base={phone:'+819012345678',name:'焼肉 たけ',instruction:'10月3日19時に2名で予約を取ってください。名前は田中です。'};
+   const booking=definePhoneRequest(preparePhoneRequest({...base,task:'reservation'}));
+   expect(booking.permissions).toMatchObject({ask:true,reserve:true});expect(booking.permissions.payment).toBeFalsy();
+   expect(Object.keys(booking.require).sort()).toEqual(['confirmed','date','time']);expect(booking.confirmation).toBe('callee_acceptance');
+   expect(String(booking.input.policy)).toContain('支払い');
+   const ask=definePhoneRequest(preparePhoneRequest(base));
+   expect(ask.permissions.reserve).toBeFalsy();expect(String(ask.input.policy)).toContain('予約・購入・支払い');
+ });
 });

@@ -726,7 +726,8 @@
     if(results[0].status === "fulfilled") renderPhoneReadiness(results[0].value);
     else $("#phone-readiness").textContent=t("connLost",{msg:results[0].reason.message});
     if(results[1].status === "fulfilled") {
-      phoneTemplates=results[1].value;
+      // A booking template needs the gateway's reservation request (task); Arena's requests are ask-only.
+      phoneTemplates=results[1].value.filter(item=>!item.task);
       $("#phone-template").replaceChildren(el("option",{value:"",text:t("phoneTemplateBlank")}),...phoneTemplates.map(item=>el("option",{value:item.id,text:item.title[LANG] || item.title.en})));
       $("#phone-template").value=phoneSelectedTemplate;
     }

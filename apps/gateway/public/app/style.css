@@ -236,3 +236,8 @@ mark.proof sup { margin-left: 1px; font-size: 10px; font-weight: 700; color: var
 .row.decision { grid-template-columns: minmax(0, 1fr); }
 .row.decision .who { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .fields + .page-h, .card + .page-h { margin-top: 28px; }
+/* Kinds of call: cards in a grid under the category chips. */
+.kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.kind { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); font-size: 14px; text-align: left; cursor: pointer; }
+.kind[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); font-weight: 700; }
+.blanks { margin-top: 0; }

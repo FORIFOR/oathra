@@ -159,6 +159,9 @@ export const PhoneRequestFieldsSchema = z.object({
   // Optional: whose behalf the call is on, as the callee should hear it ("堀尾"). A call that cannot say who is
   // behind it gets "誰?" and a hang-up. Letters, not contact details.
   callerName: z.string().trim().min(1).max(40).refine(value => !/[\d@<>{}]|https?:/i.test(value), "名前だけを入力してください。").optional(),
+  // Optional: a reservation request may book what was approved (date, time, party, name) — the one task that widens
+  // what the AI may do. Purchases, payments, card numbers and further calls stay forbidden. Absent: ask-only.
+  task: z.enum(["reservation"]).optional(),
   // Optional: which speech-to-speech engine speaks. Absent keeps the server's configured engine.
   engine: z.enum(PHONE_ENGINES).optional(),
   // Optional: which voice speaks. Absent keeps the engine's default. A voice belongs to one engine.
@@ -176,7 +179,7 @@ export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, c
 });
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset" | "task">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

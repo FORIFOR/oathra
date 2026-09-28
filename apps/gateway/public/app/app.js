@@ -298,30 +298,59 @@ async function ask() {
   const scoped = splitScope(form.instruction); form.instruction = scoped.body; form.ok = scoped.ok; form.hold = scoped.hold;
   let review = null, suggested = !form.instruction;
   // Purposes: a request in plain words, a chat, or one of the sales goals (a registered contact and a reviewed product).
-  const PURPOSES = [['', '依頼（ふだんの言葉で）'], ['chat', '雑談'], ['meeting', '商談の日時を決める'], ['materials', '資料を送ってよいか聞く'], ['introduce', '商品を説明する']];
+  // What kind of call: grouped the way people think of them. A template kind brings fields for its {{…}} blanks;
+  // the sales kinds need a contact and a product; 自由に書く is a request in plain words.
+  const GROUPS = [['shop', 'お店・窓口', ['reserve', 'availability', 'opening-hours', 'stock', 'delivery', 'lost-property', 'change-policy', 'business-contact']],
+    ['people', '知り合い', ['friend-check-in', 'meetup', 'late', 'callback', 'thanks', 'chat']], ['work', '仕事（営業）', ['meeting', 'materials', 'introduce']], ['free', '自由に書く', ['']]];
+  const SALES_TITLE = { meeting: '商談の日時を決める', materials: '資料を送ってよいか聞く', introduce: '商品を説明する' };
+  const kindTitle = k => k === '' ? '自由に書く' : SALES_TITLE[k] ?? app.templates.find(t => t.id === k)?.title?.ja ?? k;
+  const tpl = () => app.templates.find(t => t.id === form.kind);
+  const blanks = () => [...new Set([...(tpl()?.instruction?.ja ?? '').matchAll(/\{\{([^{}]+)\}\}/g)].map(m => m[1]))];
+  form.kind = from?.sales ? from.goal : pre.task === 'reservation' ? 'reserve' : pre.conversationMode === 'chat' ? 'chat' : (params.get('kind') ?? '');
+  form.fill = {};
   const SALES_TEXT = { meeting: n => `${n}に商品を説明して、興味があれば15分の商談の日時を相談してください。`, materials: n => `${n}に商品を簡単に説明して、資料を送ってよいか聞いてください。`, introduce: n => `${n}に商品を簡単に説明してください。` };
   const isSales = () => Boolean(SALES_TEXT[form.purpose]);
+  if (tpl()) { form.mode = tpl().conversationMode ?? ''; if (form.kind === 'chat') form.purpose = 'chat'; }
+  if (SALES_TEXT[form.kind]) form.purpose = form.kind;
+  const setKind = k => { form.kind = k; form.purpose = SALES_TEXT[k] ? k : k === 'chat' ? 'chat' : ''; form.mode = tpl()?.conversationMode ?? ''; form.fill = {}; suggested = true; drawKind(); suggest(); changed(); };
   const actingReady = st.engines?.find(e => e.id === 'character-tts')?.ready === true;
   const engineFor = preset => preset?.startsWith('character-') && actingReady ? 'character-tts' : '';
 
   const phone = el('input', { type: 'tel', id: 'ask-phone', value: displayPhone(form.phone), autocomplete: 'off', placeholder: '090-1234-5678' });
   const name = el('input', { type: 'text', id: 'ask-name', value: form.name, placeholder: '相手の名前' });
   const instruction = el('textarea', { id: 'ask-instruction', placeholder: '例：10月3日（土）の夜に2名で予約を取ってほしい。できれば19時。名前は田中。' }); instruction.value = form.instruction;
-  const template = el('select', { id: 'ask-template', 'aria-label': '例から選ぶ' }, el('option', { value: '', text: '例から選ぶ（任意）' }), ...app.templates.map(t => el('option', { value: t.id, text: t.title?.ja ?? t.id })));
+
   const voice = el('select', { id: 'ask-voice' }, el('option', { value: '', text: '標準の声（すぐ返事）' }),
     ...Object.entries(st.voicePresets ?? {}).map(([id, label]) => el('option', { value: id, text: `${label}${engineFor(id) ? '（演技・返事まで2〜3秒）' : ''}` })));
   voice.value = form.preset;
   const chips = el('div', { class: 'chips', role: 'group', 'aria-label': '連絡先から選ぶ' }, ...contacts.slice(0, 8).map(c => el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c.id === form.contactId), 'data-id': c.id, text: c.name || c.company,
     onclick: () => { phone.value = displayPhone(c.phone); name.value = c.name || c.company; form.contactId = c.id; suggest(); changed(); } })));
-  const purposeChips = el('div', { class: 'chips', role: 'radiogroup', 'aria-label': '電話の目的' }, ...PURPOSES.map(([v, l]) => el('button', { type: 'button', class: 'chip', role: 'radio', 'aria-checked': String(form.purpose === v), 'aria-pressed': String(form.purpose === v), 'data-purpose': v, text: l,
-    onclick: () => { form.purpose = v; form.mode = v === 'chat' ? 'chat' : ''; suggest(); changed(); } })));
+  let group = GROUPS.find(g => g[2].includes(form.kind))?.[0] ?? 'shop';
+  const groupChips = el('div', { class: 'chips', role: 'tablist', 'aria-label': '電話の種類の分類' });
+  const kindCards = el('div', { class: 'kinds', role: 'radiogroup', 'aria-label': '電話の種類' });
+  const blankBox = el('div', { class: 'two blanks' });
+  function drawKind() {
+    groupChips.replaceChildren(...GROUPS.map(([g, l]) => el('button', { type: 'button', class: 'chip', role: 'tab', 'aria-selected': String(g === group), 'aria-pressed': String(g === group), 'data-group': g, text: l, onclick: () => { group = g; if (g === 'free') setKind(''); else drawKind(); } })));
+    const kinds = GROUPS.find(x => x[0] === group)[2];
+    kindCards.hidden = group === 'free';
+    kindCards.replaceChildren(...kinds.filter(k => k !== '').map(k => el('button', { type: 'button', class: 'kind', role: 'radio', 'aria-checked': String(form.kind === k), 'data-kind': k, text: kindTitle(k), onclick: () => setKind(k) })));
+    // The template's blanks as fields; the request text is written from them.
+    const own = b.account?.callerName ?? '';
+    blankBox.replaceChildren(...blanks().map(label => { const v = form.fill[label] ?? (/自分の名前|予約の名前/.test(label) ? own : ''); form.fill[label] = v;
+      const input = el('input', { type: 'text', value: v, 'data-blank': label, 'aria-label': label });
+      input.addEventListener('input', () => { form.fill[label] = input.value; suggest(); changed(); });
+      return el('div', {}, el('label', { class: 'lbl', text: label }), input); }));
+    blankBox.hidden = !blanks().length;
+  }
+  const purposeChips = el('div', {}, groupChips, el('div', { class: 'gap' }), kindCards, el('div', { class: 'gap' }), blankBox);
   const product = el('select', { id: 'ask-product', 'aria-label': '紹介する商品' }, ...(b.products.length ? b.products.map(x => el('option', { value: x.id, text: x.name })) : [el('option', { value: '', text: '（商品がまだありません）' })]));
   product.value = form.productId;
   product.addEventListener('change', () => { form.productId = product.value; changed(); });
   const productRow = el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-product', text: '紹介する商品' }), product),
     el('p', { class: 'note' }, b.products.length ? '商品の説明は、確認済みの内容だけを使います。' : '営業の電話には、確認済みの商品が必要です。', el('a', { href: '#/settings/products', text: ' 設定で商品を登録' })));
   const scopeBox = el('div', { class: 'scopes' });
-  const usesScope = () => form.purpose === '';
+  // Deciding on the spot matters for a request in plain words and for a booking.
+  const usesScope = () => form.kind === '' || form.kind === 'reserve';
   function renderScope() {
     const col = (key, title, cls, mark, sug) => {
       const next = sug.find(x => !form[key].includes(x));
@@ -337,6 +366,10 @@ async function ask() {
     // Keep the wording in step with the purpose and the person, but never overwrite what was typed.
     if (!suggested && instruction.value.trim()) return;
     const who = name.value.trim() || '相手';
+    if (tpl() && form.kind !== 'chat') {
+      const text = (tpl().instruction?.ja ?? '').replace(/\{\{([^{}]+)\}\}/g, (_, k) => (form.fill[k] ?? '').trim() || `（${k}）`);
+      instruction.value = text; suggested = true; return;
+    }
     const t = SALES_TEXT[form.purpose]?.(who) ?? (form.purpose === 'chat' ? (app.templates.find(x => x.id === 'chat')?.instruction?.ja ?? `${who}と近況を話して、気軽に雑談してください。`) : '');
     if (t) { instruction.value = t; suggested = true; }
   }
@@ -355,10 +388,8 @@ async function ask() {
   function changed() {
     review = null; consentBox.checked = false;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
-    for (const c of purposeChips.children) { const on = c.dataset.purpose === form.purpose; c.setAttribute('aria-pressed', String(on)); c.setAttribute('aria-checked', String(on)); }
+    for (const c of kindCards.children) c.setAttribute('aria-checked', String(c.dataset.kind === form.kind));
     productRow.hidden = !isSales(); voiceField.hidden = isSales(); scopeField.hidden = !usesScope();
-    // The purposes write the request; examples only help a request in plain words.
-    template.closest('.two').hidden = form.purpose !== '';
     renderSide();
   }
   // Typing a number by hand means it is not the chosen contact any more.
@@ -366,13 +397,14 @@ async function ask() {
   instruction.addEventListener('input', () => { suggested = false; });
   for (const n of [phone, name, instruction, voice]) n.addEventListener('input', changed);
   voice.addEventListener('change', changed);
-  template.addEventListener('change', () => { const t = app.templates.find(x => x.id === template.value); if (!t) return; instruction.value = t.instruction?.ja ?? ''; suggested = false; form.mode = t.conversationMode ?? ''; form.purpose = form.mode === 'chat' ? 'chat' : ''; changed(); });
+
   consentBox.addEventListener('change', () => { go.disabled = !review || !consentBox.checked; });
 
   function renderSide() {
     const v = values();
     const brief = el('div', { class: 'brief' },
       el('p', { class: 'nomargin' }, el('b', { text: v.name || '（相手）' }), v.phone ? el('span', { class: 'num', text: `（${displayPhone(v.phone)}）` }) : '', ' に電話して、次のことを頼みます。'),
+      ...(form.kind === 'reserve' ? [el('p', { class: 'nomargin' }, el('mark', { text: 'AIが予約を取ります。' }), '日時・人数・名前を復唱し、相手がはっきり了承したときだけ成立とします。支払い・カード番号は伝えません。')] : []),
       ...(isSales() ? [el('p', { text: `紹介する商品：${b.products.find(x => x.id === form.productId)?.name ?? '（未選択）'}。確認済みの説明だけを使い、値引き・契約・支払いは約束しません。` })] : []),
       el('blockquote', { text: v.body || '（何をしてほしいか）' }),
       ...(usesScope() && form.ok.length ? [el('p', { class: 'nomargin' }, 'その場で決めてよいこと：', el('mark', { text: form.ok.join('、') }))] : []),
@@ -416,8 +448,12 @@ async function ask() {
         if (!form.productId) throw new Error('紹介する商品を選んでください（設定の「商品」で登録できます）。');
         const m = await api('/missions/draft', { method: 'POST', body: { request: v.body, productId: form.productId, goal: form.purpose, contactId: form.contactId, maxSeconds: Math.min(180, b.configuration.maxSeconds) } });
         review = { ...(await api(`/missions/${m.id}/review`, { method: 'POST', body: {} })), readiness: st };
-      } else review = await api('/phone/draft', { method: 'POST', body: { phone: v.phone, name: v.name, instruction: v.instruction,
+      } else {
+        const empty = blanks().filter(k => !(form.fill[k] ?? '').trim());
+        if (tpl() && form.kind !== 'chat' && suggested && empty.length) throw new Error(`「${empty.join('」「')}」を入れてください。`);
+        review = await api('/phone/draft', { method: 'POST', body: { phone: v.phone, name: v.name, instruction: v.instruction, ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
         ...(form.mode ? { conversationMode: form.mode } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}) } });
+      }
       review.key = crypto.randomUUID();
       renderSide(); consentBox.focus();
     } catch (e) { err.textContent = e.message; err.hidden = false; renderSide(); }
@@ -437,12 +473,14 @@ async function ask() {
       el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'), el('h1', { text: '電話を頼む' }),
       field('だれに', contacts.length ? '連絡先から選ぶか、番号を入れます' : '番号と名前を入れます', contacts.length ? chips : null,
         el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-phone', text: '電話番号' }), phone), el('div', {}, el('label', { class: 'lbl', for: 'ask-name', text: '相手の名前' }), name))),
-      field('何をしてほしいか', '目的を選び、ふだんの言葉で', purposeChips, el('div', { class: 'gap' }), instruction, el('div', { class: 'two' }, template), productRow),
+      field('何の電話か', '種類を選ぶと、必要なことを聞きます', purposeChips),
+      field('何をしてほしいか', 'ふだんの言葉で。種類から作った文も書き換えられます', instruction, productRow),
       scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
       voiceField = field('声', '話し方と声。判定は、どの声でも同じです', voice,
         el('p', { class: 'note', text: b.account?.callerName ? `AIは「${b.account.callerName}の代わり」と名乗ります。` : 'AIが名乗る名前は、設定の「かける設定」で決められます。' }))),
     side);
-  if (form.purpose && !form.instruction) suggest();
+  drawKind();
+  if ((form.purpose || tpl()) && !form.instruction) suggest();
   changed();
   return view;
 }

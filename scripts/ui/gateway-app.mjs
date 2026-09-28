@@ -84,9 +84,16 @@ try {
   c.ok(scope[0].length === 0 && scope[1].length === 2 && scope[2].length === 2, "任せる範囲: nothing decided for the AI by default, two to bring back, two it never does", JSON.stringify(scope));
   await page.js("document.querySelector('.scope.ok .scope-add').click()");
   c.ok(/その場で決めてよいこと：時間は第一希望から2時間以内/.test(await page.text(".ask-side")), "adding a ○ item shows in the AI's brief");
-  await page.js("document.querySelector('[data-purpose=chat]').click()");
+  await page.js("document.querySelector('[data-group=people]').click();document.querySelector('[data-kind=chat]').click()");
   c.ok(await page.js("document.querySelector('.scopes').closest('.field').hidden"), "a chat has no 任せる範囲");
-  await page.js("document.querySelector('[data-purpose=\"\"]').click()");
+  // 予約を取る: the blanks become fields (the names filled from the account), the request is written from them.
+  await page.js("document.querySelector('[data-group=shop]').click();document.querySelector('[data-kind=reserve]').click()"); await sleep(150);
+  const blanks = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('[data-blank]')].map(i=>[i.dataset.blank,i.value]))"));
+  c.ok(blanks.length === 4 && blanks.find(([k]) => k === "自分の名前")?.[1] === "田中", "予約を取る: its blanks as fields, your name filled in", JSON.stringify(blanks));
+  await page.js("for (const [k,v] of [['希望日時','10月10日の19時'],['人数','2名']]) { const i=document.querySelector(`[data-blank='${k}']`); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); }");
+  c.ok(/10月10日の19時に2名で予約を取ってください/.test(await page.js("document.querySelector('#ask-instruction').value")) && /AIが予約を取ります/.test(await page.text(".ask-side")) && !(await page.js("document.querySelector('.scopes').closest('.field').hidden")), "the request is written from the fields; the brief says the AI books; 任せる範囲 is there");
+  await page.screenshot(join(out, "gateway-app-ask-reserve.png"));
+  await page.js("document.querySelector('[data-group=free]').click()");
   c.ok(/確かめるまで、発信できません/.test(await page.text(".ask-side")) && await page.js("document.querySelector('.ask-side .btn.big').disabled"), "an unknown outcome blocks a new call, and the side says where to fix it");
   await page.screenshot(join(out, "gateway-app-ask.png"));
 
@@ -134,8 +141,8 @@ try {
   // 営業の目的: a registered contact and a reviewed product; practice mode talks to the practice partner.
   for (const id of [running, unknown]) { const m = app.store.get("mission", id); m.status = "COMPLETED"; m.finishedAt = Date.now(); app.store.put("mission", m); }
   await page.js("location.hash='#/'"); await sleep(300);
-  await page.js("location.hash='#/new'"); await page.until("document.querySelector('[data-purpose=meeting]')");
-  await page.js("document.querySelector('[data-purpose=meeting]').click()");
+  await page.js("location.hash='#/new'"); await page.until("document.querySelector('[data-group=work]')");
+  await page.js("document.querySelector('[data-group=work]').click();document.querySelector('[data-kind=meeting]').click()");
   c.ok(!(await page.js("document.querySelector('#ask-product').closest('.two').hidden")) && /15分の商談/.test(await page.js("document.querySelector('#ask-instruction').value")), "商談: the product appears and the request follows the purpose");
   await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='佐藤').click()");
   await page.js("[...document.querySelectorAll('.ask-side button')].find(b=>b.textContent==='内容を確かめる').click()");

@@ -393,10 +393,12 @@ export function defineRestaurantReception(call: { restaurantName: string; caller
 
 /** Shared ask-only policy for personal phone requests across CLI, OSS Web and managed Gateway. */
 export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
-  const parsed = parsePhoneRequest(request);
+  const parsed = parsePhoneRequest(request), reservation = parsed.task === "reservation";
   return defineCall({ goal: "phone.message", language: "ja",
-    input: { request: parsed.instruction, ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), ...(parsed.voicePreset ? { voicePreset: parsed.voicePreset } : {}), policy: "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
-    permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
+    input: { request: parsed.instruction, ...(parsed.task ? { task: parsed.task } : {}), ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), ...(parsed.voicePreset ? { voicePreset: parsed.voicePreset } : {}), policy: reservation ? "AIによる代理電話であることを最初に伝える。承認された予約だけを、日付・時刻・人数・名前を復唱して相手の了承を得てから成立させる。任せる範囲の外は決めずに持ち帰る。購入・支払い・カード番号の提供・契約・別の相手への発信を行わない。相手が断ったら終了する。" : "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
+    // A reservation is complete only when the callee's own words settle the date, the time and their acceptance.
+    ...(reservation ? { require: { date: true, time: true, confirmed: true }, confirmation: "callee_acceptance" as const } : {}),
+    permissions: reservation ? { ask: true, reserve: true, share_name: true } : { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
     target: { phone: parsed.phone, name: parsed.name },
   });
 }
