@@ -125,6 +125,13 @@ try {
   c.ok(/上限 \$30/.test(await page.text("#view")) && await page.js("!!document.querySelector('.bar-meter i')"), "月の上限: saved in 設定 and shown on ホーム with a meter");
   c.ok(page.pageErrors.length === 0, "no page errors", page.pageErrors.join(" "));
 
+  // 予定: dates settled on calls, 確定 only on the callee's words.
+  await page.js("location.hash='#/schedule'"); await page.until("/これからの予定/.test(document.querySelector('#view').textContent)");
+  const sched = await page.text("#view");
+  c.ok(/10月3日（土）/.test(sched) && /19:00/.test(sched) && /相手の言葉で確定/.test(sched) && /10月5日（月）/.test(sched) && /未確定（提案・確認待ち）/.test(sched), "予定: the booked day settled by the callee's words, the proposed one not", sched.slice(0, 200));
+  await page.js("[...document.querySelectorAll('a.link')].find(a=>/次の月/.test(a.textContent)).click()"); await sleep(500);
+  c.ok(await page.js("document.querySelectorAll('.cal-d .dots i.ok').length") >= 1 && await page.js("document.querySelectorAll('.cal-d .dots i.wait').length") >= 1, "the month grid marks settled and unsettled days");
+  await page.screenshot(join(out, "gateway-app-schedule.png"), { fullPage: true });
   // 練習: the list, the detail, and a practice run that closes the ring only on the callee's words.
   await page.emulateReducedMotion();
   await page.js("location.hash='#/practice'"); await page.until("document.querySelectorAll('.item').length>0", { label: "practice list" });

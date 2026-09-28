@@ -241,3 +241,19 @@ mark.proof sup { margin-left: 1px; font-size: 10px; font-weight: 700; color: var
 .kind { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); font-size: 14px; text-align: left; cursor: pointer; }
 .kind[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); font-weight: 700; }
 .blanks { margin-top: 0; }
+/* 予定: a month grid (jade = settled by the other party's words, amber ring = not settled), then the days. */
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+.cal-h { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
+.cal-d { min-height: 52px; padding: 6px; border-radius: 8px; background: var(--bg); text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; }
+.cal-d.empty { background: transparent; }
+.cal-d.today { box-shadow: inset 0 0 0 1.5px var(--ink); }
+button.cal-d { border: 0; text-align: left; font: inherit; cursor: pointer; }
+button.cal-d:hover { background: var(--bg-2); }
+.cal-d .n { font-family: var(--mono); font-size: 12px; }
+.cal-d .dots { display: flex; gap: 3px; flex-wrap: wrap; }
+.cal-d .dots i, .legend { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.cal-d .dots i.ok, .legend.ok { background: var(--ok); }
+.cal-d .dots i.wait, .legend.wait { border: 1.5px solid var(--badge); box-sizing: border-box; }
+.day { scroll-margin-top: 80px; }
+.day + .day { margin-top: 18px; }
+.grid-2 + .page-h { margin-top: 28px; }

@@ -137,7 +137,7 @@ function renderBar() {
 }
 
 // ---------------------------------------------------------------- router
-const routes = { '': home, requests, new: ask, call, practice, contacts, settings };
+const routes = { '': home, requests, schedule, new: ask, call, practice, contacts, settings };
 async function route() {
   clearTimeout(app.timer);
   const [name = '', id, sub] = location.hash.split('?')[0].replace(/^#\/?/, '').split('/');
@@ -556,6 +556,56 @@ function ringFor(n, flags) {
   const t2 = svg('text', { x: 24, y: 31, 'text-anchor': 'middle', 'font-size': 4 }); t2.textContent = '確認';
   s.append(g, t, t2);
   return s;
+}
+
+// ---------------------------------------------------------------- 予定
+// Dates and times that calls settled or proposed, from each call's record (the evidence engine's notes, the sales
+// verdict). 確定 only when the other party's words settled both the day and the time; otherwise 未確定.
+function scheduleEntries() {
+  const out = [];
+  for (const r of app.history) {
+    if (r.state === 'draft') continue;
+    const notes = notesOf(r), meeting = notes.find(n => n.field === 'meeting_agreed_on_call' && n.value !== undefined);
+    if (meeting) { const d = new Date(meeting.value); if (!isNaN(d)) out.push({ r, at: d, time: d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }), settled: meeting.status === 'verified', what: '商談' }); continue; }
+    const date = notes.find(n => n.field === 'date' && n.value !== undefined), time = notes.find(n => n.field === 'time' && n.value !== undefined);
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date.value))) continue;
+    const hhmm = time && /^\d{2}:\d{2}$/.test(String(time.value)) ? String(time.value) : null;
+    const party = notes.find(n => n.field === 'partySize' && n.value !== undefined);
+    out.push({ r, at: new Date(`${date.value}T${hhmm ?? '00:00'}:00+09:00`), time: hhmm, settled: date.status === 'verified' && time?.status === 'verified' && notes.every(n => n.field !== 'confirmed' || n.status === 'verified'),
+      what: [r.sales ? '商談' : r.request?.conversationMode === 'chat' ? '約束' : '予約', party ? `${party.value}名` : ''].filter(Boolean).join(' ・ ') });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+async function schedule(monthKey) {
+  await loadAll();
+  const entries = scheduleEntries(), now = new Date(), tokyo = d => new Date(d.getTime() + 9 * 3600e3);
+  const today = tokyo(now).toISOString().slice(0, 10);
+  const [y, m] = monthKey && /^\d{4}-\d{2}$/.test(monthKey) ? monthKey.split('-').map(Number) : [tokyo(now).getUTCFullYear(), tokyo(now).getUTCMonth() + 1];
+  const dayKey = e => tokyo(e.at).toISOString().slice(0, 10), key = (yy, mm) => `${yy}-${String(mm).padStart(2, '0')}`;
+  const prev = m === 1 ? key(y - 1, 12) : key(y, m - 1), next = m === 12 ? key(y + 1, 1) : key(y, m + 1);
+  // The month as a grid: a day with a settled entry gets a jade dot, one only proposed an amber ring.
+  const first = new Date(Date.UTC(y, m - 1, 1)), days = new Date(Date.UTC(y, m, 0)).getUTCDate(), lead = first.getUTCDay();
+  const byDay = new Map(); for (const e of entries) { const k = dayKey(e); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(e); }
+  const grid = el('div', { class: 'cal', role: 'grid', 'aria-label': `${y}年${m}月` }, ...'日月火水木金土'.split('').map(w => el('div', { class: 'cal-h', role: 'columnheader', text: w })),
+    ...Array.from({ length: lead }, () => el('div', { class: 'cal-d empty' })),
+    ...Array.from({ length: days }, (_, i) => { const k = `${key(y, m)}-${String(i + 1).padStart(2, '0')}`, list = byDay.get(k) ?? [];
+      return el(list.length ? 'button' : 'div', { class: `cal-d ${k === today ? 'today' : ''}`, role: 'gridcell', ...(list.length ? { type: 'button', onclick: () => document.getElementById(`day-${k}`)?.scrollIntoView({ block: 'start' }) } : {}), 'aria-label': `${m}月${i + 1}日${list.length ? `、予定${list.length}件` : ''}` },
+        el('span', { class: 'n', text: String(i + 1) }), el('span', { class: 'dots' }, ...list.slice(0, 3).map(e => el('i', { class: e.settled ? 'ok' : 'wait' })))); }));
+  const upcoming = entries.filter(e => dayKey(e) >= today), past = entries.filter(e => dayKey(e) < today).reverse();
+  const dayList = list => { const groups = new Map(); for (const e of list) { const k = dayKey(e); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
+    return [...groups].map(([k, items]) => el('section', { class: 'day', id: `day-${k}` }, el('h3', { class: 'section-h', text: fmtDate(k) + (k === today ? '　今日' : '') }),
+      el('div', { class: 'rows' }, ...items.map(e => el('a', { class: 'row', href: `#/call/${e.r.id}` },
+        el('div', {}, el('div', { class: 'who' }, el('span', { class: 'num', text: e.time ?? '時刻未定' }), '　', e.r.request.name), el('div', { class: 'what', text: e.what })),
+        el('div', { class: `outcome ${e.settled ? '' : 'warn'}` }, e.settled ? el('span', { class: 'tick', text: '✓' }) : null, e.settled ? '相手の言葉で確定' : '未確定（提案・確認待ち）')))))); };
+  return el('div', { class: 'page' },
+    el('div', { class: 'page-h' }, el('h1', { text: '予定' }), el('span', { class: 'sub', text: '電話で決まった日時です。確定は、相手の言葉で日時が確かめられたものだけです。' })),
+    el('div', { class: 'grid-2' },
+      el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('a', { class: 'link', href: `#/schedule/${prev}`, text: '‹ 前の月' }), el('b', { class: 'section-h', text: `${y}年${m}月` }), el('a', { class: 'link', href: `#/schedule/${next}`, text: '次の月 ›' })), grid,
+        el('p', { class: 'note' }, el('i', { class: 'legend ok' }), ' 相手の言葉で確定　', el('i', { class: 'legend wait' }), ' 未確定')),
+      el('div', { class: 'card' }, el('h2', { text: 'カレンダーに入れる' }), el('p', { class: 'about', text: '報告の画面の「カレンダーに入れる」から、1件ずつあなたのカレンダー（iPhone・Google など）に読み込めます。未確定のものは「未確定」と書かれた仮の予定になります。' }))),
+    el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'これからの予定' })),
+    upcoming.length ? el('div', { class: 'stack' }, ...dayList(upcoming)) : el('p', { class: 'muted', text: 'これからの予定はありません。予約や商談の電話で日時が決まると、ここに並びます。' }),
+    ...(past.length ? [el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'これまで' })), el('div', { class: 'stack' }, ...dayList(past.slice(0, 20)))] : []));
 }
 
 // ---------------------------------------------------------------- 練習
