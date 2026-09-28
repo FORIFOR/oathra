@@ -62,7 +62,13 @@ pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemi
 
 `play --json` は会話ログや見出しを混ぜず、`result`・`intake`・保存先の `savedPath` だけをJSONで返します。決定事項や明示回答を別の業務システムへ渡すときに使えます。
 
-ソースから動かす `oathra demo` は、Oathra のアプリ（Gateway）を練習モードで開きます。練習では「AIの電話を見る」か「自分が相手役」を選べます。後者では AI があなたに電話をかけ、あなたがお店として文字で答えます。電話はかからず、データは `.oathra/demo/` に残ります（Node 22.13 以上）。前の画面（Arena）は `oathra demo --arena` で開けます。トンネル・LAN 公開・外部モデル（`--tunnel` `--allow-remote` `--allow-models`）は今のところ Arena だけの機能です。v0.1.18 の配布物の `oathra demo` は Arena を開きます。
+ソースから動かす `oathra demo` は、Oathra のアプリ（Gateway）を練習モードで開きます。練習では「AIの電話を見る」か「自分が相手役」を選べます。後者では AI があなたに電話をかけ、あなたがお店として文字で答えます。電話はかからず、データは `.oathra/demo/` に残ります（Node 22.13 以上）。練習の記録は `.oathra/calls/` に残り（ターミナルの `oathra play` の記録も含む）、練習画面の「記録」で見返せます。
+
+- `--allow-remote`：同じネットワークの別の端末（スマホなど）から開けます。起動時に出るログイン用リンクを開くとログインします（このパソコン以外はリンクが必要）。
+- `--tunnel`：外から開ける https の URL を作ります（cloudflared / ngrok）。同じくログイン用リンクで開きます。
+- `--allow-models`：練習で電話する AI に OpenAI・Gemini・Ollama を選べます。会話がその会社に送られ、あなたの API キーに料金がかかります。
+- `--live --tunnel`：このパソコンのキー（電話会社・音声AI）で実際に電話をかけます。準備の状態は起動時と「設定」に出ます。
+- `--arena`：前の画面（Arena）。v0.1.18 の配布物の `oathra demo` は Arena を開きます。
 
 同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
 

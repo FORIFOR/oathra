@@ -57,7 +57,7 @@ const ERRORS = {
   select_one_reviewed_product: '紹介する商品を選んでください（設定の「商品」で登録できます）。',
   select_one_contact: '連絡先から相手を選んでください。', contact_phone_required: 'この相手には電話番号がありません。',
   product_facts_require_review: '内容を確かめたことにチェックを入れてください。',
-  unknown_practice: 'この練習は見つかりません。',
+  unknown_practice_brain: 'このAIは、いまの起動では使えません。', unknown_practice_record: 'この記録は見つかりません。', unknown_practice: 'この練習は見つかりません。',
   invalid_inbound_hours: '受ける時間は「09:00」のように、始まりと終わりを違う時刻で入れてください。',
   invalid_inbound_mode: '受け方を選んでください。', verify_your_phone_first: '先に、自分の電話番号を確認してください（従来の画面の「自分の電話番号を確認する」）。',
   forward_not_available_with_credits: 'クレジット制のサーバーでは、あなたにつなぐ設定は使えません。',
@@ -148,6 +148,12 @@ const routes = { '': home, requests, schedule, new: ask, call, practice, contact
 async function route() {
   clearTimeout(app.timer);
   if (/^#setup=/.test(location.hash)) return renderLogin();
+  // A sign-in link from `oathra demo` (another device): the token rides in the fragment, never in a request line.
+  const linked = /^#token=([a-f0-9]{64})$/.exec(location.hash)?.[1];
+  if (linked) {
+    history.replaceState(null, '', location.pathname + location.search + '#/');
+    try { await signIn('/v1/session', {}, { Authorization: 'Bearer ' + linked }); app.boot = null; } catch (e) { renderLogin('token'); toast(e.message); return; }
+  }
   const [name = '', id, sub] = location.hash.split('?')[0].replace(/^#\/?/, '').split('/');
   const view = $('#view');
   for (const a of document.querySelectorAll('[data-tab]')) {
@@ -682,12 +688,23 @@ async function schedule(monthKey) {
 }
 
 // ---------------------------------------------------------------- 練習
+const FREE_NOTE = 'AIが「決まりました」と言っても、相手の言葉で確かめられるまで完了にはなりません。';
 async function practice(id, sub) {
   app.practice ??= await api('/practice/scenarios');
+  app.practiceBrains ??= await api('/practice/brains');
+  if (id === 'record' && sub) return runView(await api(`/practice/records/${encodeURIComponent(sub)}`), { back: '#/practice', animate: false });
   const list = app.practice, sel = list.find(x => x.id === id) ?? list[0];
-  if (sub === 'run' && sel) return practiceRun(sel);
-  if (sub === 'play' && sel) return practicePlay(sel);
-  let how = 'watch';
+  const params = new URLSearchParams(location.hash.split('?')[1] ?? ''), chosen = params.get('ai') ?? '';
+  if (sub === 'run' && sel) return practiceRun(sel, chosen);
+  if (sub === 'play' && sel) return practicePlay(sel, chosen);
+  const records = await api('/practice/records');
+  let how = 'watch', brain = 'scripted';
+  const brains = app.practiceBrains;
+  const brainPick = brains.length > 1 ? el('div', { class: 'stack' },
+    el('label', { class: 'lbl', for: 'practice-ai', text: '電話するAI' }),
+    (() => { const sl = el('select', { id: 'practice-ai' }, ...brains.map(x => el('option', { value: x.id, text: x.paid ? `${x.label}（外部のAI・料金がかかります）` : x.label }))); sl.addEventListener('change', () => { brain = sl.value; const paid = !!brains.find(x => x.id === brain)?.paid; paidNote.hidden = !paid; costNote.textContent = paid ? `電話はかかりません。${FREE_NOTE}` : `電話はかからず、費用もかかりません。${FREE_NOTE}`; }); return sl; })()) : null;
+  const costNote = el('p', { class: 'note', text: `電話はかからず、費用もかかりません。${FREE_NOTE}` });
+  const paidNote = el('p', { class: 'note warn', hidden: true, text: '外部のAIを選ぶと、会話の内容がそのAIの会社に送られ、あなたのAPIキーに料金がかかります。電話はかかりません。' });
   const detail = sel ? el('div', { class: 'card stack' },
     el('span', { class: 'muted small', text: sel.difficulty }), el('h1', { class: 'headline', text: sel.title }),
     el('p', { class: 'about', text: sel.brief }),
@@ -695,20 +712,32 @@ async function practice(id, sub) {
     el('h2', { class: 'section-h', text: 'やり方' }),
     el('div', { class: 'two', role: 'radiogroup', 'aria-label': 'やり方' }, ...[['watch', 'AIの電話を見る', `AIが${sel.callee || '練習用の相手'}と話すのを見ます`], ['play', '自分が相手役', `あなたが${sel.callee || '相手'}として、文字で答えます`]].map(([v, l, d]) =>
       el('label', { class: 'option' }, el('input', { type: 'radio', name: 'how', value: v, checked: v === how, onchange: () => { how = v; } }), el('span', {}, el('b', { text: l }), el('span', { class: 'muted small', text: d }))))),
+    ...(brainPick ? [brainPick, paidNote] : []),
     el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', text: '練習を始める', onclick: () => {
-      location.hash = `#/practice/${sel.id}/${how === 'play' ? 'play' : 'run'}`;
+      location.hash = `#/practice/${sel.id}/${how === 'play' ? 'play' : 'run'}${brain !== 'scripted' ? `?ai=${encodeURIComponent(brain)}` : ''}`;
     } })),
-    el('p', { class: 'note', text: '電話はかからず、費用もかかりません。AIが「決まりました」と言っても、相手の言葉で確かめられるまで完了にはなりません。' }))
+    costNote)
     : el('div', { class: 'card' }, el('p', { class: 'muted', text: '練習がありません。' }));
   return el('div', { class: 'page' }, el('div', { class: 'split-page' },
     el('div', { class: 'stack' }, el('div', { class: 'page-h' }, el('h1', { text: '練習' })),
       el('p', { class: 'note', text: 'AIが店員役などと話します。電話はかからず、費用もかかりません。' }),
       el('div', { class: 'list' }, ...list.map(x => el('button', { class: 'item', type: 'button', 'aria-current': String(x.id === sel?.id), onclick: () => { location.hash = `#/practice/${x.id}`; } },
-        el('span', { class: 'grow' }, el('b', { text: x.title }), el('span', { text: x.brief.slice(0, 40) })), el('span', { class: 'muted small', text: x.difficulty }))))),
+        el('span', { class: 'grow' }, el('b', { text: x.title }), el('span', { text: x.brief.slice(0, 40) })), el('span', { class: 'muted small', text: x.difficulty })))),
+      ...(records.length ? [el('h2', { class: 'section-h', text: '記録' }), el('p', { class: 'note', text: 'このパソコンに保存した練習です（ターミナルの oathra play も含みます）。' }),
+        el('div', { class: 'list' }, ...records.slice(0, 30).map(r => el('a', { class: 'item', href: `#/practice/record/${encodeURIComponent(r.id)}` },
+          el('span', { class: 'grow' }, el('b', { text: r.title }), el('span', { text: [r.at ? new Date(r.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '', r.brain && r.brain !== 'scripted' ? r.brain : ''].filter(Boolean).join(' · ') })),
+          el('span', { class: `muted small`, text: r.complete ? '決まった' : '決まらず' }))))] : [])),
     detail));
 }
-async function practiceRun(sel) {
-  const run = await api('/practice/run', { method: 'POST', body: { scenario: sel.id } });
+async function practiceRun(sel, brain) {
+  const b = (app.practiceBrains ?? []).find(x => x.id === brain);
+  $('#view').replaceChildren(el('div', { class: 'page' }, el('p', { class: 'muted', role: 'status', text: b && b.id !== 'scripted' ? `${b.label} が電話しています。終わるまで数十秒かかることがあります…` : '練習の電話を準備しています…' })));
+  const run = await api('/practice/run', { method: 'POST', body: { scenario: sel.id, ...(brain && brain !== 'scripted' ? { brain } : {}) } });
+  return runView(run, { back: `#/practice/${sel.id}`, again: true, animate: true });
+}
+// A finished practice call, replayed line by line (or all at once for reduced motion / a saved record).
+function runView(run, { back, again = false, animate = true }) {
+  const here = location.hash;
   const fields = run.require, byTurn = new Map(), settled = new Map();
   for (const s of run.settled) { if (!byTurn.has(s.turnId)) byTurn.set(s.turnId, []); byTurn.get(s.turnId).push(s); }
   const ringBox = el('div'), cards = el('div', { class: 'fields' }), lines = el('div', { class: 'transcript', 'aria-live': 'polite' });
@@ -723,8 +752,8 @@ async function practiceRun(sel) {
   const finish = () => {
     stateLine.className = 'state-line'; stateLine.replaceChildren('練習が終わりました');
     headline.textContent = run.complete ? '決まりました' : '決まりませんでした';
-    foot.replaceChildren(el('a', { class: 'btn primary', href: `#/practice/${sel.id}`, text: 'もう一度' }), el('a', { class: 'btn', href: '#/practice', text: '別の練習を選ぶ' }),
-      el('p', { class: 'note', text: `${run.falseCompletion ? 'AIの勘違いで「決まった」にした項目：あり' : 'AIの勘違いで「決まった」にした項目：なし'}。練習の記録は、このサーバーには残しません。` }));
+    foot.replaceChildren(...(again ? [el('a', { class: 'btn primary', href: back, text: 'もう一度' })] : []), el('a', { class: 'btn', href: '#/practice', text: again ? '別の練習を選ぶ' : '練習に戻る' }),
+      el('p', { class: 'note', text: [run.falseCompletion === undefined ? '' : `AIの勘違いで「決まった」にした項目：${run.falseCompletion ? 'あり' : 'なし'}。`, run.saved ? 'この練習は「記録」に保存しました。' : again ? '練習の記録は、このサーバーには残しません。' : ''].join('') }));
   };
   const show = i => {
     const t = run.transcript[i];
@@ -735,10 +764,10 @@ async function practiceRun(sel) {
   };
   drawFields();
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (still) { run.transcript.forEach((_, i) => show(i)); finish(); }
-  else { let i = 0; const tick = () => { if (!location.hash.startsWith(`#/practice/${sel.id}/run`)) return; if (i < run.transcript.length) { show(i++); app.timer = setTimeout(tick, 1100); } else finish(); }; app.timer = setTimeout(tick, 300); }
+  if (still || !animate) { run.transcript.forEach((_, i) => show(i)); finish(); }
+  else { let i = 0; const tick = () => { if (location.hash !== here) return; if (i < run.transcript.length) { show(i++); app.timer = setTimeout(tick, 1100); } else finish(); }; app.timer = setTimeout(tick, 300); }
   const main = el('section', { class: 'call-main' },
-    el('div', { class: 'crumb' }, el('a', { href: '#/practice', text: '練習' }), ' › ', el('b', { text: run.scenario.title }), el('span', { class: 'tag', text: '練習' })),
+    el('div', { class: 'crumb' }, el('a', { href: '#/practice', text: '練習' }), ' › ', el('b', { text: run.scenario.title }), el('span', { class: 'tag', text: again ? '練習' : '練習の記録' }), run.brain && run.brain !== 'scripted' ? el('span', { class: 'tag', text: run.brain }) : ''),
     el('div', { class: 'head' }, ringBox, el('div', {}, stateLine, headline)),
     ...(fields.length ? [el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: '確かめること' }), el('span', { class: 'sub', text: '相手の言葉で確かめられたら、輪が一区切り閉じます' })), cards] : []),
     foot);
@@ -747,8 +776,8 @@ async function practiceRun(sel) {
 
 // 自分が相手役: the AI (the offline scripted agent) calls you, and you answer as the shop in text. The verdict is the
 // evidence engine's, as in every call: the ring closes only on what you, the callee, actually said.
-async function practicePlay(sel) {
-  let st = await api('/practice/play', { method: 'POST', body: { scenario: sel.id } });
+async function practicePlay(sel, brain) {
+  let st = await api('/practice/play', { method: 'POST', body: { scenario: sel.id, ...(brain && brain !== 'scripted' ? { brain } : {}) } });
   const fields = st.require, shown = new Set(), who = st.scenario.callee || '相手';
   const ringBox = el('div'), cards = el('div', { class: 'fields' }), lines = el('div', { class: 'transcript', 'aria-live': 'polite' });
   const stateLine = el('div', { class: 'state-line state-live' }, el('span', { class: 'dot' }), '練習中'), headline = el('h1', { class: 'headline', text: `AIが${who}に電話しています` });
@@ -782,7 +811,7 @@ async function practicePlay(sel) {
       stateLine.className = 'state-line'; stateLine.replaceChildren(st.status === 'error' ? '練習を続けられませんでした' : '練習が終わりました');
       headline.textContent = st.complete ? '決まりました' : '決まりませんでした';
       foot.replaceChildren(el('a', { class: 'btn primary', href: `#/practice/${sel.id}`, text: 'もう一度' }), el('a', { class: 'btn', href: '#/practice', text: '別の練習を選ぶ' }),
-        el('p', { class: 'note', text: 'AIが「決まりました」と言っても、あなた（相手）の言葉で確かめられた項目だけが決まったことになります。練習の記録は、このサーバーには残しません。' }));
+        el('p', { class: 'note', text: `AIが「決まりました」と言っても、あなた（相手）の言葉で確かめられた項目だけが決まったことになります。${st.saved ? 'この練習は「記録」に保存しました。' : '練習の記録は、このサーバーには残しません。'}` }));
     }
   };
   draw();

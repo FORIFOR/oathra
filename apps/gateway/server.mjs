@@ -1,5 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
-import { practiceList, practiceRun, practicePlayStart, practicePlayState, practicePlayReply, practicePlayHangup } from './lib/practice.mjs';
+import { practiceList, practiceRun, practicePlayStart, practicePlayState, practicePlayReply, practicePlayHangup, practiceBrains, practiceRecords, practiceRecord, configurePractice } from './lib/practice.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
@@ -34,7 +34,7 @@ export function configuration(env=process.env){
   const parsed=new URL(publicUrl);assert(!parsed.username&&!parsed.password&&!parsed.search&&!parsed.hash&&parsed.pathname==='/'&&(parsed.protocol==='https:'||(mode==='simulator'&&['localhost','127.0.0.1'].includes(parsed.hostname))),'public_url_must_be_https_origin',500);
   const required=['TWILIO_ACCOUNT_SID','TWILIO_AUTH_TOKEN','TWILIO_PHONE_NUMBER','OPENAI_API_KEY','OATHRA_VOICE_MODEL','OATHRA_BUSINESS_NAME','OATHRA_RATE_CEILING_USD','OATHRA_LIVE_POLICY_REVIEWED'];
   const missing=required.filter(k=>k==='OATHRA_LIVE_POLICY_REVIEWED'?env[k]!=='true':!env[k]);
-  const liveReady=mode==='live'&&missing.length===0&&env.OATHRA_LIVE_POLICY_REVIEWED==='true'&&parsed.protocol==='https:'&&existsSync(new URL('../../packages/runtime/dist/index.js',import.meta.url));
+  const liveReady=mode==='live'&&missing.length===0&&env.OATHRA_LIVE_POLICY_REVIEWED==='true'&&parsed.protocol==='https:'&&(!!env.OATHRA_GATEWAY_ROOT||existsSync(new URL('../../packages/runtime/dist/index.js',import.meta.url))); // bundled: the runtime is inside
   // Answering incoming calls is off unless someone is named to receive them; whoever that is pays for them.
   let inbound=null;
   if(env.OATHRA_INBOUND_OWNER){
@@ -106,6 +106,8 @@ function send(res,status,value,type='application/json; charset=utf-8',extra={}){
 export async function createGateway(config,options={}){
   const env=options.env??process.env,store=options.store??new Store(config.dbPath,config.dataKey),service=new Service(store,config);
   const sessions=new BrowserSessions(service);
+  // The local app passes its practice AIs and records folder; a deployed gateway has neither (lib/practice.mjs).
+  configurePractice(options.practice??{});
   const phone=options.phone??new Phone(service,env);
   const executeCall=options.execute??(config.mode==='simulator'?simulate:(m,hooks)=>phone.execute(m,hooks));
   const registry=options.registry??await loadPluginRegistry(env,{now:()=>store.now(),fetchImpl:options.fetchImpl??fetch,executeCall});
@@ -156,7 +158,7 @@ export async function createGateway(config,options={}){
       if(localOpen&&!['GET','HEAD'].includes(method))sessions.sameOrigin(req);
       const u=auth!==undefined?service.auth(auth.slice(7)):localOpen?config.users.find(x=>x.role==='admin')??config.users[0]:sessions.authenticate(req);
       if(!auth&&req.headers['x-oathra-account'])assert(req.headers['x-oathra-account']===u.id,'session_account_changed',409);
-      if(req.headers.origin)assert(req.headers.origin===config.publicUrl,'cross_origin_request_denied',403);
+      if(req.headers.origin)sessions.sameOrigin(req); // publicUrl, or the local app's LAN/tunnel pages (config.origins)
       const data=['POST','PATCH'].includes(method)?await jsonBody(req):{};
       // A signed-in person sets up (or resets) email login for their own account: the code opens the setup form.
       if(path==='/v1/account/password-link'&&method==='POST'){service.write(u);const link=service.passwords.issue(u.id,{reset:service.passwords.profile(u.id).passwordLogin});return send(res,200,{code:new URL(link.url).hash.slice(7),expiresInSeconds:link.expiresInSeconds});}
@@ -222,9 +224,13 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/missions/draft')return send(res,201,service.prepare(u,data));
       // Practice with the built-in characters (lib/practice.mjs): nothing dials and nothing is charged.
       if(method==='GET'&&path==='/v1/practice/scenarios')return send(res,200,await practiceList());
-      if(method==='POST'&&path==='/v1/practice/run')return send(res,200,await practiceRun(String(data.scenario??'')));
+      if(method==='GET'&&path==='/v1/practice/brains')return send(res,200,practiceBrains());
+      if(method==='POST'&&path==='/v1/practice/run')return send(res,200,await practiceRun(String(data.scenario??''),data.brain===undefined?undefined:String(data.brain)));
+      if(method==='GET'&&path==='/v1/practice/records')return send(res,200,await practiceRecords());
+      const recordPath=/^\/v1\/practice\/records\/([A-Za-z0-9_-]{1,80})$/.exec(path);
+      if(recordPath&&method==='GET')return send(res,200,await practiceRecord(recordPath[1]));
       // 自分が相手役: the user answers as the shop in text; the scripted agent calls them. Held in memory, per user.
-      if(method==='POST'&&path==='/v1/practice/play')return send(res,201,await practicePlayStart(u.id,String(data.scenario??'')));
+      if(method==='POST'&&path==='/v1/practice/play')return send(res,201,await practicePlayStart(u.id,String(data.scenario??''),data.brain===undefined?undefined:String(data.brain)));
       const playPath=/^\/v1\/practice\/play\/(play_[a-z0-9]{6,20})(?:\/(reply|hangup))?$/.exec(path);
       if(playPath&&method==='GET'&&!playPath[2])return send(res,200,practicePlayState(u.id,playPath[1]));
       if(playPath&&method==='POST'&&playPath[2]==='reply')return send(res,200,practicePlayReply(u.id,playPath[1],data.text));

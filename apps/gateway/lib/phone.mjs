@@ -82,8 +82,9 @@ export class Phone {
     const pending=this.service.account(u); pending.pendingPhone=number; pending.verificationExpires=this.store.now()+600_000; this.store.put('account',pending); return {sent:true};
   }
   async attach(server) {
-    const require=createRequire(new URL('../../../providers/phone-twilio/package.json',import.meta.url));
-    const {WebSocketServer}=require('ws'); this.wss=new WebSocketServer({noServer:true,maxPayload:64*1024});
+    // The checkout resolves ws through the carrier package; the npm bundle (gateway.js) through its own dependencies.
+    let ws;try{ws=createRequire(new URL('../../../providers/phone-twilio/package.json',import.meta.url))('ws');}catch{ws=createRequire(import.meta.url)('ws');}
+    const {WebSocketServer}=ws; this.wss=new WebSocketServer({noServer:true,maxPayload:64*1024});
     server.on('upgrade',(req,socket,head)=>{
       const session=this.sessions.get(req.url), base=this.config.publicUrl+req.url;
       const valid=[base,base+'/',base.replace(/^https:/,'wss:'),base.replace(/^https:/,'wss:')+'/'].some(url=>twilioSignature(url,{},req.headers['x-twilio-signature'],this.env.TWILIO_AUTH_TOKEN));
