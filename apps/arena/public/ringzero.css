@@ -1,0 +1,52 @@
+/* Ring Zero theme (2026-09-28, Oathra v6 / Oathra App). Loaded after v2.css; light by default via
+   <html data-theme="light"> (?theme=dark keeps the v2 dark look).
+   Jade (#0B7A58) is the brand colour and the colour of "confirmed by the other party's words" only.
+   Controls are ink. Amber = needs you. Coral = on a call / hang up. No gradients, glow or glass. */
+:root, :root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f1f4f2; --bg-2: #e7ebe8; --panel: #ffffff;
+  --ink: #0e1512; --ink-2: #454b53; --muted: #5f656c; --faint: #5f656c;
+  --line: #e1e4df; --line-soft: #eff1ed; --line-2: #c9cdc6;
+  --accent: #0e1512; --accent-ink: #0e1512; --accent-soft: #eef1ef;
+  --ok: #0b7a58; --bad: #c02a16; --live: #d8321c; --danger-bd: #f0c4bc; --danger-ink: #c02a16;
+  --agent: #0e1512; --callee: #454b53; --past: #5f656c;
+  --jade-200: #c6e9d8; --jade-50: #e4f3ec;
+  --attention: #9a5200; --attention-bg: #fff1dc; --attention-bd: #f1c98a;
+  --sans: "IBM Plex Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+:root[data-theme="dark"] { --ok: #3ec596; --jade-200: rgba(62, 197, 150, .25); }
+
+.brand-icon { background: var(--ok); }
+.metrics b, #m-elapsed, #m-latency, #m-cost, .e-t, .count, .rail-count { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+/* A line of Japanese words with a time in it (「相手の発言 · 00:21」) stays in the text face; only its digits line up. */
+.msrc { font-variant-numeric: tabular-nums; }
+
+:root:not([data-theme="dark"]) .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+:root:not([data-theme="dark"]) .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+:root:not([data-theme="dark"]) .btn.primary:hover { background: #2a2f35; border-color: #2a2f35; color: #fff; }
+:root:not([data-theme="dark"]) .btn:hover { border-color: var(--ink); }
+:root:not([data-theme="dark"]) .transcript .line.agent .who { color: var(--muted) !important; }
+:root:not([data-theme="dark"]) .transcript .line:not(.agent) .say { color: var(--ink) !important; }
+
+/* Verified field: a filled jade dot; the words that settled it get a jade underlay. */
+/* v2 lays each field out as label | status over the value, with .mk hidden: the dot goes before the label instead. */
+.mission-list .mrow.verified .mlabel::before { content: "✓"; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 8px; border-radius: 50%; background: var(--ok); color: #fff; font-size: 10px; font-weight: 700; vertical-align: -4px; }
+.mission-list .mrow.tick .mlabel::before { animation: rz-pop .45s cubic-bezier(.2, .9, .3, 1.2) both; }
+/* The underlay sits under the words only, not across the column. */
+.mrow .mquote { width: fit-content; max-width: 100%; background: linear-gradient(transparent 60%, var(--jade-200) 60%); }
+.mission-list .mrow.pending .mstatus { color: var(--attention); }
+@keyframes rz-pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+
+/* The ring: one arc per required field, closing only on the other party's words (drawn by ringzero.js). */
+.rz-ring { display: block; width: 64px; height: 64px; margin: 4px 0 12px; }
+.rz-ring[hidden] { display: none; }
+.rz-ring:not([hidden]) + .verdict-progress { display: none; }
+.rz-track { stroke: var(--line); stroke-width: 5; }
+.rz-on { stroke: var(--ok); stroke-width: 5; stroke-linecap: round; }
+.rz-full { stroke-linecap: butt; }
+.rz-ring text { font: 600 11px var(--mono); fill: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .mission-list .mrow.tick .mlabel::before { animation: none; } }
+/* Nothing to judge (a real chat): no ring and no progress, so 「この電話について」 starts under its heading. */
+body.real-nojudge .rz-ring, body.real-nojudge #mission-progress { display: none; }

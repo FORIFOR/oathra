@@ -30,6 +30,9 @@ export function phonePage() {
   patch(/\s*<link rel="stylesheet" href="v2.css" \/>/, '');
   // Arena's records list (practice and real calls together) is Arena-only; the managed page has its own history.
   patch(/\s*<link rel="stylesheet" href="records.css" \/>/, '');
+  // The Ring Zero theme files are Arena's; the managed page keeps its own look for now.
+  patch(/\s*<link rel="stylesheet" href="ringzero.css" \/>/, '');
+  patch(/\s*<script src="ringzero.js"><\/script>/, '');
   patch(/\s*<button type="button" class="btn" id="records-open"[^>]*>Records<\/button>/, '');
   // The Arena's icons live under assets/; the gateway serves its own copies at the root.
   patch(/href="assets\/oathra-mark-original\.png"/, 'href="/oathra-mark-original.png"');

@@ -364,3 +364,29 @@ fieldset.choices .choice b { text-align: left; }
 .item.selected { border-color: var(--line); }
 /* Handoff §4: on a narrow screen the result ends with 「同じ相手にもう一度」 as a full-width primary. */
 @media (max-width: 999px) { #current .actions button.again { flex: 1 1 100%; width: 100%; } }
+
+/* ---------- Ring Zero theme (2026-09-28, Oathra v6 / Oathra App): light by default via <html data-theme="light">.
+   Jade is the brand colour and the colour of "confirmed by the other party's words" only; every control is ink.
+   ?theme=dark keeps the v2 dark look. ---------- */
+:root, :root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f1f4f2; --card: #ffffff; --ink: #0e1512; --ink-2: #454b53; --muted: #5f656c; --line: #e1e4df; --line-2: #c9cdc6; --bg-2: #eef1ef;
+  --accent: #0e1512; --accent-soft: #eef1ef; --good: #0b7a58; --bad: #c02a16; --open: #9a5200; --busy: #454b53;
+  font-family: "IBM Plex Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+}
+:root[data-theme="dark"] { --good: #3ec596; }
+.brand-icon { background: var(--good); }
+.brand-dot { color: var(--good); }
+:root:not([data-theme="dark"]) button { border-radius: 10px; }
+:root:not([data-theme="dark"]) button:hover { filter: none; background: #2a2f35; border-color: #2a2f35; }
+:root:not([data-theme="dark"]) button.quiet, :root:not([data-theme="dark"]) button.danger { background: #fff; }
+:root:not([data-theme="dark"]) button.quiet { border-color: var(--line-2); }
+:root:not([data-theme="dark"]) button.quiet:hover { background: var(--bg-2); border-color: var(--ink); }
+:root:not([data-theme="dark"]) button.danger { border-color: #f0c4bc; }
+:root:not([data-theme="dark"]) button.danger:hover { background: #fdf1ef; border-color: var(--bad); }
+:root:not([data-theme="dark"]) .card { border-radius: 14px; border-color: var(--line); }
+:root:not([data-theme="dark"]) .progress li.done { border-color: var(--good); color: var(--ink); }
+:root:not([data-theme="dark"]) .progress li.now { border-color: var(--ink); color: var(--ink); }
+:root:not([data-theme="dark"]) input:focus, :root:not([data-theme="dark"]) textarea:focus, :root:not([data-theme="dark"]) select:focus, :root:not([data-theme="dark"]) button:focus-visible { outline-color: var(--ink); }
+/* The header's 設定・ログアウト stay plain text links in Ring Zero too (the quiet-button white fill is for the page). */
+:root:not([data-theme="dark"]) header button.quiet.small, :root:not([data-theme="dark"]) header button.quiet.small:hover { background: transparent; border: 0; }
