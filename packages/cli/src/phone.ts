@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { defineCall, parsePhoneRequest, PRESET_VOICES, resolvePhoneVoice, type CallContract, type PhoneRequest } from "@oathra/contract";
-import type { BrainContext, BrainProvider } from "@oathra/core";
+import type { BrainProvider } from "@oathra/core";
 import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { GeminiTTS } from "@oathra/gemini";
@@ -39,7 +39,9 @@ import { defaultCallsDir, saveCall } from "@oathra/replay";
 import { runCall } from "@oathra/runtime";
 import { contractFromScenario, loadScenarioDir, loadScenarioFile, type Scenario } from "@oathra/scenario";
 import { MULAW_8K, type VoiceEngine } from "@oathra/voice";
-import { callInstructions, voiceSettingRecord } from "@oathra/voice-kit";
+import { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt, voiceSettingRecord } from "@oathra/voice-kit";
+
+export { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt };
 import { pipelineEngine } from "@oathra/voice-pipeline";
 import { liveModelOf, resolveBrain } from "./brains.js";
 import { scenariosDir } from "./paths.js";
@@ -62,11 +64,6 @@ export type EngineSpec = { id: "gpt-live" | "gemini-live" | "character-tts" | "p
 
 /** Pipeline voices. `gemini-lite` is the character-call prototype: Flash-Lite TTS with the character preset's voice. */
 export type PipelineTTSChoice = "openai" | "gemini-lite";
-/**
- * The acting direction for the prototype, the first sentence of the approved reference style (the rest of that
- * style was written for one line and would give every reply the same emotional arc).
- */
-export const CHARACTER_TTS_STYLE = "日本語のアニメの会話シーンとして演じる。";
 const CHARACTER_TTS_VOICES: Record<string, string> = { "character-female": PRESET_VOICES["character-tts"]["character-female"], "character-male": PRESET_VOICES["character-tts"]["character-male"] };
 
 /** The pipeline's TTS; `gemini-lite` only for the character presets, since the style is a character's. */
@@ -77,31 +74,6 @@ export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?:
   return { tts: new GeminiTTS({ voice, style: CHARACTER_TTS_STYLE }), voice, style: CHARACTER_TTS_STYLE };
 }
 
-/**
- * How the text brain replies on a phone-request call spoken by TTS: the same call instructions the
- * speech-to-speech engines get (AI disclosure, on whose behalf, chat rules, the preset's speaking style), plus
- * what changes when replies are written and read aloud. The verdict still comes from the runtime's evidence.
- */
-export function phoneRequestSystemPrompt(ctx: BrainContext): string {
-  const ja = ctx.language === "ja";
-  return [
-    callInstructions({ contract: ctx.contract, view: ctx.mission }),
-    "",
-    ja ? "## この通話での返し方" : "## How you reply on this call",
-    ...(ja ? [
-      "- あなたの返答は文字で書かれ、そのまま声で読み上げられます。1回の返答は短く（1〜2文）。記号・絵文字・括弧書き・ト書きは書かないでください。",
-      "- end_call や検索などの道具は使えません。上の指示で end_call を使う場面では、別れの挨拶を text に書き、action を \"hangup\" にしてください。",
-      "- 通話が完了したかどうかはあなたではなく、相手の発言から判定されます。",
-    ] : [
-      "- Your reply is written and then read aloud. Keep each reply short (one or two sentences). No symbols, emoji, brackets or stage directions.",
-      "- You have no tools such as end_call or search. Where the instructions above say to use end_call, write the goodbye in text and set action to \"hangup\".",
-      "- Whether the call is complete is decided from what the callee says, not by you.",
-    ]),
-    ...(ctx.hints?.length ? ["", "## Runtime hints", ...ctx.hints.map((h) => `- ${h}`)] : []),
-    "",
-    'Respond ONLY with a JSON object, no prose, no code fences: {"text": string, "action": "continue" | "hangup"}',
-  ].join("\n");
-}
 
 /** The brain the runtime runs for this engine. Speech-to-speech engines write their own replies. */
 export function engineBrain(spec: EngineSpec, engine: VoiceEngine): BrainProvider {

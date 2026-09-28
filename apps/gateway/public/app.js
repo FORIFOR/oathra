@@ -25,8 +25,12 @@ const GOAL_TEXT = {
   meeting: name => `${name}に商品を説明して、興味があれば15分の商談の日時を相談してください。`,
   materials: name => `${name}に商品を簡単に説明して、資料を送ってよいか聞いてください。`,
   introduce: name => `${name}に商品を簡単に説明してください。`,
+  chat: name => `${name}と近況を話して、気軽に雑談してください。`,
 };
 const ERRORS = {
+  invalid_caller_name: '名乗る名前は、数字や記号を入れずに40文字以内で入力してください。',
+  voice_engine_unavailable: 'この声は、このサーバーではまだ使えません。標準の声を選んでください。',
+  invalid_phone_request: '電話番号・相手の名前・話したいことを確かめてください（名前に数字や記号は使えません）。',
   privacy_consent_required: '「はじめに」の「会話データの取り扱い」に同意してください。',
   select_one_reviewed_product: '紹介する商品を1つ登録して選んでください。',
   select_one_contact: '電話する相手を1人選んでください。',
@@ -184,7 +188,16 @@ const GOAL_HELP = {
   meeting: '相手が日時をはっきり了承したときだけ「決まった」になります。',
   materials: '了承があれば、あとでメールやSMSを送れます。',
   introduce: '説明を聞いてもらえたかを確認します。',
+  chat: '何かを決める電話ではありません。会話の記録だけを残します。',
 };
+// 雑談 is a phone request (the gateway's free-form call), not a sales call: no product, no self-test, a voice to choose.
+function syncGoal() {
+  const chat = goal() === 'chat';
+  $('product').closest('label').hidden = chat; $('product').required = !chat;
+  $('test-me').closest('label').hidden = chat; if (chat && $('test-me').checked) { $('test-me').checked = false; $('contact').disabled = false; }
+  $('slots').closest('label').hidden = chat; $('voice-field').hidden = !chat;
+  $('request').placeholder = chat ? '例：最近どうしてるか聞いて、週末の予定について気軽に話してください。' : '例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。';
+}
 
 // ---------------------------------------------------------------------------------------------- setup
 
@@ -192,6 +205,7 @@ function renderSetup() {
   const consented = state.account.consentVersion === state.configuration.consentVersion;
   const steps = [
     { done: consented, text: '会話データの取り扱いを確認して同意する', label: '内容を読む', go: () => open('s-consent') },
+    { done: !!state.account.callerName, text: '電話で名乗る名前を決める', label: '決める', go: () => open('s-caller') },
     { done: state.products.length > 0, text: '紹介する商品を登録する', label: '登録する', go: () => open('s-product') },
     { done: state.contacts.length > 0, text: '電話する相手を登録する', label: '登録する', go: () => open('s-contact') },
   ].filter(s => !s.done);
@@ -200,6 +214,12 @@ function renderSetup() {
   $('setup-steps').replaceChildren(...steps.map(s => { const li = el('li'); li.append(el('span', s.text), button(s.label, s.go, 'small')); return li; }));
   $('consent-state').textContent = consented ? '同意済み' : '未同意';
   $('consent').hidden = consented;
+  $('caller-state').textContent = state.account.callerName ? state.account.callerName : '未設定';
+  if (document.activeElement !== $('caller-name')) $('caller-name').value = state.account.callerName ?? '';
+  // The acting voices need their own services; where they are not set up, say so on the option instead of failing at the call.
+  const acting = (state.configuration.voiceEngines ?? []).find(e => e.id === 'character-tts')?.ready === true;
+  for (const o of $('chat-voice').options) if (o.value) { o.disabled = !acting; o.textContent = o.textContent.replace(/（.*）$/, acting ? '（返事まで2〜3秒）' : '（このサーバーでは未設定）'); }
+  if (!acting && $('chat-voice').value) $('chat-voice').value = '';
   // A practice number nobody verified must not read as 「確認済み」.
   $('phone-state').textContent = state.account.phoneVerificationProvider === 'simulator' ? '練習では不要' : state.account.verifiedPhone ? '確認済み' : '未確認';
   // Verifying a number sends a real SMS through the carrier. Where that is not set up, say so instead of offering a form that fails.
@@ -230,6 +250,8 @@ async function refresh() {
   options('contact', state.contacts.map(c => ({...c, name: [c.name, c.company].filter(Boolean).join(' / ') + (c.phone ? '' : '（電話番号未登録）')})), '（設定で相手を登録してください）');
   options('suppress-contact', state.contacts.filter(c => c.phone).map(c => ({...c, name: c.name || c.company})), '（登録された相手がいません）');
   $('seconds').max = c.maxSeconds; $('budget').max = c.maxCallUsd;
+  // Until someone sets a lower cap, a call may use the server's own cap (a fixed 1 USD would refuse every live estimate above it).
+  if ($('budget').dataset.touched !== 'true') $('budget').value = c.maxCallUsd;
   options('followup-kind', (state.plugins ?? []).filter(p => (state.integrations ?? []).includes(p.id)), '（使えるサービスがありません）');
   $('plugin-list').replaceChildren(...(state.plugins ?? []).map(p => el('p', `${p.name} — ${!p.enabled ? '無効' : p.configured ? '設定済み' : '設定待ち'}`)));
   $('contact-list').replaceChildren(...state.contacts.map(c => {
@@ -244,6 +266,7 @@ async function refresh() {
   }));
   renderSetup();
   renderHistory();
+  syncGoal();
   if (!$('request').value.trim()) suggestRequest();
 }
 function suggestRequest() {
@@ -253,8 +276,9 @@ function suggestRequest() {
 }
 // Keep the suggestion in step with the choices, but never overwrite what the person typed.
 for (const label of document.querySelectorAll('label.choice')) { const v = label.querySelector('input')?.value; if (v && GOAL_HELP[v]) label.append(el('span', GOAL_HELP[v], 'choice-hint')); }
-for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { $('goal-help').textContent = GOAL_HELP[goal()]; if ($('request').dataset.suggested === 'true') suggestRequest(); });
+for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { syncGoal(); $('goal-help').textContent = GOAL_HELP[goal()]; if ($('request').dataset.suggested === 'true') suggestRequest(); });
 $('request').addEventListener('input', () => { $('request').dataset.suggested = 'false'; });
+$('budget').addEventListener('input', () => { $('budget').dataset.touched = 'true'; });
 $('test-me').addEventListener('change', () => { $('contact').disabled = $('test-me').checked; });
 
 function renderHistory() {
@@ -263,7 +287,7 @@ function renderHistory() {
   if (!all.length) dest.append(el('p', 'まだありません。上のフォームから最初の電話を任せてみましょう。', 'muted'));
   for (const m of shown) {
     const b = el('button', undefined, 'item' + (m.id === selected ? ' selected' : ''));
-    b.append(el('strong', m.target.name), el('span', STATUS[m.status] ?? m.status, 'state ' + tone(m.status)), el('small', `${m.product.name} ・ ${new Date(m.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${m.mode === 'simulator' ? ' ・ 練習' : ''}`));
+    b.append(el('strong', m.target.name), el('span', STATUS[m.status] ?? m.status, 'state ' + tone(m.status)), el('small', `${m.kind === 'phone-request' ? '雑談' : m.product.name} ・ ${new Date(m.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${m.mode === 'simulator' ? ' ・ 練習' : ''}`));
     b.addEventListener('click', () => openMission(m.id).catch(e => notice(e.message)));
     dest.append(b);
   }
@@ -337,7 +361,12 @@ function renderDetail(m) {
   if (m.mode === 'live' && m.status === 'ACTIVE') actions.append(button('自分に代わる', async () => { if (confirm('確認済みの自分の番号につなぎます。回線がもう1本ぶんの料金がかかります。続けますか？')) { await api('/missions/' + m.id + '/handoff', 'POST', { acknowledged: true }); await openMission(m.id, false); } }));
   if (m.mode === 'live' && m.carrierSid && ['UNKNOWN', 'HANDOFF_PENDING', 'HANDOFF_ACTIVE'].includes(m.status)) actions.append(button('回線の状態を確認する', async () => { await api('/missions/' + m.id + '/reconcile', 'POST', { acknowledged: true }); await openMission(m.id, false); }));
   if (['COMPLETED', 'INCOMPLETE'].includes(m.status) && state.integrations?.length) actions.append(button('メール・予定などを送る', () => { followup = null; $('followup-preview').textContent = ''; $('followup-send').disabled = true; $('followup-ack').checked = false; $('followup').showModal(); }));
-  if (FINISHED.includes(m.status)) actions.append(button('同じ相手にもう一度', () => { $('contact').value = m.target.id; $('request').value = m.request; $('request').dataset.suggested = 'false'; $('request').focus(); }));
+  if (FINISHED.includes(m.status)) actions.append(button('同じ相手にもう一度', () => {
+    const chat = m.kind === 'phone-request', again = chat ? state.contacts.find(c => c.phone === m.target.phone) : null;
+    if (chat) { document.querySelector('input[name="goal"][value="chat"]').checked = true; syncGoal(); if (again) $('contact').value = again.id; }
+    else $('contact').value = m.target.id;
+    $('request').value = m.request; $('request').dataset.suggested = 'false'; $('request').focus();
+  }));
   if (['DRAFT', 'COMPLETED', 'INCOMPLETE', 'DECLINED', 'FAILED', 'CANCELLED'].includes(m.status)) actions.append(button('この記録を消す', async () => {
     if (!confirm('この電話の記録を消します。メールなど、すでに外部に送ったものは消えません。')) return;
     await api('/missions/' + m.id, 'DELETE'); selected = null; lastDetail = ''; $('detail').replaceChildren(); await refresh();
@@ -351,10 +380,24 @@ async function showReview(id) {
   const practice = m.mode === 'simulator';
   const length = m.maxSeconds % 60 ? `${Math.floor(m.maxSeconds / 60)}分${m.maxSeconds % 60}秒` : `${m.maxSeconds / 60}分`;
   // Every value a person is asked to confirm must be readable without knowing the API: no "simulator", no bare "$1".
-  const rows = {
+  const chat = m.kind === 'phone-request', acting = m.phoneRequest?.engine === 'character-tts';
+  const rows = chat ? {
+    '電話のかけ方': practice ? '練習（実際の電話はかかりません）' : '実際に電話をかけます',
+    '相手': `${m.target.name}　${m.target.phone}${practice ? '（練習用。実際にはかけません）' : ''}`,
+    'こちらの番号': practice ? '練習用（実際の番号は使いません）' : m.callerId,
+    '名乗る名前': `${m.phoneRequest.callerName}（「${m.phoneRequest.callerName}さんの代わりにお電話しているAIです」と伝えます）`,
+    '話したいこと（雑談。何かを決める電話ではありません）': m.request,
+    // Voice, length and cost on one line: every extra row pushes the approval out of the first view (brief-gateway.md).
+    '通話の長さ・声・費用': `${acting ? `演技する声・${m.phoneRequest.voicePreset === 'character-male' ? '男性' : '女性'}（返事まで2〜3秒）` : '標準の声（GPT-Live）'}。最長${length}。${practice ? '練習なので費用は0円です。' : `費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`}`,
+    '会話データの送り先': practice
+      ? '練習ではどこにも送りません。このサーバーの中だけで動き、記録は30日で消えます。'
+      : acting ? '電話会社（Twilio）、聞き取り（Deepgram）、返事を考えるAI（OpenAI）、声（Google）に音声と文字が渡ります。記録はこのサーバーに保存し、30日で消えます。'
+      : '電話会社（Twilio）と音声AI（OpenAI）に音声と文字起こしが渡ります。記録はこのサーバーに保存し、30日で消えます。',
+  } : {
     '電話のかけ方': practice ? '練習（実際の電話はかかりません）' : '実際に電話をかけます',
     '相手': `${m.target.name}　${m.target.phone}${practice ? '（練習用の番号。実際にはかけません）' : ''}`,
     'こちらの番号': practice ? '練習用（実際の番号は使いません）' : m.callerId,
+    ...(m.callerName ? { '名乗る名前': m.callerName } : {}),
     '伝えること': m.request,
     'AIが説明してよいこと': m.product.facts,
     'AIが約束しないこと': m.product.forbidden,
@@ -375,6 +418,8 @@ async function showReview(id) {
   $('review-content').replaceChildren(list, el('p', '電話の最初に、記録していることとAIであることを相手に伝えます。', 'hint'));
   $('start-call').disabled = m.creditQuote?.amount > (state.credits?.available ?? 0);
   if ($('start-call').disabled) $('review-content').append(el('p','クレジットが不足しています。残高を追加後、もう一度内容を確認してください。','hint'));
+  // Practice has no scripted person to chat with (the server refuses it): say so before anyone ticks the box.
+  if (chat && practice) { $('start-call').disabled = true; $('review-content').prepend(el('p', '雑談は練習モードでは試せません。実電話モードのときに使えます。', 'notice')); }
   $('call-ack').checked = false; $('review').showModal();
 }
 
@@ -399,6 +444,7 @@ on('credits-close','click',()=> $('credits').close());
 on('open-settings', 'click', () => open(''));
 on('refresh', 'click', refresh);
 on('more', 'click', () => { showAll = true; renderHistory(); });
+on('caller-form', 'submit', async () => { await api('/account/caller-name', 'POST', { callerName: $('caller-name').value }); await refresh(); $('settings').close(); notice('名乗る名前を保存しました。'); });
 on('consent', 'click', async () => { await api('/consent', 'POST', { version: state.configuration.consentVersion }); await refresh(); $('settings').close(); notice('同意を保存しました。'); });
 on('product-form', 'submit', async e => {
   await api('/products', 'POST', { name: $('product-name').value, facts: $('facts').value, source: $('product-url').value, reviewed: $('facts-reviewed').checked });
@@ -413,6 +459,16 @@ on('phone-form', 'submit', async () => { const r = await api('/phone/verify', 'P
 on('link', 'click', async () => { const r = await api('/links', 'POST', {}); $('link-code').textContent = r.message; });
 on('suppress', 'click', async () => { if (!confirm('この相手には、だれからも二度と電話しなくなります。よろしいですか？')) return; await api('/suppressions', 'POST', { contactId: $('suppress-contact').value, acknowledged: true }); notice('この相手への電話を停止しました。'); });
 on('mission-form', 'submit', async () => {
+  if (goal() === 'chat') {
+    const c = state.contacts.find(c => c.id === $('contact').value);
+    if (!c) throw Error('電話する相手を選んでください。');
+    if (!c.phone) throw Error('この相手は電話番号が未登録です。設定の「連絡先を登録・編集する」で登録してください。');
+    if (!state.account.callerName) { open('s-caller'); throw Error('先に、電話で名乗る名前を決めてください。'); }
+    const preset = $('chat-voice').value;
+    const r = await api('/phone/draft', 'POST', { phone: c.phone, name: c.name || c.company, instruction: $('request').value, conversationMode: 'chat', callerName: state.account.callerName,
+      ...(preset ? { engine: 'character-tts', voicePreset: preset } : {}) });
+    await refresh(); await openMission(r.mission.id, false); await showReview(r.mission.id); return;
+  }
   const m = await api('/missions/draft', 'POST', {
     request: $('request').value, productId: $('product').value, goal: goal(), testOnMe: $('test-me').checked,
     ...($('test-me').checked ? {} : { contactId: $('contact').value }),

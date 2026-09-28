@@ -58,7 +58,8 @@ node apps/gateway/test/runtime-smoke.mjs
 - `OATHRA_MODE=live`、外から到達できるHTTPSの `OATHRA_PUBLIC_URL`。
 - Twilio Account SID/Auth Token/利用可能な発信元番号、SMS確認用のVerify Service SID。
 - OpenAI APIキーと、契約で利用可能な音声モデルを `OATHRA_VOICE_MODEL` に明示指定。モデルは自動で推測しません。
-- 発信主体の名称 `OATHRA_BUSINESS_NAME`、保守的な回線・音声費用単価、時間・日次上限。
+- 発信主体の名称 `OATHRA_BUSINESS_NAME`、保守的な回線・音声費用単価、時間・日次上限。電話でAIが名乗る名前は利用者ごとに設定の「電話で名乗る名前」で決めます（未設定の営業電話だけ `OATHRA_BUSINESS_NAME` を名乗ります）。
+- 任意：`DEEPGRAM_API_KEY`・`OPENAI_API_KEY`・`GEMINI_API_KEY` がそろうと、目的「雑談する」で「演技する声」（聞き取り Deepgram → 返事 OpenAI → 声 Gemini TTS、返事まで2〜3秒）を選べます。雑談だけで使え、営業電話には使いません。どれかが欠けると依頼の時点で断り、ほかの声へ自動で切り替えません。従量課金（provider-cost-v1）では使えません。雑談は練習モードでは発信できません。
 - 利用目的、対象地域、電話勧誘・AI説明・会話データの扱い、提供元との契約を確認したうえで `OATHRA_LIVE_POLICY_REVIEWED=true`。
 
 `liveReady` は必須設定・ビルドの確認であり、回線への疎通や実電話検証の成功を意味しません。最初は自分の実番号をSMS確認し、管理下の受電者との試験だけで検証してください。セットアップで作る模擬番号は実電話に使えず、模擬番号確認を有人引き継ぎにも転用できません。

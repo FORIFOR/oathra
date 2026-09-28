@@ -63,8 +63,16 @@
             <label class="choice"><input type="radio" name="goal" value="meeting" checked><b>商談の日時を決める</b></label>
             <label class="choice"><input type="radio" name="goal" value="materials"><b>資料を送ってよいか聞く</b></label>
             <label class="choice"><input type="radio" name="goal" value="introduce"><b>商品を説明する</b></label>
+            <label class="choice"><input type="radio" name="goal" value="chat"><b>雑談する</b></label>
           </fieldset>
           <p id="goal-help" class="hint"></p>
+          <label id="voice-field" hidden>声
+            <select id="chat-voice">
+              <option value="">標準の声（GPT-Live・すぐ返事）</option>
+              <option value="character-female">演技する声・女性（返事まで2〜3秒）</option>
+              <option value="character-male">演技する声・男性（返事まで2〜3秒）</option>
+            </select>
+          </label>
 
           <label for="request">伝えたいこと（そのままの言葉で）</label>
           <textarea id="request" rows="3" required placeholder="例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。"></textarea>
@@ -122,6 +130,15 @@
         <p>実電話では電話会社（Twilio）と音声AI（OpenAI）に音声・文字起こしが渡ります。LINEの音声メッセージの文字起こしにもOpenAIを使います。結果はこのサーバーと、依頼したチャットに保存・通知されます。</p>
         <p>生の音声は保存しません。会話の文字起こしと結果は標準で30日保存します。相手には最初に、記録していることとAIであることを伝え、続けてよいかを確認します。</p>
         <button id="consent" class="primary">内容を確認して同意する</button>
+      </details>
+
+      <details id="s-caller">
+        <summary>電話で名乗る名前 <span id="caller-state" class="pill"></span></summary>
+        <p class="muted">AIは電話の最初に、だれの代わりにかけているかを名乗ります。会社名か、あなたのお名前を入れてください。</p>
+        <form id="caller-form">
+          <label>名乗る名前<input id="caller-name" maxlength="40" required placeholder="例：サンプル商事 / 田中"></label>
+          <button type="submit">保存する</button>
+        </form>
       </details>
 
       <details id="s-contact">

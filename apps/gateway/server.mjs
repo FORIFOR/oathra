@@ -44,10 +44,12 @@ export function configuration(env=process.env){
   }
   // Metered billing prices one voice model per minute (billing.mjs), so a second engine is only offered under the fixed per-call policy.
   const geminiReady=!!env.GEMINI_API_KEY&&billing.policy!==METERED;
-  const voiceEngines=[{id:'gpt-live',label:`GPT-Live (${env.OATHRA_VOICE_MODEL??'gpt-live-1'})`,ready:!!env.OPENAI_API_KEY&&!!env.OATHRA_VOICE_MODEL},{id:'gemini-live',label:`Gemini Live (${env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live'})`,ready:geminiReady}];
+  const voiceEngines=[{id:'gpt-live',label:`GPT-Live (${env.OATHRA_VOICE_MODEL??'gpt-live-1'})`,ready:!!env.OPENAI_API_KEY&&!!env.OATHRA_VOICE_MODEL},{id:'gemini-live',label:`Gemini Live (${env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live'})`,ready:geminiReady},
+    // The acting voice: speech recognition, a text brain and an acting TTS, for phone requests only (not sales calls).
+    {id:'character-tts',label:'演技する声 (Gemini TTS)',ready:!!env.DEEPGRAM_API_KEY&&!!env.OPENAI_API_KEY&&!!env.GEMINI_API_KEY&&billing.policy!==METERED}];
   assert(['gpt-live','gemini-live',undefined].includes(env.OATHRA_VOICE_ENGINE),'unsupported_voice_engine',500);
   const defaultVoiceEngine=env.OATHRA_VOICE_ENGINE==='gemini-live'&&geminiReady?'gemini-live':'gpt-live';
-  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
+  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,businessName:env.OATHRA_BUSINESS_NAME??null,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
     dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,0,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0,1000),
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),
@@ -146,11 +148,11 @@ export async function createGateway(config,options={}){
         sessions.create(req,res,u,version);return send(res,200,{changed:true});
       }
       if(path==='/v1/session'&&method==='POST'){assert(auth?.startsWith('Bearer '),'bearer_required',401);sessions.create(req,res,u);return send(res,200,{signedIn:true,expiresInSeconds:8*3600});}
-      if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).filter(m=>m.kind!=='phone-request').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
+      if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).filter(m=>m.direction!=='inbound').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
         ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         // Lets the page hide what cannot work here instead of offering it and failing.
         available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
-        configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl}});
+        configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl,voiceEngines:(config.voiceEngines??[]).map(({id,label,ready})=>({id,label,ready}))}});
       if(method==='GET'&&path==='/v1/phone/status')return send(res,200,phoneReadiness(service,config,u));
       if(method==='GET'&&path==='/v1/phone/templates')return send(res,200,PHONE_PURPOSE_TEMPLATES);
       if(method==='GET'&&path==='/v1/phone/history')return send(res,200,store.list('mission',u.id).filter(m=>m.kind==='phone-request').map(m=>phoneRecord(service,m)));
@@ -190,6 +192,7 @@ export async function createGateway(config,options={}){
       }
       if(method==='GET'&&path==='/v1/plugins'){assert(u.role==='admin','administrator_required',403);return send(res,200,{apiVersion:1,plugins:registry.list()});}
       if(method==='POST'&&path==='/v1/consent')return send(res,200,service.saveConsent(u,data.version));
+      if(method==='POST'&&path==='/v1/account/caller-name')return send(res,200,service.saveCallerName(u,data.callerName));
       if(method==='POST'&&path==='/v1/products/import'){service.write(u);return send(res,200,await importProduct(data.url));}
       if(method==='POST'&&path==='/v1/products')return send(res,201,service.product(u,data));
       if(method==='POST'&&path==='/v1/contacts')return send(res,201,service.contact(u,data,req.headers['idempotency-key']));

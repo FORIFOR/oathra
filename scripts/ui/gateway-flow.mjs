@@ -47,13 +47,20 @@ try {
 
     if (name === "desktop") {
       const steps = await page.js("[...document.querySelectorAll('#setup-steps li span')].map(n=>n.textContent)");
-      c.ok(steps.length === 1 && /同意/.test(steps[0]), "setup asks only for what is missing", steps.join(" / "));
+      c.ok(steps.length === 2 && /同意/.test(steps[0]) && /名乗る名前/.test(steps[1]), "setup asks only for what is missing (consent, the name the AI gives)", steps.join(" / "));
       await page.click("#setup-steps li button");
       await page.until("document.querySelector('#settings').open", { label: "settings panel" });
       c.ok(await page.js("document.querySelector('#s-consent').open"), "the setup button opens the right setting");
       await page.click("#consent");
+      await page.until("!document.querySelector('#settings').open", { label: "panel closes after consent" });
+      c.ok(await page.js("document.querySelectorAll('#setup-steps li').length") === 1, "consent leaves only the name to set");
+      // The name the AI gives: keyboard-reachable from the setup step, saved per account.
+      await page.click("#setup-steps li button");
+      await page.until("document.querySelector('#settings').open && document.querySelector('#s-caller').open", { label: "the name setting" });
+      await page.js("{const n=document.querySelector('#caller-name');n.value='サンプル商事';n.dispatchEvent(new Event('input',{bubbles:true}))}");
+      await page.click("#caller-form button[type=submit]");
       await page.until("document.querySelector('#setup').hidden", { label: "setup banner gone" });
-      c.ok(!(await page.js("document.querySelector('#settings').open")), "panel closes after consent");
+      c.ok(!(await page.js("document.querySelector('#settings').open")) && await page.text("#caller-state") === "サンプル商事", "panel closes after saving; the name shows in settings");
       c.ok(await page.visible("#detail-empty"), "empty state says what will appear on the right");
     }
     c.ok(await page.noSidewaysScroll(), "no sideways scroll");

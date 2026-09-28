@@ -12,6 +12,8 @@ export class Service {
   write(u) { assert(['admin','operator'].includes(u.role), 'read_only_account', 403); }
   own(kind, id, u) { const r = this.store.get(kind, id); assert(r && r.owner === u.id, 'not_found', 404); return r; }
   account(u) { return this.store.get('account', u.id) ?? { id: u.id, owner: u.id, consentVersion: null, verifiedPhone: null }; }
+  // The name the AI gives on this person's calls (their company or their own name). Each account sets its own.
+  saveCallerName(u, value) { this.write(u); const name = String(value ?? '').trim(); assert(name.length <= 40 && !/[\d@<>{}\r\n]|https?:/i.test(name), 'invalid_caller_name'); this.store.audit(u.id, 'account.caller_name_saved', u.id, {}); return this.store.put('account', { ...this.account(u), callerName: name || null }); }
   saveConsent(u, version) { this.write(u); assert(version === this.config.consentVersion, 'review_current_privacy_notice'); this.store.audit(u.id, 'consent.saved', u.id, { version }); return this.store.put('account', { ...this.account(u), consentVersion: version, consentAt: this.store.now() }); }
   product(u, input) {
     this.write(u); assert(input.reviewed === true, 'product_facts_require_review');
@@ -113,7 +115,7 @@ export class Service {
     const estimate = this.config.mode === 'simulator' ? 0 : Math.ceil((seconds + 30) / 60) * this.config.rateCeilingUsd * 2 + this.config.setupFeeUsd;
     assert(estimate <= maxUsd, 'estimated_cost_exceeds_budget');
     const m = { id: randomUUID(), owner: u.id, team: u.team, revision: 1, status: 'DRAFT', product, target, request, goal,
-      candidateSlots: slots, testOnMe: self, mode: this.config.mode, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
+      candidateSlots: slots, testOnMe: self, mode: this.config.mode, callerName: this.account(u).callerName || this.config.businessName || null, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
       creditQuote: this.credits.quote(this.config.mode,target.phone), callerId: this.config.callerId ?? 'simulator', callPluginIdentity: this.config.callPluginIdentity ?? null, createdAt: this.store.now(), origin, sourceKey, result: null };
     this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); });
     return m;
@@ -127,7 +129,7 @@ export class Service {
     const changed = { ...replacement, id: m.id, createdAt: m.createdAt, origin: m.origin, sourceKey: m.sourceKey, revision: m.revision + 1 };
     this.store.put('mission', changed); this.store.audit(u.id, 'mission.edited', m.id, { mission: m.id, revision: changed.revision, goal: changed.goal }); return changed;
   }
-  fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode,m.callPluginIdentity??null,m.creditQuote??null,m.kind??null,m.phoneRequest??null])); }
+  fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode,m.callPluginIdentity??null,m.creditQuote??null,m.kind??null,m.phoneRequest??null,...(m.callerName?[m.callerName]:[])])); }
   checkContact(u, m) {
     if (m.kind === 'phone-request') return;
     assert(!m.target.registrationRequired, 'contact_registration_required', 409);
