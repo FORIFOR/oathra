@@ -1167,6 +1167,14 @@
     callLive = !!on;
     renderCallStatus();
   }
+  // Narrow windows: 「通話を終える」 lives in the verdict sheet at the bottom; wide windows keep it in the header.
+  const NARROW = window.matchMedia("(max-width: 1099px)");
+  function placeHangup() {
+    const button = $("#call-hangup"), slot = NARROW.matches ? $("#sheet-actions") : $(".call-controls");
+    if (button && slot && button.parentElement !== slot) slot.append(button);
+  }
+  NARROW.addEventListener?.("change", placeHangup);
+  placeHangup();
   // Header: 「AIが話しています」 / 「ミカが話しています」 / 「通話中」 / 「通話終了」 and two level meters.
   // The simulator has no audio, so the speaking side's meter moves on a timer; only that side moves.
   let speakingSide = null, callLive = false, meterTimer = null;
@@ -1253,6 +1261,10 @@
     if (empty) empty.remove();
     // A line that arrives during a live call is revealed at speaking pace; history, replays and reduced motion show at once.
     const reveal = c.status === "running" && !c.replay && existing.size > 0 && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Narrow windows scroll the page, not the transcript: keep following the newest line above the verdict sheet,
+    // but only when the reader was already at the latest line.
+    const lastBefore = box.querySelector(".line:last-child");
+    const following = NARROW.matches && c.status === "running" && (!lastBefore || lastBefore.getBoundingClientRect().bottom <= innerHeight + 4);
     for (const l of c.transcript) {
       if (existing.has(l.turnId)) continue;
       const cls = l.source === "caller" ? "agent" : l.source === "callee" ? "callee" : "sys";
@@ -1267,6 +1279,8 @@
     }
     markProof();
     if (atBottom || c.transcript.length <= 2) box.scrollTop = box.scrollHeight;
+    const lastNow = box.querySelector(".line:last-child");
+    if (following && lastNow && lastNow !== lastBefore) lastNow.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }
 
   // Typing reveal: the full text is in the DOM from the start (screen readers and copy get all of it);
@@ -1570,7 +1584,7 @@
       })),
       el("div", { class: `result-badge ${r.complete && !fc ? "ok" : "no"}`, text: t(r.complete && !fc ? "badgeOk" : "badgeNo") }),
       c.score ? el("div", { class: `result-fc ${fc ? "fail" : ""}`, text: c.mode === "play" ? t("assessmentUnknown") : fc ? t("fc1", { f: (c.score.disagreements || []).join(", ") }) : t("fc0") }) : null,
-      el("details", { class: "result-more", open: !BOARD.matches || document.body.classList.contains("present") }, [
+      el("details", { class: "result-more", open: document.body.classList.contains("present") }, [
       el("summary", { text: t("scoreMore") }),
       el("div", { class: "result-meta" }, [
         el("div", { text: t("evidenceN", { n: verifiedN }) }),

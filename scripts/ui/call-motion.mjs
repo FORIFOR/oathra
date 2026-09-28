@@ -47,6 +47,20 @@ try {
     c.ok(!(await page.js("!!document.querySelector('.line.typing')")), "reduced motion: lines appear whole");
     c.ok(new Set(still).size === 1, "reduced motion: the meters hold a steady level", JSON.stringify(still));
   } else console.log("  · reduced motion could not be emulated here (UNVERIFIED)");
+  await page.close(); page = undefined;
+
+  // 390: the header stays on top, the verdict is a sheet at the bottom with 「通話を終える」 while the call runs.
+  page = await launch({ width: 390, height: 844 });
+  await start(page);
+  await page.until("document.querySelectorAll('#transcript .line').length>=3 && !document.querySelector('#call-hangup').hidden", { timeout: 60_000, label: "live on mobile" });
+  await page.js("document.querySelector('#transcript .line:last-child').scrollIntoView({block:'center'})"); await sleep(300);
+  const m = JSON.parse(await page.js("JSON.stringify((()=>{const r=s=>document.querySelector(s).getBoundingClientRect();const h=r('.call-head'),b=r('#call-hangup'),sheet=r('.panels > .panel:first-child');return {headTop:Math.round(h.top),btnIn:!!document.querySelector('#sheet-actions #call-hangup'),btnH:Math.round(b.height),btnVisible:b.top>=0&&b.bottom<=innerHeight,sheetBottom:Math.round(sheet.bottom),vh:innerHeight,sideways:document.documentElement.scrollWidth>innerWidth+1}})())"));
+  c.ok(Math.abs(m.headTop) <= 1, "390: the header (title, status, timer) stays at the top while scrolling", `top ${m.headTop}`);
+  c.ok(m.btnIn && m.btnVisible && m.btnH >= 44 && m.sheetBottom <= m.vh + 1, "390: 「通話を終える」 sits in the verdict sheet and the sheet is fully on screen (pinned to the bottom when the talk runs longer), 44px or taller", JSON.stringify(m));
+  c.ok(!m.sideways, "390: no sideways scroll");
+  await page.until("document.querySelector('#result-wrap').textContent.trim().length>0", { timeout: 150_000, label: "result on mobile" });
+  const order = await page.js("(()=>{const r=document.querySelector('#result-wrap').getBoundingClientRect().top,e=document.querySelector('#evidence-list').getBoundingClientRect().top,f=document.querySelector('#mission-list').getBoundingClientRect().top;return f<r&&r<e})()");
+  c.ok(order, "390: after the call the result follows the fields and comes before the evidence record");
 } finally {
   await page?.close();
   server.stop();
