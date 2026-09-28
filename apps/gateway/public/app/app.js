@@ -51,6 +51,9 @@ const ERRORS = {
   select_one_contact: '連絡先から相手を選んでください。', contact_phone_required: 'この相手には電話番号がありません。',
   product_facts_require_review: '内容を確かめたことにチェックを入れてください。',
   unknown_practice: 'この練習は見つかりません。',
+  invalid_inbound_hours: '受ける時間は「09:00」のように、始まりと終わりを違う時刻で入れてください。',
+  invalid_inbound_mode: '受け方を選んでください。', verify_your_phone_first: '先に、自分の電話番号を確認してください（従来の画面の「自分の電話番号を確認する」）。',
+  forward_not_available_with_credits: 'クレジット制のサーバーでは、あなたにつなぐ設定は使えません。',
   monthly_cap_reached: '今月の上限を超えるので、この電話はかけられません。設定の「費用とクレジット」で上限を見直せます。',
   invalid_monthly_cap: '月の上限は 0.01 以上の金額（米ドル）で入れてください。空にすると上限なしになります。',
 };
@@ -632,9 +635,26 @@ async function settings(tab) {
       row('1回の通話の上限', 'これを過ぎると、あいさつして切ります', el('span', { text: `${Math.round(cfg.maxSeconds / 60)}分（サーバーの設定）` })),
       row('発信前の確認', '本番は毎回、あなたの承認が必要です（外せません）', el('span', { class: 'muted', text: '常にオン' }))];
   } else if (app.settingsTab === 'in') {
+    const inb = cfg.inbound, pref = b.account?.inbound ?? { mode: 'ai', hours: null, name: null };
+    const canForward = Boolean(b.account?.verifiedPhone) && b.account?.phoneVerificationProvider !== 'simulator' && !b.credits?.enabled;
+    const mode = el('div', { class: 'stack', role: 'radiogroup', 'aria-label': 'かかってきたとき' }, ...[['ai', 'AIが用件を聞く', '用件を聞いてメモにし、依頼の一覧に残します。'], ['forward', 'あなたにつなぐ', canForward ? `確認済みのあなたの番号（${displayPhone(b.account.verifiedPhone)}）へ転送します。記録はしません。` : '確認済みの自分の番号が必要です（クレジット制のサーバーでは使えません）。'], ['decline', '出ない', 'この番号の案内を流して切ります。']].map(([v, l, d]) =>
+      el('label', { class: 'option' }, el('input', { type: 'radio', name: 'inb-mode', value: v, checked: pref.mode === v, disabled: v === 'forward' && !canForward }), el('span', {}, el('b', { text: l }), el('span', { class: 'muted small', text: d })))));
+    const always = el('input', { type: 'checkbox', checked: !pref.hours });
+    const hFrom = el('input', { type: 'text', value: pref.hours?.from ?? '09:00', 'aria-label': '受ける時間の始まり', inputmode: 'numeric' }), hTo = el('input', { type: 'text', value: pref.hours?.to ?? '21:00', 'aria-label': '受ける時間の終わり', inputmode: 'numeric' });
+    const syncHours = () => { hFrom.closest('.two') && (hFrom.closest('.two').hidden = always.checked); };
+    always.addEventListener('change', syncHours); queueMicrotask(syncHours);
+    const nameIn = el('input', { type: 'text', value: pref.name ?? '', placeholder: b.account?.callerName ?? '（かける設定の名前）', maxlength: '40', 'aria-label': '受けるときの名前' });
     body = [el('h2', { text: 'かけられた時の設定' }), el('p', { class: 'note', text: '発信元の番号に電話がかかってきたときの動きです。' }),
-      row('いまの動き', 'サーバーの設定で決まっています', el('span', { text: st.reception ? `予約の受付（${st.reception}）` : '用件を聞いてメモに残すか、案内して切ります' })),
-      el('p', { class: 'warnbox', text: 'この画面から変えられるようにするには、利用者ごとの設定を保存する仕組みが必要です（まだありません）。いまはサーバーの管理者が環境変数で設定します。' })];
+      ...(!inb ? [el('p', { class: 'warnbox', text: 'このサーバーでは、かかってきた電話を受ける設定がされていません（管理者の設定）。ここで決めた動きは、受ける設定がされたときと、あなたがかけた電話への折り返しに使います。' })]
+        : inb.restaurant ? [el('p', { class: 'warnbox', text: 'この番号は店の予約受付として動いています。受付の動きは管理者の設定で決まります。' })]
+        : !inb.owner ? [el('p', { class: 'note', text: 'この番号の着信はほかの人宛てです。ここで決めた動きは、あなたがかけた電話への折り返しに使います。' })] : []),
+      row('かかってきたとき', '', mode),
+      row('受ける時間', '日本時間。外の時間は案内を流して切ります', el('label', { class: 'check' }, always, 'いつでも'), el('div', { class: 'two' }, hFrom, hTo)),
+      row('名乗る名前', 'AIが「〇〇の電話です」と答える名前', nameIn),
+      el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'button', text: '保存する', onclick: async () => {
+        const m = document.querySelector('input[name=inb-mode]:checked')?.value ?? 'ai';
+        try { await api('/account/inbound', { method: 'POST', body: { mode: m, hours: always.checked ? null : { from: hFrom.value.trim(), to: hTo.value.trim() }, name: nameIn.value.trim() } }); await loadAll(); toast('かけられた時の設定を保存しました。'); route(); } catch (e) { toast(e.message); }
+      } }))];
   } else if (app.settingsTab === 'products') {
     const form = el('form', { class: 'stack', onsubmit: async e => {
       e.preventDefault(); const f = new FormData(e.currentTarget);

@@ -161,7 +161,7 @@ export async function createGateway(config,options={}){
         ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         // Lets the page hide what cannot work here instead of offering it and failing.
         available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
-        configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl,voiceEngines:(config.voiceEngines??[]).map(({id,label,ready})=>({id,label,ready}))}});
+        configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl,voiceEngines:(config.voiceEngines??[]).map(({id,label,ready})=>({id,label,ready})),inbound:config.inbound?{owner:config.inbound.owner===u.id,restaurant:Boolean(config.inbound.restaurant)}:null}});
       if(method==='GET'&&path==='/v1/phone/status')return send(res,200,phoneReadiness(service,config,u));
       if(method==='GET'&&path==='/v1/phone/templates')return send(res,200,PHONE_PURPOSE_TEMPLATES);
       if(method==='GET'&&path==='/v1/phone/history')return send(res,200,store.list('mission',u.id).filter(m=>m.kind==='phone-request').map(m=>phoneRecord(service,m)));
@@ -202,6 +202,7 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/plugins'){assert(u.role==='admin','administrator_required',403);return send(res,200,{apiVersion:1,plugins:registry.list()});}
       if(method==='POST'&&path==='/v1/consent')return send(res,200,service.saveConsent(u,data.version));
       if(method==='POST'&&path==='/v1/account/caller-name')return send(res,200,service.saveCallerName(u,data.callerName));
+      if(method==='POST'&&path==='/v1/account/inbound')return send(res,200,service.saveInbound(u,data));
       if(method==='POST'&&path==='/v1/account/monthly-cap')return send(res,200,service.saveMonthlyCap(u,data.capUsd));
       if(method==='GET'&&path==='/v1/account/month')return send(res,200,service.monthUsage(u));
       if(method==='POST'&&path==='/v1/products/import'){service.write(u);return send(res,200,await importProduct(data.url));}

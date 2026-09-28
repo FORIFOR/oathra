@@ -20,6 +20,19 @@ export class Service {
     const usedUsd = this.store.list('reservation', u.id).filter(x => x.approvedAt >= start).reduce((n, x) => n + x.estimatedMaximumUsd, 0);
     return { usedUsd: Math.round(usedUsd * 100) / 100, capUsd: this.account(u).monthlyCapUsd ?? null, since: new Date(start).toISOString() };
   }
+  // How calls to this person's number are answered (the server still decides whether incoming calls are on and whose
+  // number it is): the AI takes a message, forwards to their verified phone, or does not answer; within hours if set.
+  saveInbound(u, input) {
+    this.write(u);
+    const mode = input?.mode ?? 'ai'; assert(['ai', 'forward', 'decline'].includes(mode), 'invalid_inbound_mode');
+    const hhmm = v => { assert(typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v), 'invalid_inbound_hours'); return v; };
+    const hours = input?.hours ? { from: hhmm(input.hours.from), to: hhmm(input.hours.to) } : null;
+    assert(!hours || hours.from !== hours.to, 'invalid_inbound_hours');
+    const name = String(input?.name ?? '').trim(); assert(name.length <= 40 && !/[\d@<>{}\r\n]|https?:/i.test(name), 'invalid_caller_name');
+    if (mode === 'forward') { const a = this.account(u); assert(a.verifiedPhone && a.phoneVerificationProvider !== 'simulator', 'verify_your_phone_first'); assert(!this.credits.enabled, 'forward_not_available_with_credits', 409); }
+    this.store.audit(u.id, 'account.inbound_saved', u.id, { mode, hours: Boolean(hours) });
+    return this.store.put('account', { ...this.account(u), inbound: { mode, hours, name: name || null } });
+  }
   // The name the AI gives on this person's calls (their company or their own name). Each account sets its own.
   saveCallerName(u, value) { this.write(u); const name = String(value ?? '').trim(); assert(name.length <= 40 && !/[\d@<>{}\r\n]|https?:/i.test(name), 'invalid_caller_name'); this.store.audit(u.id, 'account.caller_name_saved', u.id, {}); return this.store.put('account', { ...this.account(u), callerName: name || null }); }
   saveConsent(u, version) { this.write(u); assert(version === this.config.consentVersion, 'review_current_privacy_notice'); this.store.audit(u.id, 'consent.saved', u.id, { version }); return this.store.put('account', { ...this.account(u), consentVersion: version, consentAt: this.store.now() }); }

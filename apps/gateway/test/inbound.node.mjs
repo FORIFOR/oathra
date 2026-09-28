@@ -121,3 +121,36 @@ test('an answered call is recorded as an answered call, not as a request someone
  assert.match(evaluateSales(turns,{kind:'phone-request',direction:'inbound'},true).caveat,/^着信の記録です/);
  assert.match(evaluateSales(turns,{kind:'phone-request'},true).caveat,/依頼が達成されたか/);
 });
+test("the owner's settings: the name to answer for, not answering, and hours",using(f=>{
+ const owner=f.users[0];
+ f.service.saveInbound(owner,{mode:'ai',name:'田中'});
+ let r=f.ring('+819011112222');assert.ok(answered(r.twiml));
+ assert.equal(f.store.list('mission','owner').find(m=>m.direction==='inbound').inbound.ownerName,'田中');
+ for(const m of f.store.list('mission','owner'))if(m.direction==='inbound'){m.status='COMPLETED';f.store.put('mission',m);}
+ f.service.saveInbound(owner,{mode:'decline'});
+ r=f.ring('+819033334444');assert.ok(!answered(r.twiml)&&/お受けできません/.test(r.twiml),'not answering plays the announcement and hangs up');
+ // Hours that exclude now (JST): the announcement, not the AI.
+ const t=new Date(f.store.now()+9*3600_000),h=(t.getUTCHours()+2)%24,p=v=>String(v).padStart(2,'0');
+ f.service.saveInbound(owner,{mode:'ai',hours:{from:`${p(h)}:00`,to:`${p((h+1)%24)}:00`}});
+ r=f.ring('+819055556666');assert.ok(!answered(r.twiml),'outside the hours: not answered');
+ assert.throws(()=>f.service.saveInbound(owner,{mode:'ai',hours:{from:'25:00',to:'09:00'}}),/invalid_inbound_hours/);
+}));
+test('forwarding needs a verified phone and a deployment without credits; otherwise it is refused, never turned into the AI',using(f=>{
+ const owner=f.users[0];
+ assert.throws(()=>f.service.saveInbound(owner,{mode:'forward'}),/verify_your_phone_first/);
+ f.store.put('account',{...f.service.account(owner),verifiedPhone:'+819099998888',phoneVerificationProvider:'twilio'});
+ assert.throws(()=>f.service.saveInbound(owner,{mode:'forward'}),/forward_not_available_with_credits/);
+ // Saved earlier (credits turned on later): the caller hears the announcement, the AI does not pick up.
+ f.store.put('account',{...f.service.account(owner),inbound:{mode:'forward',hours:null,name:null}});
+ const r=f.ring('+819011112222');assert.ok(!answered(r.twiml)&&!/<Dial/.test(r.twiml));
+}));
+test('forwarding, where it is available: the caller is put through to the verified phone from our number, nothing recorded',using(f=>{
+ const owner=f.users[0];
+ f.store.put('account',{...f.service.account(owner),verifiedPhone:'+819099998888',phoneVerificationProvider:'twilio'});
+ Object.defineProperty(f.service.credits,'enabled',{value:false,configurable:true});
+ f.service.saveInbound(owner,{mode:'forward'});
+ const r=f.ring('+819011112222');
+ assert.match(r.twiml,/<Dial callerId="\+815000000000" timeout="20" timeLimit="\d+"><Number>\+819099998888<\/Number><\/Dial>/);
+ assert.ok(!answered(r.twiml)&&!/この通話は録音/.test(r.twiml));
+ assert.equal(f.store.list('mission','owner').filter(m=>m.direction==='inbound').length,0,'no AI call was queued');
+}));

@@ -142,11 +142,14 @@ export class Phone {
    * number is, in Japanese, and can ask not to be called again. Never an error page and never silence.
    */
   inbound(params) {
+    const withinHours=(ms,h)=>{const t=new Date(ms+9*3600_000),m=t.getUTCHours()*60+t.getUTCMinutes(),mm=v=>Number(v.slice(0,2))*60+Number(v.slice(3));const a=mm(h.from),b=mm(h.to);return a<b?m>=a&&m<b:m>=a||m<b;};
     const from=String(params.From??''),callSid=String(params.CallSid??''),known=/^\+[1-9]\d{7,14}$/.test(from)&&/^CA[a-f0-9]{32}$/i.test(callSid);
     // The most recent call this service placed to that number says who the caller is answering, and whose call this is.
     const earlier=known?this.store.list('mission').filter(x=>x.kind==='phone-request'&&x.direction!=='inbound'&&x.target?.phone===from&&x.status!=='DRAFT'&&(x.approvedAt??0)>this.store.now()-30*86400_000).sort((a,b)=>(b.approvedAt??0)-(a.approvedAt??0))[0]:undefined;
     const cfg=this.config.inbound,reception=!!cfg?.restaurant,ownerId=reception?cfg.owner:earlier?.owner??cfg?.owner,owner=ownerId&&this.config.users.find(u=>u.id===ownerId);
-    const onBehalf=reception?cfg.restaurant.name:earlier?.phoneRequest?.callerName??(earlier?null:cfg?.name);
+    // The owner's own settings (設定 › かけられた時の設定): the name to answer for, the way to answer, the hours.
+    const pref=owner&&!reception?this.service.account(owner).inbound??null:null;
+    const onBehalf=reception?cfg.restaurant.name:earlier?.phoneRequest?.callerName??(earlier?null:pref?.name??this.service.account(owner||{id:''}).callerName??cfg?.name);
     const announce=reason=>{
       if(known)this.store.audit(ownerId??'system','call.inbound_not_answered',callSid,{reason,from:this.store.phoneRef(from),earlier:earlier?.id??null});
       const token=random();if(known&&owner)this.store.setKey('inbound-optout',token,this.store.seal({team:owner.team,owner:owner.id,phone:from}),3600_000);
@@ -157,6 +160,15 @@ export class Phone {
     if(!known)return announce('unknown_caller');
     if(!cfg||!owner||this.config.mode!=='live'||!this.config.liveReady)return announce('inbound_not_enabled');
     if(this.store.suppressed(owner.team,from))return announce('caller_opted_out');
+    if(pref?.hours&&!withinHours(this.store.now(),pref.hours))return announce('outside_owner_hours');
+    if(pref?.mode==='decline')return announce('owner_declined');
+    if(pref?.mode==='forward'){
+      // To the owner's own verified phone, as a plain carrier transfer; nothing is recorded or transcribed.
+      const account=this.service.account(owner);
+      if(!account.verifiedPhone||account.phoneVerificationProvider==='simulator'||this.service.credits.enabled)return announce('forward_not_available');
+      this.store.audit(owner.id,'call.inbound_forwarded',callSid,{from:this.store.phoneRef(from)});
+      return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。おつなぎします。</Say><Dial callerId="${xml(this.config.callerId)}" timeout="20" timeLimit="${cfg.maxSeconds}"><Number>${xml(account.verifiedPhone)}</Number></Dial><Hangup/></Response>`;
+    }
     if(!onBehalf)return announce('owner_name_unknown');
     const hour=Math.floor(this.store.now()/3600_000),caller=`${hour}:${this.store.phoneRef(from)}`,perCaller=Number(this.store.key('inbound-rate',caller)??0),all=Number(this.store.key('inbound-rate',`${hour}:*`)??0);
     if(perCaller>=cfg.perCallerPerHour||all>=cfg.perHour)return announce('rate_limited');
