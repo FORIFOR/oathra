@@ -366,7 +366,7 @@ function renderDetail(m) {
     if (chat) { document.querySelector('input[name="goal"][value="chat"]').checked = true; syncGoal(); if (again) $('contact').value = again.id; }
     else $('contact').value = m.target.id;
     $('request').value = m.request; $('request').dataset.suggested = 'false'; $('request').focus();
-  }));
+  }, 'primary again'));
   if (['DRAFT', 'COMPLETED', 'INCOMPLETE', 'DECLINED', 'FAILED', 'CANCELLED'].includes(m.status)) actions.append(button('この記録を消す', async () => {
     if (!confirm('この電話の記録を消します。メールなど、すでに外部に送ったものは消えません。')) return;
     await api('/missions/' + m.id, 'DELETE'); selected = null; lastDetail = ''; $('detail').replaceChildren(); await refresh();

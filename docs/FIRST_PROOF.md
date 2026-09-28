@@ -28,7 +28,7 @@ The first-proof path should remain useful with no paid telephony account and sho
 ## Source checkout: first success and recovery
 
 Node 22+ and pnpm 10.12.2. Run `pnpm install`, then `pnpm first-proof`.
-The default demo exposes only the built-in, offline scripted agent. Choose a mission, read the other party's transcript beside its evidence, then choose **Download evidence JSON**. This file includes the result, contract, transcript, evidence events, and decision memo. The simulator is a product feature, not a real booking or a live model quality benchmark.
+The default demo exposes only the built-in, offline scripted agent. Choose a mission, read the other party's transcript beside its evidence, then choose **Save evidence**. This file includes the result, contract, transcript, evidence events, and decision memo. The simulator is a product feature, not a real booking or a live model quality benchmark.
 
 On the first screen, open **Edit a practice response**, edit the restaurant response, and open practice. The text is copied into the reply box; review it and press Send. Choose **Play** to answer yourself; the suggested response chips populate an editable input. Confirmed statements and tentative statements should produce different evidence. A failed/incomplete result is a valid outcome, not a broken application.
 

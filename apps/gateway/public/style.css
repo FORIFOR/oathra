@@ -362,3 +362,5 @@ fieldset.choices .choice b { text-align: left; }
 .brand-dot { margin-left: -8px; }
 .choice-hint { font-size: 12px; flex-basis: 230px; }
 .item.selected { border-color: var(--line); }
+/* Handoff §4: on a narrow screen the result ends with 「同じ相手にもう一度」 as a full-width primary. */
+@media (max-width: 999px) { #current .actions button.again { flex: 1 1 100%; width: 100%; } }

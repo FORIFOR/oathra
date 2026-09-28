@@ -97,6 +97,7 @@ const MIME: Record<string, string> = {
   ".png": "image/png",
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
+  ".wav": "audio/wav",
 };
 
 function json(res: ServerResponse, status: number, body: unknown): void {

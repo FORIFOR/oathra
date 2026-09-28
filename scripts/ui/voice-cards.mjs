@@ -21,6 +21,14 @@ try {
   await page.until("document.querySelectorAll('.voice-card').length===7");
   c.ok(await page.js("document.querySelectorAll('.voice-card-tag').length") === 2, "the two character cards are the acting voice");
   c.ok(await page.js("document.querySelector('input[name=phone-voice-card][value=\"\"]').checked"), "nothing chosen = the standard voice (unchanged default)");
+  // Samples: a play button only on real-time cards whose voice has a recording (the acting voices have none).
+  const samples = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.voice-sample')].map(b=>b.getAttribute('aria-label')))"));
+  c.ok(samples.length === 5 && samples.every((l) => /を試聴$/.test(l)) && !(await page.js("!!document.querySelector('.voice-card.is-acting .voice-sample')")), "a play button on the five real-time cards, none on the acting voices", JSON.stringify(samples));
+  await page.js("document.querySelector('.voice-card.is-standard').scrollIntoView({block:'center'})"); await page.tap(".voice-card.is-standard .voice-sample"); await sleep(900);
+  const playing = JSON.parse(await page.js("JSON.stringify({on:!!document.querySelector('.voice-card.is-standard.playing'),p:getComputedStyle(document.querySelector('.voice-card.is-standard')).getPropertyValue('--sample'),label:document.querySelector('.voice-card.is-standard .voice-sample').getAttribute('aria-label'),checked:document.querySelector('input[name=phone-voice-card][value=\"\"]').checked})"));
+  c.ok(playing.on && Number(playing.p) > 0 && /止める/.test(playing.label), "a pointer press plays the sample (the button sits above the card's radio): the progress line advances and the button says it stops", JSON.stringify(playing));
+  await page.tap(".voice-card.is-standard .voice-sample"); await sleep(150);
+  c.ok(!(await page.js("!!document.querySelector('.voice-card.playing')")) && playing.checked, "a second press stops it; playing never changes the chosen voice");
   await page.js(pick("character-male")); c.ok(await page.js(state) === "character-tts/Puck/character-male", "character (male) speaks with the acting voice, Puck", await page.js(state));
   await page.js(pick("sales-female")); c.ok(await page.js(state) === "gpt-live/gleam/sales-female", "a business card goes back to the real-time engine", await page.js(state));
   await page.js(pick("")); c.ok(await page.js(state) === "gpt-live/marin/", "standard = the engine's default voice, no preset", await page.js(state));

@@ -28,6 +28,9 @@ export function phonePage() {
   patch('href="style.css"', 'href="/phone-style/style.css"');
   // Arena's v2 look is Arena-only for now; the managed page keeps its current styles until it is redesigned.
   patch(/\s*<link rel="stylesheet" href="v2.css" \/>/, '');
+  // The Arena's icons live under assets/; the gateway serves its own copies at the root.
+  patch(/href="assets\/oathra-mark-original\.png"/, 'href="/oathra-mark-original.png"');
+  patch(/href="assets\/oathra-mark-white\.png"/, 'href="/oathra-mark.png"');
   patch('</head>', '<link rel="stylesheet" href="/managed-phone.css"></head>');
   patch(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   patch(/<section id="phone-review"([\s\S]*?)<\/section>/, (_, inside) =>

@@ -428,3 +428,15 @@ body.focused-task #screen-real { overflow: visible; }
   /* While typing (the on-screen keyboard is up on phones) the sheet steps aside so it cannot cover the answer box. */
   body:not(.present) .call-frame:has(#play-text:focus) .panels > .panel:first-child { display: none; }
 }
+/* Voice samples (handoff §2): a play button as the row's last cell, only where a recorded sample exists; while it plays,
+   a 2px accent line runs along the bottom of the row. The button is 44px to touch, 30px drawn. */
+body:not(.managed-phone) #phone-form label.voice-card { position: relative; display: flex; align-items: stretch; }
+.voice-card > .voice-card-body { flex: 1 1 auto; min-width: 0; }
+.voice-sample { position: relative; z-index: 2; flex: none; align-self: center; width: 44px; height: 44px; min-height: 44px; margin: 0 6px 0 -8px; padding: 0; border: 0; background: transparent; display: grid; place-content: center; cursor: pointer; color: var(--ink-2); }
+.voice-sample::before { content: ""; width: 28px; height: 28px; box-sizing: border-box; border: 1px solid var(--line-2); border-radius: 50%; grid-area: 1 / 1; }
+.voice-sample::after { content: ""; grid-area: 1 / 1; place-self: center; width: 0; height: 0; margin-left: 3px; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent currentColor; }
+.voice-card.playing .voice-sample { color: var(--accent); }
+.voice-card.playing .voice-sample::after { margin-left: 0; width: 8px; height: 10px; border: 0; border-left: 3px solid currentColor; border-right: 3px solid currentColor; box-sizing: border-box; }
+.voice-sample:hover::before { border-color: var(--muted); }
+.voice-sample:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 50%; }
+.voice-card.playing::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: calc(var(--sample, 0) * 100%); background: var(--accent); }
