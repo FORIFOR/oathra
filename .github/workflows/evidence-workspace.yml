@@ -21,7 +21,7 @@ jobs:
       - run: python -m pip install playwright==1.57.0 && python -m playwright install --with-deps chromium
       - name: Exercise local simulator and disabled phone path
         run: |
-          node packages/cli/dist/bin.js demo --no-open > /tmp/arena.log 2>&1 &
+          node packages/cli/dist/bin.js demo --arena --no-open > /tmp/arena.log 2>&1 &
           PID=$!
           trap 'kill "$PID" || true' EXIT
           python scripts/verify-evidence-workspace.py

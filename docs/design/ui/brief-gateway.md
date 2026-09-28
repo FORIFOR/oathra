@@ -57,3 +57,4 @@
   - 月の上限：承認時に、今月承認した電話の見込み上限の合計＋この電話の見込みで止める（日本時間の月）。
 - ログイン（2026-09-29、利用者の判断）：画面のログインはメールアドレスとパスワード。トークンは管理者用（API・SDK・初期設定）として「管理者のトークンでログイン」に残す。自分のメールログインは 設定 › 記録と表示 から1回限りのリンクで設定する。`OATHRA_LOCAL_OPEN=true` のときだけ、simulator モードで、このパソコンから localhost に開いた場合はログインを省く（書き込みは同じ画面からに限る）。
 - Arena の統合・段階1（2026-09-29、利用者の承認）：練習の「自分が相手役」を Gateway に移した（AIが電話をかけ、利用者がお店として文字で答える。判定は evidence のまま、決まった項目の引用は相手＝利用者の言葉だけ）。声の見本は 設定 › 声とAI と「電話を頼む」の声の横で聞ける。`pnpm demo:app` で設定なしの練習用 Gateway（simulator・localhost のみログインなし）。`npx oathra demo`（npm 配布）はまだ Arena のまま：Gateway を CLI パッケージに同梱するまで Arena は外さない。
+- Arena の統合・段階2（2026-09-29、利用者の承認）：Gateway を CLI の npm パッケージに同梱（`dist/bundle/gateway.js` と `assets/gateway-root`。実行時に読むファイルは `apps/gateway/lib/paths.mjs` の `repoUrl` を通す）。`oathra demo` は Gateway を練習モードで開く。Arena は `--arena` と、Arena だけの機能（`--tunnel` `--allow-remote` `--allow-models`、ローカルの Web 発信）のために残す。Arena の削除は、これらを Gateway に移してから。

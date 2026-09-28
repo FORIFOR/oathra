@@ -17,6 +17,7 @@ import { Followups } from './lib/followups.mjs';
 import { Phone } from './lib/phone.mjs';
 import { billingConfiguration, METERED } from './lib/billing.mjs';
 import { assert, Fault, hash, importProduct, text } from './lib/security.mjs';
+import { repoUrl } from './lib/paths.mjs';
 
 function number(env,key,fallback,min,max){const n=Number(env[key]??fallback);assert(Number.isFinite(n)&&n>=min&&n<=max,`invalid_${key}`,500);return n;}
 const isLoopback=a=>/^(127\.|::1$|::ffff:127\.)/.test(String(a??''));
@@ -125,10 +126,10 @@ export async function createGateway(config,options={}){
       if(limits.size>5000)for(const k of limits.keys())if(!k.startsWith(minute+':'))limits.delete(k);
       const count=(limits.get(key)??0)+1;limits.set(key,count);assert(count<=RATE_LIMITS[kind],'rate_limited',429);
       if(config.deployment==='managed'&&method==='GET'&&path==='/')return send(res,200,phonePage(),'text/html; charset=utf-8');
-      if(method==='GET'&&path==='/sales')return send(res,200,readFileSync(new URL('./public/index.html',import.meta.url)),'text/html; charset=utf-8');
+      if(method==='GET'&&path==='/sales')return send(res,200,readFileSync(repoUrl('apps/gateway/public/index.html')),'text/html; charset=utf-8');
       const sharedStyle=/^\/phone-style\/(style|style-base|workspace|quiet-cinema|one-page|board)\.css$/.exec(path);
-      if(method==='GET'&&sharedStyle)return send(res,200,readFileSync(new URL('../arena/public/'+sharedStyle[1]+'.css',import.meta.url)),'text/css; charset=utf-8');
-      if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return sendAsset(req,res,readFileSync(new URL('./public/'+file,import.meta.url)),type);}
+      if(method==='GET'&&sharedStyle)return send(res,200,readFileSync(repoUrl('apps/arena/public/'+sharedStyle[1]+'.css')),'text/css; charset=utf-8');
+      if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return sendAsset(req,res,readFileSync(repoUrl('apps/gateway/public/'+file)),type);}
       if(method==='GET'&&path==='/healthz')return send(res,200,{ok:true,mode:config.mode});
       const channelHook=path.match(/^\/hooks\/(?:channels\/)?([a-z][a-z0-9-]{0,47})$/);
       if(method==='POST'&&channelHook){

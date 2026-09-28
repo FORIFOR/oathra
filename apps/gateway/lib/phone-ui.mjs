@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
+import { repoUrl } from './paths.mjs';
 
 /** Reuse Arena's phone/contacts view; detect contract drift before serving a broken screen. */
 export function phonePage() {
-  let html = readFileSync(new URL('../../arena/public/index.html', import.meta.url), 'utf8');
-  const account = readFileSync(new URL('../public/phone/account.html', import.meta.url), 'utf8');
-  const bookings = readFileSync(new URL('../public/phone/bookings.html', import.meta.url), 'utf8');
+  let html = readFileSync(repoUrl('apps/arena/public/index.html'), 'utf8');
+  const account = readFileSync(repoUrl('apps/gateway/public/phone/account.html'), 'utf8');
+  const bookings = readFileSync(repoUrl('apps/gateway/public/phone/bookings.html'), 'utf8');
   const patch = (slot, replacement) => {
     const updated = html.replace(slot, replacement);
     if (updated === html) throw new Error('Managed phone markup slot is missing: ' + slot);

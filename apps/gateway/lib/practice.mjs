@@ -2,8 +2,9 @@
 // agent. Nothing dials, no provider is reached, nothing is charged. The verdict is the evidence engine's, as always.
 import { fileURLToPath } from 'node:url';
 import { assert } from './security.mjs';
+import { repoUrl } from './paths.mjs';
 
-const SCENARIOS_DIR = fileURLToPath(new URL('../../../scenarios/', import.meta.url));
+const scenariosDir = () => fileURLToPath(repoUrl('scenarios/'));
 // The practice list in Japanese (the scenario files carry English titles; Arena keeps the same names).
 const TITLE_JA = {
   'restaurant-reservation': 'レストラン予約', 'impossible-hotel': '無理難題ホテル', 'bulk-buy': 'まとめ買い交渉', 'serial-number': 'シリアル番号の復唱',
@@ -16,7 +17,7 @@ async function scenarios() {
   if (cache) return cache;
   const { loadScenarioDir } = await import('../../../packages/scenario/dist/index.js');
   // Japanese practice only (the app is Japanese); generic scenarios are real-call templates, not practice.
-  cache = loadScenarioDir(SCENARIOS_DIR).filter(s => s.domain !== 'generic' && s.language === 'ja');
+  cache = loadScenarioDir(scenariosDir()).filter(s => s.domain !== 'generic' && s.language === 'ja');
   return cache;
 }
 export async function practiceList() {

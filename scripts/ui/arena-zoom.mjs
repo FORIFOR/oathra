@@ -8,7 +8,7 @@ mkdirSync(out, {recursive:true});
 const temp = mkdtempSync(join(tmpdir(), 'oathra-zoom-'));
 const port = await freePort();
 const url = `http://127.0.0.1:${port}`;
-const server = await serve(process.execPath, [resolve('packages/cli/dist/bin.js'),'demo','--no-open','--port',String(port)], {cwd:temp,url});
+const server = await serve(process.execPath, [resolve('packages/cli/dist/bin.js'),'demo','--arena','--no-open','--port',String(port)], {cwd:temp,url});
 const page = await launch({width:1440,height:900});
 try {
  await page.goto(url);

@@ -2,6 +2,7 @@ import { phoneMemory } from '../../../packages/core/dist/index.js';
 import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
+import { repoUrl } from './paths.mjs';
 
 /**
  * What was measured about each voice (scripts/voice-samples.mjs): median pitch and how long the same sentence
@@ -10,7 +11,7 @@ import { readFileSync } from 'node:fs';
  */
 function voiceDetails() {
  try {
-  const measured=JSON.parse(readFileSync(new URL('../public/phone/voices/voices.json',import.meta.url),'utf8')).voices??{};
+  const measured=JSON.parse(readFileSync(repoUrl('apps/gateway/public/phone/voices/voices.json'),'utf8')).voices??{};
   const details=Object.fromEntries(PHONE_VOICES.filter(v=>Number.isFinite(measured[v]?.pitchHz)).map(v=>{const {pitchHz,seconds,phoneCer,phoneLevel}=measured[v];
    return [v,{pitchHz,seconds,phoneCer,phoneLevel,pitch:pitchHz<150?'low':pitchHz<195?'mid':pitchHz<250?'high':'very-high',pace:seconds<=5.2?'fast':seconds>=6.4?'slow':'medium',quiet:Number.isFinite(phoneLevel)&&phoneLevel<QUIET_LEVEL,sample:`/phone/voices/${v}.wav`}];}));
   recommend(details);return details;

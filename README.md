@@ -47,7 +47,7 @@ Oathra は、AI エージェントが電話をかけて交渉し、予約や注�
 ```bash
 git clone https://github.com/FORIFOR/oathra && cd oathra
 pnpm install && pnpm build
-pnpm demo                                      # http://localhost:4242 で AI 同士の電話が始まる
+pnpm demo                                      # http://localhost:4242 で Oathra のアプリが練習モードで開く（ログイン・キー不要）
 
 pnpm oathra play restaurant-reservation        # 同じ通話をターミナルで
 pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # 同意付き追加聞き取り
@@ -62,7 +62,7 @@ pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemi
 
 `play --json` は会話ログや見出しを混ぜず、`result`・`intake`・保存先の `savedPath` だけをJSONで返します。決定事項や明示回答を別の業務システムへ渡すときに使えます。
 
-Arena では「AI同士を見る」か「自分が電話に出る」かを選べます。後者はあなたが店員役になって、AI の交渉を受ける側になります。
+ソースから動かす `oathra demo` は、Oathra のアプリ（Gateway）を練習モードで開きます。練習では「AIの電話を見る」か「自分が相手役」を選べます。後者では AI があなたに電話をかけ、あなたがお店として文字で答えます。電話はかからず、データは `.oathra/demo/` に残ります（Node 22.13 以上）。前の画面（Arena）は `oathra demo --arena` で開けます。トンネル・LAN 公開・外部モデル（`--tunnel` `--allow-remote` `--allow-models`）は今のところ Arena だけの機能です。v0.1.18 の配布物の `oathra demo` は Arena を開きます。
 
 同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
 

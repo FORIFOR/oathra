@@ -3,6 +3,7 @@ import { execSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { startArena } from "@oathra/arena";
 import { battle, COMPLETABLE, evalScenarios, MUTATIONS, renderBattleMarkdown, renderBattleSvg, runAdversarial, runScenario } from "@oathra/eval";
 import { listCalls, loadCall, renderTimeline, saveCall, snapshotAt } from "@oathra/replay";
@@ -10,7 +11,7 @@ import { loadScenarioDir, loadScenarioFile, parseScenario, type Scenario } from 
 import { brains, listBrains, resolveBrain } from "./brains.js";
 import { resolveCallee } from "./callee.js";
 import { phoneDoctor, phoneAdd, phoneList, phoneRemove, phoneTest, providerCreate, runPhoneCall, setupPhone } from "./phone.js";
-import { arenaPublicDir, scenariosDir } from "./paths.js";
+import { arenaPublicDir, gatewayDemo, scenariosDir } from "./paths.js";
 import { liveRenderer, resultBox } from "./render.js";
 import { bad, bold, box, cyan, dim, green, mmss, ok, table, warn, yellow } from "./ui.js";
 
@@ -138,7 +139,39 @@ async function startTunnel(port: number, preferred?: string): Promise<{ url: str
 
 // ---------------------------------------------------------------------------
 
+type GatewayDemo = { startDemo: (o: { port: number; open: boolean }) => Promise<{ url: string; close: () => Promise<void> }> };
+
+/**
+ * `oathra demo`: the Oathra app (the Gateway) on this computer, practice mode. Nothing dials, no key, no sign-in.
+ * Arena stays behind --arena, and for what only it does so far: a tunnel, LAN access, model brains, the local web phone.
+ */
 export async function cmdDemo(flags: Flags): Promise<void> {
+  const arenaOnly = ["tunnel", "ngrok", "allow-remote", "remote", "host", "allow-models"].filter((f) => flags[f] !== undefined);
+  if (flags.arena || arenaOnly.length) {
+    if (!flags.arena) console.log(dim(`--${arenaOnly[0]} is an Arena option: opening Arena (the previous screen).`));
+    return cmdArena(flags);
+  }
+  console.log(`\n${bold("Oathra")}\n`);
+  console.log(ok(`Runtime        Node ${process.version}`));
+  console.log(ok("Practice       built-in characters, nothing dials, no API key needed"));
+  const { entry, root } = gatewayDemo();
+  if (root) process.env.OATHRA_GATEWAY_ROOT = root;
+  let startDemo: GatewayDemo["startDemo"];
+  try { ({ startDemo } = (await import(pathToFileURL(entry).href)) as GatewayDemo); }
+  catch (err) {
+    // The app keeps its data in node:sqlite (Node 22.13+ without a flag). Older Node still gets the previous screen.
+    if ((err as { code?: string }).code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw err;
+    console.log(warn(`The app needs Node 22.13 or later (this is ${process.version}); opening Arena instead.`));
+    return cmdArena(flags);
+  }
+  const demo = await startDemo({ port: num(flags.port, 4242), open: !flags["no-open"] });
+  console.log(ok(`App            ${demo.url}`));
+  console.log(`\nOpening Oathra...\n\n  ${cyan(demo.url)}\n`);
+  console.log(dim("練習: AIの電話を見る、または「自分が相手役」でAIからの電話に答える。データは .oathra/demo/ に残ります。Ctrl+C で止めます。\n"));
+  await new Promise<void>((res) => { process.on("SIGINT", () => { void demo.close().then(res); }); });
+}
+
+async function cmdArena(flags: Flags): Promise<void> {
   console.log(`\n${bold("Oathra")}\n`);
   console.log(ok(`Runtime        Node ${process.version}`));
   console.log(ok("Simulator      built-in characters, no API key needed"));
@@ -525,7 +558,7 @@ export async function cmdDoctor(): Promise<void> {
   }
   console.log(`\n${bold("Ready on this machine")}\n`);
   console.log(ok("Simulator       AI-vs-AI and Play mode, offline"));
-  console.log(ok("Arena           browser UI (oathra demo)"));
+  console.log(ok("App             browser UI, practice mode (oathra demo)"));
   console.log(ok("Replay / Eval   saved calls, scoring, adversarial runs"));
   console.log(ok("Japanese        dates, times, prices, phone numbers, serials parsed deterministically"));
   console.log(ok("Verification    evidence engine decides completion, not the model"));
@@ -569,8 +602,8 @@ export function help(): string {
 ${bold("Oathra")}  ${dim("Give AI agents a phone, and proof of what happened.")}
 
 ${bold("Try it")}
-  oathra demo                        open the Arena: two agents on a simulated call, no API key
-                                     ${dim("--tunnel (token-protected public URL via cloudflared/ngrok)  --allow-remote (LAN)  --port <n>")}
+  oathra demo                        open the app in practice mode: watch the AI call, or answer it yourself; no API key
+                                     ${dim("--port <n>  --no-open  --arena (previous screen; also --tunnel, --allow-remote, --allow-models)")}
   oathra play [scenario]             run one scenario in the terminal        ${dim("--brain scripted|openai|gemini|ollama  --fast  --seed <n>  --json")}
   oathra battle [scenario]           several brains, same scenario, one card ${dim("--agent <brain> …  --markdown  --svg <file>  --png <file>")}
 

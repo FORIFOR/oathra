@@ -32,3 +32,16 @@ export function arenaPublicDir(): string {
   for (const c of candidates) if (existsSync(c)) return c;
   throw new Error("arena assets not found");
 }
+
+/**
+ * Locate the Gateway app that `oathra demo` starts. Published: dist/bundle/gateway.js, with its runtime files in
+ * assets/gateway-root (same layout as the repository). Repo: apps/gateway/demo.mjs, reading the checkout itself.
+ */
+export function gatewayDemo(): { entry: string; root?: string } {
+  const h = here();
+  const bundled = resolve(h, "gateway.js"), root = resolve(h, "../../assets/gateway-root");
+  if (existsSync(bundled) && existsSync(root)) return { entry: bundled, root };
+  const repo = resolve(h, "../../../apps/gateway/demo.mjs");
+  if (existsSync(repo)) return { entry: repo };
+  throw new Error("gateway app not found");
+}

@@ -25,6 +25,20 @@ await build({
   logLevel: "warning",
 });
 
+// The Gateway app for `oathra demo` (practice mode). Loaded by bin.js with import(); its runtime files come from
+// assets/gateway-root, which keeps the repository layout (apps/gateway/lib/paths.mjs, OATHRA_GATEWAY_ROOT).
+await build({
+  entryPoints: [resolve(root, "apps/gateway/demo.mjs")],
+  outfile: resolve(out, "gateway.js"),
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  target: "node22",
+  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+  external: [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})],
+  logLevel: "warning",
+});
+
 // Public SDK: one ESM entry without the CLI, carrier or model runtime.
 await build({
   entryPoints: [resolve(cli, "src/evidence.ts")],
@@ -59,6 +73,13 @@ const assets = resolve(cli, "assets");
 rmSync(assets, { recursive: true, force: true });
 cpSync(resolve(root, "apps/arena/public"), resolve(assets, "arena"), { recursive: true });
 cpSync(resolve(root, "scenarios"), resolve(assets, "scenarios"), { recursive: true });
+const gatewayRoot = resolve(assets, "gateway-root");
+cpSync(resolve(root, "apps/gateway/public"), resolve(gatewayRoot, "apps/gateway/public"), { recursive: true });
+cpSync(resolve(root, "apps/gateway/lib/phone.mjs"), resolve(gatewayRoot, "apps/gateway/lib/phone.mjs")); // plugin identity digest
+cpSync(resolve(root, "plugins"), resolve(gatewayRoot, "plugins"), { recursive: true, filter: (f) => !/\.test\.|node_modules/.test(f) });
+cpSync(resolve(root, "scenarios"), resolve(gatewayRoot, "scenarios"), { recursive: true });
+mkdirSync(resolve(gatewayRoot, "apps/arena/public"), { recursive: true });
+for (const f of readdirSync(resolve(root, "apps/arena/public"))) if (f === "index.html" || f.endsWith(".css")) cpSync(resolve(root, "apps/arena/public", f), resolve(gatewayRoot, "apps/arena/public", f));
 cpSync(resolve(root, "README.md"), resolve(cli, "README.md"));
 cpSync(resolve(root, "LICENSE"), resolve(cli, "LICENSE"));
 writeFileSync(resolve(out, ".gitkeep"), "");

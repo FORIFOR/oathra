@@ -6,7 +6,7 @@ import { checklist, freePort, launch, serve, sleep } from "./cdp.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const port = await freePort(), base = `http://127.0.0.1:${port}`;
-const server = await serve("node", [join(root, "packages/cli/dist/bin.js"), "demo", "--no-open", "--port", String(port)], { cwd: root, url: base + "/" });
+const server = await serve("node", [join(root, "packages/cli/dist/bin.js"), "demo", "--arena", "--no-open", "--port", String(port)], { cwd: root, url: base + "/" });
 const c = checklist("call motion");
 const start = async (page) => {
   await page.goto(base + "/?practice=1&lang=ja");

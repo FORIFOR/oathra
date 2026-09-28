@@ -7,7 +7,7 @@
 - The canonical confirmation field is `confirmed` (callee-only evidence). Scenario `win` fields must appear in `mission.require` or `mission.constraints`.
 - Scripted characters live in `providers/simulator/src/characters/` and must implement `truth()` so eval can detect false completions. `pnpm oathra eval` must report `False Completion 0`.
 - Product goal: `docs/GOAL.md`. Architecture: `docs/ARCHITECTURE.md`.
-- Arena visual QA without the Chrome extension: start `oathra demo --no-open`, then `node scripts/qa-arena.mjs <outDir>` (drives local Google Chrome headless over CDP and writes PNGs).
+- Arena visual QA without the Chrome extension: start `oathra demo --arena --no-open`, then `node scripts/qa-arena.mjs <outDir>` (drives local Google Chrome headless over CDP and writes PNGs).
 - Trust gate: `oathra eval --adversarial 10000` must print `False Completion: 0 / 10000`.
 - Phone Layer (`packages/phone`) + Voice Layer (`packages/voice`): carriers (`providers/phone-*`) and engines (`providers/openai-realtime`, `providers/gemini-live`, `providers/voice-pipeline`) never import each other (shared prompts, desk tools and farewell detection live in `providers/voice-kit`); the bridge in `packages/phone/src/bridge.ts` converts audio. LiveKit is the first `SipGateway` implementation, not the spec.
 - Every call opens with `recordingNotice(language)` from `@oathra/core` (「この通話は録音されています。」). Simulated calls get it from the runtime (`openingNotice`); the Twilio direct carrier plays it itself before the media stream, only when it records (`recordDir`). Never set both. A call that keeps a transcript and no audio (the gateway, Arena's web phone) says `transcriptNotice(language)` (「この通話は記録されています。」) instead; pass `transcriptNotice: true` to `PhoneTransport`.

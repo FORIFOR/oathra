@@ -12,7 +12,7 @@ const port = await freePort(), base = `http://127.0.0.1:${port}`;
 let server, page;
 const c = checklist("arena primary flow");
 try {
-  server = await serve("node", [join(root, "packages/cli/dist/bin.js"), "demo", "--no-open", "--port", String(port)], { cwd: root, url: base + "/" });
+  server = await serve("node", [join(root, "packages/cli/dist/bin.js"), "demo", "--arena", "--no-open", "--port", String(port)], { cwd: root, url: base + "/" });
   const fits = () => page.js("document.documentElement.scrollHeight<=innerHeight+1 && document.body.scrollHeight<=innerHeight+1");
   for (const [name, width, height] of [["desktop", 1440, 900], ["laptop", 1280, 800], ["mobile", 390, 844]]) {
     const board = width >= 1100;
