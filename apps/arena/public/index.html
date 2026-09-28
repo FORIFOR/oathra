@@ -199,11 +199,16 @@
               <p id="phone-voice-note" class="note" data-i18n="phoneVoiceNote"></p></div>
             </details>
           </fieldset>
-          <p id="phone-error" role="alert" hidden></p>
-          <div class="phone-form-actions">
-            <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
-            <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
-          </div>
+          <div class="phone-aside" id="phone-aside"><!-- phone-aside -->
+            <h3 class="phone-aside-h" data-i18n="phoneSummaryTitle">Before calling</h3>
+            <dl class="phone-summary" id="phone-summary"></dl>
+            <p class="note phone-aside-note" data-i18n="phoneSummaryNote"></p><!-- /phone-aside-head -->
+            <p id="phone-error" role="alert" hidden></p>
+            <div class="phone-form-actions">
+              <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
+              <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
+            </div>
+          </div><!-- /phone-aside -->
         </form>
         <section id="phone-review" hidden aria-labelledby="phone-review-title" tabindex="-1">
           <h3 id="phone-review-title" data-i18n="phoneReviewTitle">Call draft · not sent</h3>

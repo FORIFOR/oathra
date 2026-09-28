@@ -47,6 +47,12 @@ try {
   await page.js(pick("character-male"));
   await page.js("{const set=(id,v)=>{const n=document.querySelector(id);n.value=v;n.dispatchEvent(new Event('input',{bubbles:true}))};set('#phone-number','+819012345678');set('#phone-name','ゆき');set('#phone-instruction','最近どうしてるか聞いて、週末の予定について気軽に話してください。')}");
   await page.js("{const e=document.querySelector('#phone-engine');e.value='character-tts';e.dispatchEvent(new Event('change',{bubbles:true}))}");
+  await page.js("document.querySelector('#phone-voice-choice').scrollIntoView({block:'end'})"); await sleep(200);
+  const submitSeen = await page.js("(()=>{const r=document.querySelector('#phone-form button[type=submit]').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()");
+  c.ok(submitSeen, "after the last choice (the voices), 「内容を確認」 is still on screen");
+  await page.js("window.scrollTo(0,0)");
+  const summary = await page.text("#phone-summary");
+  c.ok(/ゆき/.test(summary) && /\+819012345678/.test(summary) && /キャラクター・男性の声（Puck）/.test(summary) && /約2〜3秒/.test(summary), "「発信前の確認」 mirrors the recipient, number, voice and the reply wait before anything is sent", summary.replace(/\s+/g, " ").slice(0, 160));
   await page.click("#phone-form button[type=submit]"); await page.until("!document.querySelector('#phone-review').hidden");
   const history = await (await fetch(arena.url + "/api/phone/history")).json();
   c.ok(history[0]?.request.engine === "character-tts" && history[0]?.request.voicePreset === "character-male" && !history[0]?.request.voice, "the draft asks for the acting voice with the character preset", JSON.stringify({ engine: history[0]?.request.engine, preset: history[0]?.request.voicePreset }));

@@ -22,6 +22,8 @@ export function phonePage() {
   patch(/<fieldset class="phone-step">\s*<legend[^>]*>[^<]*<\/legend>/g, '');
   patch(/<\/fieldset>/g, '');
   patch(/<p id="phone-caller-hint"[^>]*><\/p>/, '');
+  patch(/<div class="phone-aside" id="phone-aside"><!-- phone-aside -->[\s\S]*?<!-- \/phone-aside-head -->/, '');
+  patch('</div><!-- /phone-aside -->', '');
   patch(' aria-describedby="phone-caller-hint"', '');
   patch('href="style.css"', 'href="/phone-style/style.css"');
   // Arena's v2 look is Arena-only for now; the managed page keeps its current styles until it is redesigned.
