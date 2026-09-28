@@ -404,7 +404,9 @@ export function createArenaServer(opts: ArenaOptions): Server {
           try {
             const c = loadCall(id, callsDir);
             const started = c.events.find((e) => e.type === "call.started");
-            return { id, scenario: started && started.type === "call.started" ? started.scenario ?? null : null, status: c.result.status, durationMs: c.metrics.durationMs };
+            const contract = (c as { contract?: { goal?: string; target?: { name?: string }; input?: { conversationMode?: unknown } } }).contract;
+            // Real phone calls are saved under their phone record id, so the list can tell them from practice.
+            return { id, scenario: started && started.type === "call.started" ? started.scenario ?? null : null, status: c.result.status, durationMs: c.metrics.durationMs, real: id.startsWith("phone_"), target: contract?.target?.name ?? null, goal: contract?.goal ?? null, chat: contract?.input?.conversationMode === "chat" };
           } catch {
             return { id, status: "unreadable" };
           }

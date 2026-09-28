@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" href="assets/oathra-mark-white.png" media="(prefers-color-scheme: dark)" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="v2.css" />
+  <link rel="stylesheet" href="records.css" />
 </head>
 <body>
   <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
@@ -24,6 +25,7 @@
     <div class="topbar-right">
       <button type="button" class="btn" id="home-open" data-i18n="home">Home</button>
       <button type="button" class="btn" id="contacts-open" data-i18n="contacts">Contacts</button>
+      <button type="button" class="btn" id="records-open">Records</button>
       <div class="transport-toggle" role="group" data-i18n-aria="transport" aria-label="Transport">
         <button type="button" class="tt-btn is-on" data-transport="simulator" aria-pressed="true">
           <span class="dot" aria-hidden="true"></span><span data-i18n="simulator">Simulator</span>
@@ -105,6 +107,11 @@
           <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel" data-i18n="replays">Replays</button>
         </div>
         <div class="replays-panel" id="replays-panel" hidden>
+          <div class="replay-filter" id="replay-filter" role="group">
+            <button type="button" class="rf-btn is-on" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="rf-btn" data-filter="real" aria-pressed="false">Real</button>
+            <button type="button" class="rf-btn" data-filter="practice" aria-pressed="false">Practice</button>
+          </div>
           <ul class="replay-list" id="replay-list"></ul>
         </div>
       </div>
@@ -232,7 +239,7 @@
           <h3 id="phone-live-title" data-i18n="phoneProgress"></h3>
           <p id="phone-live-state" role="status"></p><p id="phone-live-recipient"></p>
           <p id="phone-live-error" role="alert" hidden></p>
-          <div class="phone-live-actions"><button type="button" class="btn" id="phone-refresh" data-i18n="phoneRefresh"></button><button type="button" class="btn" id="phone-hangup" hidden data-i18n="endCall"></button><button type="button" class="btn" id="phone-resolve" hidden data-i18n="phoneResolve"></button></div>
+          <div class="phone-live-actions"><button type="button" class="btn" id="phone-refresh" data-i18n="phoneRefresh"></button><button type="button" class="btn" id="phone-hangup" hidden data-i18n="endCall"></button><button type="button" class="btn" id="phone-resolve" hidden data-i18n="phoneResolve"></button><button type="button" class="btn" id="phone-open-record" hidden></button></div>
           <pre id="phone-live-summary"></pre><details><summary data-i18n="phoneTranscript"></summary><div id="phone-live-transcript"></div></details>
         </section>
         <details id="phone-history-section"><summary data-i18n="phoneHistory"></summary>

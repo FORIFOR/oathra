@@ -244,6 +244,15 @@
   }
 
   // ------------------------------------------------------------------ screens
+  // Labels for the shared practice + real-call records list.
+  const REC_T = LANG === "ja"
+    ? { all: "すべて", real: "本番", practice: "練習", open: "判定と証拠を見る", records: "記録", filter: "記録の種類" }
+    : { all: "All", real: "Real", practice: "Practice", open: "View verdict and evidence", records: "Records", filter: "Record type" };
+  // A real call opens in the verdict view only once it has ended and its artifacts are saved (never an unknown outcome).
+  const recordOpenable = (record) => record.persistence === "saved" && ["ended", "failed"].includes(record.state);
+  // A record's purpose in words; the contract's goal id is internal and never shown.
+  const recordPurpose = (r) => r.chat ? (LANG === "ja" ? "雑談" : "Chat")
+    : ({ "phone.message": LANG === "ja" ? "電話の依頼" : "Phone request", "phone.inbound": LANG === "ja" ? "着信" : "Incoming call", "phone.reception": LANG === "ja" ? "予約の受付" : "Reservations" })[r.goal] ?? "";
   const screens = { home: $("#screen-home"), contacts: $("#screen-contacts"), start: $("#screen-start"), real: $("#screen-real"), call: $("#screen-call") };
   // Wide windows get a board that fits the window (board.css): missions on the left, the call in the middle, result and evidence on the right.
   const BOARD = window.matchMedia("(min-width: 1100px) and (min-height: 600px)");
@@ -686,6 +695,7 @@
         el("div",{class:"phone-live-actions"},[
           el("button",{type:"button",class:"btn",text:t("phoneUsePurpose"),onclick:()=>reusePhoneRequest(record.request,false)}),
           el("button",{type:"button",class:"btn",text:t("phoneUseAll"),onclick:()=>reusePhoneRequest(record.request,true)}),
+          ...(recordOpenable(record)?[el("button",{type:"button",class:"btn",text:REC_T.open,onclick:()=>openReplay(record.id)})]:[]),
           el("button",{type:"button",class:"btn",text:t("phoneViewRecord"),onclick:()=>{if(phoneDialPending || (webPhoneBusy() && webPhoneRecord?.id !== record.id)) { toast(t("phoneNoStatus")); return; } sessionStorage.setItem("oathra.webPhoneActive",record.id);loadWebPhone(record.id,true);}})
         ])
       ])) : [el("li",{class:"note",text:t("phoneHistoryEmpty")})]));
@@ -751,6 +761,8 @@
     $("#phone-live-error").textContent=record.error || "";$("#phone-live-error").hidden=!record.error;
     $("#phone-hangup").hidden=!["starting","running","stopping"].includes(record.state);$("#phone-hangup").disabled=record.state === "stopping";
     $("#phone-resolve").hidden=record.state !== "unknown" || Boolean(record.resolvedAt);
+    // A finished real call is saved like a practice call; open it in the same verdict + evidence view.
+    const openRecord=$("#phone-open-record");openRecord.textContent=REC_T.open;openRecord.hidden=!recordOpenable(record);openRecord.onclick=()=>openReplay(record.id);
     $("#phone-live-transcript").replaceChildren(...(record.transcript||[]).map(turn=>el("p",{text:`${turn.source === "callee" ? record.request.name : "AI"}: ${turn.text}`})));
     syncPhoneDial();
   }
@@ -811,27 +823,52 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !localPop.hidden) { localPop.hidden = true; localBtn.setAttribute("aria-expanded", "false"); } });
 
-  // replays
-  $("#replays-link").addEventListener("click", async () => {
-    const panel = $("#replays-panel");
-    const open = panel.hidden;
-    panel.hidden = !open;
-    $("#replays-link").setAttribute("aria-expanded", String(open));
-    if (!open) return;
+  // replays: practice and real phone calls share one list, filterable by kind.
+  let replayFilter = "all", replayCache = null;
+  $("#replay-filter").setAttribute("aria-label", REC_T.filter);
+  $$("#replay-filter .rf-btn").forEach((b) => {
+    b.textContent = REC_T[b.dataset.filter];
+    b.addEventListener("click", () => {
+      replayFilter = b.dataset.filter;
+      $$("#replay-filter .rf-btn").forEach((x) => { const on = x === b; x.classList.toggle("is-on", on); x.setAttribute("aria-pressed", String(on)); });
+      renderReplayList();
+    });
+  });
+  function renderReplayList() {
+    const ul = $("#replay-list");
+    const list = (replayCache || []).filter((r) => replayFilter === "all" || (replayFilter === "real") === Boolean(r.real));
+    if (!list.length) { ul.replaceChildren(el("li", { class: "muted mono", text: t("noReplays") })); return; }
+    ul.replaceChildren(...list.slice().reverse().map((r) => el("li", {}, [
+      el("button", { type: "button", class: "replay-btn", onclick: () => openReplay(r.id) }, [
+        el("span", { class: r.real ? "replay-kind is-real" : "replay-kind", text: r.real ? REC_T.real : REC_T.practice }),
+        // Who (real) or which practice, then purpose, verdict and length. Record ids stay internal.
+        el("span", { class: "replay-title", text: r.real ? (r.target || REC_T.real) : ((LANG === "ja" && TITLE_JA[r.scenario]) || r.scenario || "?") }),
+        el("span", { class: "muted", text: [r.real ? recordPurpose(r) : "", statusTitle(r.status), r.durationMs ? mmss(r.durationMs) : ""].filter(Boolean).join(" · ") }),
+      ]),
+    ])));
+  }
+  async function loadReplayList() {
     const ul = $("#replay-list");
     ul.replaceChildren(el("li", { class: "muted mono", text: t("loading") }));
-    try {
-      const list = await api("/api/replays");
-      if (!list.length) { ul.replaceChildren(el("li", { class: "muted mono", text: t("noReplays") })); return; }
-      ul.replaceChildren(...list.slice().reverse().map((r) => el("li", {}, [
-        el("button", { type: "button", class: "replay-btn", onclick: () => openReplay(r.id) }, [
-          el("span", { text: r.id }),
-          el("span", { class: "muted", text: `${(LANG === "ja" && TITLE_JA[r.scenario]) || r.scenario || "?"} · ${statusTitle(r.status)}${r.durationMs ? ` · ${mmss(r.durationMs)}` : ""}` }),
-        ]),
-      ])));
-    } catch (e) {
-      ul.replaceChildren(el("li", { class: "muted mono", text: t("replaysFailed", { msg: e.message }) }));
-    }
+    try { replayCache = await api("/api/replays"); renderReplayList(); }
+    catch (e) { ul.replaceChildren(el("li", { class: "muted mono", text: t("replaysFailed", { msg: e.message }) })); }
+  }
+  function openReplayPanel() {
+    $("#replays-panel").hidden = false;
+    $("#replays-link").setAttribute("aria-expanded", "true");
+    return loadReplayList();
+  }
+  $("#replays-link").addEventListener("click", () => {
+    if ($("#replays-panel").hidden) { openReplayPanel(); return; }
+    $("#replays-panel").hidden = true;
+    $("#replays-link").setAttribute("aria-expanded", "false");
+  });
+  $("#records-open").textContent = REC_T.records;
+  // The list sits under the practice list: bring it into view and put focus on its filter, so the press visibly lands.
+  $("#records-open").addEventListener("click", async () => {
+    show("start"); await openReplayPanel();
+    $("#replays-panel").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    $("#replay-filter .rf-btn.is-on")?.focus({ preventScroll: true });
   });
 
   // ------------------------------------------------------------------ call lifecycle

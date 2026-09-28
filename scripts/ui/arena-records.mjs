@@ -1,0 +1,83 @@
+// Arena records: practice and real phone calls in one list (「記録」 in the top bar), filterable, and a finished real call
+// opens in the same verdict + evidence view. Real Arena server on temp folders; the "real" call is a saved practice
+// call filed under a phone record id (no carrier, nothing dials).
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { randomUUID } from "node:crypto";
+import { startArena } from "../../apps/arena/dist/index.js";
+import { preparePhoneRequest } from "../../packages/contract/dist/index.js";
+import { brains } from "../../packages/cli/dist/brains.js";
+import { checklist, launch, sleep } from "./cdp.mjs";
+
+const work = mkdtempSync(join(tmpdir(), "oathra-records-"));
+const out = resolve("artifacts/ui"); mkdirSync(out, { recursive: true });
+const callsDir = join(work, "calls"), historyDir = join(work, "phone");
+const arena = await startArena({ scenariosDir: resolve("scenarios"), brains: { scripted: brains.scripted }, callsDir, phoneHistoryDir: historyDir, port: 0 });
+const c = checklist("arena records");
+let page;
+try {
+  page = await launch({ width: 1440, height: 900 });
+  // One practice call, saved as usual.
+  await page.goto(arena.url + "/?practice=1&lang=ja");
+  await page.until("document.querySelector('[data-scenario=friend-hype]')");
+  await page.js("document.querySelector('[data-scenario=friend-hype]').click()");
+  await page.until("document.querySelector('#result-wrap').textContent.trim().length>0", { timeout: 150_000, label: "practice result" });
+  for (let i = 0; i < 40 && !readdirSync(callsDir).length; i++) await sleep(250);
+  const practiceId = readdirSync(callsDir)[0];
+  // The same artifacts filed as a real call: phone_ id, a phone request contract (chat), and its history record.
+  const realId = `phone_${randomUUID()}`;
+  cpSync(join(callsDir, practiceId), join(callsDir, realId), { recursive: true });
+  const contractFile = join(callsDir, realId, "contract.json"), contract = JSON.parse(readFileSync(contractFile, "utf8"));
+  writeFileSync(contractFile, JSON.stringify({ ...contract, goal: "phone.message", target: { phone: "+819012345678", name: "テスト相手" }, input: { ...contract.input, conversationMode: "chat" } }));
+  const request = preparePhoneRequest({ phone: "+819012345678", name: "テスト相手", instruction: "近況を話して、気軽に雑談してください。", conversationMode: "chat" });
+  const now = new Date().toISOString();
+  mkdirSync(historyDir, { recursive: true });
+  writeFileSync(join(historyDir, `${realId}.json`), JSON.stringify({ id: realId, request, state: "ended", createdAt: now, updatedAt: now, expiresAt: new Date(Date.now() + 86400_000).toISOString(),
+    readiness: { ready: false, issues: [] }, events: [], transcript: [], persistence: "saved", endReason: "agent_hangup" }));
+
+  // 「記録」 opens the list from anywhere, with both kinds and the purpose in words.
+  await page.goto(arena.url + "/?lang=ja");
+  await page.until("document.querySelector('#records-open')");
+  c.ok(await page.text("#records-open") === "記録", "the top bar has 「記録」");
+  await page.click("#records-open");
+  await page.until("!document.querySelector('#replays-panel').hidden && document.querySelectorAll('#replay-list .replay-btn').length===2", { label: "records list" });
+  await sleep(700);
+  const seen = JSON.parse(await page.js("JSON.stringify((()=>{const r=document.querySelector('#replays-panel').getBoundingClientRect();return {top:Math.round(r.top),vh:innerHeight,focus:document.activeElement?.dataset?.filter??null}})())"));
+  c.ok(seen.top >= 0 && seen.top < seen.vh - 120 && seen.focus === "all", "「記録」 brings the list into view and puts focus on its filter", JSON.stringify(seen));
+  await page.screenshot(join(out, "arena-records-desktop.png"));
+  const rows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('#replay-list .replay-btn')].map(b=>b.textContent))"));
+  c.ok(rows.some((r) => /^本番テスト相手雑談/.test(r)) && rows.some((r) => /^練習/.test(r)), "real and practice in one list; the real call shows its person and purpose", JSON.stringify(rows));
+  c.ok(!/phone\.|phone_/.test(await page.text("#replays-panel")), "no internal ids (goal, record id) on screen for the real call");
+  const count = () => page.js("document.querySelectorAll('#replay-list .replay-btn').length");
+  await page.click("#replay-filter [data-filter=real]"); await sleep(150);
+  const realOnly = await count();
+  await page.click("#replay-filter [data-filter=practice]"); await sleep(150);
+  const practiceOnly = await count();
+  c.ok(realOnly === 1 && practiceOnly === 1 && await page.js("document.querySelector('#replay-filter [data-filter=practice]').getAttribute('aria-pressed')") === "true", "すべて／本番／練習 filter the list and say which is on", `${realOnly}/${practiceOnly}`);
+  await page.click("#replay-filter [data-filter=all]"); await sleep(150);
+  // The real call opens in the practice verdict + evidence view.
+  await page.js("[...document.querySelectorAll('#replay-list .replay-btn')].find(b=>/本番/.test(b.textContent)).click()");
+  await page.until("document.querySelectorAll('#transcript .line').length>0 && document.querySelector('#mission-list').children.length>0", { timeout: 20_000, label: "replay of the real call" });
+  c.ok(true, "a real call opens in the same verdict and evidence view");
+  // From the phone screen's history: 「判定と証拠を見る」 on a saved, ended call.
+  await page.goto(arena.url + "/?lang=ja&phone=1");
+  await page.until("document.querySelector('#phone-history-section')");
+  await page.js("document.querySelector('#phone-history-section').open=true"); await sleep(400);
+  const open = await page.js("!![...document.querySelectorAll('#phone-history-section button')].find(b=>b.textContent==='判定と証拠を見る')");
+  c.ok(open, "the phone history offers 「判定と証拠を見る」 for a saved call");
+  await page.js("[...document.querySelectorAll('#phone-history-section button')].find(b=>b.textContent==='判定と証拠を見る').click()");
+  await page.until("document.querySelectorAll('#transcript .line').length>0", { timeout: 20_000, label: "replay from history" });
+  c.ok(true, "…and it opens the saved record (no redial)");
+  // 390: the list and its filter fit.
+  await page.viewport(390, 844); await page.goto(arena.url + "/?lang=ja");
+  await page.until("document.querySelector('#records-open')"); await page.click("#records-open");
+  await page.until("document.querySelectorAll('#replay-list .replay-btn').length===2", { label: "records list (390)" });
+  await page.js("document.querySelector('#replays-panel').scrollIntoView({block:'start'})"); await sleep(200);
+  c.ok(await page.noSidewaysScroll(), "390: no sideways scroll");
+  await page.screenshot(join(out, "arena-records-mobile.png"));
+  c.ok(page.pageErrors.length === 0, "no page errors", page.pageErrors.join(" "));
+} finally {
+  await page?.close(); arena.server.closeAllConnections(); await arena.close(); rmSync(work, { recursive: true, force: true });
+}
+c.finish();
