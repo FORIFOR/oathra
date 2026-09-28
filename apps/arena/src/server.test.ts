@@ -89,6 +89,22 @@ describe("Arena API", () => {
     expect((await get("/api/replays/..%2F..%2Fsecret")).status).toBe(404);
   });
 
+  it("answers byte ranges (Safari plays audio only from a server that does)", async () => {
+    const whole = await get("/app.js");
+    expect(whole.headers.get("accept-ranges")).toBe("bytes");
+    const body = await whole.text();
+    const first = await fetch(base + "/app.js", { headers: { range: "bytes=0-1" } });
+    expect(first.status).toBe(206);
+    expect(first.headers.get("content-range")).toBe(`bytes 0-1/${body.length}`);
+    expect(await first.text()).toBe(body.slice(0, 2));
+    const tail = await fetch(base + "/app.js", { headers: { range: "bytes=-3" } });
+    expect(tail.status).toBe(206);
+    expect(await tail.text()).toBe(body.slice(-3));
+    const open = await fetch(base + "/app.js", { headers: { range: "bytes=5-" } });
+    expect(await open.text()).toBe(body.slice(5));
+    expect((await fetch(base + "/app.js", { headers: { range: `bytes=${body.length}-` } })).status).toBe(416);
+  });
+
   it("answers malformed JSON with an error instead of crashing", async () => {
     const res = await fetch(base + "/api/calls", { method: "POST", body: "{not json" });
     expect(res.status).toBeGreaterThanOrEqual(400);

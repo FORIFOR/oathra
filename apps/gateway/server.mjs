@@ -87,8 +87,16 @@ async function jsonBody(req) {
   const raw=await body(req);let data;try{data=JSON.parse(raw.toString()||'{}');}catch{throw new Fault(400,'invalid_json');}
   assert(data&&typeof data==='object'&&!Array.isArray(data),'json_object_required');return data;
 }
-function send(res,status,value,type='application/json; charset=utf-8'){
-  res.writeHead(status,{'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY',
+// Safari (iPhone and Mac) plays a voice sample only from a server that answers byte ranges (it asks for bytes=0-1 first).
+function sendAsset(req,res,body,type){
+  const m=/^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range??''));
+  if(!m||(!m[1]&&!m[2]))return send(res,200,body,type,{'accept-ranges':'bytes'});
+  const size=body.length,start=m[1]?Number(m[1]):Math.max(0,size-Number(m[2])),end=m[1]&&m[2]?Math.min(Number(m[2]),size-1):size-1;
+  if(start>=size||start>end)return send(res,416,'',type,{'content-range':`bytes */${size}`});
+  return send(res,206,body.subarray(start,end+1),type,{'accept-ranges':'bytes','content-range':`bytes ${start}-${end}/${size}`});
+}
+function send(res,status,value,type='application/json; charset=utf-8',extra={}){
+  res.writeHead(status,{...extra,'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY',
     'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});
   res.end(type.startsWith('application/json')?JSON.stringify(value):value);
 }
@@ -118,7 +126,7 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/sales')return send(res,200,readFileSync(new URL('./public/index.html',import.meta.url)),'text/html; charset=utf-8');
       const sharedStyle=/^\/phone-style\/(style|style-base|workspace|quiet-cinema|one-page|board)\.css$/.exec(path);
       if(method==='GET'&&sharedStyle)return send(res,200,readFileSync(new URL('../arena/public/'+sharedStyle[1]+'.css',import.meta.url)),'text/css; charset=utf-8');
-      if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return send(res,200,readFileSync(new URL('./public/'+file,import.meta.url)),type);}
+      if(method==='GET'&&assets.has(path)){const[file,type]=assets.get(path);return sendAsset(req,res,readFileSync(new URL('./public/'+file,import.meta.url)),type);}
       if(method==='GET'&&path==='/healthz')return send(res,200,{ok:true,mode:config.mode});
       const channelHook=path.match(/^\/hooks\/(?:channels\/)?([a-z][a-z0-9-]{0,47})$/);
       if(method==='POST'&&channelHook){

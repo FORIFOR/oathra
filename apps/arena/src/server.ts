@@ -436,9 +436,29 @@ export function createArenaServer(opts: ArenaOptions): Server {
         const rel = path === "/" ? "/index.html" : normalize(path);
         const file = join(publicDir, rel);
         if (file.startsWith(publicDir) && existsSync(file) && statSync(file).isFile()) {
-          res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream", "cache-control": "no-store" });
+          const type = MIME[extname(file)] ?? "application/octet-stream";
+          const body = readFileSync(file);
+          // Safari (iPhone and Mac) plays audio only from a server that answers byte ranges: it asks for bytes=0-1 first
+          // and gives up on a plain 200. The voice samples need this; other files answer the same way.
+          const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ""));
+          if (range && (range[1] || range[2])) {
+            const size = body.length;
+            const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+            let end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+            if (!range[1]) end = size - 1;
+            if (start >= size || start > end) {
+              res.writeHead(416, { "content-range": `bytes */${size}`, "cache-control": "no-store" });
+              res.end();
+              return;
+            }
+            res.writeHead(206, { "content-type": type, "cache-control": "no-store", "accept-ranges": "bytes", "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) });
+            if (method === "HEAD") res.end();
+            else res.end(body.subarray(start, end + 1));
+            return;
+          }
+          res.writeHead(200, { "content-type": type, "cache-control": "no-store", "accept-ranges": "bytes", "content-length": String(body.length) });
           if (method === "HEAD") res.end();
-          else res.end(readFileSync(file));
+          else res.end(body);
           return;
         }
       }

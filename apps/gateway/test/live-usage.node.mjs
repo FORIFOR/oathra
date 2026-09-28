@@ -79,6 +79,10 @@ test('a phone request may choose the voice; unknown voices are refused and the l
   assert.equal(new Set(recommended.map(([,d])=>d.pitch==='very-high'?'high':d.pitch)).size,recommended.length);
   assert.equal(status.voiceDetails.quartz.quiet,true);assert.ok(!status.voiceDetails.quartz.recommended);
   const sample=await fetch(base+'/phone/voices/vesper.wav');assert.equal(sample.status,200);assert.equal(sample.headers.get('content-type'),'audio/wav');assert.equal(Buffer.from(await sample.arrayBuffer()).subarray(0,4).toString(),'RIFF');
+  // Safari plays audio only from a server that answers byte ranges.
+  const whole=Buffer.from(await (await fetch(base+'/phone/voices/vesper.wav')).arrayBuffer());
+  const part=await fetch(base+'/phone/voices/vesper.wav',{headers:{range:'bytes=0-1'}});assert.equal(part.status,206);assert.equal(part.headers.get('content-range'),`bytes 0-1/${whole.length}`);assert.deepEqual(Buffer.from(await part.arrayBuffer()),whole.subarray(0,2));
+  assert.equal((await fetch(base+'/phone/voices/vesper.wav',{headers:{range:`bytes=${whole.length}-`}})).status,416);
   for(const path of ['/phone/voices/alloy.wav','/phone/voices/../main.js','/phone/voices/voices.json'])assert.notEqual((await fetch(base+path)).headers.get('content-type'),'audio/wav');
   const draft=body=>fetch(base+'/v1/phone/draft',{method:'POST',headers,body:JSON.stringify({phone:'+819000000000',name:'local',instruction:'Only local validation; no phone execution.',...body})});
   const chosen=await draft({voice:'vesper'});assert.equal(chosen.status,201);assert.equal((await chosen.json()).mission.phoneRequest.voice,'vesper');
