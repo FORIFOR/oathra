@@ -69,7 +69,7 @@ input, textarea, select { border-radius: var(--radius); }
 html[lang="ja"] .result-fc, html[lang="ja"] .result-lines, html[lang="ja"] .result-meta, html[lang="ja"] .score-grid, html[lang="ja"] .metrics b, html[lang="ja"] .e-t, html[lang="ja"] .e-val, html[lang="ja"] .mrow .mv, html[lang="ja"] .mrow .mc { font-family: var(--sans); }
 
 /* ---------- decoration removed ---------- */
-.party-orb, .party-ring, .activity { display: none !important; }
+body:not(.present) .party-orb, body:not(.present) .party-ring, body:not(.present) .activity { display: none !important; }
 .scenario-btn, .erow.is-new, .mrow.tick, .just-verified { animation: none; }
 
 /* ---------- board (wide windows): 272 | call | 330, columns split by 1px rules ---------- */
@@ -214,4 +214,49 @@ html[lang="ja"] .result-fc, html[lang="ja"] .result-lines, html[lang="ja"] .resu
   html.board .panels { grid-template-rows: auto auto auto auto; align-content: start; }
   html.board .panels > .panel:nth-child(2) { overflow: visible; }
   html.board .result-fc { margin-right: 14px; }
+}
+
+/* ---------- stage 2: motion that carries meaning ---------- */
+/* Header right: two level meters (only the speaking side moves), then status over the timer. */
+.meters { display: grid; gap: 6px; }
+.meter { display: flex; align-items: center; gap: 8px; }
+.meter-label { width: 34px; font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter-bars { display: flex; gap: 2px; }
+.meter-bars i { width: 5px; height: 8px; background: var(--line); }
+.meter-bars i.on { background: var(--ink); }
+.meter-bars i.on.peak { background: var(--live); }
+.call-clock { display: flex; flex-direction: column; align-items: flex-end; min-width: 110px; }
+.call-status { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.call-status.is-speaking { color: var(--live); }
+.call-timer { font-size: 24px; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--ink); }
+/* The status word lives in the clock now; the old badge stays for screen readers and the present view. */
+body:not(.present) .call-controls .live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body.present .meters, body.present .call-clock { display: none; }
+
+/* Typing reveal: the unsaid part is invisible but present; a blinking caret ends the speaking line. */
+.say .unsaid { visibility: hidden; }
+.line.typing .say .said::after { content: ""; display: inline-block; width: 2px; height: 1.1em; margin-left: 1px; vertical-align: -.15em; background: var(--accent); animation: v2-caret 1s steps(1) infinite; }
+@keyframes v2-caret { 50% { opacity: 0; } }
+/* The callee's words the verdict rests on. */
+.say .proof { text-decoration: underline; text-decoration-color: var(--ok); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.proof-legend { margin-left: auto; font-size: 12px; color: var(--muted); }
+.proof-legend::before { content: ""; display: inline-block; width: 14px; height: 0; border-bottom: 2px solid var(--ok); margin-right: 6px; vertical-align: 3px; }
+@media (min-width: 1100px) and (min-height: 600px) {
+  html.board .metrics { padding-right: 110px; }
+  html.board .call-controls { align-items: center; gap: 18px; }
+}
+@media (max-width: 1099px) { .meters { display: none; } .call-timer { font-size: 18px; } .call-clock { min-width: 0; } }
+@media (prefers-reduced-motion: reduce) { .line.typing .say .said::after { animation: none; } }
+/* Only the motions above carry meaning; the older entrance effects are off (kept for ?present=1 recordings). */
+body:not(.present) .screen, body:not(.present) .line, body:not(.present) .result, body:not(.present) .result > *, body:not(.present) .result-lines li,
+body:not(.present) .erow.is-new, body:not(.present) .erow.just-verified .e-ok, body:not(.present) .mrow.tick .mk, body:not(.present) .live.is-live .dot,
+body:not(.present) .scenario-btn { animation: none !important; }
+@media (min-width: 1100px) and (min-height: 600px) {
+  /* The header timer carries the elapsed time on the board; the footer keeps latency and cost. */
+  html.board .metrics > span:nth-of-type(4) { display: none; }
+  html.board .metrics:has(#m-elapsed) > span:has(#m-elapsed) { display: none; }
+  /* Keep the hang-up button's place so the meters and clock do not jump when the call ends. */
+  html.board #call-hangup[hidden] { display: inline-flex !important; visibility: hidden; }
+  html.board .call-title-text { flex: 1; }
+  html.board .call-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }

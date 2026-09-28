@@ -80,7 +80,7 @@
       practice: "Practice locally → inspect evidence → save a result. No real booking. Default agent: no API fees or uploads.", saved: "Saved locally. Available in Past calls.", saveFailed: "Not saved. Download the result or retry saving; do not repeat the call.", saveUnknown: "Saving has not been confirmed.", saveDisabled: "Automatic saving is off. Download to keep this result.", saveRetry: "Retry saving", download: "Download evidence JSON", recover: "Check this call again", unconfirmed: "Connection interrupted. The outcome is unconfirmed. Check the same call; do not start another.", starting: "Starting…", assessmentUnknown: "False completion: not independently assessed", external: "External model: conversation data is sent to the selected provider; API charges may apply.",
       skip: "Skip to content", arena: "Arena", transport: "Transport", simulator: "Practice", realPhone: "Call preparation", local: "Running on this computer",
       popTitle: "Running locally.", popSub: "Everything is yours.", popNeed: "Need:", popNumbers: "phone numbers", popSip: "managed SIP", popTeam: "team deployment", popHosted: "hosted inference",
-      startTitle: "Practice calls", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "replay (recorded call)", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
+      startTitle: "Practice calls", meterAgent: "AI", statusSpeaking: "{who} is speaking", statusInCall: "In call", statusEnded: "Call ended", proofLegend: "Underlined: the words the verdict rests on", countItems: "{n}", practiceNoCall: "practice (no phone call)", replayNote: "replay (recorded call)", verdictCount: "{n} of {total} confirmed", fieldVerified: "confirmed", fieldPending: "awaiting", fieldMissing: "not yet", fieldViolation: "outside the terms", emptyTitle: "Pick a call on the left. It starts here.", emptyLead: "The AI saying \"it's booked\" completes nothing. A ✓ appears only when the other side says it.", emptyStep1: "Pick a call", emptyStep2: "Watch it, or answer it yourself", emptyStep3: "The result, in the callee's words", scoreMore: "Score and breakdown", closeDetails: "Close ×", mode: "Mode", watch: "Watch", watchSub: "AI vs AI", play: "Play", playSub: "you answer the phone",
       agentSelect: "Agent", missions: "Missions", loadingMissions: "Loading missions…", noMissions: "No missions found in scenarios/.", loadMissionsFailed: "Could not load missions: {msg}",
       replays: "Past calls", loading: "Loading…", noReplays: "No saved calls yet. Finished calls are saved to .oathra/calls/.", replaysFailed: "Could not load replays: {msg}",
       connectProvider: "Connect a phone provider", provider: "Phone provider", customSip: "Custom SIP", v02: "v0.2",
@@ -123,7 +123,7 @@
       practice: "ローカルで練習 → 発話の証拠を確認 → 結果を保存。実予約は行いません。既定のエージェントはAPI費用・外部送信なし。", saved: "ローカルに保存済み。「過去の通話」から再確認できます。", saveFailed: "未保存です。結果をダウンロードするか、保存だけ再試行してください。", saveUnknown: "保存の完了は未確認です。", saveDisabled: "自動保存は無効です。結果をダウンロードしてください。", saveRetry: "保存だけ再試行", download: "証拠JSONを保存", recover: "この通話の状態を再確認", unconfirmed: "接続が途切れ、結果は未確認です。新しい通話を始めず、この通話の状態を再確認してください。", starting: "開始しています…", assessmentUnknown: "誤完了：独立した照合は未実施", external: "外部モデル：会話データが選択した提供元に送信され、API料金が発生する場合があります。",
       skip: "本文へ移動", arena: "Arena", transport: "通話経路", simulator: "電話の練習", realPhone: "電話をかける", local: "このパソコンで実行中",
       popTitle: "この Mac の中だけで動いています。", popSub: "データも通話記録も、あなたの手元にあります。", popNeed: "次が必要になったら Oathra Cloud:", popNumbers: "電話番号", popSip: "マネージド SIP", popTeam: "チームでの運用", popHosted: "推論のホスティング",
-      startTitle: "練習する電話", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "再生（録画した通話）", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
+      startTitle: "練習する電話", meterAgent: "AI", statusSpeaking: "{who}が話しています", statusInCall: "通話中", statusEnded: "通話終了", proofLegend: "下線 = 判定の根拠になった言葉", countItems: "{n}件", practiceNoCall: "練習（電話はかかりません）", replayNote: "再生（録画した通話）", verdictCount: "{total}項目中 {n} 確認", fieldVerified: "確認済み", fieldPending: "確認待ち", fieldMissing: "未確認", fieldViolation: "条件外", emptyTitle: "左から電話を選ぶと、ここで始まります。", emptyLead: "AIが「決まりました」と言っても、完了にはなりません。相手がそう言ったときだけ ✓ が付きます。", emptyStep1: "電話を選ぶ", emptyStep2: "会話を見る（自分が出てもよい）", emptyStep3: "相手の言葉で、結果が決まる", scoreMore: "スコアと内訳", closeDetails: "閉じる ×", mode: "モード", watch: "AI同士を見る", watchSub: "AI 同士の練習", play: "自分が電話に出る", playSub: "相手役で練習",
       agentSelect: "エージェント", missions: "ミッション", loadingMissions: "ミッションを読み込んでいます…", noMissions: "scenarios/ にミッションがありません。", loadMissionsFailed: "ミッションを読み込めませんでした: {msg}",
       replays: "過去の通話", loading: "読み込み中…", noReplays: "保存された通話はまだありません。終了した通話は .oathra/calls/ に保存されます。", replaysFailed: "過去の通話を読み込めませんでした: {msg}",
       connectProvider: "電話会社をつなぐ", provider: "電話会社", customSip: "自前の SIP", v02: "v0.2 で対応",
@@ -1075,6 +1075,8 @@
     $(".timeline-wrap").classList.remove("has-snap");
     $("#latency-table tbody").replaceChildren();
     $("#m-latency").textContent = "—"; $("#m-cost").textContent = "$0.000"; $("#m-elapsed").textContent = "00:00";
+    if ($("#call-timer")) $("#call-timer").textContent = "00:00";
+    finishTyping(); speakingSide = null;
     setLive(!c.replay, c.replay ? t("replay") : t("live"));
     setUx("idle");
     mountOrb();
@@ -1121,7 +1123,7 @@
         setSpeaking(c.speaking); break;
       case "agent.speech.started": setSpeaking("agent"); renderTranscript(); break;
       case "transcript.final": case "permission.requested": case "permission.decided": case "error": renderTranscript(); break;
-      case "evidence.created": case "evidence.verified": renderEvidence(); renderMission(); break;
+      case "evidence.created": case "evidence.verified": renderEvidence(); renderMission(); markProof(); break;
       case "intake.question": case "intake.consent": case "intake.answer": renderIntake(); break;
       case "mission.progress": renderMission(); break;
       case "turn.trace": case "brain.response": renderMetrics(); syncOrb(); break;
@@ -1137,6 +1139,37 @@
     const b = $("#live-badge");
     b.classList.toggle("is-live", !!on);
     $("#live-text").textContent = text || (on ? t("live") : t("ended"));
+    callLive = !!on;
+    renderCallStatus();
+  }
+  // Header: 「AIが話しています」 / 「ミカが話しています」 / 「通話中」 / 「通話終了」 and two level meters.
+  // The simulator has no audio, so the speaking side's meter moves on a timer; only that side moves.
+  let speakingSide = null, callLive = false, meterTimer = null;
+  const METER_SEGMENTS = 14;
+  function renderCallStatus() {
+    const c = app.call, status = $("#call-status");
+    if (!status) return;
+    const who = speakingSide === "agent" ? t("meterAgent") : speakingSide === "callee" ? (c?.mode === "play" ? t("you") : c?.calleeName || "—") : "";
+    status.textContent = who ? t("statusSpeaking", { who }) : callLive ? t("statusInCall") : c ? t("statusEnded") : "";
+    status.classList.toggle("is-speaking", !!who);
+    const label = $("#meter-callee-label");
+    if (label && c) label.textContent = c.mode === "play" ? t("you") : c.calleeName || "—";
+    for (const side of ["agent", "callee"]) {
+      const bars = $(`#meter-${side} .meter-bars`);
+      if (bars && bars.children.length !== METER_SEGMENTS) bars.replaceChildren(...Array.from({ length: METER_SEGMENTS }, () => el("i")));
+    }
+    const moving = callLive && !!speakingSide && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (moving && !meterTimer) meterTimer = setInterval(tickMeters, 110);
+    if (!moving && meterTimer) { clearInterval(meterTimer); meterTimer = null; }
+    tickMeters();
+  }
+  function tickMeters() {
+    for (const side of ["agent", "callee"]) {
+      const on = speakingSide === side && callLive;
+      // Reduced motion: a steady mid level for the speaking side instead of a moving one.
+      const level = !on ? 0 : meterTimer ? 6 + Math.floor(Math.random() * 8) : 8;
+      $$(`#meter-${side} .meter-bars i`).forEach((seg, i) => { seg.className = i < level ? (i >= 10 ? "on peak" : "on") : ""; });
+    }
   }
   function setUx(ux) {
     const n = $("#ux-state");
@@ -1144,6 +1177,8 @@
     $("#ux-text").textContent = t(["listening", "understanding", "acting", "speaking"].includes(ux) ? ux : "idle");
   }
   function setSpeaking(side) {
+    speakingSide = side || null;
+    renderCallStatus();
     $("#party-agent").classList.toggle("is-speaking", side === "agent");
     $("#party-callee").classList.toggle("is-speaking", side === "callee");
     const bar = $("#activity-bar");
@@ -1158,6 +1193,7 @@
   // the agent talks (voice out). Without WebGPU the text glyph stays.
   let orb = null, orbMounting = false;
   function mountOrb() {
+    if (!document.body.classList.contains("present")) return; // UI v2: no orb outside recordings
     const canvas = $("#agent-orb");
     if (!canvas || orb || orbMounting || !window.OathraOrb || !window.OathraOrb.supported) return;
     orbMounting = true;
@@ -1190,17 +1226,78 @@
       return;
     }
     if (empty) empty.remove();
+    // A line that arrives during a live call is revealed at speaking pace; history, replays and reduced motion show at once.
+    const reveal = c.status === "running" && !c.replay && existing.size > 0 && !matchMedia("(prefers-reduced-motion: reduce)").matches;
     for (const l of c.transcript) {
       if (existing.has(l.turnId)) continue;
       const cls = l.source === "caller" ? "agent" : l.source === "callee" ? "callee" : "sys";
       const who = l.source === "caller" ? t("agent") : l.source === "callee" ? (c.mode === "play" ? t("you") : c.calleeName) : t("system");
+      const say = el("div", { class: "say" });
       box.appendChild(el("div", { class: `line ${cls}`, "data-turn": l.turnId }, [
         el("div", { class: "who", text: who }),
-        el("div", { class: "say", text: l.text }),
+        say,
         el("div", { class: "t", text: typeof l.t === "number" ? mmss(l.t) : "" }),
       ]));
+      if (reveal && cls !== "sys") typeLine(say, l.text); else say.textContent = l.text;
     }
+    markProof();
     if (atBottom || c.transcript.length <= 2) box.scrollTop = box.scrollHeight;
+  }
+
+  // Typing reveal: the full text is in the DOM from the start (screen readers and copy get all of it);
+  // the not-yet-said part is invisible until it is "spoken", about 2 characters per 70 ms, with a caret.
+  let typing = null;
+  function typeLine(say, text) {
+    finishTyping();
+    const said = el("span", { class: "said" }), unsaid = el("span", { class: "unsaid", text });
+    say.replaceChildren(said, unsaid);
+    say.parentElement.classList.add("typing");
+    const chars = [...text];
+    let n = 0;
+    const step = () => {
+      n = Math.min(chars.length, n + 2);
+      said.textContent = chars.slice(0, n).join(""); unsaid.textContent = chars.slice(n).join("");
+      if (n >= chars.length) finishTyping();
+    };
+    typing = { say, text, timer: setInterval(step, 70) };
+  }
+  function finishTyping() {
+    if (!typing) return;
+    clearInterval(typing.timer);
+    typing.say.textContent = typing.text;
+    typing.say.parentElement?.classList.remove("typing");
+    typing = null;
+    markProof();
+  }
+
+  // The exact words from the callee that settled a field are underlined in the transcript.
+  function markProof() {
+    const c = app.call;
+    if (!c) return;
+    const spans = new Map();
+    for (const e of c.evidence) {
+      if (!e.verified || e.source !== "callee" || !e.span || !e.utteranceId) continue;
+      if (!spans.has(e.utteranceId)) spans.set(e.utteranceId, new Set());
+      spans.get(e.utteranceId).add(e.span);
+    }
+    for (const [turn, set] of spans) {
+      const say = $(`#transcript .line[data-turn="${CSS.escape(String(turn))}"]:not(.typing) .say`);
+      if (!say) continue;
+      const key = [...set].sort().join("\u0000");
+      if (say.dataset.proof === key) continue;
+      const text = say.textContent;
+      const ranges = [];
+      for (const span of set) {
+        const at = text.indexOf(span);
+        if (at >= 0 && !ranges.some(([a, b]) => at < b && at + span.length > a)) ranges.push([at, at + span.length]);
+      }
+      ranges.sort((a, b) => a[0] - b[0]);
+      const parts = []; let pos = 0;
+      for (const [a, b] of ranges) { if (a > pos) parts.push(document.createTextNode(text.slice(pos, a))); parts.push(el("span", { class: "proof", text: text.slice(a, b) })); pos = b; }
+      if (pos < text.length) parts.push(document.createTextNode(text.slice(pos)));
+      say.replaceChildren(...parts);
+      say.dataset.proof = key;
+    }
   }
 
   function missionFields(c) {
@@ -1393,6 +1490,7 @@
 
   function renderMetrics() {
     const c = app.call;
+    queueMicrotask(() => { const timer = $("#call-timer"), elapsed = $("#m-elapsed"); if (timer && elapsed) timer.textContent = elapsed.textContent; });
     $("#m-latency").textContent = c.lastTtfa === null ? "—" : String(c.lastTtfa);
     $("#m-cost").textContent = `$${c.cost.toFixed(3)}`;
     $("#m-elapsed").textContent = mmss(c.elapsed);

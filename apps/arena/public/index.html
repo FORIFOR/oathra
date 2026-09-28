@@ -247,7 +247,13 @@
               <p class="call-sub" id="call-sub"></p>
             </div>
           </div>
-          <div class="call-controls"><button type="button" class="btn" id="call-hangup" hidden data-i18n="endCall">End call</button><span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span></div>
+          <div class="call-controls">
+            <div class="meters" aria-hidden="true">
+              <div class="meter" id="meter-agent"><span class="meter-label" data-i18n="meterAgent">AI</span><span class="meter-bars"></span></div>
+              <div class="meter" id="meter-callee"><span class="meter-label" id="meter-callee-label">—</span><span class="meter-bars"></span></div>
+            </div>
+            <div class="call-clock"><span class="call-status" id="call-status"></span><span class="call-timer" id="call-timer">00:00</span></div>
+            <button type="button" class="btn" id="call-hangup" hidden data-i18n="endCall">End call</button><span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span></div>
         </div>
 
         <div class="parties">
@@ -316,6 +322,7 @@
           <span><span data-i18n="cost">Cost</span> <b id="m-cost">$0.000</b></span>
           <span class="sep" aria-hidden="true">·</span>
           <span><b id="m-elapsed">00:00</b></span>
+          <span class="proof-legend" data-i18n="proofLegend">Underlined: the words the verdict rests on</span>
         </div>
 
 
