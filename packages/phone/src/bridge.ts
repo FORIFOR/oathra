@@ -97,7 +97,7 @@ export class BridgedCallSession implements CallSession {
 
   async speak(input: SpeakInput): Promise<SpeakResult> {
     if (this.ended || !this.voice?.speak) return { startMs: this.now(), endMs: this.now(), interrupted: false };
-    return this.voice.speak(input.text);
+    return this.voice.speak(input.text, input.inputUntilMs !== undefined ? { inputUntilMs: input.inputUntilMs } : undefined);
   }
 
   ack(): void {

@@ -47,6 +47,11 @@ export type RunOptions = {
   /** If the callee has not spoken this long after connect, the agent opens. */
   openingTimeoutMs?: number;
   /**
+   * Voice lines with a runtime brain (not speech-to-speech): after the agent's line, this much callee silence makes
+   * the agent check in briefly; after two unanswered check-ins it says goodbye. 0 turns it off. Default 8000.
+   */
+  silenceCheckMs?: number;
+  /**
    * Spoken at the start of the agent's first turn (see `recordingNotice`). Carriers that play the notice
    * themselves before the media stream starts must leave this unset, or the callee hears it twice.
    */
@@ -179,9 +184,14 @@ export class CallRuntime {
       let calleeSpoke = false;
       let openTurnId: string | undefined;
       const openingTimeout = this.opts.openingTimeoutMs ?? 1500;
+      // Only a live voice line with our own brain needs this: speech-to-speech models handle silence themselves,
+      // and text simulations have no silence to fill.
+      const silenceCheck = !transport.speaksItself && typeof session.ack === "function" ? (this.opts.silenceCheckMs ?? 8000) : 0;
+      let silentChecks = 0;
 
       const nextEvent = async (timeoutMs?: number): Promise<SessionEvent | undefined> => {
-        const p = iterator.next();
+        const p = pendingNext ?? iterator.next();
+        pendingNext = undefined;
         if (timeoutMs === undefined) return (await p).value as SessionEvent | undefined;
         let timer: NodeJS.Timeout | undefined;
         const timeout = new Promise<"timeout">((res) => (timer = setTimeout(() => res("timeout"), timeoutMs)));
@@ -198,7 +208,19 @@ export class CallRuntime {
 
       while (!this.cancelled && !agentHungUp) {
         let ev: SessionEvent | undefined;
-        if (pendingNext) {
+        if (silenceCheck > 0 && this.connection === "active" && this.turnIndex > 0 && !openTurnId) {
+          ev = await nextEvent(silenceCheck);
+          if (ev === undefined && pendingNext) {
+            // The callee has said nothing since our line: check in once or twice, then say goodbye.
+            silentChecks++;
+            const hint = silentChecks >= 3
+              ? "The callee has stayed silent through two check-ins. Say a short, polite goodbye and end the call (action \"hangup\")."
+              : "The callee has said nothing for a while since your last line. Check in once, very briefly and naturally (for example, whether they can hear you or whether now is a bad time). Do not repeat your previous line.";
+            agentHungUp = await this.agentTurn(session, brain, gate, this.now(), [hint]);
+            if (agentHungUp) break;
+            continue;
+          }
+        } else if (pendingNext) {
           const r = await pendingNext;
           pendingNext = undefined;
           ev = r.value as SessionEvent | undefined;
@@ -290,6 +312,7 @@ export class CallRuntime {
         }
         if (ev.type === "speech") {
           calleeSpoke = true;
+          silentChecks = 0;
           // Coalesce utterances that queued up while the agent was busy
           // (thinking / speaking) so the brain answers the latest state of the
           // conversation instead of replying to each stale fragment in turn.
@@ -634,7 +657,7 @@ export class CallRuntime {
   }
 
   /** Run one agent turn. Returns true if the agent ended the call. */
-  private async agentTurn(session: CallSession, brain: BrainProvider, gate: PermissionGate, speechEndMs: number): Promise<boolean> {
+  private async agentTurn(session: CallSession, brain: BrainProvider, gate: PermissionGate, speechEndMs: number, hints?: string[]): Promise<boolean> {
     const { contract } = this.opts;
     const turnId = newId("turn");
     const trace: TurnTrace = { turnId, speechEndMs, turnConfirmMs: this.now() };
@@ -650,6 +673,7 @@ export class CallRuntime {
       permitted,
       elapsedMs: this.now(),
       turnIndex: this.turnIndex,
+      ...(hints?.length ? { hints } : {}),
     };
     this.emit({ type: "brain.request", turnId, brain: brain.name });
     trace.brainStartMs = this.now();
@@ -702,6 +726,7 @@ export class CallRuntime {
     // Permission check: deterministic, outside the LLM.
     let text = response.text;
     if (!text.trim()) text = contract.language === "ja" ? "少々お待ちください。" : "One moment, please.";
+    const withNotice = Boolean(this.opts.openingNotice && !this.noticeSpoken);
     if (this.opts.openingNotice && !this.noticeSpoken) {
       this.noticeSpoken = true;
       text = `${this.opts.openingNotice}${contract.language === "ja" ? "" : " "}${text}`;
@@ -727,7 +752,15 @@ export class CallRuntime {
     this.state.transition("SYNTHESIZING");
     this.emit({ type: "agent.speech.started", turnId, text });
     this.state.transition("SPEAKING");
-    const spoke = await session.speak({ text, language: contract.language });
+    const spoke = await session.speak({ text, language: contract.language, ...(trace.brainStartMs !== undefined ? { inputUntilMs: trace.brainStartMs } : {}) });
+    if (spoke.skipped) {
+      // The callee spoke after this reply was written and nothing of it was played: it is not part of the
+      // conversation. The newer words are answered on the next turn (and a notice not yet heard is said then).
+      if (withNotice) this.noticeSpoken = false;
+      this.emit({ type: "agent.speech.ended", turnId, startMs: spoke.startMs, endMs: spoke.endMs, interrupted: true, t: spoke.endMs });
+      this.state.transition("LISTENING");
+      return false;
+    }
     trace.ttsFirstAudioMs = spoke.startMs;
     trace.playbackStartMs = spoke.startMs;
     trace.ttfaMs = Math.max(0, Math.round(spoke.startMs - speechEndMs));

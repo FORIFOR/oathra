@@ -520,3 +520,54 @@ describe("audit 2026-09-26: the line is never left open", () => {
     expect(Date.now() - started).toBeLessThan(4000);
   });
 });
+
+describe("CallRuntime: a voice line with the runtime's brain", () => {
+  it("checks in when the callee goes silent after the agent's line, twice, then says goodbye", async () => {
+    // Nothing is delivered after each agent line (undefined replies): the callee is silent.
+    const session = new FakeSession([], true);
+    const brain = new ScriptBrain(["こんにちは、少しお話しできますか。", "もしもし、聞こえてますか？", "今は難しいかな？", { text: "また改めてかけますね。失礼します。", action: "hangup" }]);
+    const out = await runCall({ contract: reservation(), transport: fakeTransport(session, "もしもし"), brain, now: NOW, silenceCheckMs: 30 });
+    expect(session.spoken).toEqual(["こんにちは、少しお話しできますか。", "もしもし、聞こえてますか？", "今は難しいかな？", "また改めてかけますね。失礼します。"]);
+    expect(brain.contexts[0]!.hints).toBeUndefined();
+    expect(brain.contexts[1]!.hints?.[0]).toMatch(/said nothing/);
+    expect(brain.contexts[2]!.hints?.[0]).toMatch(/said nothing/);
+    expect(brain.contexts[3]!.hints?.[0]).toMatch(/goodbye/);
+    expect(out.endReason).toBe("agent_hangup");
+  });
+
+  it("an answer resets the silence count; a text simulation (no ack) never checks in", async () => {
+    const session = new FakeSession([undefined as never, "うん、元気だよ", "hangup"], true);
+    const brain = new ScriptBrain(["元気？", "もしもし？", "よかった！"]);
+    await runCall({ contract: reservation(), transport: fakeTransport(session, "もしもし"), brain, now: NOW, silenceCheckMs: 30 });
+    expect(brain.contexts.map((c) => c.hints?.length ?? 0)).toEqual([0, 1, 0]);
+    const text = new FakeSession(["hangup"]);
+    const quiet = new ScriptBrain(["こんにちは。"]);
+    const started = Date.now();
+    const sim = runCall({ contract: reservation(), transport: fakeTransport(text, "もしもし"), brain: quiet, now: NOW, silenceCheckMs: 30 });
+    await sim;
+    expect(quiet.contexts.every((c) => !c.hints)).toBe(true);
+    expect(Date.now() - started).toBeLessThan(5000);
+  });
+
+  it("a reply the voice line dropped as stale is not part of the conversation; the newer words are answered", async () => {
+    const session = new FakeSession(["hangup"], true);
+    let first = true;
+    const speak = session.speak.bind(session);
+    const inputs: Array<number | undefined> = [];
+    session.speak = async (input) => {
+      inputs.push(input.inputUntilMs);
+      if (first) {
+        // The callee said 「もしもし」 while the greeting was being written: nothing of the greeting is played.
+        first = false;
+        session.say("もしもし");
+        return { startMs: session.now(), endMs: session.now(), interrupted: true, skipped: true };
+      }
+      return speak(input);
+    };
+    const brain = new ScriptBrain(["こんにちは、突然すみません。", { text: "あ、もしもし！田中さんの代わりにお電話しているAIです。", action: "hangup" }]);
+    const out = await runCall({ contract: reservation(), transport: fakeTransport(session, undefined), brain, now: NOW, openingTimeoutMs: 10, silenceCheckMs: 0 });
+    expect(inputs[0]).toBeTypeOf("number");
+    expect(out.transcript.map((t) => `${t.source}:${t.text}`)).toEqual(["callee:もしもし", "caller:あ、もしもし！田中さんの代わりにお電話しているAIです。"]);
+    expect(brain.contexts[1]!.transcript.map((t) => t.text)).toEqual(["もしもし"]);
+  });
+});
