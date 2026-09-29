@@ -1,8 +1,10 @@
 # 既存の音声AIに、完了判定だけを加える
 
+未公開のソース変更: [Arenaの互換性・権限・復帰契約](quality/arena-contract.md)、[最初のローカル成果物](FIRST_PROOF.md)。既定のデモはオフライン専用です。外部モデルは `demo --allow-models` で明示的に有効化します。
+
 [ブラウザで自分の文字起こしを検証する](https://forifor.github.io/oathra/check.html)。インストール・APIキー不要。公開済みのモデル／シミュレーター交渉ログも読み込めます。入力はタブ内で処理し、送信・自動保存しません。
 
-Oathra v0.1.18では、電話会社・音声モデル・エージェント基盤を移行せず、保存済みの文字起こしを検査できます。仮押さえ・未確定・承認待ちを予約完了と扱わない判定に加え、会話から結果までを証拠レベルとして記録する `ActionProof` を提供します。判定はローカルで動き、API呼び出し・APIキーは不要です。[English / 詳細な入力仕様](INTEGRATION.md)
+Oathra v0.1.19では、電話会社・音声モデル・エージェント基盤を移行せず、保存済みの文字起こしを検査できます。仮押さえ・未確定・承認待ちを予約完了と扱わない判定に加え、会話から結果までを証拠レベルとして記録する `ActionProof` を提供します。判定はローカルで動き、API呼び出し・APIキーは不要です。[English / 詳細な入力仕様](INTEGRATION.md)
 
 実電話まで試す場合は、API キーの取得先と段階テストをまとめた[初心者向けセットアップ](SETUP.ja.md)を先に確認してください。
 
@@ -11,7 +13,7 @@ Oathra v0.1.18では、電話会社・音声モデル・エージェント基盤
 Node.js 22以上で実行します。
 
 ```bash
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz
 ```
 
 npmレジストリの0.1.0には今回のSDK・検査コマンドがありません。上記のGitHub配布版を使ってください。

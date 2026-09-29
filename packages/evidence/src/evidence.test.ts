@@ -511,3 +511,104 @@ describe("the slot is gone after the booking was taken", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Audit 2026-09-26: false completions found with `oathra verify` on hand-written transcripts.
+// Each case was `completed` before the fix.
+// ---------------------------------------------------------------------------
+
+describe("audit 2026-09-26: what must not complete", () => {
+  type Line = [Utterance["source"], string];
+  const ja = defineCall({ goal: "restaurant.reservation", language: "ja", require: { date: true, time: true, partySize: true, confirmed: true }, constraints: { partySize: { eq: 2 } }, permissions: { ask: true, reserve: true } });
+  const jaNoConstraint = defineCall({ goal: "restaurant.reservation", language: "ja", require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true } });
+  const en = defineCall({ goal: "restaurant.reservation", language: "en", require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true } });
+  const hotel = defineCall({ goal: "hotel.reservation", language: "ja", require: { date: true, price: true, confirmed: true }, constraints: { price: { lte: 20000 } }, permissions: { ask: true, reserve: true } });
+  const verdict = (contract: ReturnType<typeof defineCall>, lines: Line[], language: "ja" | "en" = "ja") => {
+    const engine = new EvidenceEngine({ now: new Date("2026-09-25T10:00:00+09:00"), language });
+    lines.forEach(([source, text], i) => engine.ingest({ id: `t${i}`, source, text, t: (i + 1) * 1000 }));
+    return evaluate(contract, engine, "completed");
+  };
+
+  it("english: a negated or future 'confirmed' is not a confirmation", () => {
+    const ask: Line = ["caller", "Could I book a table for two on September 26 at 7:30 pm?"];
+    for (const reply of [
+      "Sure, September 26 at 7:30 pm for two works. Just to be clear, the booking is not confirmed yet. We will call you back to confirm.",
+      "September 26 at 7:30 pm for two. Your reservation will be confirmed once we receive the deposit.",
+      "We can pencil in September 26 at 7:30 pm for two, but it is still pending.",
+    ]) {
+      const r = verdict(en, [ask, ["callee", reply]], "en");
+      expect(r.fields.confirmed, reply).toBeUndefined();
+      expect(r.complete, reply).toBe(false);
+    }
+    expect(verdict(en, [ask, ["callee", "Yes, September 26 at 7:30 pm for two. You're all set, the table is confirmed."]], "en").complete).toBe(true);
+  });
+
+  it("japanese: a bare 「承りました」 acknowledges the request; it does not book", () => {
+    const ask: Line = ["caller", "明日19時に2名で予約したいのですが。"];
+    for (const lines of [
+      [ask, ["callee", "はい、承りました。少々お待ちください。"], ["callee", "お待たせしました。申し訳ございません、その時間は難しいですね。"]] as Line[],
+      [ask, ["callee", "ご希望は承りました。……あいにくその時間は厳しいです。"]] as Line[],
+      [ask, ["callee", "はい、承りました。"]] as Line[],
+    ]) {
+      const r = verdict(ja, lines);
+      expect(r.fields.confirmed, lines.map((l) => l[1]).join(" / ")).toBeUndefined();
+      expect(r.complete).toBe(false);
+    }
+    // 承りました next to the booked terms still confirms.
+    expect(verdict(ja, [ask, ["callee", "はい、明日19時に2名様で承りました。"]]).complete).toBe(true);
+    expect(verdict(ja, [ask, ["callee", "はい、明日19時2名様でご予約承りました。"]]).complete).toBe(true);
+  });
+
+  it("japanese: 「その時間は難しい」 after a booking takes it back", () => {
+    const booked: Line[] = [["caller", "明日19時に2名で予約したいのですが。"], ["callee", "明日19時、2名様でご予約承りました。"]];
+    expect(verdict(ja, booked).complete).toBe(true);
+    expect(verdict(ja, [...booked, ["callee", "申し訳ありません、やはりその時間は難しいです。"]]).fields.confirmed).toBeUndefined();
+    expect(verdict(ja, [...booked, ["callee", "すみません、確認したところその日は厳しいとのことでした。"]]).fields.confirmed).toBeUndefined();
+  });
+
+  it("japanese: a cancellation policy is not a cancellation", () => {
+    const booked: Line[] = [["caller", "明日19時に2名で予約したいのですが。"], ["callee", "明日19時、2名様でご予約承りました。"]];
+    for (const policy of ["ご予約をキャンセルされる場合は前日までにご連絡ください。", "キャンセルしていただく際はお電話をお願いします。", "当日キャンセルの場合はキャンセル料をいただいております。"]) {
+      expect(verdict(ja, [...booked, ["callee", policy]]).fields.confirmed, policy).toBe(true);
+    }
+    expect(verdict(ja, [...booked, ["callee", "申し訳ありません、こちらの都合でキャンセルさせていただきます。"]]).fields.confirmed).toBeUndefined();
+  });
+
+  it("prices: 「2万5千円」 is 25,000, never the 1,000 of 「千円」", () => {
+    expect(parsePrices("1万5千円").map((p) => p.value)).toEqual([15000]);
+    expect(parsePrices("2万5千円になります").map((p) => p.value)).toEqual([25000]);
+    expect(parsePrices("2万3千500円").map((p) => p.value)).toEqual([23500]);
+    expect(parsePrices("3千円").map((p) => p.value)).toEqual([3000]);
+    expect(parsePrices("8千800円").map((p) => p.value)).toEqual([8800]);
+    expect(parsePrices("5千円").map((p) => p.value)).toEqual([5000]);
+    expect(parsePrices("1万5000円").map((p) => p.value)).toEqual([15000]);
+    expect(parsePrices("千円").map((p) => p.value)).toEqual([1000]);
+    const r = verdict(hotel, [["callee", "朝食付きのお部屋は9月26日、1泊2万5千円になります。"], ["caller", "はい、それでお願いします。"], ["callee", "9月26日、朝食付き1泊2万5千円でご予約承りました。"]]);
+    expect(r.fields.price).toBe(25000);
+    expect(r.complete).toBe(false);
+    expect(r.status).toBe("constraint_violation");
+  });
+
+  it("party size: a per-head price or a portion is not a party size", () => {
+    expect(parsePartySize("お一人様8,800円のコースです")).toEqual([]);
+    expect(parsePartySize("一人当たり5000円です")).toEqual([]);
+    expect(parsePartySize("3人前でご用意します")).toEqual([]);
+    expect(parsePartySize("2名様でご予約承りました").map((p) => p.value)).toEqual([2]);
+    expect(parsePartySize("お二人様ですね").map((p) => p.value)).toEqual([2]);
+    const ask: Line = ["caller", "明日19時に2名で予約したいのですが。"];
+    expect(verdict(jaNoConstraint, [ask, ["callee", "禁煙席は満席ですが、喫煙席なら空いております。お一人様5,000円のコースです。"], ["caller", "喫煙席で大丈夫です。"], ["callee", "かしこまりました。明日19時2名様でご予約承りました。"]]).fields.partySize).toBe(2);
+    // The per-head price in the same breath no longer overwrites the party size. (The confirmation itself stays
+    // stale here because the restated 8,800 円 was never accepted by the caller: a false negative, not a false completion.)
+    const r = verdict(ja, [ask, ["callee", "はい、明日19時ですね。コースはお一人様8,800円となります。2名様でご予約承りました。"]]);
+    expect(r.fields.partySize).toBe(2);
+    expect(r.constraints.violations).toEqual([]);
+  });
+
+  it("durations are not clock times or dates", () => {
+    expect(parseTimes("お席は2時間制です").map((t) => t.value)).toEqual([]);
+    expect(parseTimes("1時間半ほどお待ちいただきます").map((t) => t.value)).toEqual([]);
+    expect(parseTimes("19時半でしたら空いております").map((t) => t.value)).toEqual(["19:30"]);
+    expect(parseDates("10日ほどかかります", NOW).map((d) => d.value)).toEqual([]);
+    expect(parseDates("14日でお願いします", NOW).map((d) => d.value)).toEqual(["2026-09-14"]);
+  });
+});

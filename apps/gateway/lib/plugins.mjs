@@ -8,15 +8,16 @@ import email from '../../../plugins/email/index.mjs';
 import calendar from '../../../plugins/calendar/index.mjs';
 import sms from '../../../plugins/sms/index.mjs';
 import crm from '../../../plugins/crm/index.mjs';
+import { repoUrl } from './paths.mjs';
 const factories={line,slack,call,email,calendar,sms,crm};
 export function builtinRegistry(env={}, {now=Date.now,fetchImpl=fetch,executeCall,disabled=[]}={}) {
  const r=new PluginRegistry();
  requirePlugin(Array.isArray(disabled)&&disabled.every(id=>Object.hasOwn(factories,id)), 'invalid_builtin_disable');
  for(const [id,factory] of Object.entries(factories)){
-  const root=new URL(`../../../plugins/${id}/`,import.meta.url);
+  const root=repoUrl(`plugins/${id}/`);
   const manifest=JSON.parse(readFileSync(new URL('oathra.plugin.json',root),'utf8'));
   const scopedEnv=freezeData(Object.fromEntries(manifest.environment.map(k=>[k,env[k]])));
-  const identity=digest(Buffer.concat([readFileSync(new URL('index.mjs',root)),readFileSync(new URL('../../../plugins/_shared/http.mjs',import.meta.url)),...(id==='call'?[readFileSync(new URL('./phone.mjs',import.meta.url)),Buffer.from(JSON.stringify([env.OATHRA_VOICE_ENGINE,env.OATHRA_VOICE_MODEL]))]:[])]));
+  const identity=digest(Buffer.concat([readFileSync(new URL('index.mjs',root)),readFileSync(repoUrl('plugins/_shared/http.mjs')),...(id==='call'?[readFileSync(repoUrl('apps/gateway/lib/phone.mjs')),Buffer.from(JSON.stringify([env.OATHRA_VOICE_ENGINE,env.OATHRA_VOICE_MODEL]))]:[])]));
   r.register(manifest,factory({env:scopedEnv,now,fetchImpl,executeCall,config:validateConfig({},manifest.configSchema)}),{enabled:!disabled.includes(id),integrity:identity+':'+digest(JSON.stringify(scopedEnv))});
  }
  return r;

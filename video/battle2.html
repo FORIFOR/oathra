@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /*
-  Renders one frame of a "screen recording": three real Arena windows (iframes replaying real calls)
+  Renders one frame of a "screen recording": three real app windows (the record view replaying real calls)
   on a desktop, a terminal, a cursor, a camera that zooms to where the action is, and burned-in
   captions. window.render(t) draws the frame at t ms and resolves when the iframes have seeked.
   Nothing here is mocked: the windows are the product; the transcript is the recorded run.
@@ -50,9 +50,9 @@ html[lang="en"] #cap .box{font-family:"IBM Plex Sans","Noto Sans JP",sans-serif;
 <div id="stage">
   <div class="wall"></div>
   <div id="cam">
-    <div class="win" id="w0" style="left:30px;top:60px;z-index:2"><div class="bar"><i></i><i></i><i></i><span>Oathra Arena — 無理難題ホテル · scripted</span></div><iframe id="f0"></iframe></div>
-    <div class="win" id="w2" style="left:990px;top:120px;z-index:1"><div class="bar"><i></i><i></i><i></i><span>Oathra Arena — 無理難題ホテル · gemini:gemini-flash-latest</span></div><iframe id="f2"></iframe></div>
-    <div class="win" id="w1" style="left:510px;top:90px;z-index:3"><div class="bar"><i></i><i></i><i></i><span>Oathra Arena — 無理難題ホテル · openai:gpt-4o-mini</span></div><iframe id="f1"></iframe></div>
+    <div class="win" id="w0" style="left:30px;top:60px;z-index:2"><div class="bar"><i></i><i></i><i></i><span>Oathra — 無理難題ホテル · scripted</span></div><iframe id="f0"></iframe></div>
+    <div class="win" id="w2" style="left:990px;top:120px;z-index:1"><div class="bar"><i></i><i></i><i></i><span>Oathra — 無理難題ホテル · gemini:gemini-flash-latest</span></div><iframe id="f2"></iframe></div>
+    <div class="win" id="w1" style="left:510px;top:90px;z-index:3"><div class="bar"><i></i><i></i><i></i><span>Oathra — 無理難題ホテル · openai:gpt-4o-mini</span></div><iframe id="f1"></iframe></div>
     <div class="win on" id="term" style="z-index:5"><div class="bar"><i></i><i></i><i></i><span>zsh — oathra</span></div><div class="body" id="termbody"></div></div>
     <svg id="cursor" viewBox="0 0 26 36"><path d="M2 2 L2 28 L8.5 22 L13 33 L18 31 L13.5 20.5 L22 20.5 Z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg>
   </div>
@@ -67,8 +67,8 @@ html[lang="en"] #cap .box{font-family:"IBM Plex Sans","Noto Sans JP",sans-serif;
   document.documentElement.lang = LANG;
   const IDS = ["battle_scripted", "battle_openai-gpt-4o-mini", "battle_gemini-gemini-flash-latest"];
   const frames = [0, 1, 2].map((i) => document.getElementById("f" + i));
-  frames.forEach((f, i) => { f.src = `${BASE}/?lang=${LANG}&theme=dark&replay=${IDS[i]}`; });
-  if (LANG === "en") { const titles = ["Oathra Arena — Impossible Hotel · scripted", "Oathra Arena — Impossible Hotel · gemini:gemini-flash-latest", "Oathra Arena — Impossible Hotel · openai:gpt-4o-mini"]; ["w0", "w2", "w1"].forEach((id, i) => { document.querySelector(`#${id} .bar span`).textContent = titles[i]; }); }
+  frames.forEach((f, i) => { f.src = `${BASE}/?theme=dark#/practice/record/${IDS[i]}`; }); // the app's record view (oathra demo reads .oathra/calls)
+  if (LANG === "en") { const titles = ["Oathra — Impossible Hotel · scripted", "Oathra — Impossible Hotel · gemini:gemini-flash-latest", "Oathra — Impossible Hotel · openai:gpt-4o-mini"]; ["w0", "w2", "w1"].forEach((id, i) => { document.querySelector(`#${id} .bar span`).textContent = titles[i]; }); }
 
   // ---- measured durations of the trimmed voice clips (ms); the renderer may override via window.__DUR__
   const DUR = Object.assign({ g1: 6510, h1: 8630, g2: 7400, h3: 4290, hf: 9940 }, window.__DUR__ || {});

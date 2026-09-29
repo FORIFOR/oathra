@@ -155,7 +155,7 @@ pre:empty { display: none; }
 .board label { margin-bottom: 14px; }
 .board textarea#request { min-height: 0; }
 /* header 76 + gaps + the history card ≈ 330px; the call card takes what is left of the window. */
-#current { min-height: 250px; max-height: max(250px, calc(100vh - 362px)); overflow: auto; overscroll-behavior: contain; }
+#current { min-height: 250px; max-height: max(250px, calc(100vh - 300px)); overflow: auto; overscroll-behavior: contain; }
 #history-section .list { max-height: 84px; overflow: auto; overscroll-behavior: contain; margin: 4px 0 0; }
 #history-section { padding-block: 18px; }
 body.signed-in footer { display: none; }
@@ -220,6 +220,14 @@ dialog.panel > details:first-of-type { border-top: 0; }
   .banner { margin-bottom: 10px; padding-block: 8px; }
 }
 
+/* On the board the card's actions stay at its bottom edge while the transcript scrolls above them. */
+@media (min-width: 1000px) {
+  #current .actions { position: sticky; bottom: -24px; z-index: 1; margin: 16px -24px -24px; padding: 14px 24px 18px; background: var(--card); border-radius: 0 0 18px 18px; }
+}
+@media (min-width: 1000px) and (max-height: 960px) {
+  #current .actions { bottom: -16px; margin: 12px -20px -16px; padding: 10px 20px 14px; }
+}
+
 /* The call card scrolls inside itself; shadows at its edges say "there is more" without a permanent scrollbar. */
 #current {
   background:
@@ -229,3 +237,156 @@ dialog.panel > details:first-of-type { border-top: 0; }
     radial-gradient(farthest-side at 50% 100%, rgb(20 30 20 / .22), transparent) bottom / 100% 12px no-repeat scroll,
     var(--card);
 }
+
+/* ---------- UI v2 (2026-09-28, design_handoff_oathra_ui_v2 §3): dark and restrained by default; ?theme=light keeps the
+   earlier light palette. Hierarchy from type and 1px rules; no fills behind facts, no shadows. ---------- */
+:root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #131211; --card: transparent; --ink: #ebe7de; --ink-2: #b9b4a8; --muted: #858175; --line: #2b2926; --line-2: #3a3834; --bg-2: #22211e;
+  --accent: #ebe7de; --accent-soft: #22211e; --good: #93c29e; --bad: #e8a097; --open: #d9a045; --busy: #b9b4a8;
+}
+:root { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif; font-feature-settings: "palt"; }
+:root:not([data-theme="light"]) body { background: var(--bg); }
+:root:not([data-theme="light"]) .lead, :root:not([data-theme="light"]) .request { color: var(--ink-2); }
+:root:not([data-theme="light"]) .notice { color: var(--ink); background: var(--bg-2); }
+:root:not([data-theme="light"]) input, :root:not([data-theme="light"]) textarea, :root:not([data-theme="light"]) select { background: var(--bg); color: var(--ink); border-color: var(--line-2); }
+:root:not([data-theme="light"]) select:disabled { background: var(--bg-2); }
+:root:not([data-theme="light"]) input:focus, :root:not([data-theme="light"]) textarea:focus, :root:not([data-theme="light"]) select:focus, :root:not([data-theme="light"]) button:focus-visible, :root:not([data-theme="light"]) summary:focus-visible, :root:not([data-theme="light"]) .choice:focus-within { outline-color: #d9a045; }
+:root:not([data-theme="light"]) button.primary, :root:not([data-theme="light"]) button:not(.quiet):not(.danger):not(.item) { color: #131211; }
+:root:not([data-theme="light"]) button.quiet { background: transparent; color: var(--ink); border-color: var(--line-2); }
+:root:not([data-theme="light"]) button.danger { background: transparent; color: var(--bad); border-color: #6b3a33; }
+:root:not([data-theme="light"]) .steps li, :root:not([data-theme="light"]) .banner .steps li { background: var(--bg-2); }
+:root:not([data-theme="light"]) .steps li::before { color: #131211; }
+:root:not([data-theme="light"]) .banner { background: var(--bg-2); border-color: var(--line-2); }
+:root:not([data-theme="light"]) .turn { border-bottom-color: var(--line); }
+:root:not([data-theme="light"]) .followup, :root:not([data-theme="light"]) pre, :root:not([data-theme="light"]) code { background: var(--bg-2); }
+:root:not([data-theme="light"]) #notice { background: var(--ink); color: #131211; }
+:root:not([data-theme="light"]) dialog { background: #171614; color: var(--ink); border: 1px solid var(--line-2); }
+:root:not([data-theme="light"]) .progress li.done { border-color: var(--good); }
+body { font-variant-numeric: tabular-nums; }
+
+/* Header: mark and wordmark; mode, settings and log out as plain text. */
+header { min-height: 60px; box-shadow: none; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 600; letter-spacing: -.5px; }
+.brand-icon { width: 28px; height: 28px; background: var(--ink); -webkit-mask: url(/oathra-mark.png) center / contain no-repeat; mask: url(/oathra-mark.png) center / contain no-repeat; }
+.brand-dot { color: var(--good); }
+.badge, .badge.practice, .badge.live { border: 0; background: transparent; padding: 0; font-size: 13px; color: var(--muted); font-weight: 400; }
+.badge.live { color: var(--bad); }
+header button.quiet.small { border: 0; background: transparent; padding: 0 4px; min-height: 44px; font-size: 13px; font-weight: 400; color: var(--muted); }
+header button.quiet.small:hover { color: var(--ink); }
+
+/* Cards become areas split by rules. */
+.card { border-radius: 10px; }
+:root:not([data-theme="light"]) .card { border-color: var(--line); }
+button, input, textarea, select { border-radius: 6px; }
+button.primary, .actions button.primary { background: var(--accent); border-color: var(--accent); }
+
+/* Purpose: a radio list; the chosen one shows its hint on the right. */
+.choices { display: block; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; padding: 0; }
+.choices legend { padding: 0; margin-bottom: 6px; }
+.choice { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 0; padding: 11px 14px; border: 0; border-radius: 0; background: transparent; }
+.choice + .choice { border-top: 1px solid var(--line); }
+.choice input { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; margin: 0; border: 1px solid var(--line-2); border-radius: 50%; background: transparent; min-height: 0; }
+.choice input:checked { border: 5px solid var(--good); }
+.choice:has(input:checked) { background: var(--bg-2); }
+.choice b { font-weight: 500; }
+.choice:has(input:checked) b { font-weight: 700; }
+.choice-hint { display: none; font-size: 11px; color: var(--muted); max-width: 190px; line-height: 1.5; }
+.choice:has(input:checked) .choice-hint { display: block; }
+@media (min-width: 1000px) { #goal-help { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+
+/* Result: meta line, a large headline in ink, what was asked, then label | content rows. */
+#detail .eyebrow { font-size: 13px; color: var(--muted); }
+#detail .state-title { font-size: 36px; font-weight: 700; line-height: 1.3; margin: 4px 0 10px; color: var(--ink); }
+#detail .request { border: 0; padding: 0; font-size: 14px; color: var(--ink-2); margin-bottom: 18px; }
+.defs { border-top: 1px solid var(--line); }
+.def { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 18px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.def-k { margin: 0; font-size: 13px; font-weight: 400; color: var(--muted); }
+.def-v > :first-child { margin-top: 0; } .def-v > :last-child { margin-bottom: 0; }
+.def .facts { margin: 0; }
+.def .facts li, .def .facts li.good, .def .facts li.open, .def .facts li.bad { background: transparent; padding: 0 0 0 22px; font-weight: 700; font-size: 16px; }
+.def .facts li::before { left: 0; }
+.def .facts li.open { font-weight: 500; color: var(--ink-2); }
+.def blockquote { border: 0; background: transparent; padding: 0; margin: 0 0 6px; font-size: 19px; line-height: 1.6; color: var(--ink); }
+.def .hint { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+@media (max-width: 600px) { .def { grid-template-columns: 1fr; } }
+
+/* これまでの電話: table rows. */
+.item, :root:not([data-theme="light"]) .item { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; padding: 10px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.item.selected { background: transparent; box-shadow: none; }
+.item.selected strong { text-decoration: underline; text-underline-offset: 4px; }
+.item small { color: var(--muted); }
+.item .state.good { color: var(--good); } .item .state.bad { color: var(--bad); } .item .state.open { color: var(--open); }
+
+/* Board: the form 480px on the left, the call on the right. */
+@media (min-width: 1000px) {
+  body.signed-in .board { grid-template-columns: 480px minmax(0, 1fr); gap: 0; }
+  body.signed-in .board #ask { border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 24px 32px 24px 0; }
+  body.signed-in .side { gap: 0; }
+  body.signed-in .side .card { border: 0; border-radius: 0; padding: 24px 0 24px 40px; }
+  body.signed-in .side #history-section { border-top: 1px solid var(--line); }
+  #current .actions { background: var(--bg); border-radius: 0; margin-left: -40px; padding-left: 40px; }
+}
+/* the older rules make the purposes a 3-column grid (line 179); v2 keeps one list */
+fieldset.choices, .board fieldset.choices { display: block; grid-template-columns: none; gap: 0; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; padding: 0; margin: 0 0 10px; }
+fieldset.choices legend { float: left; width: 100%; margin: 0 0 6px; }
+fieldset.choices legend + .choice { clear: both; }
+.choice, :root:not([data-theme="light"]) .choice { border-radius: 0; border: 0; }
+.choice, :root:not([data-theme="light"]) .choice { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.choice input { flex: none; display: inline-block; width: 16px; height: 16px; margin: 0; }
+.choice b { flex: 1 1 auto; min-width: 0; }
+.choice-hint { flex: 0 1 190px; text-align: left; }
+/* The legend stays outside the list: the rows carry the frame. */
+fieldset.choices, .board fieldset.choices { border: 0; border-radius: 0; overflow: visible; }
+fieldset.choices .choice { border: 1px solid var(--line-2); border-top-width: 0; text-align: left; justify-content: flex-start; }
+fieldset.choices legend + .choice { border-top-width: 1px; border-radius: 8px 8px 0 0; }
+fieldset.choices .choice:last-of-type { border-radius: 0 0 8px 8px; }
+fieldset.choices .choice input[type=radio] { -webkit-appearance: none; appearance: none; display: block; flex: none; width: 16px; height: 16px; margin: 0; padding: 0; border: 1px solid var(--muted); border-radius: 50%; background: transparent; box-sizing: border-box; }
+fieldset.choices .choice input[type=radio]:checked { border: 5px solid var(--good); }
+fieldset.choices .choice b { text-align: left; }
+/* line 182 (the chip design) hides the radio over the whole label; v2 shows it */
+:root fieldset.choices .choice input[type=radio] { position: static; opacity: 1; inset: auto; cursor: pointer; }
+:root fieldset.choices .choice { position: relative; border: 1px solid var(--line-2); border-top-width: 0; border-radius: 0; }
+:root fieldset.choices legend + .choice { border-top-width: 1px; border-radius: 8px 8px 0 0; }
+:root fieldset.choices .choice:last-of-type { border-radius: 0 0 8px 8px; }
+:root fieldset.choices .choice { margin: 0; }
+/* The purpose hint sits in the chosen row only on a wide board; narrower, #goal-help under the list says it once. */
+@media (max-width: 999px) { .choice:has(input:checked) .choice-hint { display: none; } }
+/* Light keeps its palette but gets the two v2 tokens the rules above use, and the board reads as one sheet, not white boxes. */
+:root[data-theme="light"] { --line-2: #cfcabd; --bg-2: #efece4; }
+@media (min-width: 1000px) { :root[data-theme="light"] body.signed-in .board { --card: var(--bg); } }
+/* Review 2026-09-28 (P2): the native dark checkbox reads as filled when it is not; draw it as an outline that fills when checked. */
+:root:not([data-theme="light"]) input[type=checkbox] { -webkit-appearance: none; appearance: none; display: inline-grid; place-content: center; box-sizing: border-box; border: 1.5px solid var(--muted); border-radius: 4px; background: transparent; cursor: pointer; }
+:root:not([data-theme="light"]) input[type=checkbox]:checked { background: var(--accent); border-color: var(--accent); }
+:root:not([data-theme="light"]) input[type=checkbox]:checked::before { content: ""; width: 11px; height: 6px; border: solid #131211; border-width: 0 0 2px 2px; transform: translateY(-2px) rotate(-45deg); }
+.brand-dot { margin-left: -8px; }
+.choice-hint { font-size: 12px; flex-basis: 230px; }
+.item.selected { border-color: var(--line); }
+/* Handoff §4: on a narrow screen the result ends with 「同じ相手にもう一度」 as a full-width primary. */
+@media (max-width: 999px) { #current .actions button.again { flex: 1 1 100%; width: 100%; } }
+
+/* ---------- Ring Zero theme (2026-09-28, Oathra v6 / Oathra App): light by default via <html data-theme="light">.
+   Jade is the brand colour and the colour of "confirmed by the other party's words" only; every control is ink.
+   ?theme=dark keeps the v2 dark look. ---------- */
+:root, :root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f1f4f2; --card: #ffffff; --ink: #0e1512; --ink-2: #454b53; --muted: #5f656c; --line: #e1e4df; --line-2: #c9cdc6; --bg-2: #eef1ef;
+  --accent: #0e1512; --accent-soft: #eef1ef; --good: #0b7a58; --bad: #c02a16; --open: #9a5200; --busy: #454b53;
+  font-family: "IBM Plex Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+}
+:root[data-theme="dark"] { --good: #3ec596; }
+.brand-icon { background: var(--good); }
+.brand-dot { color: var(--good); }
+:root:not([data-theme="dark"]) button { border-radius: 10px; }
+:root:not([data-theme="dark"]) button:hover { filter: none; background: #2a2f35; border-color: #2a2f35; }
+:root:not([data-theme="dark"]) button.quiet, :root:not([data-theme="dark"]) button.danger { background: #fff; }
+:root:not([data-theme="dark"]) button.quiet { border-color: var(--line-2); }
+:root:not([data-theme="dark"]) button.quiet:hover { background: var(--bg-2); border-color: var(--ink); }
+:root:not([data-theme="dark"]) button.danger { border-color: #f0c4bc; }
+:root:not([data-theme="dark"]) button.danger:hover { background: #fdf1ef; border-color: var(--bad); }
+:root:not([data-theme="dark"]) .card { border-radius: 14px; border-color: var(--line); }
+:root:not([data-theme="dark"]) .progress li.done { border-color: var(--good); color: var(--ink); }
+:root:not([data-theme="dark"]) .progress li.now { border-color: var(--ink); color: var(--ink); }
+:root:not([data-theme="dark"]) input:focus, :root:not([data-theme="dark"]) textarea:focus, :root:not([data-theme="dark"]) select:focus, :root:not([data-theme="dark"]) button:focus-visible { outline-color: var(--ink); }
+/* The header's 設定・ログアウト stay plain text links in Ring Zero too (the quiet-button white fill is for the page). */
+:root:not([data-theme="dark"]) header button.quiet.small, :root:not([data-theme="dark"]) header button.quiet.small:hover { background: transparent; border: 0; }

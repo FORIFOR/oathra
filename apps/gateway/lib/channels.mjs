@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { extractPhoneNumber } from '../../../packages/contract/dist/index.js';
 import { assert, hash, text } from './security.mjs';
 import { reviewText } from './service.mjs';
 import { builtinRegistry } from './plugins.mjs';
@@ -44,10 +45,17 @@ export class Channels {
     const {actor,destination}=e,origin={channel:kind,actor,destination,pluginIdentity:this.registry.identity(kind)};
     let message=e.text??'';
     const binding=message.trim().match(/^(?:連携|link)\s+([\w-]{40,100})$/i);
-    if(binding){this.registry.demand(kind,'mission:draft');const u=this.service.link(kind,actor,binding[1]);this.reply(job,u,origin,'連携しました。登録済みの相手と商品を指定して依頼してください。メッセージだけでは発信しません。',[],'linked');return;}
+    if(binding){this.registry.demand(kind,'mission:draft');const u=this.service.link(kind,actor,binding[1]);this.reply(job,u,origin,'連携しました。相手の電話番号または登録済みの名前と商品を指定して依頼してください。メッセージだけでは発信しません。',[],'linked');return;}
     let u;try{u=this.service.channelUser(kind,actor);}catch{return;}
     if(e.type==='unlink'){this.store.delKey(`identity:${kind}`,actor);this.store.audit(u.id,'channel.unlinked',kind,{channel:kind});return;}
     if(e.type==='unsend'){
+      const requestKey = `${kind}:${actor}:${e.sourceMessageId}`;
+      const requestDraft = this.store.key(`phone-request:${u.id}`, requestKey);
+      if (requestDraft) {
+        const saved = this.store.open(requestDraft);
+        this.store.db.prepare("DELETE FROM records WHERE kind='outbox' AND owner=? AND id=?").run(u.id, `${saved.origin.sourceJobId}:phone-request`);
+        this.store.delKey(`phone-request:${u.id}`, requestKey);
+      }
       for(const m of this.store.list('mission',u.id))if(m.origin?.channel===kind&&m.origin?.actor===actor&&m.sourceMessageId===e.sourceMessageId){
         this.service.cancel(u,m.id);if(['CANCELLED','DRAFT'].includes(this.store.get('mission',m.id)?.status))this.store.removeMission(m);
       }return;
@@ -70,6 +78,15 @@ export class Channels {
         return;
       }
       if(!message.trim())return;this.registry.demand(kind,'mission:draft');
+      const phone = extractPhoneNumber(message);
+      const products = this.store.list('product',u.id);
+      if (!products.length || (phone && !products.some(product => message.includes(product.name)))) {
+        assert(phone, 'select_one_contact');
+        this.registry.demand(kind,'mission:read');
+        const draft = this.service.phoneRequest(u,{phone,name:'電話の相手',instruction:message},{...origin,sourceJobId:job.id},`${kind}:${actor}:${e.sourceMessageId ?? e.eventId}`);
+        this.reply(job,u,origin,`電話依頼の下書きを保存しました（未発信）。\n電話番号: ${draft.request.phone}\n話してほしい内容: ${draft.request.instruction}\nこのチャネルでは一般の電話依頼の発信操作にはまだ接続していません。番号を入力しただけでは発信しません。修正する場合は番号と内容を送り直してください。下書きは30日で期限切れになります。`,[],'phone-request');
+        return;
+      }
       let m;
       if(/^(?:変更|修正)\s/.test(message)){
         const drafts=this.store.list('mission',u.id,'DRAFT').filter(m=>m.origin?.channel===kind&&m.origin?.actor===actor);
@@ -81,13 +98,14 @@ export class Channels {
       const buttons=[];
       if(this.registry.allows(kind,'approval:request')){
         assert(m.status==='DRAFT','mission_already_started',409);
-        buttons.push({label:'確認して発信',data:new URLSearchParams({action:'start',token:this.service.grant(u,m,'start',scope)}).toString()},
-          {label:'キャンセル',data:new URLSearchParams({action:'cancel',token:this.service.grant(u,m,'cancel',scope)}).toString()});
+        if (!m.target.registrationRequired) buttons.push({label:'確認して発信',data:new URLSearchParams({action:'start',token:this.service.grant(u,m,'start',scope)}).toString()});
+        buttons.push({label:'キャンセル',data:new URLSearchParams({action:'cancel',token:this.service.grant(u,m,'cancel',scope)}).toString()});
       }
       this.reply(job,u,origin,reviewText(m),buttons,'review',m.id);
     }catch(error){
-      const help={select_one_contact:'Webで連絡先を登録し、相手の名前を1人だけ指定してください。',select_one_reviewed_product:'Webで商品情報を登録・確認してください。',privacy_consent_required:'Webでデータの送信先と利用目的を確認して同意してください。',recipient_suppressed:'この相手は再連絡停止になっています。',approval_expired_or_used:'承認が期限切れ、または使用済みです。詳細画面で実行状況を確認してください。'};
-      const code=/^[a-z_]{1,80}$/.test(error.code??'')?error.code:'internal_error';
+      const help={contact_phone_required:'この連絡先には電話番号がありません。Webで連絡先を編集して番号を追加してください。',contact_relationship_required:'営業電話には関係の登録が必要です。Webで連絡先を編集してください。',contact_basis_required:'営業電話の根拠をWebの連絡先に入力してください。',select_one_contact:'電話番号または登録済みの相手の名前を1人だけ指定してください。同じ番号の連絡先が複数ある場合はWebで選択してください。',phone_target_conflict:'指定された名前と電話番号が一致しません。相手を確認して、1人の電話番号を指定してください。',invalid_phone_request:'電話番号と伝えたい内容を確認して、送り直してください。',invalid_phone_number:'電話番号を確認してください。日本の国内番号、または+から始まる国番号付きの番号を入力できます。',multiple_phone_numbers:'電話番号は1つだけ指定してください。',contact_registration_required:'番号は下書きに保存されています。Webの設定で関係と連絡する根拠を含む連絡先を登録し、依頼を作成し直してください。',select_one_reviewed_product:'Webで商品情報を登録・確認してください。',privacy_consent_required:'Webでデータの送信先と利用目的を確認して同意してください。',recipient_suppressed:'この相手は再連絡停止になっています。',approval_expired_or_used:'承認が期限切れ、または使用済みです。詳細画面で実行状況を確認してください。'};
+      const normalizedCode=error.code?.toLowerCase();
+      const code=/^[a-z_]{1,80}$/.test(normalizedCode??'')?normalizedCode:'internal_error';
       this.reply(job,u,origin,help[code]??`処理を進められませんでした（${code}）。詳細画面で確認してください。`,[],'error');
     }
   }

@@ -7,8 +7,8 @@
  * format and takes AudioChunks back; the adapters here convert.
  *
  *   Twilio (μ-law 8k) ─┐                       ┌─ GPT-Live
- *   LiveKit (PCM 48k) ─┼─ AudioAdapter ─ Engine ┼─ OpenAI Realtime
- *   Simulator         ─┘                       ├─ Pipeline (STT+LLM+TTS)
+ *   LiveKit (PCM 48k) ─┼─ AudioAdapter ─ Engine ┼─ Pipeline (STT+LLM+TTS)
+ *   Simulator         ─┘                       │
  *                                              └─ Local
  */
 import type { Action, CallContract } from "@oathra/contract";
@@ -141,7 +141,7 @@ export interface VoiceSession {
   /** Agent audio and control, in the engine's native format. */
   readonly output: AsyncIterable<VoiceOutput>;
   /** Pipeline engines: synthesize and play a reply produced by the runtime's brain. */
-  speak?(text: string): Promise<{ startMs: number; endMs: number; interrupted: boolean }>;
+  speak?(text: string, opts?: { inputUntilMs?: number }): Promise<{ startMs: number; endMs: number; interrupted: boolean; skipped?: boolean }>;
   /** Pipeline engines: play a pre-synthesized acknowledgement. */
   ack?(): void;
   /** Speech-to-speech engines: ground the model in the evidence state. */

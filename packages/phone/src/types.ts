@@ -36,6 +36,8 @@ export type DialOptions = {
   contract: CallContract;
   /** Directory for callee.wav / caller.wav; carriers may ignore. */
   recordDir?: string;
+  /** The call keeps a transcript but no audio: the carrier says so first. Ignored when `recordDir` already announces a recording. */
+  transcriptNotice?: boolean;
 };
 
 export interface CarrierTransport {

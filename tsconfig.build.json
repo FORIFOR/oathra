@@ -26,9 +26,6 @@
       "path": "packages/eval"
     },
     {
-      "path": "apps/arena"
-    },
-    {
       "path": "providers/ollama"
     },
     {
@@ -48,6 +45,12 @@
     },
     {
       "path": "providers/deepgram"
+    },
+    {
+      "path": "providers/voice-kit"
+    },
+    {
+      "path": "providers/gemini-live"
     },
     {
       "path": "providers/openai-realtime"

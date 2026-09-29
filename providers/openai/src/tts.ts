@@ -1,6 +1,6 @@
 import type { AudioFrame, TTSProvider } from "@oathra/core";
 import type { Language } from "@oathra/evidence";
-import { bytesToInt16, pcm24kToMulaw8k } from "@oathra/audio-kit";
+import { bytesToInt16, mulawEncode, pcm24kToMulaw8k, StreamResampler } from "@oathra/audio-kit";
 
 export type OpenAITTSOptions = {
   apiKey?: string;
@@ -75,6 +75,8 @@ export class OpenAITTS implements TTSProvider {
       if (!res.ok) throw new Error(`OpenAI TTS ${res.status}: ${(await res.text()).slice(0, 300)}`);
       if (!res.body) continue;
       const reader = res.body.getReader();
+      // One filter per sentence stream: no aliasing, and no step where network chunks meet.
+      const resampler = new StreamResampler(24000, 8000);
       let carry = new Uint8Array(0);
       for (;;) {
         const { value, done } = await reader.read();
@@ -85,9 +87,10 @@ export class OpenAITTS implements TTSProvider {
         // Keep whole 24k→8k groups (3 samples = 6 bytes) so resampling stays aligned.
         const usable = buf.length - (buf.length % 6);
         carry = buf.subarray(usable);
-        if (usable > 0) yield pcm24kToMulaw8k(bytesToInt16(buf.subarray(0, usable)));
+        if (usable > 0) yield mulawEncode(resampler.process(bytesToInt16(buf.subarray(0, usable))));
       }
-      if (carry.length >= 2) yield pcm24kToMulaw8k(bytesToInt16(carry.subarray(0, carry.length - (carry.length % 2))));
+      // The filter delays audio by 1.5 ms; durations stay exact, so nothing is padded here.
+      if (carry.length >= 2) yield mulawEncode(resampler.process(bytesToInt16(carry.subarray(0, carry.length - (carry.length % 2)))));
     }
   }
 

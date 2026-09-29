@@ -129,6 +129,35 @@ describe("pipelineEngine", () => {
     await session.close();
   });
 
+  it("VAD alone opens no segment: the callee is speaking only once there are words", async () => {
+    const { stt, start } = setup();
+    const session = await start();
+    stt.fire({ type: "speech_started", t: 100 });
+    stt.fire({ type: "final", text: "", startMs: 100, endMs: 400, confidence: 0, speechFinal: true });
+    stt.fire({ type: "partial", text: "もしもし", startMs: 900, endMs: 1300, confidence: 0.9 });
+    // The first event is the words' segment, starting at the words, not at the earlier VAD blip.
+    const events = (await drain(session, 80)).flatMap((o) => (o.type === "event" ? [o.event] : []));
+    expect(events.filter((e) => e.type === "speech.started")).toHaveLength(1);
+    expect(events[0]).toMatchObject({ type: "speech.started", startMs: 900 });
+    await session.close();
+  });
+
+  it("drops a reply unplayed when the callee said real words after it was written (not for a nod)", async () => {
+    const { stt, start } = setup();
+    const session = await start();
+    stt.fire({ type: "partial", text: "うん", startMs: 30, endMs: 60, confidence: 0.9 });
+    const kept = session.speak!("こんにちは、少しお時間よろしいですか。", { inputUntilMs: 10 });
+    const [played] = await Promise.all([kept, drain(session, 50)]);
+    expect(played.skipped).toBeUndefined();
+    stt.fire({ type: "partial", text: "もしもし", startMs: 2000, endMs: 2400, confidence: 0.9 });
+    const before = fakeTts.calls.length;
+    const [dropped, out] = await Promise.all([session.speak!("こんにちは、少しお時間よろしいですか。", { inputUntilMs: 1500 }), drain(session, 50)]);
+    expect(dropped).toMatchObject({ interrupted: true, skipped: true });
+    expect(out.some((o) => o.type === "audio")).toBe(false);
+    expect(fakeTts.calls.length).toBe(before); // nothing was synthesized for it either
+    await session.close();
+  });
+
   it("isBargeIn policy", () => {
     expect(isBargeIn("うん", "ja")).toBe(false);
     expect(isBargeIn("19時は満席です", "ja")).toBe(true);

@@ -1,7 +1,7 @@
 version: 1
 id: restaurant-reservation
 title: Restaurant Reservation
-description: Book a table for two tomorrow after 19:00. 19:00 is full; the restaurant will offer 19:30.
+description: Book a table for two on 2026-09-12 after 19:00. 19:00 is full; the restaurant will offer 19:30.
 difficulty: easy
 language: ja
 domain: restaurant
@@ -9,7 +9,7 @@ tags: [reservation, evidence, japanese]
 
 mission:
   objective: restaurant.reservation
-  brief: 明日19時以降で2名の予約を取ってください。19時は満席です。
+  brief: 2026年9月12日の19時以降で2名の予約を取ってください。19時は満席です。
   input:
     date: "2026-09-12"
     partySize: 2

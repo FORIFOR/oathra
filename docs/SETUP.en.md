@@ -1,5 +1,7 @@
 # Beginner setup
 
+Source checkout updates (not yet released): [first local outcome](FIRST_PROOF.md). Default demo is offline-only; external models require `demo --allow-models`.
+
 Oathra is easiest to try in two stages: verify the evidence rules without an API key, then add a voice engine and a phone carrier only when you need a real call. This guide keeps the stages separate so a missing carrier credential cannot hide a problem in the evidence checker.
 
 ## 1. Verify the behavior without an API key
@@ -45,7 +47,7 @@ The shortest real-call path is **Twilio + GPT-Live**. Twilio connects directly t
 
 | Purpose | Environment variables | Where to get them |
 | --- | --- | --- |
-| GPT-Live / OpenAI Realtime | `OPENAI_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) |
+| GPT-Live | `OPENAI_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) |
 | Pipeline speech recognition | `DEEPGRAM_API_KEY` | [Deepgram Console](https://console.deepgram.com/) |
 | Twilio calling | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | [Twilio Console](https://console.twilio.com/) |
 | Twilio caller ID | `TWILIO_PHONE_NUMBER` | [Twilio phone numbers](https://console.twilio.com/us1/develop/phone-numbers/manage/search) |
@@ -74,10 +76,10 @@ To skip the two choice menus, pin the voice engine and carrier. API keys are sti
 pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
 ```
 
-For the public release package, use the v0.1.18 GitHub asset explicitly:
+For the public release package, use the v0.1.19 GitHub asset explicitly:
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz oathra setup phone
 ```
 
 The wizard:
@@ -124,3 +126,14 @@ When reporting a problem, include the command, the red check and the provider na
 ## What is and is not verified
 
 Twilio direct calling and the GPT-Live engine have been exercised in development calls. Plivo and Custom SIP are implemented through LiveKit but their PSTN path is not yet verified. The evidence checker validates transcript claims; it does not inspect a carrier's reservation ledger. See the [readiness gates](READINESS.md) before using the project for a production workflow.
+
+Practice starts from **練習** in the app: watch the AI call, or answer it yourself as the shop (text). Records are kept in `.oathra/calls/` and listed under **記録**. Restaurant exercises use a fixed date (2026-09-12) for reproducibility.
+
+
+## Phone requests from the app
+
+In the app, choose **電話を頼む**, enter the recipient, phone number and purpose, then review. Pick a template by kind of call or reuse history, and replace every `{{…}}`. Reviewing or reusing history never dials.
+
+Real calls run with `pnpm oathra demo --live --tunnel` (this machine's carrier and voice keys from `.env`) or with the Gateway as a server ([apps/gateway/README.md](../apps/gateway/README.md)). Readiness is shown at start and in 設定.
+
+End an active call with the hangup button. An unconfirmed result blocks another call until you check the carrier and acknowledge termination; it is never retried automatically. Drafts, transcripts, and outcomes persist locally in `.oathra/phone-history`; Web calls do not save audio files. JSON export and CLI handoff remain available. LINE/Slack generic requests remain draft-only. See the [Web contract and evidence](quality/web-phone.md).

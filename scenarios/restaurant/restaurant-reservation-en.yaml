@@ -1,7 +1,7 @@
 version: 1
 id: restaurant-reservation-en
 title: Restaurant Reservation (English)
-description: Book a table for two tomorrow at 7 pm or later. 7 pm is full; the restaurant will offer 7:30.
+description: Book a table for two on 2026-09-12 at 7 pm or later. 7 pm is full; the restaurant will offer 7:30.
 difficulty: easy
 language: en
 domain: restaurant
@@ -9,7 +9,7 @@ tags: [reservation, evidence, english]
 
 mission:
   objective: restaurant.reservation
-  brief: Book a table for two tomorrow, 7 pm or later. 7 pm is full.
+  brief: Book a table for two on 2026-09-12, 7 pm or later. 7 pm is full.
   input:
     date: "2026-09-12"
     partySize: 2

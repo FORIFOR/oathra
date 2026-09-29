@@ -8,6 +8,8 @@ export type OpenAIBrainOptions = {
   temperature?: number;
   /** Request timeout in ms (phone turns must stay short). */
   timeoutMs?: number;
+  /** Replaces the generic mission prompt (the reply format stays brain-kit's JSON). */
+  systemPrompt?: (ctx: BrainContext) => string;
 };
 
 /** OpenAI Chat Completions (also works with any OpenAI-compatible baseUrl). */
@@ -18,6 +20,7 @@ export class OpenAIBrain implements BrainProvider {
   private readonly baseUrl: string;
   private readonly temperature: number;
   private readonly timeoutMs: number;
+  private readonly systemPrompt: ((ctx: BrainContext) => string) | undefined;
 
   constructor(opts: OpenAIBrainOptions = {}) {
     this.model = opts.model ?? "gpt-4o-mini";
@@ -25,6 +28,7 @@ export class OpenAIBrain implements BrainProvider {
     this.baseUrl = (opts.baseUrl ?? "https://api.openai.com/v1").replace(/\/$/, "");
     this.temperature = opts.temperature ?? 0.4;
     this.timeoutMs = opts.timeoutMs ?? 20_000;
+    this.systemPrompt = opts.systemPrompt;
     this.name = `openai:${this.model}`;
   }
 
@@ -35,7 +39,7 @@ export class OpenAIBrain implements BrainProvider {
       headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({
         model: this.model,
-        messages: buildMessages(ctx),
+        messages: this.systemPrompt ? buildMessages(ctx, this.systemPrompt) : buildMessages(ctx),
         temperature: this.temperature,
         response_format: { type: "json_object" },
         max_tokens: 300,

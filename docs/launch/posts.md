@@ -1,5 +1,30 @@
 # Launch posts and publication record
 
+## Measurement checkpoint — 2026-09-24 18:21 JST
+
+- The read-only snapshot remains at 0 stars / 0 forks.
+- GitHub's available 14-day window now reports 28 repository views / 17 unique visitors and 4,137 clones / 601 unique cloners. The new 2026-09-23 bucket contributes 4 views / 3 unique visitors and 11 clones / 7 unique cloners. GitHub does not identify fetchers, and these counts can include maintainer or automation activity, so they are unclassified distribution signals rather than confirmed external users.
+- No external issue or business inquiry is observed. v0.1.18 assets remain at 4 tarball downloads and 1 checksum download.
+- Raw snapshot: [metrics/2026-09-24-1821-jst.json](metrics/2026-09-24-1821-jst.json).
+
+## awesome-voice-agents listing merged — 2026-09-21 00:03 JST
+
+- The existing [awesome-voice-agents #42](https://github.com/yzfly/awesome-voice-agents/pull/42) was merged at `2026-09-20T15:03:09Z` (merge commit `033a28e77ba5bf9987de9bd84ee8f8ed49e1ccc8`). The public entry places Oathra under Specialized Solutions and describes utterance-anchored completion, the simulator, phone adapters and consented intake.
+- This is confirmed third-party distribution. It is not proof of stars, external trials, phone-call success or business demand.
+
+## Measurement checkpoint — 2026-09-23 18:51 JST
+
+- The read-only snapshot remains at 0 stars / 0 forks and 24 repository views / 15 unique visitors.
+- The available 14-day clone window increased to 4,126 clones / 596 unique cloners, including a new 2026-09-22 bucket of 303 clones / 77 unique cloners. GitHub does not identify fetchers, and the counts may include maintainer or automation activity, so this is an unclassified distribution signal rather than external-user evidence.
+- No external issue or business inquiry is observed. v0.1.18 assets remain at 4 tarball downloads and 1 checksum download.
+- Raw snapshot: [metrics/2026-09-23-1851-jst.json](metrics/2026-09-23-1851-jst.json).
+
+## Measurement checkpoint — 2026-09-23 00:36 JST
+
+- The read-only snapshot reports 0 stars / 0 forks, 24 repository views / 15 unique visitors and 3,823 clones / 557 unique cloners in the available 14-day window. These traffic values include maintainer or automation activity and are not confirmed external users.
+- v0.1.18 assets show 4 tarball downloads and 1 checksum download. GitHub does not identify asset fetchers, so these are unclassified distribution signals rather than external adoption.
+- Raw snapshot: [metrics/2026-09-23-0036-jst.json](metrics/2026-09-23-0036-jst.json).
+
 ## Awesome-AI-Agents listing merged — 2026-09-18 14:04 JST
 
 - The existing [Awesome-AI-Agents #486](https://github.com/Jenqyang/Awesome-AI-Agents/pull/486) was merged at `2026-09-18T05:04:23Z` (merge commit `7cb5da0ea95d95d80d4239aa8178648dfa7f42ae`). The public entry describes Oathra's standalone evidence-verification engine, simulator/Arena evaluation surface, phone-agent adapters and consented follow-up boundary.

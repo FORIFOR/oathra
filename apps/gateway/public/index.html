@@ -1,17 +1,20 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8f7f4">
+  <meta name="theme-color" content="#f1f4f2">
   <title>Oathra — 電話を、任せる。</title>
+  <link rel="icon" type="image/png" href="/oathra-mark-original.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" href="/oathra-mark.png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
 <header>
-  <a class="brand" href="/">oathra<span class="brand-dot">.</span></a>
+  <a class="brand" href="/"><span class="brand-icon" aria-hidden="true"></span>oathra<span class="brand-dot">.</span></a>
   <span id="mode" class="badge" hidden></span>
+  <button id="credit-balance" class="quiet small" hidden></button>
   <button id="open-settings" class="quiet small" hidden>設定</button>
   <button id="logout" class="quiet small" hidden>ログアウト</button>
 </header>
@@ -62,8 +65,16 @@
             <label class="choice"><input type="radio" name="goal" value="meeting" checked><b>商談の日時を決める</b></label>
             <label class="choice"><input type="radio" name="goal" value="materials"><b>資料を送ってよいか聞く</b></label>
             <label class="choice"><input type="radio" name="goal" value="introduce"><b>商品を説明する</b></label>
+            <label class="choice"><input type="radio" name="goal" value="chat"><b>雑談する</b></label>
           </fieldset>
           <p id="goal-help" class="hint"></p>
+          <label id="voice-field" hidden>声
+            <select id="chat-voice">
+              <option value="">標準の声（GPT-Live・すぐ返事）</option>
+              <option value="character-female">演技する声・女性（返事まで2〜3秒）</option>
+              <option value="character-male">演技する声・男性（返事まで2〜3秒）</option>
+            </select>
+          </label>
 
           <label for="request">伝えたいこと（そのままの言葉で）</label>
           <textarea id="request" rows="3" required placeholder="例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。"></textarea>
@@ -107,6 +118,11 @@
 
   <div id="notice" role="status" aria-live="polite" hidden></div>
 
+  <dialog id="credits" class="panel" aria-labelledby="credits-title">
+    <div class="row"><h2 id="credits-title">クレジット</h2><button id="credits-close" class="quiet">閉じる</button></div>
+    <p id="credits-summary"></p><p class="hint">追加はサービス管理者へお問い合わせください。</p>
+    <div id="credit-ledger"></div><button id="credits-more" class="quiet" hidden>もっと見る</button>
+  </dialog>
   <dialog id="settings" class="panel">
     <form method="dialog"><button class="close quiet" aria-label="閉じる">×</button></form>
     <h2>設定</h2>
@@ -118,23 +134,41 @@
         <button id="consent" class="primary">内容を確認して同意する</button>
       </details>
 
+      <details id="s-caller">
+        <summary>電話で名乗る名前 <span id="caller-state" class="pill"></span></summary>
+        <p class="muted">AIは電話の最初に、だれの代わりにかけているかを名乗ります。会社名か、あなたのお名前を入れてください。</p>
+        <form id="caller-form">
+          <label>名乗る名前<input id="caller-name" maxlength="40" required placeholder="例：サンプル商事 / 田中"></label>
+          <button type="submit">保存する</button>
+        </form>
+      </details>
+
       <details id="s-contact">
-        <summary>電話する相手を登録する</summary>
+        <summary>連絡先を登録・編集する</summary>
+        <p>名前か会社名だけで登録できます。電話番号は電話を依頼するときに必要です。</p>
+        <div id="contact-list"></div>
         <form id="contact-form">
+          <input id="contact-id" type="hidden">
           <div class="columns">
-            <label>名前<input id="contact-name" required placeholder="田中さん"></label>
-            <label>電話番号（国番号から）<input id="contact-phone" type="tel" required placeholder="+81 90 1234 5678"></label>
+            <label>名前<input id="contact-name" maxlength="100" placeholder="田中さん"></label>
+            <label>電話番号（任意・国番号から）<input id="contact-phone" type="tel" placeholder="+81 90 1234 5678"></label>
           </div>
+          <label>会社名（任意）<input id="contact-company" maxlength="200"></label>
+          <label>メモ（任意）<textarea id="contact-notes" maxlength="4000"></textarea></label>
+          <label>前回の電話内容（任意・手入力）<textarea id="contact-last-call" maxlength="4000"></textarea></label>
+          <details><summary>営業電話の許可情報（発信前に必要）</summary>
           <div class="columns">
             <label>連絡する理由
               <select id="relationship">
+                <option value="">未設定</option>
                 <option value="inquiry">問い合わせへの折り返し</option>
                 <option value="customer">すでにお客様</option>
                 <option value="consented">連絡してよいと言われている</option>
               </select>
             </label>
-            <label>その根拠<input id="contact-basis" required placeholder="例：9月19日の問い合わせで電話希望"></label>
+            <label>その根拠<input id="contact-basis" placeholder="例：9月19日の問い合わせで電話希望"></label>
           </div>
+          </details>
           <details>
             <summary>メール・CRM（任意）</summary>
             <div class="columns">
@@ -142,7 +176,8 @@
               <label>HubSpot Contact ID<input id="crm-id" inputmode="numeric"></label>
             </div>
           </details>
-          <button type="submit">相手を保存</button>
+          <button type="submit">連絡先を保存</button>
+          <button type="reset" class="quiet">新規登録に戻す</button>
         </form>
       </details>
 

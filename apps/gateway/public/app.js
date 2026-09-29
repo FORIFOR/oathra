@@ -25,8 +25,12 @@ const GOAL_TEXT = {
   meeting: name => `${name}に商品を説明して、興味があれば15分の商談の日時を相談してください。`,
   materials: name => `${name}に商品を簡単に説明して、資料を送ってよいか聞いてください。`,
   introduce: name => `${name}に商品を簡単に説明してください。`,
+  chat: name => `${name}と近況を話して、気軽に雑談してください。`,
 };
 const ERRORS = {
+  invalid_caller_name: '名乗る名前は、数字や記号を入れずに40文字以内で入力してください。',
+  voice_engine_unavailable: 'この声は、このサーバーではまだ使えません。標準の声を選んでください。',
+  invalid_phone_request: '電話番号・相手の名前・話したいことを確かめてください（名前に数字や記号は使えません）。',
   privacy_consent_required: '「はじめに」の「会話データの取り扱い」に同意してください。',
   select_one_reviewed_product: '紹介する商品を1つ登録して選んでください。',
   select_one_contact: '電話する相手を1人選んでください。',
@@ -46,8 +50,15 @@ const ERRORS = {
   rate_limited: '操作が多すぎます。少し待ってからお試しください。',
   // Filling in forms
   invalid_text: '入力が空か、長すぎます。内容を確かめてください。',
+  insufficient_credits: 'クレジットが不足しています。残高を確認してください。',
+  credit_price_changed_review_again: '利用料金が変わりました。依頼を作成し直してください。',
+  credits_not_enabled: 'この環境ではクレジットを使用しません。',
+  invalid_credit_amount: 'クレジット数は正の整数で指定してください。',
   invalid_email: 'メールアドレスの形を確かめてください。',
   invalid_crm_contact_id: 'HubSpot Contact ID は数字だけで入力してください。',
+  contact_phone_required: 'この連絡先には電話番号がありません。設定で連絡先を編集して番号を追加してください。',
+  contact_name_or_company_required: '名前か会社名を入力してください。',
+  contact_basis_required: '営業電話をする根拠を連絡先に入力してください。',
   contact_relationship_required: '連絡する理由を選んでください。',
   product_facts_require_review: '「内容が正しいことを確認しました」にチェックを入れてください。',
   invalid_duration: '通話の上限（秒）が範囲の外です。「くわしい設定」で見直してください。',
@@ -114,6 +125,12 @@ const ERRORS = {
   cross_origin_request_denied: 'このページのアドレスが、サーバーの設定と違います。設定されたアドレスで開き直してください。',
 };
 
+// Dark by default (UI v2); ?theme=light (or dark) is remembered in this browser.
+(() => {
+  let theme = new URLSearchParams(location.search).get('theme');
+  try { if (theme === 'light' || theme === 'dark') localStorage.setItem('oathra.theme', theme); else theme = localStorage.getItem('oathra.theme'); } catch { /* storage may be off */ }
+  if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+})();
 const el = (tag, text, cls) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = String(text); if (cls) n.className = cls; return n; };
 const when = iso => new Date(iso).toLocaleString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 const goal = () => document.querySelector('input[name="goal"]:checked').value;
@@ -171,7 +188,16 @@ const GOAL_HELP = {
   meeting: '相手が日時をはっきり了承したときだけ「決まった」になります。',
   materials: '了承があれば、あとでメールやSMSを送れます。',
   introduce: '説明を聞いてもらえたかを確認します。',
+  chat: '何かを決める電話ではありません。会話の記録だけを残します。',
 };
+// 雑談 is a phone request (the gateway's free-form call), not a sales call: no product, no self-test, a voice to choose.
+function syncGoal() {
+  const chat = goal() === 'chat';
+  $('product').closest('label').hidden = chat; $('product').required = !chat;
+  $('test-me').closest('label').hidden = chat; if (chat && $('test-me').checked) { $('test-me').checked = false; $('contact').disabled = false; }
+  $('slots').closest('label').hidden = chat; $('voice-field').hidden = !chat;
+  $('request').placeholder = chat ? '例：最近どうしてるか聞いて、週末の予定について気軽に話してください。' : '例：田中さんにサービスを説明して、興味があれば来週の商談日程を相談して。';
+}
 
 // ---------------------------------------------------------------------------------------------- setup
 
@@ -179,6 +205,7 @@ function renderSetup() {
   const consented = state.account.consentVersion === state.configuration.consentVersion;
   const steps = [
     { done: consented, text: '会話データの取り扱いを確認して同意する', label: '内容を読む', go: () => open('s-consent') },
+    { done: !!state.account.callerName, text: '電話で名乗る名前を決める', label: '決める', go: () => open('s-caller') },
     { done: state.products.length > 0, text: '紹介する商品を登録する', label: '登録する', go: () => open('s-product') },
     { done: state.contacts.length > 0, text: '電話する相手を登録する', label: '登録する', go: () => open('s-contact') },
   ].filter(s => !s.done);
@@ -187,6 +214,12 @@ function renderSetup() {
   $('setup-steps').replaceChildren(...steps.map(s => { const li = el('li'); li.append(el('span', s.text), button(s.label, s.go, 'small')); return li; }));
   $('consent-state').textContent = consented ? '同意済み' : '未同意';
   $('consent').hidden = consented;
+  $('caller-state').textContent = state.account.callerName ? state.account.callerName : '未設定';
+  if (document.activeElement !== $('caller-name')) $('caller-name').value = state.account.callerName ?? '';
+  // The acting voices need their own services; where they are not set up, say so on the option instead of failing at the call.
+  const acting = (state.configuration.voiceEngines ?? []).find(e => e.id === 'character-tts')?.ready === true;
+  for (const o of $('chat-voice').options) if (o.value) { o.disabled = !acting; o.textContent = o.textContent.replace(/（.*）$/, acting ? '（返事まで2〜3秒）' : '（このサーバーでは未設定）'); }
+  if (!acting && $('chat-voice').value) $('chat-voice').value = '';
   // A practice number nobody verified must not read as 「確認済み」.
   $('phone-state').textContent = state.account.phoneVerificationProvider === 'simulator' ? '練習では不要' : state.account.verifiedPhone ? '確認済み' : '未確認';
   // Verifying a number sends a real SMS through the carrier. Where that is not set up, say so instead of offering a form that fails.
@@ -202,6 +235,9 @@ function renderSetup() {
 async function refresh() {
   state = await api('/bootstrap');
   const c = state.configuration;
+  $('credit-balance').hidden = !state.credits?.enabled;
+  $('budget').closest('label').hidden = Boolean(state.credits?.enabled);
+  $('credit-balance').textContent = `${state.credits?.available ?? 0} クレジット${state.credits?.held ? `（確保中 ${state.credits.held}）` : ''}`;
   $('mode').hidden = false;
   $('mode').textContent = c.mode === 'simulator' ? '練習モード（電話はかかりません）' : '実電話モード';
   $('mode').className = 'badge ' + (c.mode === 'simulator' ? 'practice' : 'live');
@@ -211,23 +247,38 @@ async function refresh() {
   $('goal-help').textContent = GOAL_HELP[goal()];
   $('detail-empty').hidden = selected !== null;
   options('product', state.products, '（設定で商品を登録してください）');
-  options('contact', state.contacts, '（設定で相手を登録してください）');
-  options('suppress-contact', state.contacts, '（登録された相手がいません）');
+  options('contact', state.contacts.map(c => ({...c, name: [c.name, c.company].filter(Boolean).join(' / ') + (c.phone ? '' : '（電話番号未登録）')})), '（設定で相手を登録してください）');
+  options('suppress-contact', state.contacts.filter(c => c.phone).map(c => ({...c, name: c.name || c.company})), '（登録された相手がいません）');
   $('seconds').max = c.maxSeconds; $('budget').max = c.maxCallUsd;
+  // Until someone sets a lower cap, a call may use the server's own cap (a fixed 1 USD would refuse every live estimate above it).
+  if ($('budget').dataset.touched !== 'true') $('budget').value = c.maxCallUsd;
   options('followup-kind', (state.plugins ?? []).filter(p => (state.integrations ?? []).includes(p.id)), '（使えるサービスがありません）');
   $('plugin-list').replaceChildren(...(state.plugins ?? []).map(p => el('p', `${p.name} — ${!p.enabled ? '無効' : p.configured ? '設定済み' : '設定待ち'}`)));
+  $('contact-list').replaceChildren(...state.contacts.map(c => {
+    const row = el('div');
+    row.append(button([c.name, c.company].filter(Boolean).join(' / ') + ' — 編集', () => {
+      for (const [field, id] of Object.entries({id:'contact-id',name:'contact-name',company:'contact-company',phone:'contact-phone',email:'contact-email',notes:'contact-notes',lastCallNotes:'contact-last-call',relationship:'relationship',basis:'contact-basis',crmId:'crm-id'})) $(id).value = c[field] ?? '';
+      $('contact-name').focus();
+    }));
+    row.append(el('p', c.phone || '電話番号未登録'));
+    if (c.lastCallNotes) row.append(el('p', '前回の電話内容: ' + c.lastCallNotes));
+    return row;
+  }));
   renderSetup();
   renderHistory();
+  syncGoal();
   if (!$('request').value.trim()) suggestRequest();
 }
 function suggestRequest() {
-  const name = $('test-me').checked ? '自分' : $('contact').selectedOptions[0]?.textContent ?? '';
+  const name = $('test-me').checked ? '自分' : ($('contact').selectedOptions[0]?.textContent ?? '').replace(/（電話番号未登録）$/, '');
   if (!name || name.startsWith('（')) return;
   $('request').value = GOAL_TEXT[goal()](name); $('request').dataset.suggested = 'true';
 }
 // Keep the suggestion in step with the choices, but never overwrite what the person typed.
-for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { $('goal-help').textContent = GOAL_HELP[goal()]; if ($('request').dataset.suggested === 'true') suggestRequest(); });
+for (const label of document.querySelectorAll('label.choice')) { const v = label.querySelector('input')?.value; if (v && GOAL_HELP[v]) label.append(el('span', GOAL_HELP[v], 'choice-hint')); }
+for (const n of document.querySelectorAll('input[name="goal"], #contact, #test-me')) n.addEventListener('change', () => { syncGoal(); $('goal-help').textContent = GOAL_HELP[goal()]; if ($('request').dataset.suggested === 'true') suggestRequest(); });
 $('request').addEventListener('input', () => { $('request').dataset.suggested = 'false'; });
+$('budget').addEventListener('input', () => { $('budget').dataset.touched = 'true'; });
 $('test-me').addEventListener('change', () => { $('contact').disabled = $('test-me').checked; });
 
 function renderHistory() {
@@ -236,7 +287,7 @@ function renderHistory() {
   if (!all.length) dest.append(el('p', 'まだありません。上のフォームから最初の電話を任せてみましょう。', 'muted'));
   for (const m of shown) {
     const b = el('button', undefined, 'item' + (m.id === selected ? ' selected' : ''));
-    b.append(el('strong', m.target.name), el('span', STATUS[m.status] ?? m.status, 'state ' + tone(m.status)), el('small', `${m.product.name} ・ ${new Date(m.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${m.mode === 'simulator' ? ' ・ 練習' : ''}`));
+    b.append(el('strong', m.target.name), el('span', STATUS[m.status] ?? m.status, 'state ' + tone(m.status)), el('small', `${m.kind === 'phone-request' ? '雑談' : m.product.name} ・ ${new Date(m.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${m.mode === 'simulator' ? ' ・ 練習' : ''}`));
     b.addEventListener('click', () => openMission(m.id).catch(e => notice(e.message)));
     dest.append(b);
   }
@@ -259,33 +310,35 @@ function renderDetail(m) {
   const snapshot = JSON.stringify([m, state.followups?.filter(f => f.missionId === m.id), state.integrations]);
   if (snapshot === lastDetail && $('detail').childElementCount) return; lastDetail = snapshot;
   const d = $('detail'); $('detail-empty').hidden = true; d.replaceChildren();
-  d.append(el('p', `${m.target.name} への電話${m.mode === 'simulator' ? '（練習）' : ''}`, 'eyebrow'), el('h2', STATUS[m.status] ?? m.status, 'state-title ' + tone(m.status)));
+  const when = m.createdAt ? new Date(m.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  d.append(el('p', `${m.target.name} への電話${m.mode === 'simulator' ? '（練習）' : ''}${when ? `　${when}` : ''}`, 'eyebrow'), el('h2', STATUS[m.status] ?? m.status, 'state-title ' + tone(m.status)));
 
   if (!FINISHED.includes(m.status) && m.status !== 'DRAFT') {
     const bar = el('ol', undefined, 'progress'), at = PROGRESS.findIndex(([s]) => s === m.status);
     PROGRESS.forEach(([, label], i) => bar.append(el('li', label, i < at ? 'done' : i === at ? 'now' : '')));
     d.append(bar);
   }
-  d.append(el('p', m.request, 'request'));
+  d.append(el('p', `頼んだこと：${m.request}`, 'request'));
   if (m.error) d.append(el('p', ERRORS[m.error] ?? `理由：${m.error}`, 'notice'));
 
   if (m.result) {
+    // One row per kind of fact: what was confirmed, the callee's words it rests on, what is still open.
+    const defs = el('div', undefined, 'defs');
+    const row = (label, ...content) => { const r = el('div', undefined, 'def'); const v = el('div', undefined, 'def-v'); v.append(...content); r.append(el('h3', label, 'def-k'), v); defs.append(r); };
     const verified = Object.entries(m.result.verified ?? {}), stop = m.result.doNotContact;
-    d.append(el('h3', '確認できたこと'));
-    if (!verified.length && !stop) d.append(el('p', '相手の言葉で確認できたことは、まだありません。', 'muted'));
     const list = el('ul', undefined, 'facts');
     if (stop) list.append(el('li', FACTS.do_not_contact(), 'bad'));
     for (const [key, value] of verified) list.append(el('li', (FACTS[key] ?? (v => `${key}：${v}`))(value), 'good'));
-    d.append(list);
-    const missing = (m.result.missing ?? []).filter(() => !stop);
-    if (missing.length) { d.append(el('h3', 'まだ決まっていないこと')); const ul = el('ul', undefined, 'facts'); for (const k of missing) ul.append(el('li', MISSING[k] ?? k, 'open')); d.append(ul); }
+    row('確認できたこと', ...(!verified.length && !stop ? [el('p', '相手の言葉で確認できたことは、まだありません。', 'muted')] : []), list);
     const quotes = (m.result.evidence ?? []).filter(e => e.quote);
-    if (quotes.length) {
-      d.append(el('h3', '根拠になった相手の言葉'));
-      for (const e of quotes) d.append(el('blockquote', `「${e.quote}」${e.confirmedProposal ? `（こちらの提案：「${e.confirmedProposal}」）` : ''}`));
-    }
-    if (m.result.caveat) d.append(el('p', m.result.caveat, 'hint'));
+    if (quotes.length || m.result.caveat) row('根拠になった言葉', ...quotes.map(e => el('blockquote', `「${e.quote}」${e.confirmedProposal ? `（こちらの提案：「${e.confirmedProposal}」）` : ''}`)), ...(m.result.caveat ? [el('p', m.result.caveat, 'hint')] : []));
+    const missing = (m.result.missing ?? []).filter(() => !stop);
+    if (missing.length) { const ul = el('ul', undefined, 'facts'); for (const k of missing) ul.append(el('li', MISSING[k] ?? k, 'open')); row('まだのこと', ul); }
+    d.append(defs);
   }
+
+  if(m.creditUsage?.cost?.basis==='usage-rate-v1'){const c=m.creditUsage.cost;d.append(el('p',`通話 ${c.durationSeconds}秒 · Twilio $${((c.carrierNanoUsd+c.mediaNanoUsd)/1e9).toFixed(5)} · ${c.voiceModel} $${(c.aiNanoUsd/1e9).toFixed(5)} · 検索 ${c.searchCalls}回 $${(c.searchNanoUsd/1e9).toFixed(5)}`,'hint'));}
+  if(m.creditQuote?.mode==='credits') {const u=m.creditUsage;d.append(el('p',u?(u.status==='pending'?`精算待ち · ${u.held} クレジット確保中`:`消費 ${u.consumed} クレジット · 確保 ${u.held} · 返却 ${u.released}`):'消費クレジット：未確認','hint'));}
 
   if (m.transcript?.length) {
     const details = el('details'); details.append(el('summary', '会話の文字起こしを見る'));
@@ -308,7 +361,12 @@ function renderDetail(m) {
   if (m.mode === 'live' && m.status === 'ACTIVE') actions.append(button('自分に代わる', async () => { if (confirm('確認済みの自分の番号につなぎます。回線がもう1本ぶんの料金がかかります。続けますか？')) { await api('/missions/' + m.id + '/handoff', 'POST', { acknowledged: true }); await openMission(m.id, false); } }));
   if (m.mode === 'live' && m.carrierSid && ['UNKNOWN', 'HANDOFF_PENDING', 'HANDOFF_ACTIVE'].includes(m.status)) actions.append(button('回線の状態を確認する', async () => { await api('/missions/' + m.id + '/reconcile', 'POST', { acknowledged: true }); await openMission(m.id, false); }));
   if (['COMPLETED', 'INCOMPLETE'].includes(m.status) && state.integrations?.length) actions.append(button('メール・予定などを送る', () => { followup = null; $('followup-preview').textContent = ''; $('followup-send').disabled = true; $('followup-ack').checked = false; $('followup').showModal(); }));
-  if (FINISHED.includes(m.status)) actions.append(button('同じ相手にもう一度', () => { $('contact').value = m.target.id; $('request').value = m.request; $('request').dataset.suggested = 'false'; $('request').focus(); }));
+  if (FINISHED.includes(m.status)) actions.append(button('同じ相手にもう一度', () => {
+    const chat = m.kind === 'phone-request', again = chat ? state.contacts.find(c => c.phone === m.target.phone) : null;
+    if (chat) { document.querySelector('input[name="goal"][value="chat"]').checked = true; syncGoal(); if (again) $('contact').value = again.id; }
+    else $('contact').value = m.target.id;
+    $('request').value = m.request; $('request').dataset.suggested = 'false'; $('request').focus();
+  }, 'primary again'));
   if (['DRAFT', 'COMPLETED', 'INCOMPLETE', 'DECLINED', 'FAILED', 'CANCELLED'].includes(m.status)) actions.append(button('この記録を消す', async () => {
     if (!confirm('この電話の記録を消します。メールなど、すでに外部に送ったものは消えません。')) return;
     await api('/missions/' + m.id, 'DELETE'); selected = null; lastDetail = ''; $('detail').replaceChildren(); await refresh();
@@ -322,22 +380,46 @@ async function showReview(id) {
   const practice = m.mode === 'simulator';
   const length = m.maxSeconds % 60 ? `${Math.floor(m.maxSeconds / 60)}分${m.maxSeconds % 60}秒` : `${m.maxSeconds / 60}分`;
   // Every value a person is asked to confirm must be readable without knowing the API: no "simulator", no bare "$1".
-  const rows = {
+  const chat = m.kind === 'phone-request', acting = m.phoneRequest?.engine === 'character-tts';
+  const rows = chat ? {
+    '電話のかけ方': practice ? '練習（実際の電話はかかりません）' : '実際に電話をかけます',
+    '相手': `${m.target.name}　${m.target.phone}${practice ? '（練習用。実際にはかけません）' : ''}`,
+    'こちらの番号': practice ? '練習用（実際の番号は使いません）' : m.callerId,
+    '名乗る名前': `${m.phoneRequest.callerName}（「${m.phoneRequest.callerName}さんの代わりにお電話しているAIです」と伝えます）`,
+    '話したいこと（雑談。何かを決める電話ではありません）': m.request,
+    // Voice, length and cost on one line: every extra row pushes the approval out of the first view (brief-gateway.md).
+    '通話の長さ・声・費用': `${acting ? `演技する声・${m.phoneRequest.voicePreset === 'character-male' ? '男性' : '女性'}（返事まで2〜3秒）` : '標準の声（GPT-Live）'}。最長${length}。${practice ? '練習なので費用は0円です。' : `費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`}`,
+    '会話データの送り先': practice
+      ? '練習ではどこにも送りません。このサーバーの中だけで動き、記録は30日で消えます。'
+      : acting ? '電話会社（Twilio）、聞き取り（Deepgram）、返事を考えるAI（OpenAI）、声（Google）に音声と文字が渡ります。記録はこのサーバーに保存し、30日で消えます。'
+      : '電話会社（Twilio）と音声AI（OpenAI）に音声と文字起こしが渡ります。記録はこのサーバーに保存し、30日で消えます。',
+  } : {
     '電話のかけ方': practice ? '練習（実際の電話はかかりません）' : '実際に電話をかけます',
     '相手': `${m.target.name}　${m.target.phone}${practice ? '（練習用の番号。実際にはかけません）' : ''}`,
     'こちらの番号': practice ? '練習用（実際の番号は使いません）' : m.callerId,
+    ...(m.callerName ? { '名乗る名前': m.callerName } : {}),
     '伝えること': m.request,
     'AIが説明してよいこと': m.product.facts,
     'AIが約束しないこと': m.product.forbidden,
     '通話の長さと費用': practice
       ? `最長${length}。練習なので費用は0円です。`
-      : `最長${length}。費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`,
+      : m.creditQuote?.mode==='credits' ? `最長${length}。利用料金は下記のクレジットで精算します。` : `最長${length}。費用の上限は${m.maxUsd}米ドル（見込みでは最大${m.estimatedMaximumUsd.toFixed(2)}米ドル）。`,
     '会話データの送り先': practice
       ? '練習ではどこにも送りません。このサーバーの中だけで動き、記録は30日で消えます。'
       : '電話会社（Twilio）と音声AI（OpenAI）に音声と文字起こしが渡ります。記録はこのサーバーに保存し、30日で消えます。',
   };
+  if (m.creditQuote?.mode === 'credits') {
+    const metered=m.creditQuote.policy==='provider-cost-v1';
+    rows[metered?'最大確保':'利用クレジット'] = `${m.creditQuote.amount} クレジット（残高 ${state.credits?.available ?? 0}）${metered?`。1クレジット=$${m.creditQuote.creditUsd}`:''}`;
+    rows['消費のタイミング'] = m.creditQuote.tariff?.settlement==='usage-rate-v1'?'終了時に回線時間・音声AI・検索の使用量と単価で精算、余剰返却します。後日の追加徴収なし。文字起こし・税・欠測費用は運営者負担。':metered?'承認時に上限分を確保し、終了後に回線料金と音声AI使用量で精算・差額返却します。文字起こし・中継費等は運営者負担。料金未取得時は精算待ちです。':'承認時に確保し、発信処理の実行確定時に消費します。接続前の障害・不応答も対象です。実行前の取消は返却します。';
+    if(m.creditQuote.tariff?.carrierFx){const fx=m.creditQuote.tariff.carrierFx;rows['円建て回線の換算']=`1 USD = ${fx.unitsPerUsdNano/1e9}円（${fx.date} 基準）`;}
+  }
   for (const [name, value] of Object.entries(rows)) list.append(el('dt', name), el('dd', value));
   $('review-content').replaceChildren(list, el('p', '電話の最初に、記録していることとAIであることを相手に伝えます。', 'hint'));
+  $('start-call').disabled = m.creditQuote?.amount > (state.credits?.available ?? 0);
+  if ($('start-call').disabled) $('review-content').append(el('p','クレジットが不足しています。残高を追加後、もう一度内容を確認してください。','hint'));
+  // Practice has no scripted person to chat with (the server refuses it): say so before anyone ticks the box.
+  if (chat && practice) { $('start-call').disabled = true; $('review-content').prepend(el('p', '雑談は練習モードでは試せません。実電話モードのときに使えます。', 'notice')); }
   $('call-ack').checked = false; $('review').showModal();
 }
 
@@ -349,10 +431,20 @@ on('login-form', 'submit', async () => {
   const running = state.missions.find(m => !FINISHED.includes(m.status) && m.status !== 'DRAFT');
   if (running) await openMission(running.id, false);
 });
-on('logout', 'click', () => { token = ''; state = null; selected = null; lastDetail = ''; $('detail').replaceChildren(); $('workspace').hidden = true; $('logout').hidden = true; $('open-settings').hidden = true; $('mode').hidden = true; $('login').hidden = false; document.body.classList.remove('signed-in'); });
+on('logout', 'click', () => { token = ''; state = null; selected = null; lastDetail = ''; $('detail').replaceChildren(); $('workspace').hidden = true; $('logout').hidden = true; $('open-settings').hidden = true; $('mode').hidden = true; $('credit-balance').hidden=true; $('credits').close();$('credit-ledger').replaceChildren(); $('login').hidden = false; document.body.classList.remove('signed-in'); });
+let creditCursor=0;
+async function loadCreditLedger() {
+  const {entries}=await api('/credits/ledger?after='+creditCursor);
+  for(const e of entries) {const labels={grant:'追加',reserve:'確保',consume:'消費',release:'返却'};$('credit-ledger').append(el('p',`${new Date(e.created).toLocaleString('ja')} · ${labels[e.kind]??e.kind} ${e.amount} クレジット`));creditCursor=e.seq;}
+  $('credits-more').hidden=entries.length<100;
+}
+on('credit-balance','click',async()=>{const b=await api('/credits');$('credits-summary').textContent=`残高 ${b.available} / 確保中 ${b.held} クレジット`;$('credit-ledger').replaceChildren();creditCursor=0;await loadCreditLedger();$('credits').showModal();});
+on('credits-more','click',loadCreditLedger);
+on('credits-close','click',()=> $('credits').close());
 on('open-settings', 'click', () => open(''));
 on('refresh', 'click', refresh);
 on('more', 'click', () => { showAll = true; renderHistory(); });
+on('caller-form', 'submit', async () => { await api('/account/caller-name', 'POST', { callerName: $('caller-name').value }); await refresh(); $('settings').close(); notice('名乗る名前を保存しました。'); });
 on('consent', 'click', async () => { await api('/consent', 'POST', { version: state.configuration.consentVersion }); await refresh(); $('settings').close(); notice('同意を保存しました。'); });
 on('product-form', 'submit', async e => {
   await api('/products', 'POST', { name: $('product-name').value, facts: $('facts').value, source: $('product-url').value, reviewed: $('facts-reviewed').checked });
@@ -360,13 +452,23 @@ on('product-form', 'submit', async e => {
 });
 on('import-form', 'submit', async () => { const r = await api('/products/import', 'POST', { url: $('product-url').value }); $('facts').value = r.content; $('facts-reviewed').checked = false; notice('取り込みました。内容を確かめて、必要なら直してください。まだ電話には使われません。'); });
 on('contact-form', 'submit', async e => {
-  const saved = await api('/contacts', 'POST', { name: $('contact-name').value, phone: $('contact-phone').value, email: $('contact-email').value, relationship: $('relationship').value, basis: $('contact-basis').value, crmId: $('crm-id').value });
-  e.target.reset(); await refresh(); $('contact').value = saved.id; $('settings').close(); suggestRequest(); notice(`${saved.name} を登録しました。`);
+  const saved = await api('/contacts', 'POST', { id: $('contact-id').value || undefined, name: $('contact-name').value, company: $('contact-company').value, notes: $('contact-notes').value, lastCallNotes: $('contact-last-call').value, phone: $('contact-phone').value, email: $('contact-email').value, relationship: $('relationship').value, basis: $('contact-basis').value, crmId: $('crm-id').value });
+  e.target.reset(); await refresh(); $('contact').value = saved.id; $('settings').close(); suggestRequest(); notice(`${saved.name || saved.company} を保存しました。`);
 });
 on('phone-form', 'submit', async () => { const r = await api('/phone/verify', 'POST', { phone: $('my-phone').value, code: $('phone-code').value, acknowledged: $('verify-ack').checked }); await refresh(); notice(r.verified ? '電話番号を確認しました。' : '確認用のSMSを送りました。届いたコードを入力して、もう一度押してください。'); });
 on('link', 'click', async () => { const r = await api('/links', 'POST', {}); $('link-code').textContent = r.message; });
 on('suppress', 'click', async () => { if (!confirm('この相手には、だれからも二度と電話しなくなります。よろしいですか？')) return; await api('/suppressions', 'POST', { contactId: $('suppress-contact').value, acknowledged: true }); notice('この相手への電話を停止しました。'); });
 on('mission-form', 'submit', async () => {
+  if (goal() === 'chat') {
+    const c = state.contacts.find(c => c.id === $('contact').value);
+    if (!c) throw Error('電話する相手を選んでください。');
+    if (!c.phone) throw Error('この相手は電話番号が未登録です。設定の「連絡先を登録・編集する」で登録してください。');
+    if (!state.account.callerName) { open('s-caller'); throw Error('先に、電話で名乗る名前を決めてください。'); }
+    const preset = $('chat-voice').value;
+    const r = await api('/phone/draft', 'POST', { phone: c.phone, name: c.name || c.company, instruction: $('request').value, conversationMode: 'chat', callerName: state.account.callerName,
+      ...(preset ? { engine: 'character-tts', voicePreset: preset } : {}) });
+    await refresh(); await openMission(r.mission.id, false); await showReview(r.mission.id); return;
+  }
   const m = await api('/missions/draft', 'POST', {
     request: $('request').value, productId: $('product').value, goal: goal(), testOnMe: $('test-me').checked,
     ...($('test-me').checked ? {} : { contactId: $('contact').value }),

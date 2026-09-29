@@ -28,4 +28,5 @@ export function createCharacter(scenario: Scenario, rng: () => number): CalleeCh
 }
 
 export { FriendCharacter, HotelCharacter, RestaurantCharacter, SerialCharacter, ShopCharacter, LlmCharacter };
+export { ReservationBook, type Booking } from "./restaurant.js";
 export { parseCalleeJson, type ChatFn, type ChatMessage, type LlmCharacterOptions } from "./llm.js";

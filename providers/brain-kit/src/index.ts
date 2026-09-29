@@ -77,9 +77,12 @@ export function buildSystemPrompt(ctx: BrainContext): string {
   return lines.join("\n");
 }
 
-/** System prompt + transcript as alternating callee (user) / agent (assistant) messages. */
-export function buildMessages(ctx: BrainContext): ChatMessage[] {
-  const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt(ctx) }];
+/**
+ * System prompt + transcript as alternating callee (user) / agent (assistant) messages. A caller with its own
+ * instructions for the call (a phone request) passes `systemPrompt`; the reply must still be the JSON below.
+ */
+export function buildMessages(ctx: BrainContext, systemPrompt: (ctx: BrainContext) => string = buildSystemPrompt): ChatMessage[] {
+  const messages: ChatMessage[] = [{ role: "system", content: systemPrompt(ctx) }];
   for (const t of ctx.transcript) {
     messages.push({ role: t.source === "callee" ? "user" : "assistant", content: t.text });
   }

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Oathra</title>
+  <link rel="icon" type="image/png" href="assets/oathra-mark-original.png" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/png" href="assets/oathra-mark-white.png" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="v2.css" />
+  <link rel="stylesheet" href="ringzero.css" />
+  <link rel="stylesheet" href="records.css" />
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+  <header class="topbar">
+    <button type="button" class="btn" id="navigation-back" disabled><span aria-hidden="true">← </span><span data-i18n="back">Back</span></button>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-icon" aria-hidden="true"></span>
+      <span class="brand-name">Oathra</span>
+      <span class="brand-sub" data-i18n="arena">Arena</span>
+    </div>
+    <div class="topbar-right">
+      <button type="button" class="btn" id="home-open" data-i18n="home">Home</button>
+      <button type="button" class="btn" id="contacts-open" data-i18n="contacts">Contacts</button>
+      <button type="button" class="btn" id="records-open" aria-controls="replays-panel" aria-expanded="false">Records</button>
+      <div class="transport-toggle" role="group" data-i18n-aria="transport" aria-label="Transport">
+        <button type="button" class="tt-btn is-on" data-transport="simulator" aria-pressed="true">
+          <span class="dot" aria-hidden="true"></span><span data-i18n="simulator">Simulator</span>
+        </button>
+        <button type="button" class="tt-btn" data-transport="real" aria-pressed="false">
+          <span class="dot" aria-hidden="true"></span><span data-i18n="realPhone">Real Phone</span>
+        </button>
+      </div>
+      <div class="local-wrap">
+        <button type="button" class="local-btn" id="local-btn" aria-expanded="false" aria-controls="local-pop">
+          <span data-i18n="local">Local</span> <span class="dot on" aria-hidden="true"></span>
+        </button>
+        <div class="popover" id="local-pop" hidden role="dialog" data-i18n-aria="popTitle" aria-label="Running locally">
+          <p class="pop-title" data-i18n="popTitle">Running locally.</p>
+          <p class="pop-sub" data-i18n="popSub">Everything is yours.</p>
+          <p class="pop-need" data-i18n="popNeed">Need:</p>
+          <ul>
+            <li data-i18n="popNumbers">phone numbers</li>
+            <li data-i18n="popSip">managed SIP</li>
+            <li data-i18n="popTeam">team deployment</li>
+            <li data-i18n="popHosted">hosted inference</li>
+          </ul>
+          <p class="pop-foot">Oathra Cloud</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <aside id="recovery" hidden role="status"><p data-i18n="unconfirmed"></p><button type="button" id="recover-call" data-i18n="recover"></button></aside>
+    <section class="screen" id="screen-home" aria-labelledby="home-title" hidden>
+      <p class="home-kicker" data-i18n="homeKicker">Your contacts and conversations</p>
+      <h1 id="home-title" data-i18n="homeTitle">What would you like to do?</h1>
+      <p class="home-lead" data-i18n="homeLead"></p>
+      <button type="button" class="btn primary" id="home-resume" data-i18n="resumeCall" hidden></button>
+      <div class="home-choices">
+        <section class="home-choice"><h2 data-i18n="homePhoneTitle"></h2><p data-i18n="homePhoneText"></p><p class="availability" data-i18n="phoneUnavailable"></p><button type="button" class="btn primary" id="home-phone" data-i18n="homePhoneAction"></button></section>
+        <section class="home-choice"><h2 data-i18n="homeContactsTitle"></h2><p data-i18n="homeContactsText"></p><button type="button" class="btn" id="home-contacts" data-i18n="homeContactsAction"></button></section>
+        <section class="home-choice"><h2 data-i18n="homePracticeTitle"></h2><p data-i18n="homePracticeText"></p><button type="button" class="btn" id="home-practice" data-i18n="homePracticeAction"></button></section>
+      </div>
+    </section>
+    <!-- ============ START SCREEN ============ -->
+    <section class="screen" id="screen-start">
+      <div class="start-inner">
+        <div class="rail-head">
+          <h1 class="start-title" data-i18n-html="startTitle">Give your agent<br />a mission.</h1>
+          <span class="rail-count" id="scenario-count"></span>
+        </div>
+
+        <p class="practice-note" data-i18n="practice"></p>
+        <button type="button" class="btn" id="resume-call" hidden data-i18n="resumeCall"></button>
+        <div class="mode-toggle" role="group" data-i18n-aria="mode" aria-label="Mode">
+          <button type="button" class="mode-btn is-on" data-mode="watch" aria-pressed="true">
+            <span class="mode-k" data-i18n="watch">Watch</span><span class="mode-d" data-i18n="watchSub">AI vs AI</span>
+          </button>
+          <button type="button" class="mode-btn" data-mode="play" aria-pressed="false">
+            <span class="mode-k" data-i18n="play">Play</span><span class="mode-d" data-i18n="playSub">you answer the phone</span>
+          </button>
+        </div>
+
+        <div class="brain-row" id="brain-row" hidden>
+          <label for="brain-select" class="mono" data-i18n="agentSelect">Agent</label>
+          <select id="brain-select"></select>
+          <small data-i18n="external"></small>
+        </div>
+
+        <div class="scenario-list" id="scenario-list" data-i18n-aria="missions" aria-label="Missions">
+          <p class="muted mono" data-i18n="loadingMissions">Loading missions…</p>
+        </div>
+
+        <div class="start-foot">
+          <details class="starter-example">
+            <summary data-i18n="sampleTitle">Edit an example</summary>
+            <label for="starter-text" data-i18n="sampleLabel">What the restaurant says</label>
+            <textarea id="starter-text" rows="2"></textarea>
+            <button type="button" class="btn" id="starter-run" data-i18n="sampleRun">Try this response</button>
+          </details>
+          <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel" data-i18n="replays">Replays</button>
+        </div>
+        <div class="replays-panel" id="replays-panel" hidden>
+          <h3 class="replays-title" id="replays-title" data-i18n="replays">Records</h3>
+          <div class="replay-filter" id="replay-filter" role="group">
+            <button type="button" class="rf-btn is-on" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="rf-btn" data-filter="real" aria-pressed="false">Real</button>
+            <button type="button" class="rf-btn" data-filter="practice" aria-pressed="false">Practice</button>
+          </div>
+          <ul class="replay-list" id="replay-list" aria-labelledby="replays-title"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EMPTY STAGE (board layout only): where the call will appear ============ -->
+    <section class="screen" id="stage-empty" aria-labelledby="empty-h">
+      <div class="empty-inner">
+        <h2 id="empty-h" data-i18n="emptyTitle">Pick a call on the left. It starts here.</h2>
+        <p data-i18n="emptyLead">The AI saying "it's booked" completes nothing. A ✓ appears only when the other side says it.</p>
+        <ol class="empty-flow">
+          <li data-i18n="emptyStep1">Pick a call</li>
+          <li data-i18n="emptyStep2">Watch it, or answer it yourself</li>
+          <li data-i18n="emptyStep3">The result, in the callee's words</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-contacts" hidden aria-labelledby="contacts-title">
+      <div class="contacts-header"><h2 id="contacts-title" data-i18n="contacts">Contacts</h2><button type="button" class="btn" id="contacts-new" data-i18n="contactNew">New contact</button></div>
+      <p class="note" data-i18n="contactsIntro"></p>
+      <p id="contacts-error" role="alert" hidden></p>
+      <div class="contacts-layout">
+        <aside class="contacts-directory">
+          <button type="button" class="btn" id="contacts-resume" hidden data-i18n="contactResume">Return to unsaved changes</button>
+          <label for="contacts-search" data-i18n="contactSearch">Search by name or company</label>
+          <input id="contacts-search" type="search" autocomplete="off" />
+          <p id="contacts-empty" class="note" data-i18n="contactsEmpty"></p>
+          <ul id="contacts-list"></ul>
+          <button type="button" class="btn" id="contacts-reload" data-i18n="contactsReload">Reload list</button>
+        </aside>
+        <div class="contact-detail">
+          <button type="button" class="btn contact-back" id="contacts-back" data-i18n="contactBack">Back to contacts</button>
+          <form id="contact-form">
+            <h3 id="contact-editor-title" data-i18n="contactNew">New contact</h3>
+            <p class="note" data-i18n="contactHint"></p>
+            <div class="contact-fields">
+              <label><span data-i18n="contactName">Name</span><input id="contact-name" maxlength="200" autocomplete="off" /></label>
+              <label><span data-i18n="contactCompany">Company</span><input id="contact-company" maxlength="200" autocomplete="off" /></label>
+              <label><span data-i18n="contactPhone">Phone (optional)</span><input id="contact-phone" type="tel" maxlength="80" autocomplete="off" /></label>
+
+            </div>
+            <label for="contact-lastCallNotes" data-i18n="contactLast">Previous call notes (entered by you)</label>
+            <textarea id="contact-lastCallNotes" rows="3" maxlength="20000"></textarea>
+<details id="contact-extra"><summary data-i18n="contactExtra">Email and other notes</summary>              <label><span data-i18n="contactEmail">Email (optional)</span><input id="contact-email" type="email" maxlength="254" autocomplete="off" /></label>            <label for="contact-notes" data-i18n="contactNotes">Other notes</label>
+            <textarea id="contact-notes" rows="3" maxlength="20000"></textarea></details>
+            <div class="contact-save-bar"><p id="contact-save-status" role="status"></p>
+            <div class="contact-actions"><button type="submit" class="btn primary" data-i18n="contactSave">Save contact</button><button type="button" class="btn" id="contact-use" disabled data-i18n="contactUse">Prepare a call</button></div></div>
+            <p class="note" data-i18n="contactUseNote"></p>
+          </form>
+          <section class="contact-history" aria-labelledby="contact-history-title"><h3 id="contact-history-title" data-i18n="contactHistory">Saved calls to this number</h3><p class="note" data-i18n="contactHistoryNote"></p><div id="contact-history"></div></section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ REAL PHONE PANEL ============ -->
+    <section class="screen" id="screen-real" hidden>
+      <div class="start-inner narrow">
+        <h2 class="panel-h" data-i18n="phoneTitle">Prepare a phone call</h2>
+        <div class="availability" id="phone-readiness" role="status" data-i18n="phoneChecking"></div>
+        <form id="phone-form">
+          <fieldset class="phone-step">
+            <legend data-i18n="phoneStepWho">Who</legend>
+            <button type="button" class="btn" id="phone-pick-contact" data-i18n="contactPick">Choose a contact</button>
+            <div class="phone-row2">
+              <div class="phone-field"><label for="phone-number" data-i18n="phoneNumber">Phone number</label>
+              <input id="phone-number" type="tel" inputmode="tel" autocomplete="off" required maxlength="80" aria-describedby="phone-help" /></div>
+              <div class="phone-field"><label for="phone-name" data-i18n="phoneName">Recipient name</label>
+              <input id="phone-name" type="text" autocomplete="off" required maxlength="100" /></div>
+            </div>
+            <div class="phone-field"><label for="phone-caller-name" data-i18n="phoneCallerName">Your name (optional)</label>
+            <input id="phone-caller-name" type="text" autocomplete="name" maxlength="40" aria-describedby="phone-caller-hint" />
+            <p id="phone-caller-hint" class="note" data-i18n="phoneCallerHint"></p></div>
+          </fieldset>
+          <fieldset class="phone-step">
+            <legend data-i18n="phoneStepWhat">What to say</legend>
+            <div class="phone-field"><label for="phone-template" data-i18n="phoneTemplate">Start from a purpose template</label>
+            <select id="phone-template"><option value="" data-i18n="phoneTemplateBlank">Write your own purpose</option></select></div>
+            <div class="phone-field"><label for="phone-instruction" data-i18n="phoneInstruction">What should the AI say?</label>
+            <textarea id="phone-instruction" rows="3" required maxlength="2000"></textarea></div>
+            <details class="phone-input-help"><summary data-i18n="phoneInputHelp">Input help</summary><p id="phone-help" class="note" data-i18n="phoneHelp"></p><p class="note" data-i18n="phoneTemplateHint"></p></details>
+          </fieldset>
+          <fieldset class="phone-step" id="phone-voice-choice" aria-describedby="phone-voice-cards-note">
+            <legend data-i18n="phoneStepVoice">Voice</legend>
+            <div id="phone-voice-cards" class="phone-voice-cards"></div>
+            <p id="phone-voice-cards-note" class="note" data-i18n="phoneVoiceCardsNote"></p>
+            <details id="phone-voice-advanced"><summary data-i18n="phoneVoiceAdvanced">More settings</summary>
+              <div class="phone-field"><label for="phone-engine" data-i18n="phoneEngine">Voice AI</label>
+              <select id="phone-engine" aria-describedby="phone-engine-note"></select>
+              <p id="phone-engine-note" class="note" data-i18n="phoneEngineNote"></p></div>
+              <input type="hidden" id="phone-preset" value="" />
+              <div class="phone-field"><label for="phone-voice" data-i18n="phoneVoice">AI voice</label>
+              <select id="phone-voice" aria-describedby="phone-voice-note"></select>
+              <p id="phone-voice-note" class="note" data-i18n="phoneVoiceNote"></p></div>
+            </details>
+          </fieldset>
+          <div class="phone-aside" id="phone-aside"><!-- phone-aside -->
+            <h3 class="phone-aside-h" data-i18n="phoneSummaryTitle">Before calling</h3>
+            <dl class="phone-summary" id="phone-summary"></dl>
+            <p class="note phone-aside-note" data-i18n="phoneSummaryNote"></p><!-- /phone-aside-head -->
+            <p id="phone-error" role="alert" hidden></p>
+            <div class="phone-form-actions">
+              <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
+              <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
+            </div>
+          </div><!-- /phone-aside -->
+        </form>
+        <section id="phone-review" hidden aria-labelledby="phone-review-title" tabindex="-1">
+          <h3 id="phone-review-title" data-i18n="phoneReviewTitle">Call draft · not sent</h3>
+          <dl id="phone-review-fields"></dl>
+          <p class="note" data-i18n="phonePrivacy"></p>
+          <div id="phone-disclosure" class="availability"></div>
+          <label class="phone-consent"><input type="checkbox" id="phone-consent" /><span data-i18n="phoneConsent"></span></label>
+          <button type="button" class="btn primary" id="phone-setup" hidden data-i18n="phoneSetupAction">Check phone setup</button>
+          <button type="button" class="btn primary" id="phone-dial" disabled aria-describedby="phone-dial-hint" data-i18n="phoneDial">Place call</button>
+          <p id="phone-dial-hint" class="note" role="status" hidden></p>
+          <p id="phone-dial-error" role="alert" hidden></p>
+          <a class="btn" id="phone-download" download="oathra-phone-request.json" data-i18n="phoneSave">Save call draft</a>
+          <details class="phone-developer"><summary data-i18n="phoneDeveloper"></summary><p class="note" data-i18n="phoneNext"></p>
+          <code>oathra call --request-file oathra-phone-request.json --dry-run</code>
+          <p class="note" data-i18n="phoneApprove"></p>
+          <code>oathra call --request-file oathra-phone-request.json --approve-request</code></details>
+        </section>
+        <section id="phone-live" hidden aria-labelledby="phone-live-title" tabindex="-1">
+          <h3 id="phone-live-title" data-i18n="phoneProgress"></h3>
+          <p id="phone-live-state" role="status"></p><p id="phone-live-recipient"></p>
+          <p id="phone-live-error" role="alert" hidden></p>
+          <div class="phone-live-actions"><button type="button" class="btn" id="phone-refresh" data-i18n="phoneRefresh"></button><button type="button" class="btn" id="phone-hangup" hidden data-i18n="endCall"></button><button type="button" class="btn" id="phone-resolve" hidden data-i18n="phoneResolve"></button><button type="button" class="btn" id="phone-open-record" hidden></button></div>
+          <pre id="phone-live-summary"></pre><details><summary data-i18n="phoneTranscript"></summary><div id="phone-live-transcript"></div></details>
+        </section>
+        <details id="phone-history-section"><summary data-i18n="phoneHistory"></summary>
+          <button type="button" class="btn" id="phone-history-refresh" data-i18n="contactsReload"></button>
+          <p id="phone-history-error" role="alert" hidden></p><ul id="phone-history-list"></ul>
+        </details>
+        <button type="button" class="btn" id="real-back" data-i18n="back">Back</button>
+      </div>
+    </section>
+
+    <!-- ============ CALL SCREEN ============ -->
+    <section class="screen call" id="screen-call" hidden>
+      <div class="call-frame">
+        <div class="call-head">
+          <div class="call-title-wrap">
+            <button type="button" class="back-btn" id="call-back" data-i18n-aria="backToMissions" aria-label="Back to missions">←</button>
+            <div class="call-title-text">
+              <h2 class="call-title" id="call-title">—</h2>
+              <p class="call-sub" id="call-sub"></p>
+            </div>
+          </div>
+          <div class="call-controls">
+            <div class="meters" aria-hidden="true">
+              <div class="meter" id="meter-agent"><span class="meter-label" data-i18n="meterAgent">AI</span><span class="meter-bars"></span></div>
+              <div class="meter" id="meter-callee"><span class="meter-label" id="meter-callee-label">—</span><span class="meter-bars"></span></div>
+            </div>
+            <div class="call-clock"><span class="call-status" id="call-status"></span><span class="call-timer" id="call-timer">00:00</span></div>
+            <button type="button" class="btn" id="call-hangup" hidden data-i18n="endCall">End call</button><span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span></div>
+        </div>
+
+        <div class="parties">
+          <div class="party" id="party-agent" data-side="agent">
+            <div class="party-label mono" data-i18n="partyAgent">AGENT</div>
+            <div class="party-face"><span class="party-ring" aria-hidden="true"></span><canvas class="party-orb" id="agent-orb" hidden aria-hidden="true"></canvas><span class="party-glyph" id="agent-glyph">◉</span></div>
+            <div class="party-name" id="agent-name">scripted</div>
+          </div>
+          <div class="activity" aria-hidden="true">
+            <div class="activity-bar" id="activity-bar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="party" id="party-callee" data-side="callee">
+            <div class="party-label mono" data-i18n="partyCallee">CALLEE</div>
+            <div class="party-face"><span class="party-ring" aria-hidden="true"></span><span class="party-glyph avatar" id="callee-avatar">◉</span></div>
+            <div class="party-name" id="callee-name">—</div>
+          </div>
+        </div>
+
+        <div class="ux-state mono" id="ux-state" aria-live="polite">
+          <span class="ux-pill"><span class="ux-dot" aria-hidden="true"></span><span id="ux-text">Idle</span></span>
+        </div>
+
+        <div class="transcript" id="transcript" aria-live="polite" data-i18n-aria="transcript" aria-label="Transcript"></div>
+
+        <div class="play-brief" id="play-brief" hidden>
+          <span class="mono muted brief-k" data-i18n="yourMission">YOUR MISSION</span>
+          <p id="play-brief-text"></p>
+        </div>
+
+        <form class="play-input" id="play-form" hidden>
+          <label for="play-text" class="play-label" id="play-label">You are the callee. Answer the phone.</label>
+          <div class="play-row">
+            <input type="text" id="play-text" autocomplete="off" data-i18n-placeholder="playPlaceholder" placeholder="Type what you say…" />
+            <button type="submit" class="btn primary" data-i18n="send">Send</button>
+            <button type="button" class="btn" id="play-hangup" data-i18n="hangUp">Hang up</button>
+          </div>
+          <div class="fool" id="fool" hidden>
+            <span class="mono muted fool-k" data-i18n="foolTitle">TRY TO FOOL IT</span>
+            <div class="fool-row" id="fool-row"></div>
+          </div>
+        </form>
+
+        <div class="panels">
+          <section class="panel" aria-labelledby="mission-h">
+            <h3 class="panel-title mono" id="mission-h"><span data-i18n="mission">MISSION</span> <span class="count" id="mission-count"></span></h3>
+            <div class="verdict-progress" id="mission-progress" aria-hidden="true"></div>
+            <ul class="mission-list" id="mission-list"></ul>
+            <div class="sheet-actions" id="sheet-actions"></div>
+          </section>
+          <section class="panel" aria-labelledby="evidence-h">
+            <h3 class="panel-title mono" id="evidence-h"><span data-i18n="evidence">EVIDENCE</span> <span class="count" id="evidence-count">0</span></h3>
+            <ul class="evidence-list" id="evidence-list"></ul>
+          </section>
+          <section class="panel intake-panel" id="intake-panel" aria-labelledby="intake-h" hidden>
+            <h3 class="panel-title mono" id="intake-h"><span data-i18n="intake">OPTIONAL INTAKE</span></h3>
+            <div class="intake-meta mono"><span id="intake-status"></span><span id="intake-questions"></span></div>
+            <p class="intake-purpose" id="intake-purpose"></p>
+            <ul class="intake-list" id="intake-list"></ul>
+            <p class="intake-note" id="intake-note"></p>
+          </section>
+          <div class="result-wrap" id="result-wrap" hidden></div>
+        </div>
+
+        <div class="metrics mono" id="metrics">
+          <span><span data-i18n="latency">Latency</span> <b id="m-latency">—</b> ms</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span><span data-i18n="cost">Cost</span> <b id="m-cost">$0.000</b></span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span><b id="m-elapsed">00:00</b></span>
+          <span class="proof-legend" data-i18n="proofLegend">Underlined: the words the verdict rests on</span>
+        </div>
+
+
+        <div class="drawer">
+          <button type="button" class="drawer-toggle mono" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-body" data-i18n="details">Details</button>
+          <div class="drawer-body" id="drawer-body" hidden>
+            <div class="tabs" role="tablist">
+              <button type="button" role="tab" class="tab is-on" data-tab="timeline" aria-selected="true" data-i18n="timeline">Timeline</button>
+              <button type="button" role="tab" class="tab" data-tab="events" aria-selected="false" data-i18n="events">Events</button>
+              <button type="button" role="tab" class="tab" data-tab="latency" aria-selected="false" data-i18n="latency">Latency</button>
+              <button type="button" class="drawer-close" id="drawer-close" data-i18n="closeDetails">Close</button>
+            </div>
+            <div class="tabpanes">
+              <div class="tabpane" data-pane="timeline">
+                <div class="timeline-wrap">
+                  <ol class="timeline mono" id="timeline"></ol>
+                  <div class="snapshot" id="snapshot" hidden></div>
+                </div>
+              </div>
+              <div class="tabpane" data-pane="events" hidden>
+                <pre class="events-raw mono" id="events-raw"></pre>
+              </div>
+              <div class="tabpane" data-pane="latency" hidden>
+                <table class="latency-table mono" id="latency-table">
+                  <thead><tr><th data-i18n="thTurn">turn</th><th data-i18n="thTtfa">ttfa</th><th data-i18n="thBrain">brain</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="orb/orb.js"></script>
+<script src="app.js"></script>
+<script src="ringzero.js"></script>
+</body>
+</html>

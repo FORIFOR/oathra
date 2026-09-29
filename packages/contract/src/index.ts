@@ -6,6 +6,36 @@
  * and what counts as done. It is deliberately separate from any LLM prompt.
  */
 import { z } from "zod";
+import { parsePhoneRequest, type PhoneRequest } from "./phone-input.js";
+export { ContactInputSchema, ContactUpdateSchema, ContactRecordSchema, type ContactInput, type ContactRecord } from "./contact.js";
+
+export {
+  PhoneInputError,
+  normalizePhoneNumber,
+  extractPhoneNumber,
+  PhoneRequestSchema,
+  PhoneRequestFieldsSchema,
+  PHONE_VOICES,
+  DEFAULT_PHONE_VOICE,
+  PHONE_ENGINES,
+  GEMINI_VOICES,
+  GEMINI_VOICE_TRAITS,
+  VOICE_PRESETS,
+  VOICE_PRESET_LABELS,
+  PRESET_VOICES,
+  CHARACTER_TTS_PRESETS,
+  resolvePhoneVoice,
+  type VoicePreset,
+  DEFAULT_GEMINI_VOICE,
+  ENGINE_VOICES,
+  ENGINE_DEFAULT_VOICE,
+  type PhoneEngine,
+  preparePhoneRequest,
+  parsePhoneRequest,
+  type PhoneInputErrorCode,
+  type PhoneRequest,
+  type PhoneRequestInput,
+} from "./phone-input.js";
 
 // ---------------------------------------------------------------------------
 // Constraints
@@ -330,4 +360,45 @@ export function checkConstraints(
   }
 
   return { satisfied: violations.length === 0, violations, unknown };
+}
+export { PHONE_PURPOSE_TEMPLATES } from "./phone-templates.js";
+
+/**
+ * Someone rang the number. Nobody reviewed a request for this call, so the agent may do less than on an outbound
+ * one: it answers on the owner's behalf, takes the message, and promises nothing. `context` is what the service
+ * already knows (for example that this number was called earlier, and why); it is data, not an instruction.
+ */
+export function definePhoneInbound(call: { ownerName: string; callerPhone: string; callerName?: string; context?: string }, budget: Partial<CallContract["budget"]> = {}): CallContract {
+  const ownerName = call.ownerName.trim().slice(0, 40), context = call.context?.trim().slice(0, 600);
+  return defineCall({ goal: "phone.inbound", language: "ja",
+    input: { ownerName, ...(context ? { context } : {}), policy: "着信への応対。AIであることと誰の電話かを最初に伝える。用件・名前・折り返し先を聞き取り、依頼者へ伝えると約束するだけにする。予約・購入・支払い・契約・個人情報の提供・依頼者の予定や居場所の回答は行わない。相手が切りたければ終了する。" },
+    permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
+    target: { phone: call.callerPhone, name: call.callerName?.trim().slice(0, 100) || "着信" },
+  });
+}
+
+/**
+ * A restaurant's own number, answered by an AI that takes table bookings. The voice only talks: whether a
+ * table exists and whether it is now taken is decided by the reservation desk (`@oathra/core`), through tools.
+ * `today` anchors "あさって" and "今週の金曜"; `seatings` are the only times that can be booked.
+ */
+export function defineRestaurantReception(call: { restaurantName: string; callerPhone: string; callerName?: string; today: string; seatings: string[]; maxParty: number; closedNote?: string }, budget: Partial<CallContract["budget"]> = {}): CallContract {
+  const closedNote = call.closedNote?.trim().slice(0, 120);
+  return defineCall({ goal: "phone.reception", language: "ja",
+    input: { restaurantName: call.restaurantName.trim().slice(0, 40), today: call.today, seatings: call.seatings.slice(0, 48), maxParty: call.maxParty, ...(closedNote ? { closedNote } : {}), policy: "店の電話にAIが出て席の予約だけを受ける。AIであることと店名を最初に伝える。空席の確認と予約の記録は台帳のツールだけで行い、ツールが booked を返すまで予約成立と言わない。支払い・割引・貸切・メニューの約束はしない。" },
+    permissions: { ask: true, reserve: true }, budget: { maxDurationMs: 240000, maxTurns: 40, maxCostUsd: 1, ...budget },
+    target: { phone: call.callerPhone, name: call.callerName?.trim().slice(0, 100) || "着信" },
+  });
+}
+
+/** Shared ask-only policy for personal phone requests across CLI, OSS Web and managed Gateway. */
+export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
+  const parsed = parsePhoneRequest(request), reservation = parsed.task === "reservation";
+  return defineCall({ goal: "phone.message", language: "ja",
+    input: { request: parsed.instruction, ...(parsed.task ? { task: parsed.task } : {}), ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), ...(parsed.voicePreset ? { voicePreset: parsed.voicePreset } : {}), policy: reservation ? "AIによる代理電話であることを最初に伝える。承認された予約だけを、日付・時刻・人数・名前を復唱して相手の了承を得てから成立させる。任せる範囲の外は決めずに持ち帰る。購入・支払い・カード番号の提供・契約・別の相手への発信を行わない。相手が断ったら終了する。" : "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
+    // A reservation is complete only when the callee's own words settle the date, the time and their acceptance.
+    ...(reservation ? { require: { date: true, time: true, confirmed: true }, confirmation: "callee_acceptance" as const } : {}),
+    permissions: reservation ? { ask: true, reserve: true, share_name: true } : { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
+    target: { phone: parsed.phone, name: parsed.name },
+  });
 }

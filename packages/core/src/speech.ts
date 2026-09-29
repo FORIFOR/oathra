@@ -139,3 +139,11 @@ export function normalizeForSpeech(text: string, lang: Language = "ja"): string 
 export function recordingNotice(language: Language): string {
   return language === "ja" ? "この通話は録音されています。" : "This call is being recorded.";
 }
+
+/**
+ * The same first words for a call that keeps a transcript but no audio. "Recorded" would
+ * claim something that is not kept; saying nothing would hide that the words are.
+ */
+export function transcriptNotice(language: Language): string {
+  return language === "ja" ? "この通話は記録されています。" : "This call is being transcribed.";
+}

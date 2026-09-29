@@ -1,19 +1,22 @@
+import { definePhoneRequest } from "@oathra/contract";
 /**
  * `oathra phone …` and `oathra setup phone`: bring your own carrier, bring
  * your own voice engine. SIP details stay behind the provider protocol; the
  * user answers a few questions and the provider automates what it can.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { defineCall, type CallContract } from "@oathra/contract";
+import { defineCall, parsePhoneRequest, PRESET_VOICES, resolvePhoneVoice, type CallContract, type PhoneRequest } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
 import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
+import { GeminiTTS } from "@oathra/gemini";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
-import { OpenAITTS } from "@oathra/openai";
-import { gptLiveEngine, realtimeEngine } from "@oathra/openai-realtime";
+import { OpenAIBrain, OpenAITTS } from "@oathra/openai";
+import { gptLiveEngine } from "@oathra/openai-realtime";
+import { geminiLiveEngine } from "@oathra/gemini-live";
 import {
   loadPhoneConfig,
   phoneConfigPath,
@@ -36,8 +39,11 @@ import { defaultCallsDir, saveCall } from "@oathra/replay";
 import { runCall } from "@oathra/runtime";
 import { contractFromScenario, loadScenarioDir, loadScenarioFile, type Scenario } from "@oathra/scenario";
 import { MULAW_8K, type VoiceEngine } from "@oathra/voice";
+import { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt, voiceSettingRecord } from "@oathra/voice-kit";
+
+export { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt };
 import { pipelineEngine } from "@oathra/voice-pipeline";
-import { liveModelOf, realtimeModelOf, resolveBrain } from "./brains.js";
+import { liveModelOf, resolveBrain } from "./brains.js";
 import { scenariosDir } from "./paths.js";
 import { liveRenderer, resultBox } from "./render.js";
 import { bad, bold, cyan, dim, green, ok, red, warn, yellow } from "./ui.js";
@@ -54,40 +60,66 @@ export function buildRegistry(env: NodeJS.ProcessEnv = process.env): PhoneRegist
   return reg;
 }
 
-export type EngineSpec = { id: "gpt-live" | "realtime" | "pipeline"; model?: string; brain?: string };
+export type EngineSpec = { id: "gpt-live" | "gemini-live" | "character-tts" | "pipeline"; model?: string; brain?: string; tts?: PipelineTTSChoice };
 
-/** Accepts `--engine gpt-live|realtime|pipeline[:model]` and the legacy `--brain` spellings. */
+/** Pipeline voices. `gemini-lite` is the character-call prototype: Flash-Lite TTS with the character preset's voice. */
+export type PipelineTTSChoice = "openai" | "gemini-lite";
+const CHARACTER_TTS_VOICES: Record<string, string> = { "character-female": PRESET_VOICES["character-tts"]["character-female"], "character-male": PRESET_VOICES["character-tts"]["character-male"] };
+
+/** The pipeline's TTS; `gemini-lite` only for the character presets, since the style is a character's. */
+export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?: string): { tts: OpenAITTS | GeminiTTS; voice?: string; style?: string } {
+  if (choice !== "gemini-lite") return { tts: new OpenAITTS() };
+  const voice = voicePreset ? CHARACTER_TTS_VOICES[voicePreset] : undefined;
+  if (!voice) throw new Error(`--tts gemini-lite is for the character presets only: add --voice-preset ${Object.keys(CHARACTER_TTS_VOICES).join("|")}`);
+  return { tts: new GeminiTTS({ voice, style: CHARACTER_TTS_STYLE }), voice, style: CHARACTER_TTS_STYLE };
+}
+
+
+/** The brain the runtime runs for this engine. Speech-to-speech engines write their own replies. */
+export function engineBrain(spec: EngineSpec, engine: VoiceEngine): BrainProvider {
+  if (engine.speaksItself) return { name: engine.id, respond: async () => { throw new Error("engine speaks itself"); } };
+  if (spec.id === "character-tts") return new OpenAIBrain({ ...(spec.brain ? { model: spec.brain } : {}), systemPrompt: phoneRequestSystemPrompt });
+  return resolveBrain(spec.brain ?? "openai");
+}
+
+/** Accepts `--engine gpt-live|gemini-live|character-tts|pipeline[:model]` and the legacy `--brain` spellings. */
 export function parseEngineSpec(engine?: string, brain?: string, configDefault = "gpt-live"): EngineSpec {
   const spec = engine ?? (brain ? undefined : configDefault);
   if (spec) {
     const [id, ...rest] = spec.split(":");
     const model = rest.length ? rest.join(":") : undefined;
     if (id === "gpt-live" || id === "live") return { id: "gpt-live", ...(model ? { model } : {}) };
-    if (id === "realtime") return { id: "realtime", ...(model ? { model } : {}) };
+    if (id === "gemini-live" || id === "gemini") return { id: "gemini-live", ...(model ? { model } : {}) };
+    if (id === "character-tts") return { id: "character-tts", ...(model ? { brain: model } : {}) };
     if (id === "pipeline") return { id: "pipeline", ...(model ? { brain: model } : {}) };
     if (/^gpt-live/.test(spec)) return { id: "gpt-live", model: spec };
-    if (/^gpt-realtime/.test(spec)) return { id: "realtime", model: spec };
-    throw new Error(`Unknown voice engine "${spec}". Use gpt-live, realtime or pipeline[:brain]`);
+    if (/^gemini-.*live/.test(spec)) return { id: "gemini-live", model: spec };
+    throw new Error(`Unknown voice engine "${spec}". Use gpt-live, gemini-live, character-tts or pipeline[:brain]`);
   }
   // legacy --brain
   const live = brain ? liveModelOf(brain) : undefined;
   if (live) return { id: "gpt-live", model: live };
-  const rt = brain ? realtimeModelOf(brain) : undefined;
-  if (rt) return { id: "realtime", model: rt };
   return { id: "pipeline", ...(brain ? { brain } : {}) };
 }
 
-export function buildEngine(spec: EngineSpec): VoiceEngine {
-  if (spec.id === "gpt-live") return gptLiveEngine(spec.model ? { model: spec.model } : {});
-  if (spec.id === "realtime") return realtimeEngine(spec.model ? { model: spec.model } : {});
+export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.env, voice?: string, voicePreset?: string): VoiceEngine {
+  if (spec.id === "gpt-live") return gptLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}) });
+  if (spec.id === "gemini-live") return geminiLiveEngine({ ...(spec.model ? { model: spec.model } : {}), ...(voice ? { voice } : {}), ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}) });
+  if (spec.id === "character-tts") {
+    // The acting voice: the request's voice (or the character preset's), always with the character style.
+    // Acknowledgements are off: the pipeline's fixed 「はい。」「ええ。」 do not fit a character's casual register.
+    const tts = new GeminiTTS({ voice: voice ?? (voicePreset ? CHARACTER_TTS_VOICES[voicePreset] : undefined) ?? "Leda", style: CHARACTER_TTS_STYLE, ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}) });
+    return { ...pipelineEngine({ brain: engineBrainPlaceholder, stt: new DeepgramSTT(), tts, acknowledgements: false, ttsLabel: `Gemini TTS (${tts.voice})` }), id: "character-tts", requires: ENGINE_CREDENTIALS["character-tts"] };
+  }
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
-  return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: new OpenAITTS() });
+  return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: pipelineTTS(spec.tts, voicePreset).tts });
 }
 
 export function engineChoices(): Array<{ id: string; label: string; note: string }> {
   return [
     { id: "gpt-live", label: "GPT-Live", note: "Recommended · needs OPENAI_API_KEY · $0.05/min session" },
-    { id: "realtime", label: "OpenAI Realtime", note: "needs OPENAI_API_KEY · speech-to-speech" },
+    { id: "gemini-live", label: "Gemini Live", note: "gemini-3.8-live · needs GEMINI_API_KEY · not yet verified on a real line" },
+    { id: "character-tts", label: "Character voice (acting)", note: "Gemini TTS acting · replies ~2–3 s · needs DEEPGRAM + OPENAI + GEMINI keys" },
     { id: "pipeline", label: "Pipeline", note: "needs DEEPGRAM_API_KEY + OPENAI_API_KEY · customizable" },
   ];
 }
@@ -115,9 +147,13 @@ const CREDENTIAL_GUIDES: Record<string, CredentialGuide> = {
 
 const ENGINE_CREDENTIALS: Record<EngineSpec["id"], string[]> = {
   "gpt-live": ["OPENAI_API_KEY"],
-  realtime: ["OPENAI_API_KEY"],
+  "gemini-live": ["GEMINI_API_KEY"],
+  "character-tts": ["DEEPGRAM_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"],
   pipeline: ["DEEPGRAM_API_KEY", "OPENAI_API_KEY"],
 };
+
+/** The pipeline engine needs a brain for its label only; the runtime runs `engineBrain()`. */
+const engineBrainPlaceholder: BrainProvider = { name: "openai (phone request)", respond: async () => { throw new Error("the runtime supplies the brain"); } };
 
 const SIP_GATEWAY_CREDENTIALS = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"];
 
@@ -518,18 +554,29 @@ export async function phoneDoctor(flags: { provider?: string; to?: string; engin
 // phone test — Local (telephony ¥0, model API usage) / Gateway (¥0) / PSTN (paid)
 // ---------------------------------------------------------------------------
 
-export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string }): Promise<void> {
+export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string; tts?: string; voicePreset?: string; out?: string; maxUsd?: string }): Promise<void> {
   const config = loadPhoneConfig();
   const level =
     flags.level ??
     (await choose("Choose test level", [
       { id: "local", label: "Local", note: "telephony ¥0 · uses model APIs with synthesized audio" },
+      { id: "conversation", label: "Conversation", note: "telephony ¥0 · a whole scripted phone-request call through the real runtime and brain (paid APIs)" },
       { id: "gateway", label: "Gateway", note: "¥0 · SIP gateway loopback, no PSTN" },
       { id: "pstn", label: "PSTN", note: "paid · real phone call (carrier rate applies)" },
     ]));
   const engineSpec = parseEngineSpec(flags.engine, undefined, config.voice.engine);
+  if (flags.tts) {
+    if (flags.tts !== "openai" && flags.tts !== "gemini-lite") throw new Error(`Unknown --tts "${flags.tts}". Use openai or gemini-lite`);
+    if (engineSpec.id !== "pipeline") throw new Error("--tts applies to --engine pipeline");
+    if (level !== "local") throw new Error("--tts is a prototype: only --level local for now");
+    engineSpec.tts = flags.tts;
+  }
+  if (level === "conversation") {
+    await localConversationTest(flags);
+    return;
+  }
   if (level === "local") {
-    await localLoopback(engineSpec);
+    await localLoopback(engineSpec, flags.voicePreset);
     return;
   }
   if (level === "gateway") {
@@ -547,11 +594,53 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
   await runPhoneCall({ to: flags.to, ...(flags.provider ? { provider: flags.provider } : {}), ...(flags.engine ? { engine: flags.engine } : {}), scenario: flags.scenario ?? "friend-chat" });
 }
 
+/**
+ * A whole phone-request call with no carrier: a real call's path (request → contract → CallRuntime →
+ * engine + engineBrain) against a scripted callee that waits for each reply, with one deliberate cut-in.
+ * Real, paid voice APIs; stops at --max-usd (default $0.05). Saves the audio and a report.
+ */
+async function localConversationTest(flags: { engine?: string; voicePreset?: string; out?: string; maxUsd?: string }): Promise<void> {
+  if (!flags.engine) throw new Error("--level conversation needs an explicit --engine (e.g. character-tts)");
+  const spec = parseEngineSpec(flags.engine);
+  if (spec.id === "pipeline") throw new Error("--level conversation runs the phone-request engines: gpt-live, gemini-live or character-tts");
+  const maxUsd = flags.maxUsd === undefined ? 0.05 : Number(flags.maxUsd);
+  if (!(maxUsd > 0 && maxUsd <= 1)) throw new Error("--max-usd must be between 0 and 1");
+  const request = parsePhoneRequest({ schemaVersion: 1, kind: "oathra.phone-request", phone: "+819000000000", name: "ゆき", callerName: "田中", conversationMode: "chat", engine: spec.id, ...(flags.voicePreset ? { voicePreset: flags.voicePreset } : {}), instruction: "最近どうしてるか聞いて、気軽に雑談してください。" });
+  await ensureEnvKeys(ENGINE_CREDENTIALS[spec.id]);
+  const voice = resolvePhoneVoice(spec.id, request);
+  const engine = buildEngine(spec, process.env, voice, request.voicePreset);
+  const contract = phoneRequestContract(request);
+  const character = spec.id === "character-tts";
+  const ttsModel = character ? (await import("@oathra/gemini")).DEFAULT_GEMINI_TTS_MODEL : undefined;
+  const voiceSetting = voiceSettingRecord(spec.id, spec.model ?? ttsModel ?? (spec.id === "gemini-live" ? "gemini-3.8-live" : "gpt-live-1"), voice ?? (character ? "Leda" : undefined), contract, new Date(), character ? { ttsStyle: CHARACTER_TTS_STYLE } : {});
+  const brain = engineBrain(spec, engine);
+  console.log(`\n${bold("Local conversation")}  ${dim(engine.label)}  ${dim(`(no carrier · paid APIs · stops at $${maxUsd})`)}\n`);
+  const { runLocalConversation, wavBytes } = await import("./local-conversation.js");
+  const report = await runLocalConversation({ request, contract, engine, brain, callee: new OpenAITTS(), maxUsd, ...(character ? { systemPrompt: phoneRequestSystemPrompt } : {}) });
+  let commit = "unknown";
+  try { commit = (await import("node:child_process")).execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a checkout */ }
+  const dir = resolve(flags.out ?? join(defaultCallsDir(), "..", "local-conversations", new Date().toISOString().replace(/[:.]/g, "-")));
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "call-mixed-8k.wav"), wavBytes(report.mixedAudio));
+  writeFileSync(join(dir, "agent-8k.wav"), wavBytes(report.agentAudio));
+  const { agentAudio, mixedAudio, ...rest } = report;
+  writeFileSync(join(dir, "report.json"), JSON.stringify({ createdAt: new Date().toISOString(), commit, engine: spec.id, models: { brain: brain.name, stt: character ? "deepgram:nova-3" : null, tts: ttsModel ?? null, callee: "openai-tts (script)" }, voiceSetting, request, ...rest }, null, 2));
+  for (const r of report.replies) console.log(`  ${r.replyAudioAfterMs === null ? red("✗") : green("✓")} 「${r.line}」 → reply heard after ${r.replyAudioAfterMs ?? "—"} ms ${dim(`(recognized ${r.sttFinalAfterMs ?? "—"} · text ${r.replyTextAfterMs ?? "—"} · brain ${r.brainLatencyMs ?? "—"} ms)`)}`);
+  const cut = report.interruption;
+  if (cut) console.log(`  ${cut.stoppedAfterMs !== null && !cut.staleAudioAfterStop ? green("✓") : red("✗")} cut-in: ${cut.agentWasSpeaking ? "while the agent spoke" : "agent was quiet"}, stopped after ${cut.stoppedAfterMs ?? "—"} ms${cut.staleAudioAfterStop ? red(", old reply kept playing") : ""}`);
+  console.log(`  ${dim("end")} ${report.endReason ?? report.error ?? "?"}${report.stoppedForBudget ? red(" (stopped at the budget)") : ""}  ${dim("estimated cost")} $${report.usage.estimatedUsd}`);
+  console.log(`\n${dim("Saved:")} ${dir}\n${dim("The line is local: no transcript notice is played, and a real line adds carrier latency.")}`);
+}
+
 /** Engine loopback: synthesized callee speech → engine → expect agent audio + transcripts. Costs a few yen of API, no telephony. */
-async function localLoopback(spec: EngineSpec): Promise<void> {
-  const engine = buildEngine(spec);
+async function localLoopback(spec: EngineSpec, voicePreset?: string): Promise<void> {
+  const engine = buildEngine(spec, process.env, undefined, voicePreset);
   console.log(`\n${bold("Local loopback")}  ${dim(engine.label)}\n`);
-  const contract = defineCall({ goal: "chat.casual", input: { topic: "最近ハマっていること" }, permissions: { ask: true } });
+  const contract = defineCall({ goal: "chat.casual", input: { topic: "最近ハマっていること", ...(voicePreset ? { voicePreset } : {}) }, permissions: { ask: true } });
+  if (spec.id === "pipeline" && spec.tts === "gemini-lite") {
+    const { tts, voice, style } = pipelineTTS(spec.tts, voicePreset);
+    console.log(dim(`  voice setting ${JSON.stringify(voiceSettingRecord("pipeline", (tts as GeminiTTS).model, voice, contract, new Date(), style ? { ttsStyle: style } : {}))}`));
+  }
   const t0 = Date.now();
   const clock = { now: () => Date.now() - t0 };
   const session = await engine.start({ contract, language: "ja", carrierAudio: MULAW_8K, calleeName: "テスト" }, clock);
@@ -605,7 +694,7 @@ async function localLoopback(spec: EngineSpec): Promise<void> {
 // call (router)
 // ---------------------------------------------------------------------------
 
-export type PhoneCallFlags = { to?: string; scenario?: string; engine?: string; brain?: string; provider?: string; name?: string; noSave?: boolean; port?: number; publicUrl?: string };
+export type PhoneCallFlags = { requestFile?: string; dryRun?: boolean; approveRequest?: boolean; to?: string; scenario?: string; engine?: string; brain?: string; provider?: string; name?: string; noSave?: boolean; port?: number; publicUrl?: string };
 
 function findScenario(idOrPath: string): Scenario {
   if (existsSync(idOrPath) && /\.ya?ml$/.test(idOrPath)) return loadScenarioFile(resolve(idOrPath));
@@ -615,16 +704,31 @@ function findScenario(idOrPath: string): Scenario {
   return s;
 }
 
+/** Shared personal-call policy for CLI handoffs and the local Web adapter. */
+export function phoneRequestContract(request: PhoneRequest): CallContract {
+  return definePhoneRequest(request);
+}
+
 export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
-  const to = flags.to ?? process.env.OATHRA_TEST_PHONE;
+  if ((flags.dryRun || flags.approveRequest) && !flags.requestFile) throw new Error("--dry-run and --approve-request require --request-file");
+  if (flags.requestFile && (flags.to || flags.scenario || flags.name)) throw new Error("--request-file cannot be combined with --to, --name or --scenario; edit and review the request file instead");
+  if (flags.requestFile && statSync(flags.requestFile).size > 16384) throw new Error("phone request file exceeds 16 KiB");
+  const request = flags.requestFile ? parsePhoneRequest(JSON.parse(readFileSync(flags.requestFile, "utf8"))) : undefined;
+  const to = request?.phone ?? flags.to ?? process.env.OATHRA_TEST_PHONE;
   if (!to || !/^\+\d{8,15}$/.test(to)) throw new Error("--to must be an E.164 number, e.g. --to +819012345678");
+  const scenario = findScenario(request ? "friend-chat" : flags.scenario ?? "restaurant-reservation");
+  const base = contractFromScenario(scenario);
+  const contract: CallContract = request ? phoneRequestContract(request) : defineCall({ ...base,
+    target: { phone: to, name: flags.name ?? scenario.callee.persona.name } });
+  if (flags.dryRun) {
+    console.log(JSON.stringify({ state: "draft", dialed: false, contract, recording: !flags.noSave, notice: "Real calls transmit to the configured carrier and voice provider and incur usage charges. The runtime budget is not a guaranteed carrier billing cap." + (request?.conversationMode === "chat" ? " Chat on Realtime enables public-category news lookup through OpenAI Responses web_search (gpt-5.4-mini), at most twice per call, with additional API charges. Other engines cannot verify current news." : "") }, null, 2));
+    return;
+  }
+  if (request && !flags.approveRequest) throw new Error("Review with --dry-run first. A saved draft is not approval; use --approve-request only to explicitly place the paid call.");
   const reg = buildRegistry();
   const config = loadPhoneConfig();
   const engineSpec = parseEngineSpec(flags.engine, flags.brain, config.voice.engine);
-  const engine = buildEngine(engineSpec);
-  const scenario = findScenario(flags.scenario ?? "restaurant-reservation");
-  const base = contractFromScenario(scenario);
-  const contract: CallContract = defineCall({ ...base, target: { phone: to, name: flags.name ?? scenario.callee.persona.name } });
+  const engine = buildEngine(engineSpec, process.env, request ? resolvePhoneVoice(engineSpec.id, request) : undefined, request?.voicePreset);
 
   // Direct media-stream providers need a public URL while their transport is
   // constructed. Prepare the tunnel before routing so a ready Twilio route is
@@ -709,11 +813,12 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
       const outcome = await runCall({
         contract,
         transport,
-        brain: engine.speaksItself ? { name: engine.id, respond: async () => { throw new Error("engine speaks itself"); } } : resolveBrain(engineSpec.brain ?? "openai"),
+        brain: engineBrain(engineSpec, engine),
         callId,
         scenarioId: scenario.id,
         onEvent: liveRenderer(scenario),
-        openingTimeoutMs: 4000,
+        // The agent opens the call as soon as the line is up; it does not wait for the callee's hello.
+        openingTimeoutMs: 0,
       });
       console.log("");
       console.log(resultBox(outcome));
@@ -727,6 +832,8 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
     } catch (e) {
       lastError = e as Error;
       console.log(warn(`${route.provider.label} failed: ${lastError.message}`));
+      // A reviewed personal request must not ring again via another carrier after an ambiguous failure.
+      if (request) break;
       if (routes.indexOf(route) < routes.length - 1) console.log(dim("Trying the next route..."));
     } finally {
       tunnel?.stop();

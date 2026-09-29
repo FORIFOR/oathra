@@ -1,5 +1,7 @@
 # 初心者向けセットアップ
 
+未公開のソース変更: [最初のローカル成果物](FIRST_PROOF.md)。既定のデモはオフライン専用です。外部モデルは `demo --allow-models` で明示的に有効化します。
+
 Oathra は、まず API キーなしで判定機能を確認し、その後に音声エンジンと電話会社を追加する順番が一番迷いません。電話を発信しない範囲なら、ブラウザの[証拠ラボ](https://forifor.github.io/oathra/check.html)ですぐに試せます。
 
 ## 1. API キーなしで動作を確認する
@@ -49,12 +51,15 @@ python3 -m http.server 4380 --directory site
 
 | 目的 | 環境変数 | 取得先 |
 | --- | --- | --- |
-| GPT-Live / OpenAI Realtime | `OPENAI_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) |
+| GPT-Live | `OPENAI_API_KEY` | [OpenAI API keys](https://platform.openai.com/api-keys) |
+| Gemini Live（`--engine gemini-live`、`gemini-3.8-live`） | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) |
 | Pipeline の音声認識 | `DEEPGRAM_API_KEY` | [Deepgram Console](https://console.deepgram.com/) |
 | Twilio 発信 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | [Twilio Console](https://console.twilio.com/) |
 | Twilio 発信元番号 | `TWILIO_PHONE_NUMBER` | [Twilio 電話番号](https://console.twilio.com/us1/develop/phone-numbers/manage/search) |
 | Plivo 発信 | `PLIVO_AUTH_ID` / `PLIVO_AUTH_TOKEN` | [Plivo Console](https://console.plivo.com/) |
 | Plivo / Custom SIP のゲートウェイ | `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | [LiveKit Cloud](https://cloud.livekit.io/) |
+
+Twilio 直結の発信は、電話会社から Oathra の PC へ音声を届けるために公開 URL が必要です。`oathra call` が [ngrok](https://ngrok.com/) を自動起動するので、事前に `brew install ngrok` と `ngrok config add-authtoken` を済ませてください（`oathra doctor` が導入の有無を表示します）。
 
 キーは Oathra のリポジトリではなく、プロジェクトごとの `.env` に保存します。`.env.example` をコピーしてもよく、ウィザードに入力して自動作成してもかまいません。
 
@@ -76,10 +81,10 @@ pnpm oathra setup phone
 pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
 ```
 
-公開パッケージを使う場合は、v0.1.18 の GitHub 配布版を明示します。
+公開パッケージを使う場合は、v0.1.19 の GitHub 配布版を明示します。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz oathra setup phone
 ```
 
 ウィザードは次の順で進みます。
@@ -127,3 +132,19 @@ pnpm oathra call --to +819012345678 --scenario ./my-scenario.yaml
 - `.env` を変更した後に反映されない：新しいターミナルでコマンドを再実行します。既存のシェル環境変数が `.env` より優先されます。
 
 診断結果に秘密値を貼り付けず、発生したコマンド、赤くなった項目、プロバイダ名だけを Issue に記載してください。
+
+練習はアプリの「練習」から始めます。「AIの電話を見る」か「自分が相手役」（AIからの電話にお店として文字で答える）を選べます。記録は `.oathra/calls/` に残り、「記録」で見返せます。レストランの練習日は再現性のため2026年9月12日に固定されています。
+
+## 電話番号と内容を画面から入力する
+
+アプリの「電話を頼む」で、相手・電話番号・目的を入力します。目的は種類ごとのテンプレートか履歴から選べます。テンプレートの `{{項目}}` は具体的な内容に置き換えてください。確認画面で送信先・料金・保存内容を確かめてから承認します。確認や履歴の再利用だけでは発信しません。
+
+実際の電話は `pnpm oathra demo --live --tunnel`（このパソコンの `.env` の電話会社・音声AIのキーを使う）か、サーバーとして動かす Gateway（[apps/gateway/README.md](../apps/gateway/README.md)）で行います。準備の状態は起動時と「設定」に出ます。
+
+通話中は「通話を終了」を押します。終了確認が取れなければ「結果未確認」を維持します。通信会社側で終了したことを確かめてから、画面の確認操作を行ってください。自動で再発信しません。履歴と会話テキストは端末内の `.oathra/phone-history` に保存します。音声ファイルは保存しません。詳細は [Web発信の契約](quality/web-phone.md) を参照してください。
+
+CLIへ引き継ぐ場合もJSONを保存できます。保存先のディレクトリから、まず `oathra call --request-file oathra-phone-request.json --dry-run` で確認してください。ソースから実行する場合はrepoルートで `node packages/cli/dist/bin.js call --request-file /保存先/oathra-phone-request.json --dry-run` を使います。実行時のcwdにある電話設定と.envが使われます。
+
+実際に発信するのは `--dry-run` を `--approve-request` に置き換えたときだけです。電話会社と音声AIの利用料金、録音設定を確認してください。予算値は電話会社の請求額を保証する上限ではありません。番号・名前・シナリオの上書きフラグとの併用は拒否されるため、変更後はファイルを再確認してください。
+
+連携済みLINE/Slackでも、メッセージに電話番号と依頼内容を記載できます。複数番号や登録名との矛盾は拒否します。商品名を指定しない友人向け依頼は汎用下書きとして番号・本文を返信し、まだ発信しません。チャンネルからの汎用実発信は未接続です。営業依頼で未登録の番号を指定した場合は連絡先登録が必要です。

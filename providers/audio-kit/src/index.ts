@@ -170,9 +170,106 @@ export function frameFromInt16(samples: Int16Array, sampleRate: number, t: numbe
   return { sampleRate, samples, channels: 1, t };
 }
 
-/** 24 kHz PCM (OpenAI TTS "pcm") -> 8 kHz μ-law for telephony. */
+/** Kaiser-windowed sinc low-pass, unity gain at DC. `cutoff` is a fraction of the filter's sample rate. */
+function lowPassTaps(length: number, cutoff: number, beta = 8): Float64Array {
+  const bessel = (x: number): number => {
+    let sum = 1;
+    let term = 1;
+    for (let k = 1; k < 32; k++) {
+      term *= (x / (2 * k)) ** 2;
+      sum += term;
+    }
+    return sum;
+  };
+  const taps = new Float64Array(length);
+  const mid = (length - 1) / 2;
+  let gain = 0;
+  for (let i = 0; i < length; i++) {
+    const t = i - mid;
+    const sinc = t === 0 ? 2 * cutoff : Math.sin(2 * Math.PI * cutoff * t) / (Math.PI * t);
+    const window = bessel(beta * Math.sqrt(1 - (t / mid) ** 2)) / bessel(beta);
+    taps[i] = sinc * window;
+    gain += taps[i]!;
+  }
+  for (let i = 0; i < length; i++) taps[i] = taps[i]! / gain;
+  return taps;
+}
+
+const clamp16 = (value: number): number => Math.max(-32768, Math.min(32767, Math.round(value)));
+
+/**
+ * Streaming resampler for integer rate ratios (24 kHz <-> 8 kHz on a phone call).
+ *
+ * `resample()` averages or interpolates each chunk on its own. Going down, a
+ * three-sample average barely attenuates 4-8 kHz, so sibilants alias into the
+ * telephone band and the voice turns gritty; going up, every 20 ms frame ends
+ * in a small step. This keeps filter state across chunks and band-limits to
+ * 3.6 kHz, which is what an 8 kHz line can carry.
+ */
+export class StreamResampler {
+  private readonly factor: number;
+  private readonly down: boolean;
+  private readonly taps: Float64Array;
+  private readonly perPhase: number;
+  private pending: Float64Array;
+
+  constructor(fromRate: number, toRate: number) {
+    const ratio = fromRate > toRate ? fromRate / toRate : toRate / fromRate;
+    if (!Number.isInteger(ratio) || ratio < 2) throw new Error(`StreamResampler needs an integer rate ratio, got ${fromRate} -> ${toRate}`);
+    this.factor = ratio;
+    this.down = fromRate > toRate;
+    this.perPhase = 24;
+    // The prototype runs at the higher rate; 0.45 of the lower rate keeps the telephone band and rejects images/aliases.
+    this.taps = lowPassTaps(this.perPhase * ratio, 0.45 / ratio);
+    this.pending = new Float64Array(this.down ? this.taps.length - 1 : this.perPhase - 1);
+  }
+
+  process(pcm: Int16Array): Int16Array {
+    const input = new Float64Array(this.pending.length + pcm.length);
+    input.set(this.pending, 0);
+    for (let i = 0; i < pcm.length; i++) input[this.pending.length + i] = pcm[i]!;
+    return this.down ? this.decimate(input) : this.interpolate(input);
+  }
+
+  private decimate(input: Float64Array): Int16Array {
+    const { taps, factor } = this;
+    const count = input.length >= taps.length ? Math.floor((input.length - taps.length) / factor) + 1 : 0;
+    const out = new Int16Array(count);
+    for (let n = 0; n < count; n++) {
+      let sum = 0;
+      const base = n * factor;
+      for (let k = 0; k < taps.length; k++) sum += taps[k]! * input[base + k]!;
+      out[n] = clamp16(sum);
+    }
+    // Keep every sample the next output window still needs, so chunk edges are inaudible.
+    this.pending = input.slice(count * factor);
+    return out;
+  }
+
+  private interpolate(input: Float64Array): Int16Array {
+    const { taps, factor, perPhase } = this;
+    const first = perPhase - 1;
+    const count = Math.max(0, input.length - first);
+    const out = new Int16Array(count * factor);
+    for (let i = 0; i < count; i++) {
+      for (let phase = 0; phase < factor; phase++) {
+        let sum = 0;
+        for (let k = 0; k < perPhase; k++) sum += taps[k * factor + phase]! * input[first + i - k]!;
+        out[i * factor + phase] = clamp16(sum * factor);
+      }
+    }
+    this.pending = input.slice(input.length - first);
+    return out;
+  }
+}
+
+/** 24 kHz PCM (OpenAI TTS "pcm") -> 8 kHz μ-law for telephony. One whole utterance; use StreamResampler for chunks. */
 export function pcm24kToMulaw8k(pcm24k: Int16Array): Uint8Array {
-  return mulawEncode(resample(pcm24k, 24000, MULAW_SAMPLE_RATE));
+  const resampler = new StreamResampler(24000, MULAW_SAMPLE_RATE);
+  // Flush the filter's tail so the last syllable is not shortened.
+  const padded = new Int16Array(pcm24k.length + 72);
+  padded.set(pcm24k, 0);
+  return mulawEncode(resampler.process(padded)).subarray(0, Math.floor(pcm24k.length / 3));
 }
 
 /** Silence of `ms` milliseconds as μ-law. */

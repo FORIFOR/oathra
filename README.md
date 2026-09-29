@@ -1,47 +1,26 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
-<p align="center"><sub><a href="README.en.md">English</a> · Oathra gives AI agents a phone, and takes the word “booked” away from them: the verdict comes from what the other person said, checked by code.</sub></p>
-
 <p align="center">
   <a href="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/FORIFOR/oathra/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FORIFOR/oathra?display_name=tag&sort=semver"></a>
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-修正版 **v0.1.18** を起動（Node.js 22以上、APIキー不要）：
-
-```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra demo
-```
-
-[GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.18)から配布しています。`npx oathra demo` が取得するnpm版は0.1.0です。ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)へ。
-
-動作確認後も更新を追跡するなら、[GitHubでStar](https://github.com/FORIFOR/oathra)を付けてください。実際の用途や判定の問題は[Discussion #14](https://github.com/FORIFOR/oathra/discussions/14)または[Issue](https://github.com/FORIFOR/oathra/issues)で共有できます（個人情報・通話内容は除いてください）。
-
-**すでに音声AIを作っている方へ：** v0.1.18では完了判定と、`startAfter`・`dependsOn`・`choices` でシーンに応じて分岐できる同意付き追加聞き取りに加え、会話・確認・システム・結果の証拠レベルを統一する `ActionProof` を組み込めます。仮押さえ・未確定・承認待ちを予約完了と誤認しない保守的な判定も含みます。明確な同意がない場合や相手が急いでいる場合は任意聞き取りをその場で終了します。シナリオYAMLの `mission.intake` も実電話へ引き継げます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
-
-予約や注文の完了を外部記録まで追跡する場合は、`oathra/evidence` の `ActionProof` で V0（自己申告）から V1（会話）、V2（認証済みメール・SMS・Webhook）、V3（認証済み業務システム）、V4（結果報告）を同じ期待値に照合できます。外部サービスの認証と接続は利用側の `VerificationProvider` / `VerificationAdapter` に委ね、Oathra は期限・参照ID・フィールド一致を決定的に検査します。OpenTable、TableCheck、Google Reserveの実接続アダプターや認証情報は含めていません。[ActionProofの導入手順](docs/INTEGRATION.ja.md#行動の完了を外部記録まで検証するactionproof)。
-
-[インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
-
 <p align="center"><a href="https://forifor.github.io/oathra/#verdict-video"><img src="docs/media/oathra-share-2026-09.png" width="880" alt="判定画面。AIが「ご予約承りました」と言った直後に、日付2026-09-12・時刻19:30・人数2名は相手の発言を根拠に確定し、「確定」だけが未確認のまま残っている"/></a><br><sub>AIは「承りました」と言い、店はまだ確定していない。26秒の画面録画（音声なし）は画像をクリック</sub></p>
 
-<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="600" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録（63秒・音声あり）</sub></p>
-追加の聞き取りを実際に見るなら、[48秒の Arena 録画](https://forifor.github.io/oathra/#intake-video)と [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml)を確認できます。
+**1 分で試す**（Node.js 22 以上。API キーも電話番号も不要）
 
-## Omnichannel Sales — LINE / iOS / Web から電話を任せる
+```bash
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz oathra demo
+```
 
-Oathra を「電話アプリ」ではなく、どこからでも呼び出せる evidence-first な電話実行エージェントへ拡張しています。実装は `apps/gateway`（[起動手順](apps/gateway/README.md)）にあり、既定は台本シミュレーターです。LINE・Slack などの実アカウント接続と実回線での検証はまだ済んでいません。LINE・iOS・Web・Slack・API は同じ Mission のリモコンで、実行と完了判定は既存ランタイムが担当します。
+ブラウザだけで試すなら[証拠ラボ](https://forifor.github.io/oathra/#sim)、手元の文字起こしを判定するなら[チェッカー](https://forifor.github.io/oathra/check.html)（どちらも入力を送信しません）。実電話は[初心者向けセットアップ](docs/SETUP.ja.md)へ。
 
-最初の体験は **商品情報を確認 → 自分に電話して試す → 1人の相手と目的を確認 → 明示承認 → 発信 → 相手の言葉に基づく結果** です。メッセージを送っただけで外部へ発信したり、曖昧な返答を商談成立にしたりしません。
-
-設計・安全境界・LINE UX・iOS構成・実装ゲートは [docs/OMNICHANNEL_SALES.md](docs/OMNICHANNEL_SALES.md) を参照してください。
+> 配布は [GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.19) です。`npx oathra demo` が取得する npm 版は 0.1.0 のまま更新されていません。ソースから動かす手順と、配布版との差分は [docs/FIRST_PROOF.md](docs/FIRST_PROOF.md)。
 
 <p align="center"><a href="https://forifor.github.io/oathra/">サイト</a> · <a href="README.en.md">English</a> · <a href="docs/ARCHITECTURE.md">設計</a> · <a href="scenarios/">シナリオ</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Zenn の記事</a></p>
 
 ## これは何か
-
-[企業紹介の条件・反復検証・実電話100件の未完了ゲート](docs/ENTERPRISE_READINESS.md)
 
 Oathra は、AI エージェントが電話をかけて交渉し、予約や注文を取るためのオープンソースのランタイムです（Apache-2.0、TypeScript）。
 
@@ -68,7 +47,7 @@ Oathra は、AI エージェントが電話をかけて交渉し、予約や注�
 ```bash
 git clone https://github.com/FORIFOR/oathra && cd oathra
 pnpm install && pnpm build
-pnpm demo                                      # http://localhost:4242 で AI 同士の電話が始まる
+pnpm demo                                      # http://localhost:4242 で Oathra のアプリが練習モードで開く（ログイン・キー不要）
 
 pnpm oathra play restaurant-reservation        # 同じ通話をターミナルで
 pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # 同意付き追加聞き取り
@@ -83,11 +62,18 @@ pnpm oathra battle impossible-hotel --agent scripted --agent openai --agent gemi
 
 `play --json` は会話ログや見出しを混ぜず、`result`・`intake`・保存先の `savedPath` だけをJSONで返します。決定事項や明示回答を別の業務システムへ渡すときに使えます。
 
-Arena では「AI同士を見る」か「自分が電話に出る」かを選べます。後者はあなたが店員役になって、AI の交渉を受ける側になります。
+ソースから動かす `oathra demo` は、Oathra のアプリ（Gateway）を練習モードで開きます。練習では「AIの電話を見る」か「自分が相手役」を選べます。後者では AI があなたに電話をかけ、あなたがお店として文字で答えます。電話はかからず、データは `.oathra/demo/` に残ります（Node 22.13 以上）。練習の記録は `.oathra/calls/` に残り（ターミナルの `oathra play` の記録も含む）、練習画面の「記録」で見返せます。
+
+- `--allow-remote`：同じネットワークの別の端末（スマホなど）から開けます。起動時に出るログイン用リンクを開くとログインします（このパソコン以外はリンクが必要）。
+- `--tunnel`：外から開ける https の URL を作ります（cloudflared / ngrok）。同じくログイン用リンクで開きます。
+- `--allow-models`：練習で電話する AI に OpenAI・Gemini・Ollama を選べます。会話がその会社に送られ、あなたの API キーに料金がかかります。
+- `--live --tunnel`：このパソコンのキー（電話会社・音声AI）で実際に電話をかけます。準備の状態は起動時と「設定」に出ます。
+
+v0.1.18 までの配布物の `oathra demo` は、以前の画面（Arena）を開きます。Arena は v0.1.19 でこのアプリに統合しました。
 
 同じ無理難題ホテル（定価23,500円・予算2万円）に、組み込みAI・GPT-4o mini・Gemini Flash が電話した実際の対戦です。3者とも2万円以下で成立、誤完了はゼロ。ホテル側の「ご予約承りました」が出た通話だけが成立と数えられます。
 
-<p align="center"><img src="docs/media/arena-confirmed.png" width="720" alt="Arena の画面。ホテルの「ご予約承りました」で確定に✓が付き、証拠に confirmed = はい（相手）が並ぶ"/><br><sub>ホテルが「ご予約承りました」と言った瞬間。「確定」に✓が付き、証拠の先頭に confirmed = はい（相手）が入る</sub></p>
+<p align="center"><a href="docs/media/oathra-battle-ja.mp4"><img src="docs/media/oathra-battle-ja.gif" width="600" alt="無理難題ホテルに3つのAIが電話する画面録画。Arena の3つのウィンドウで交渉が進み、ホテルの「ご予約承りました」で確定に✓が付く"/></a><br><sub>定価23,500円のホテルに、組み込みAI・GPT-4o mini・Gemini Flash が電話した記録（63秒・音声あり）</sub></p>
 
 ## 本物の電話
 
@@ -105,11 +91,14 @@ API キーの取得先、`.env` の扱い、Twilio / Plivo / Custom SIP の違�
 | 電話会社 | | 音声モデル | |
 |--|--|--|--|
 | Twilio（直結） | 実通話で検証済み | GPT-Live | 推奨。全二重、$0.05/分 |
-| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | OpenAI Realtime | speech-to-speech |
+| Plivo（SIP） | LiveKit ゲートウェイ経由、PSTN 未検証 | Gemini Live | `gemini-3.8-live`、全二重。`--engine gemini-live`。実回線は未検証 |
 | Custom SIP | 任意のトランク | Pipeline | Deepgram + 任意の LLM + OpenAI TTS |
-| Telnyx · Wavix · Sinch | v0.2 | LLM | OpenAI · Gemini · Ollama · 組み込み |
+| | | LLM | OpenAI · Gemini · Ollama · 組み込み |
+| Telnyx · Wavix · Sinch | v0.2 | | |
 
 人の操作が必要な手順（発信元番号の本人確認、海外発信の許可）はリンク付きの一手順として案内し、終わるまで待ちます。「ワンクリック」とは言いません。
+
+動作確認後も更新を追跡するなら、[GitHubでStar](https://github.com/FORIFOR/oathra)を付けてください。実際の用途や判定の問題は[Discussion #14](https://github.com/FORIFOR/oathra/discussions/14)または[Issue](https://github.com/FORIFOR/oathra/issues)で共有できます（個人情報・通話内容は除いてください）。
 
 ## 実際に電話してみた記録
 
@@ -120,6 +109,26 @@ API キーの取得先、`.env` の扱い、Twilio / Plivo / Custom SIP の違�
 | 3 | GPT-Live（全二重） | 「もしもし」から返答まで約 0.4 秒。6 分 25 秒、112 ターン、エラーなし。「バイバイ」で切れなかったので終話ツールと無音 25 秒の安全装置を追加 |
 
 通話料は Twilio で日本の携帯宛 ¥28.78/分、GPT-Live はセッション $0.05/分です。
+
+## 既存の音声 AI に組み込む
+
+電話基盤や音声モデルはそのままで、完了判定だけを足せます。`oathra verify` で手元の文字起こしを検査し、`oathra/evidence` から型付き SDK を読み込みます。API キーは不要です。[導入手順と LiveKit 接続例](docs/INTEGRATION.ja.md)。
+
+v0.1.19では完了判定と、`startAfter`・`dependsOn`・`choices` でシーンに応じて分岐できる同意付き追加聞き取りに加え、会話・確認・システム・結果の証拠レベルを統一する `ActionProof` を組み込めます。仮押さえ・未確定・承認待ちを予約完了と誤認しない保守的な判定も含みます。明確な同意がない場合や相手が急いでいる場合は任意聞き取りをその場で終了します。シナリオYAMLの `mission.intake` も実電話へ引き継げます。`oathra verify`で手元の文字起こしを検査、`oathra/evidence`から型付きSDKを読み込み。電話基盤の移行・APIキーは不要です。[導入手順とLiveKit接続例](docs/INTEGRATION.ja.md)。実電話の API 設定は[初心者向けセットアップ](docs/SETUP.ja.md)に、取得先から段階テストまでまとめています。
+
+予約や注文の完了を外部記録まで追跡する場合は、`oathra/evidence` の `ActionProof` で V0（自己申告）から V1（会話）、V2（認証済みメール・SMS・Webhook）、V3（認証済み業務システム）、V4（結果報告）を同じ期待値に照合できます。外部サービスの認証と接続は利用側の `VerificationProvider` / `VerificationAdapter` に委ね、Oathra は期限・参照ID・フィールド一致を決定的に検査します。OpenTable、TableCheck、Google Reserveの実接続アダプターや認証情報は含めていません。[ActionProofの導入手順](docs/INTEGRATION.ja.md#行動の完了を外部記録まで検証するactionproof)。
+
+[インストールせず、自分の文字起こしを検証 →](https://forifor.github.io/oathra/check.html) · [25秒の実操作動画](https://forifor.github.io/oathra/#transcript-video)
+
+追加の聞き取りを実際に見るなら、[48秒の Arena 録画](https://forifor.github.io/oathra/#intake-video)と [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml)を確認できます。
+
+## Omnichannel Sales — LINE / iOS / Web から電話を任せる
+
+Oathra を「電話アプリ」ではなく、どこからでも呼び出せる evidence-first な電話実行エージェントへ拡張しています。実装は `apps/gateway`（[起動手順](apps/gateway/README.md)）にあり、既定は台本シミュレーターです。LINE・Slack などの実アカウント接続と実回線での検証はまだ済んでいません。LINE・iOS・Web・Slack・API は同じ Mission のリモコンで、実行と完了判定は既存ランタイムが担当します。
+
+最初の体験は **商品情報を確認 → 自分に電話して試す → 1人の相手と目的を確認 → 明示承認 → 発信 → 相手の言葉に基づく結果** です。メッセージを送っただけで外部へ発信したり、曖昧な返答を商談成立にしたりしません。
+
+設計・安全境界・LINE UX・iOS構成・実装ゲートは [docs/OMNICHANNEL_SALES.md](docs/OMNICHANNEL_SALES.md) を参照してください。
 
 ## 証拠のルール
 
@@ -157,10 +166,10 @@ API キーの取得先、`.env` の扱い、Twilio / Plivo / Custom SIP の違�
 ## 設計
 
 ```text
-contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
+contract → evidence → core → scenario → runtime → providers → replay / eval → cli（アプリ apps/gateway は dist を使う別枠）
 ```
 
-依存の向きは `pnpm lint:deps` が CI で検査します。電話会社（`providers/phone-*`）と音声モデル（`providers/openai-realtime`、`providers/voice-pipeline`）は互いを知らず、`packages/phone` のブリッジが音声形式を変換します。LiveKit は SIP ゲートウェイの最初の実装であって仕様ではありません。詳しくは [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+依存の向きは `pnpm lint:deps` が CI で検査します。電話会社（`providers/phone-*`）と音声モデル（`providers/openai-realtime`、`providers/gemini-live`、`providers/voice-pipeline`）は互いを知らず（共通のプロンプトは `providers/voice-kit`）、`packages/phone` のブリッジが音声形式を変換します。LiveKit は SIP ゲートウェイの最初の実装であって仕様ではありません。詳しくは [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## シナリオを書く
 
@@ -215,7 +224,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 `oathra mcp` は stdio の MCP サーバです。Claude Code や Claude Desktop などから、ツール呼び出し 1 回でシミュレータ通話を走らせ、相手の発言に紐づく証拠つきの結果を受け取れます。
 
 ```json
-{ "mcpServers": { "oathra": { "command": "npx", "args": ["--yes", "--package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz", "oathra", "mcp"] } } }
+{ "mcpServers": { "oathra": { "command": "npx", "args": ["--yes", "--package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz", "oathra", "mcp"] } } }
 ```
 
 | ツール | 内容 |
@@ -227,13 +236,13 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 全部ローカルで動き、API キーも費用もかかりません。実電話を発信するツールと、有料の LLM を選ぶ引数は意図的に入れていません。`inspect_call` は `.oathra/calls/` の中身を MCP クライアントに渡すので、実通話の記録がある場所で使うときはその点だけ注意してください。
 
-## 正直な現状（v0.1.18）
+## 正直な現状（v0.1.19）
 
 - [x] CallContract、証拠エンジン、決定論的な完了判定（敵対的 1 万 run で誤完了ゼロ）
-- [x] シミュレータ、Arena（見る／自分で出る）、Battle カード、Replay、時点への巻き戻し
+- [x] シミュレータ、アプリの練習（見る／自分が相手役）、Battle カード、Replay、時点への巻き戻し
 - [x] Phone Layer：`setup phone`、`phone doctor`、3 段階テスト、フォールバック付きルーティング
 - [x] Twilio 直結（実通話で検証済み）、Plivo と Custom SIP（LiveKit 経由、ドキュメント準拠で実装、PSTN 未検証）
-- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、OpenAI Realtime、Deepgram + LLM + TTS
+- [x] 音声エンジン：GPT-Live（推奨、実通話で検証済み）、Gemini Live（`gemini-3.8-live`、実回線は未検証）、Deepgram + LLM + TTS
 - [ ] Telnyx、Wavix、Sinch、ElevenLabs TTS
 - [ ] 金額・番号の二重 ASR、パイプライン 650 ms 目標
 - [x] MCP サーバ `oathra mcp`（simulate_call · verify_transcript · inspect_call · list_calls · list_scenarios）。ローカルだけで動き、実電話は発信しない
@@ -247,7 +256,7 @@ PR で追加されたシナリオは CI が検証し、誤完了を出すもの�
 
 インストールせずに試すなら、[ブラウザの証拠ラボ](https://forifor.github.io/oathra/#sim)へ。本体の `EvidenceEngine` と `evaluate` がブラウザで動き、自由入力・話者切替・予約取り消しをその場で判定します。入力本文は送信せず、実際の電話も発信しません。[30秒の操作録画](https://forifor.github.io/oathra/#demo-video)では、曖昧な返事 → 確定 → 取り消しを確認できます。
 
-冒頭のv0.1.18起動コマンドで「自分が電話に出る」を選ぶと、入力欄の下に次の 3 つがボタンで並びます。店員役として押して送ってみてください。どれも「確定」に ✓ が付かないはずです（[検証記録](docs/launch/miscompletion-cases.md)）。
+冒頭のv0.1.19起動コマンドで開くアプリの「練習」で「自分が相手役」を選ぶと、あなたが店員として AI の電話に答えられます。曖昧な返事や、確定の後の条件変更を試して、どの項目に ✓ が付くかを見てください。判定エンジン単体では、次の返事を確定として扱わないことを確かめています（[検証記録](docs/launch/miscompletion-cases.md)）。画面の結果は、その前後の会話によって変わります。
 
 - レストランで「たぶん大丈夫ですが、まだ確定ではありません」→ 確定にならない
 - レストランで「19時は満席です。19時半なら空いています」→ 19時は予約時刻として採用されず、19時半は AI が受諾するまで未確定
@@ -281,7 +290,6 @@ const contract = defineCall({
 
 ## クレジット
 
-Arena の AI 側のアバター（液体ガラスのオーブ）は [LerSent001/orb](https://github.com/LerSent001/orb)（MIT）のシェーダーを同梱しています（`apps/arena/public/orb/`）。WebGPU が使えないブラウザでは従来の記号表示に戻ります。
 
 ## 参加する
 
@@ -289,7 +297,7 @@ Arena の AI 側のアバター（液体ガラスのオーブ）は [LerSent001/
 
 ## 企業向けの現状
 
-現在は技術紹介・検証範囲の相談（L1）が中心です。有償PoC（L2）・本番導入（L3）の完成を意味しません。実電話100件の成功率・p95応答は未測定です。[段階別の条件とデータの扱い](docs/READINESS.md)を確認してください。
+現在は技術紹介・検証範囲の相談（L1）が中心です。有償PoC（L2）・本番導入（L3）の完成を意味しません。実電話100件の成功率・p95応答は未測定です。[段階別の条件とデータの扱い](docs/READINESS.md)と[企業紹介の条件・反復検証・実電話100件の未完了ゲート](docs/ENTERPRISE_READINESS.md)を確認してください。
 
 ## 導入相談
 
@@ -302,4 +310,14 @@ Apache-2.0。OSS 版は単体で完結しています。電話番号の管理や
 
 ## 改善に参加する
 
-[判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [質問と導入相談の案内](SUPPORT.md) · [参加ガイド](CONTRIBUTING.md)。日本語・英語どちらでもどうぞ。
+[判定の不具合を報告](https://github.com/FORIFOR/oathra/issues/new?template=evidence.yml) · [起動・操作の不具合](https://github.com/FORIFOR/oathra/issues/new?template=startup.yml) · [質問と導入相談の案内](SUPPORT.md) · [参加ガイド](CONTRIBUTING.md)。 変更履歴は [CHANGELOG.md](CHANGELOG.md)。日本語・英語どちらでもどうぞ。
+
+## アプリでできること
+
+`oathra demo` で開くアプリ（`apps/gateway`）には、ホーム・依頼・予定・練習・連絡先・設定があります。「電話を頼む」では相手・番号・目的（「雑談」を含むテンプレート、または履歴）を入力し、送信先と費用の説明を確認してから発信します（実際の電話は `--live --tunnel` か、サーバーとしての Gateway）。「雑談」でニュースや公開情報を頼まれたときは、OpenAI の Web 検索で確かめ、日付と出典を添えます。詳しくは [apps/gateway/README.md](apps/gateway/README.md)。
+
+### OSSとサービス運営
+
+OSS版は利用者自身が電話会社・AIのAPIを設定します。サービス版は認証付きGatewayの `managed` モードで、運営者のAPIを使い、利用者のクレジットを確保・消費・返却できます（experimental）。以前の Arena の電話画面を引き継いだ画面で、番号・相手・目的、テンプレート・履歴を使えます。メールとパスワードのログイン（初回は管理者の設定リンク）、残高・台帳・管理者付与APIを実装。通話時間と回線・音声AI・検索の使用量から、終了時のクレジット消費・余剰返却・内訳表示に対応（`usage-rate-v1`、旧契約も互換維持）。販売価格・購入決済・サービス公開・実回線での会計検証は未設定/未実施です。[導入とAPI](apps/gateway/README.md#ossとサービス版のクレジットexperimental)。
+
+サービス版の電話入力は同じタブで再読込して復元でき、未完了通話へ再発信せず戻れます。連絡先の保存・履歴・料金表示とサーバーの認可/会計処理を分離しています。[構造と復帰・互換性の検証](docs/quality/implementation-review.md)。

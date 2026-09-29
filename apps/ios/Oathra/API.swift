@@ -23,6 +23,8 @@ enum Value: Codable, Hashable {
 }
 struct Product: Codable, Identifiable { let id: String; let name: String; let facts: String; let forbidden: String? }
 struct Contact: Codable, Identifiable { let id: String; let name: String; let phone: String; let email: String? }
+/// A mission's callee. Drafts for numbers that are not saved contacts carry `id: null`.
+struct MissionTarget: Decodable { let id: String?; let name: String; let phone: String; let email: String? }
 struct Account: Decodable { let consentVersion: String?; let verifiedPhone: String? }
 struct Configuration: Decodable { let mode: String; let liveReady: Bool; let missing: [String]; let consentVersion: String; let maxSeconds: Double; let maxCallUsd: Double }
 struct Bootstrap: Decodable { let account: Account; let configuration: Configuration; let products: [Product]; let contacts: [Contact]; let missions: [Mission] }
@@ -30,7 +32,7 @@ struct Evidence: Decodable { let quote: String; let field: String; let confirmed
 struct Result: Decodable { let verified: [String: Value]?; let missing: [String]?; let evidence: [Evidence]?; let caveat: String? }
 struct Turn: Decodable, Identifiable { let id: String; let source: String; let text: String }
 struct Mission: Decodable, Identifiable {
-    let id: String; let revision: Int; let status: String; let mode: String; let target: Contact; let product: Product
+    let id: String; let revision: Int; let status: String; let mode: String; let target: MissionTarget; let product: Product
     let request: String; let goal: String; let callerId: String; let maxSeconds: Double; let maxUsd: Double; let estimatedMaximumUsd: Double
     let result: Result?; let transcript: [Turn]?; let error: String?; let carrierSid: String?
     var final: Bool { ["COMPLETED", "INCOMPLETE", "DECLINED", "FAILED", "CANCELLED", "UNKNOWN"].contains(status) }

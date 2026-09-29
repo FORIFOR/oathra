@@ -1,5 +1,6 @@
 node_modules/
 dist/
+target/
 *.tsbuildinfo
 .env
 .env.local
@@ -20,6 +21,8 @@ video/.work/*
 video/*/frames-*/
 # The exports live in docs/media, which Pages deploys; keeping a second copy under video/ only doubles the repo.
 video/*/oathra-evidence-*
+# Upload-ready renders (same picture, silent audio track added for X); rebuildable from docs/media.
+video/*/x/
 !video/.work/battle.json
 !video/.work/tts/
 video/.work/tts/*
@@ -39,3 +42,19 @@ site/playground.js
 # UI quality workflow: session receipts and captured screens (approved visual baselines, if any, belong in Git)
 .ui-quality/
 artifacts/ui/
+
+# Empty managed-service setup credentials
+.env.managed
+.env.managed.*
+.oathra-managed/
+
+# Local audit / QA output and agent workspaces: rebuildable, never source.
+artifacts/
+.agents/
+apps/desktop/src-tauri/gen/
+# SNS operations ledgers and the one-off status audit kept next to the repo.
+/accounts.csv
+/activities.csv
+/assets.csv
+/metrics.csv
+/status-audit.md

@@ -13,6 +13,7 @@ export class Followups {
     return this.registry.list('capability').filter(p=>p.enabled&&p.configured&&p.effect!=='call').map(p=>p.id);
   }
   policy(u, m, kind) {
+    assert(m.kind !== 'phone-request','followup_requires_business_contact',409);
     this.service.write(u);
     assert(m.mode==='live' && ['COMPLETED','INCOMPLETE'].includes(m.status), 'finished_real_call_required',409);
     assert(!m.result?.doNotContact && !this.store.suppressed(u.team,m.target.phone),'recipient_suppressed',403);

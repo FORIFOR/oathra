@@ -9,32 +9,23 @@
   <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
 </p>
 
-Run **v0.1.18** with the latest fixes (Node.js 22+, no API key):
-
-```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra demo
-```
-
-Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.18). The npm command `npx oathra demo` still resolves to 0.1.0. For an instant browser trial, open the [evidence lab](https://forifor.github.io/oathra/en/#sim).
-
-After trying it, [star the repository](https://github.com/FORIFOR/oathra) to follow updates. Share a real use case or an unexpected judgement in [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) or an [issue](https://github.com/FORIFOR/oathra/issues); remove personal data and private call content first.
-
-**Already building a voice agent?** v0.1.18 includes scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a unified `ActionProof` model for conversation, confirmation, system and outcome evidence. It keeps provisional reservation confirmations from being treated as completed and stops immediately when consent is unclear or the callee signals time pressure. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
-
-For closed-loop booking or ordering, `oathra/evidence` also exposes `ActionProof`. It compares one expected action across V0 (claimed), V1 (conversation), V2 (authenticated email/SMS/webhook), V3 (authenticated business system) and V4 (reported outcome). Your `VerificationProvider` / `VerificationAdapter` owns provider authentication and connectivity; Oathra deterministically checks freshness, reference IDs and exact fields. No OpenTable, TableCheck or Google Reserve adapter or credential is bundled. [ActionProof integration guide](docs/INTEGRATION.md#verify-an-action-through-external-records-actionproof).
-
-[Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
-
 <p align="center"><a href="https://forifor.github.io/oathra/en/#verdict-video"><img src="docs/media/oathra-share-2026-09-en.png" width="880" alt="The checker just after the agent said the reservation is confirmed: date, time and party are settled from the shop's own words, and Confirmed is the one field still open"/></a><br><sub>The agent said "confirmed". The shop has not. Click for the 26-second screen recording, no sound.</sub></p>
 
-<p align="center"><a href="docs/media/oathra-battle-en.mp4"><img src="docs/media/oathra-battle-en.gif" width="600" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>The built-in agent, GPT-4o mini and Gemini Flash calling a hotel that lists at ¥23,500. Click for the 63-second video with sound (Japanese audio, English captions)</sub></p>
-See the [48-second Arena intake recording](https://forifor.github.io/oathra/en/#intake-video) and the [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml) scenario for a complete consented follow-up run.
+**Try it in one minute** (Node.js 22+; no API key, no phone number):
+
+```bash
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz oathra demo
+```
+
+Browser only: the [evidence lab](https://forifor.github.io/oathra/en/#sim) and the [transcript checker](https://forifor.github.io/oathra/en/check.html) run the same engine locally and send nothing. Real phone: [setup guide](docs/SETUP.en.md).
+
+> Distributed through [GitHub Releases](https://github.com/FORIFOR/oathra/releases/tag/v0.1.19). The npm command `npx oathra demo` still resolves to 0.1.0. Source-first steps and what the release package does not yet include: [docs/FIRST_PROOF.md](docs/FIRST_PROOF.md).
 
 <p align="center"><a href="README.md">日本語</a> · <a href="https://forifor.github.io/oathra/en/">Website</a> · <a href="docs/ARCHITECTURE.md">Architecture</a> · <a href="scenarios/">Scenarios</a> · <a href="docs/GOAL.md">Goal (ja)</a> · <a href="https://dev.to/forifor/five-ways-a-voice-agent-tells-you-it-booked-a-table-when-it-didnt-1lpj">Story (dev.to)</a> · <a href="https://zenn.dev/forifori/articles/oathra-launch">Story (ja, Zenn)</a></p>
 
 ```text
-✓ Playable simulator        AI vs AI, or you answer the phone. No API key.
-✓ Real phone calls          Twilio + Deepgram + OpenAI TTS, one command.
+✓ Playable simulator        watch the AI call, or answer it yourself. No API key.
+✓ Real phone calls          Twilio or any SIP trunk · GPT-Live or Gemini Live, one flag.
 ✓ Verified outcomes         every field backed by the other party's words.
 ✓ Replay & eval             time travel, five-axis scoring, 0 / 10,000 false completions.
 ✓ Local models              Ollama brains, offline scripted baseline.
@@ -45,12 +36,12 @@ See the [48-second Arena intake recording](https://forifor.github.io/oathra/en/#
 Pick a mission, watch an agent negotiate with a simulated restaurant or hotel, or answer the phone yourself and try to stop it. Pit models against each other:
 
 ```bash
-npx oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:qwen2.5:7b --png card.png
+pnpm oathra battle impossible-hotel --agent openai --agent gemini --agent ollama:qwen2.5:7b --png card.png   # from a clone; see below
 ```
 
 A real run against the "impossible" hotel (lists at ¥23,500, budget ¥20,000): the built-in agent, GPT-4o mini and Gemini Flash all closed under budget, zero false completions. Only calls where the hotel says "your reservation is confirmed" count.
 
-<p align="center"><img src="docs/media/arena-confirmed.png" width="720" alt="Arena: the hotel's confirmation flips the confirmed check; evidence shows confirmed = yes from the callee"/><br><sub>The moment the hotel confirms: the confirmed row gets its check and confirmed = yes (callee) lands at the top of the evidence</sub></p>
+<p align="center"><a href="docs/media/oathra-battle-en.mp4"><img src="docs/media/oathra-battle-en.gif" width="600" alt="Screen recording: three Arena windows negotiating with the impossible hotel; the hotel's confirmation flips the confirmed check"/></a><br><sub>The built-in agent, GPT-4o mini and Gemini Flash calling a hotel that lists at ¥23,500. Click for the 63-second video with sound (Japanese audio, English captions)</sub></p>
 
 ### CALL
 
@@ -59,18 +50,19 @@ Same runtime, real phone. **Bring your own carrier. Bring your own model.**
 ```text
 Carrier                       Voice engine
 Twilio       ✓ direct         GPT-Live          ✓ recommended
-Plivo        ✓ SIP            OpenAI Realtime   ✓
-Custom SIP   ✓ SIP            Pipeline (STT+LLM+TTS) ✓
-Telnyx · Wavix · Sinch  v0.2  Local             experimental
+Plivo        ✓ SIP            Gemini Live       ✓ gemini-3.8-live, not yet verified on a real line
+                              Pipeline (STT+LLM+TTS) ✓
+Custom SIP   ✓ SIP            Local             experimental
+Telnyx · Wavix · Sinch  v0.2
 ```
 
 ```bash
 pnpm oathra setup phone           # from a clone: pick a carrier + engine, answer guided questions
-# from the public v0.1.18 asset:
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra setup phone
-npx oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
-npx oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
-npx oathra call --to +81… --scenario restaurant-reservation
+# from the public v0.1.19 asset:
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz oathra setup phone
+pnpm oathra phone doctor --to +81… # carrier · SIP gateway · media · voice engine · latency · cost
+pnpm oathra phone test             # Local ¥0 → Gateway ¥0 → PSTN (paid)
+pnpm oathra call --to +81… --scenario restaurant-reservation
 ```
 
 Universal SIP is powered by LiveKit by default (Cloud or self-hosted); Twilio keeps its direct Media Streams fast path. Providers that need a human step (caller-ID verification, geo permissions) get a guided, linked step instead of a wall of SIP settings. See the [beginner setup guide](docs/SETUP.en.md) for credential links and staged tests. Add a carrier with `oathra provider create phone <id>`.
@@ -117,12 +109,14 @@ const contract = defineCall({
 
 ---
 
+After trying it, [star the repository](https://github.com/FORIFOR/oathra) to follow updates. Share a real use case or an unexpected judgement in [Discussion #14](https://github.com/FORIFOR/oathra/discussions/14) or an [issue](https://github.com/FORIFOR/oathra/issues); remove personal data and private call content first.
+
 ## Try it from source
 
 ```bash
 git clone https://github.com/FORIFOR/oathra && cd oathra
 pnpm install && pnpm build
-pnpm demo                                      # http://localhost:4242
+pnpm demo                                      # http://localhost:4242 — the app in practice mode (no sign-in, no key)
 
 pnpm oathra play restaurant-reservation        # same call in the terminal
 pnpm oathra play scenarios/restaurant/restaurant-reservation-intake.yaml --fast --json  # consent-based follow-up intake
@@ -131,7 +125,7 @@ pnpm oathra play impossible-hotel --fast       # instant, virtual clock
 pnpm oathra play friend-hype --fast            # a thrilled friend says yes to everything; only 「絶対行く！」 counts
 pnpm oathra eval                               # every scenario, False Completion count
 pnpm oathra eval --adversarial 10000           # mutated callees, 14 kinds: hedges, tentative holds, asking back, confirm-then-retract, voicemail, transfer, dialect…
-npx oathra eval --callee openai               # let GPT-4o mini play the shop: phrasing nobody scripted (a few cents)
+pnpm oathra eval --callee openai              # let GPT-4o mini play the shop: phrasing nobody scripted (a few cents)
 pnpm oathra replay <callId> --at 00:18.420     # time travel
 pnpm oathra doctor
 ```
@@ -163,6 +157,18 @@ Success = Connected ∧ date.verified ∧ time.verified ∧ partySize.verified
 ```
 
 `confirmed` can only be verified by an explicit confirmation from the callee («ご予約承りました»). The caller claiming success is recorded and ignored.
+
+## Add evidence checks to the voice agent you already have
+
+Keep your carrier and model; add the verdict. `oathra verify` checks a transcript you already have, and `oathra/evidence` is a typed SDK. No API key. [Integration guide with a LiveKit example](docs/INTEGRATION.md).
+
+v0.1.19 includes scene-aware, consent-based optional intake with `startAfter`, `dependsOn` and `choices`, plus a unified `ActionProof` model for conversation, confirmation, system and outcome evidence. It keeps provisional reservation confirmations from being treated as completed and stops immediately when consent is unclear or the callee signals time pressure. YAML scenario handoff into real calls and a typed SDK at `oathra/evidence` are included. Add completion checks without moving your carrier or model. No API key for verification. [Integration guide + LiveKit example](docs/INTEGRATION.md). For a real phone, follow the [beginner setup guide](docs/SETUP.en.md).
+
+For closed-loop booking or ordering, `oathra/evidence` also exposes `ActionProof`. It compares one expected action across V0 (claimed), V1 (conversation), V2 (authenticated email/SMS/webhook), V3 (authenticated business system) and V4 (reported outcome). Your `VerificationProvider` / `VerificationAdapter` owns provider authentication and connectivity; Oathra deterministically checks freshness, reference IDs and exact fields. No OpenTable, TableCheck or Google Reserve adapter or credential is bundled. [ActionProof integration guide](docs/INTEGRATION.md#verify-an-action-through-external-records-actionproof).
+
+[Check your own transcript without installing →](https://forifor.github.io/oathra/en/check.html) · [25-second walkthrough](https://forifor.github.io/oathra/en/#transcript-video)
+
+See the [48-second Arena intake recording](https://forifor.github.io/oathra/en/#intake-video) and the [`restaurant-reservation-intake.yaml`](scenarios/restaurant/restaurant-reservation-intake.yaml) scenario for a complete consented follow-up run.
 
 ## Evidence
 
@@ -198,7 +204,7 @@ Audio Transport ─▶ Turn Stream ─▶ Transcript Stream ─▶ Conversation 
 Dependency direction is enforced in CI (`pnpm lint:deps`):
 
 ```text
-contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
+contract → evidence → core → scenario → runtime → providers → replay / eval → cli (the app, apps/gateway, uses their dist)
 ```
 
 | Package | Responsibility |
@@ -211,7 +217,6 @@ contract → evidence → core → scenario → runtime → providers → replay
 | `@oathra/simulator` | scripted characters (restaurant, hotel, shop, serial), `HumanCharacter`, offline `ScriptedAgent` |
 | `@oathra/replay` | save/load call directories, time-travel snapshots |
 | `@oathra/eval` | Oathra Score, **false completion detection** against simulator ground truth, Agent Battle |
-| `@oathra/arena` | dependency-free HTTP + SSE server and the browser UI |
 | `oathra` | CLI |
 
 Internal agent states (`LISTENING … VERIFYING … SPEAKING`) are compressed to four UX states: **Listening · Understanding · Acting · Speaking**.
@@ -276,7 +281,7 @@ Bugs this harness caught before it went green: thousands separators splitting `2
 `oathra mcp` is an MCP server over stdio. From Claude Code, Claude Desktop or any MCP client, one tool call runs a simulated phone call and returns a result backed by evidence from the callee's own words.
 
 ```json
-{ "mcpServers": { "oathra": { "command": "npx", "args": ["--yes", "--package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz", "oathra", "mcp"] } } }
+{ "mcpServers": { "oathra": { "command": "npx", "args": ["--yes", "--package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz", "oathra", "mcp"] } } }
 ```
 
 | Tool | What it does |
@@ -290,18 +295,18 @@ Everything runs locally with no API key and no cost. There is deliberately no to
 
 ## Status
 
-v0.1.18 (released 2026-09-19):
+v0.1.19 (released 2026-09-19):
 
 - [x] CallContract, Evidence engine, deterministic completion
 - [x] Simulator transport, scripted characters, offline agent
-- [x] Arena (Watch / Play), CLI, Replay, Eval, Battle (SVG/PNG cards)
+- [x] App practice (watch / answer the AI yourself), CLI, Replay, Eval, Battle (SVG/PNG cards)
 - [x] Scenario DSL + CI gate; 0 / 10,000 adversarial simulator runs
 - [x] Consent-based, contract-declared follow-up intake with utterance-linked `intake.json` and `summary.md`; unclear consent, holds and non-answers stop immediately
 - [x] Provisional, pending-approval and post-confirmation-change guards; 500 regression cases cover Japanese provisional phrases
 - [x] LLM brains: OpenAI, Gemini, Ollama via `BrainProvider` (Anthropic next)
 - [x] Phone Layer: `oathra setup phone`, `phone add|list|doctor|test|remove`, preferred-order routing with fallback, reference pricing
 - [x] Twilio direct (verified on real calls), Plivo SIP + custom SIP via the LiveKit gateway (implemented against provider docs, PSTN unverified)
-- [x] Voice Layer: GPT-Live (recommended, verified on real calls), OpenAI Realtime, Deepgram + LLM + OpenAI TTS pipeline
+- [x] Voice Layer: GPT-Live (recommended, verified on real calls), Gemini Live (gemini-3.8-live, offline-tested only), Deepgram + LLM + OpenAI TTS pipeline
 - [ ] Telnyx, Wavix, Sinch, didlogic providers; ElevenLabs TTS; self-hosted SIP gateways beyond LiveKit
 - [ ] Dual-ASR safe path for dates / amounts / numbers, preemptive generation
 - [x] MCP server `oathra mcp` (`simulate_call`, `verify_transcript`, `inspect_call`, `list_calls`, `list_scenarios`). Local only; it never dials
@@ -316,7 +321,7 @@ Simulator numbers (latency, scores) are from the simulator. Real-call latency to
 
 No install: the [browser evidence lab](https://forifor.github.io/oathra/en/#sim) runs the production `EvidenceEngine` and `evaluate` locally. Enter your own wording, switch speakers, or retract a reservation. Your input text stays in the browser; no call is placed. The [30-second interaction recording](https://forifor.github.io/oathra/en/#demo-video) shows a hedge, a confirmation, and a retraction.
 
-Run `npx oathra demo`, pick "Play" (you answer the phone), and the three lines below appear as one-click buttons under the input. Send them as the clerk. None of them should tick `confirmed` ([verification log](docs/launch/miscompletion-cases.md)):
+Run the v0.1.19 command at the top and, in the app's 練習 (practice), choose 自分が相手役: you answer the AI's call as the clerk. Try hedges and changes after a confirmation and watch which fields get a tick. The evidence engine on its own does not treat the replies below as confirmed ([verification log](docs/launch/miscompletion-cases.md)); what the screen shows also depends on the rest of the conversation:
 
 - Restaurant: "probably fine, but it's not confirmed yet" → not confirmed
 - Restaurant: "7 pm is full, but 7:30 works" → the refused 7 pm is not an offer; bare 7:30 remains unresolved until am/pm is clarified and the time is accepted
@@ -326,9 +331,10 @@ If you find a phrasing that slips through, open an issue. That is the most usefu
 
 ## Credits
 
-The agent avatar in the Arena (a liquid-glass orb) vendors the shader from [LerSent001/orb](https://github.com/LerSent001/orb) (MIT) under `apps/arena/public/orb/`. Browsers without WebGPU fall back to the text glyph.
 
 ## Contributing
+
+Every release is listed in [CHANGELOG.md](CHANGELOG.md).
 
 `pnpm install && pnpm test`. Add a scenario under `scenarios/`, a character under `providers/simulator/src/characters/`, or a provider under `providers/`. Keep the dependency direction; CI checks it.
 

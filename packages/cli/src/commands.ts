@@ -1,14 +1,16 @@
+import type { BrainProvider } from "@oathra/core";
 import { execSync, spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { startArena } from "@oathra/arena";
+import { pathToFileURL } from "node:url";
 import { battle, COMPLETABLE, evalScenarios, MUTATIONS, renderBattleMarkdown, renderBattleSvg, runAdversarial, runScenario } from "@oathra/eval";
 import { listCalls, loadCall, renderTimeline, saveCall, snapshotAt } from "@oathra/replay";
 import { loadScenarioDir, loadScenarioFile, parseScenario, type Scenario } from "@oathra/scenario";
 import { brains, listBrains, resolveBrain } from "./brains.js";
 import { resolveCallee } from "./callee.js";
 import { phoneDoctor, phoneAdd, phoneList, phoneRemove, phoneTest, providerCreate, runPhoneCall, setupPhone } from "./phone.js";
-import { arenaPublicDir, scenariosDir } from "./paths.js";
+import { gatewayDemo, scenariosDir } from "./paths.js";
 import { liveRenderer, resultBox } from "./render.js";
 import { bad, bold, box, cyan, dim, green, mmss, ok, table, warn, yellow } from "./ui.js";
 
@@ -56,25 +58,134 @@ function openBrowser(url: string): void {
   }
 }
 
+async function startTunnel(port: number, preferred?: string): Promise<{ url: string; close: () => void }> {
+  if (preferred === "ngrok") {
+    const child = spawn("ngrok", ["http", String(port), "--log=stdout"], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+      let output = "";
+      const onData = (data: Buffer | string) => {
+        const text = data.toString();
+        output += text;
+        const match = text.match(/url=(https:\/\/[a-z0-9-]+\.ngrok(?:-free)?\.app)/);
+        if (match && !resolved) {
+          resolved = true;
+          resolve({
+            url: match[1]!,
+            close: () => { try { child.kill("SIGINT"); } catch {} },
+          });
+        }
+      };
+      child.stdout.on("data", onData);
+      child.stderr.on("data", onData);
+      child.on("error", (err) => {
+        if (!resolved) { resolved = true; reject(new Error(`Failed to start ngrok: ${err.message}`)); }
+      });
+      child.on("exit", (code) => {
+        if (!resolved) { resolved = true; reject(new Error(`ngrok exited with code ${code}: ${output}`)); }
+      });
+      setTimeout(() => {
+        if (!resolved) { resolved = true; try { child.kill("SIGINT"); } catch {} reject(new Error("Timeout waiting for ngrok tunnel URL")); }
+      }, 15_000);
+    });
+  }
+
+  const child = spawn("cloudflared", ["tunnel", "--url", `http://127.0.0.1:${port}`], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+    let output = "";
+    const onData = (data: Buffer | string) => {
+      const text = data.toString();
+      output += text;
+      const match = text.match(/https:\/\/(?!api\.)[a-z0-9-]+\.trycloudflare\.com/);
+      if (match && !resolved) {
+        resolved = true;
+        resolve({
+          url: match[0],
+          close: () => {
+            try { child.kill("SIGINT"); } catch {}
+          },
+        });
+      }
+    };
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
+    child.on("error", (err) => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(`Failed to start cloudflared tunnel: ${err.message}. Make sure cloudflared is installed (brew install cloudflared).`));
+      }
+    });
+    child.on("exit", (code) => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(`cloudflared exited with code ${code} without providing a tunnel URL: ${output}`));
+      }
+    });
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        try { child.kill("SIGINT"); } catch {}
+        reject(new Error("Timeout waiting for cloudflared tunnel URL to be generated"));
+      }
+    }, 20_000);
+  });
+}
+
 // ---------------------------------------------------------------------------
 
+type GatewayDemo = {
+  startDemo: (o: { port: number; open: boolean; lan?: boolean; tunnelUrl?: string; live?: boolean; brains?: Record<string, () => BrainProvider> }) => Promise<{
+    url: string; lanUrls: string[]; liveReady: boolean; missing: string[]; signIn: (base: string) => string; close: () => Promise<void>;
+  }>;
+};
+
+/**
+ * `oathra demo`: the Oathra app (the Gateway) on this computer. Practice mode by default: nothing dials, no key, no
+ * sign-in from this computer. --allow-remote (LAN) and --tunnel open it to other devices with a sign-in link;
+ * --allow-models adds external practice AIs; --live (with --tunnel) places real calls with this machine's keys.
+ */
 export async function cmdDemo(flags: Flags): Promise<void> {
   console.log(`\n${bold("Oathra")}\n`);
   console.log(ok(`Runtime        Node ${process.version}`));
-  console.log(ok("Simulator      built-in characters, no API key needed"));
-  const scenarios = loadScenarioDir(scenariosDir());
-  console.log(ok(`Scenarios      ${scenarios.length}`));
   const port = num(flags.port, 4242);
-  const arena = await startArena({ scenariosDir: scenariosDir(), publicDir: arenaPublicDir(), brains, port, host: str(flags.host, "127.0.0.1") ?? "127.0.0.1" });
-  console.log(ok(`Arena          ${arena.url}`));
-  console.log(`\nOpening Arena...\n\n  ${cyan(arena.url)}\n`);
-  if (!flags["no-open"]) openBrowser(arena.url);
-  console.log(dim("Watch two agents on a call, or choose Play and answer the phone yourself. Ctrl+C stops the server.\n"));
-  await new Promise<void>((res) => {
-    process.on("SIGINT", () => {
-      void arena.close().then(res);
-    });
-  });
+  const tunnelWanted = Boolean(flags.tunnel || flags.ngrok);
+  const lan = Boolean(flags["allow-remote"] || flags.remote || flags.host === "0.0.0.0");
+  const live = Boolean(flags.live);
+  if (live && !tunnelWanted) { console.log(bad("--live needs --tunnel: the carrier reaches this app through a public https address.")); process.exitCode = 1; return; }
+  const { entry, root } = gatewayDemo();
+  if (root) process.env.OATHRA_GATEWAY_ROOT = root;
+  let startDemo: GatewayDemo["startDemo"];
+  try { ({ startDemo } = (await import(pathToFileURL(entry).href)) as GatewayDemo); }
+  catch (err) {
+    // The app keeps its data in node:sqlite (Node 22.13+ without a flag). Older Node still gets the previous screen.
+    if ((err as { code?: string }).code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw err;
+    console.log(bad(`The app needs Node 22.13 or later (this is ${process.version}). Update Node and run oathra demo again.`));
+    process.exitCode = 1; return;
+  }
+  let tunnel: { url: string; close: () => void } | undefined;
+  if (tunnelWanted) {
+    const preferred = flags.ngrok || flags.tunnel === "ngrok" ? "ngrok" : undefined;
+    console.log(dim(`Starting ${preferred === "ngrok" ? "ngrok" : "Cloudflare"} Tunnel...`));
+    try { tunnel = await startTunnel(port, preferred); }
+    catch (err) { console.log(bad(`Tunnel error: ${(err as Error).message}`)); if (live) { process.exitCode = 1; return; } }
+  }
+  const demo = await startDemo({ port, open: false, lan, live, ...(tunnel ? { tunnelUrl: tunnel.url } : {}), ...(flags["allow-models"] ? { brains } : {}) });
+  console.log(ok(live ? `Real calls     ${demo.liveReady ? "ready (this machine's carrier and voice keys)" : `not ready: ${demo.missing.join(", ")}`}` : "Practice       built-in characters, nothing dials, no API key needed"));
+  if (flags["allow-models"]) console.log(warn("External models enabled: choosing one sends the practice conversation to that provider and may incur API charges."));
+  console.log(ok(`App            ${live ? demo.signIn(tunnel!.url) : demo.url}`));
+  for (const u of demo.lanUrls) console.log(ok(`Other devices  ${cyan(demo.signIn(u))}`));
+  if (tunnel && !live) console.log(ok(`Tunnel         ${cyan(demo.signIn(tunnel.url))}`));
+  if (demo.lanUrls.length || tunnel) console.log(warn("Anyone with a sign-in link can use this app (and, with --live, place calls). Do not share it."));
+  const openUrl = live ? demo.signIn(tunnel!.url) : demo.url;
+  console.log(`\nOpening Oathra...\n\n  ${cyan(openUrl)}\n`);
+  if (!flags["no-open"]) openBrowser(openUrl);
+  console.log(dim("練習: AIの電話を見る、または「自分が相手役」でAIからの電話に答える。データは .oathra/demo/ に、練習の記録は .oathra/calls/ に残ります。Ctrl+C で止めます。\n"));
+  await new Promise<void>((res) => { for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => { tunnel?.close(); void demo.close().then(res); }); });
 }
 
 export async function cmdPlay(positional: string[], flags: Flags): Promise<void> {
@@ -108,6 +219,9 @@ export async function cmdPlay(positional: string[], flags: Flags): Promise<void>
 
 export async function cmdCall(_positional: string[], flags: Flags): Promise<void> {
   await runPhoneCall({
+    ...(str(flags["request-file"]) ? { requestFile: str(flags["request-file"])! } : {}),
+    ...(flags["dry-run"] ? { dryRun: true } : {}),
+    ...(flags["approve-request"] ? { approveRequest: true } : {}),
     ...(str(flags.to) ? { to: str(flags.to)! } : {}),
     ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}),
     ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}),
@@ -132,7 +246,7 @@ export async function cmdPhone(positional: string[], flags: Flags): Promise<void
       return;
     }
     case "test":
-      return phoneTest({ ...(str(flags.level) ? { level: str(flags.level)! } : {}), ...(str(flags.provider) ? { provider: str(flags.provider)! } : {}), ...(str(flags.to) ? { to: str(flags.to)! } : {}), ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}), ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}) });
+      return phoneTest({ ...(str(flags.level) ? { level: str(flags.level)! } : {}), ...(str(flags.provider) ? { provider: str(flags.provider)! } : {}), ...(str(flags.to) ? { to: str(flags.to)! } : {}), ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}), ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}), ...(str(flags.tts) ? { tts: str(flags.tts)! } : {}), ...(str(flags["voice-preset"]) ? { voicePreset: str(flags["voice-preset"])! } : {}), ...(str(flags.out) ? { out: str(flags.out)! } : {}), ...(str(flags["max-usd"]) ? { maxUsd: str(flags["max-usd"])! } : {}) });
     default:
       throw new Error(`unknown phone subcommand "${sub}" (add | list | doctor | test | remove)`);
   }
@@ -375,8 +489,9 @@ export async function cmdDoctor(): Promise<void> {
       }
     }
   };
-  const ffmpeg = has("ffmpeg");
-  console.log(ffmpeg ? ok("ffmpeg") : warn("ffmpeg missing (needed for audio transports)\n    Fix: brew install ffmpeg"));
+  // Twilio direct calling needs a public URL for its media stream; `oathra call` starts ngrok for it.
+  const ngrok = has("ngrok");
+  console.log(ngrok ? ok("ngrok          found (Twilio direct calls need it for the media stream)") : dim("· ngrok          not found. Needed only for `oathra call` over Twilio direct: brew install ngrok"));
   try {
     const n = loadScenarioDir(scenariosDir()).length;
     console.log(ok(`Scenarios      ${n} valid`));
@@ -384,10 +499,8 @@ export async function cmdDoctor(): Promise<void> {
     console.log(bad(`Scenarios      ${(e as Error).message}`));
   }
   const keys: Array<[string, string, string?]> = [
-    ["DEEPGRAM_API_KEY", "Deepgram STT", "https://console.deepgram.com/"],
-    ["ELEVENLABS_API_KEY", "ElevenLabs TTS"],
-    ["OPENAI_API_KEY", "OpenAI brain", "https://platform.openai.com/api-keys"],
-    ["ANTHROPIC_API_KEY", "Anthropic brain"],
+    ["OPENAI_API_KEY", "OpenAI (GPT-Live, brain, TTS)", "https://platform.openai.com/api-keys"],
+    ["DEEPGRAM_API_KEY", "Deepgram STT (Pipeline engine)", "https://console.deepgram.com/"],
     ["GEMINI_API_KEY", "Gemini brain", "https://aistudio.google.com/apikey"],
     ["LIVEKIT_URL", "LiveKit URL", "https://cloud.livekit.io/"],
     ["LIVEKIT_API_KEY", "LiveKit API key", "https://cloud.livekit.io/"],
@@ -399,15 +512,15 @@ export async function cmdDoctor(): Promise<void> {
   ];
   console.log("");
   for (const [env, label, url] of keys) {
-    if (process.env[env]) console.log(ok(`${label.padEnd(18)} configured`));
+    if (process.env[env]) console.log(ok(`${label.padEnd(30)} configured`));
     else {
-      console.log(dim(`· ${label.padEnd(18)} not configured (${env})`));
+      console.log(dim(`· ${label.padEnd(30)} not configured (${env})`));
       if (url) console.log(dim(`  Get it at: ${url}`));
     }
   }
   console.log(`\n${bold("Ready on this machine")}\n`);
   console.log(ok("Simulator       AI-vs-AI and Play mode, offline"));
-  console.log(ok("Arena           browser UI (oathra demo)"));
+  console.log(ok("App             browser UI, practice mode (oathra demo)"));
   console.log(ok("Replay / Eval   saved calls, scoring, adversarial runs"));
   console.log(ok("Japanese        dates, times, prices, phone numbers, serials parsed deterministically"));
   console.log(ok("Verification    evidence engine decides completion, not the model"));
@@ -451,17 +564,21 @@ export function help(): string {
 ${bold("Oathra")}  ${dim("Give AI agents a phone, and proof of what happened.")}
 
 ${bold("Try it")}
-  oathra demo                        open the Arena: two agents on a simulated call, no API key
+  oathra demo                        open the app in practice mode: watch the AI call, or answer it yourself; no API key
+                                     ${dim("--allow-remote (other devices, sign-in link)  --tunnel  --allow-models  --live (real calls, with --tunnel)  --port <n>")}
   oathra play [scenario]             run one scenario in the terminal        ${dim("--brain scripted|openai|gemini|ollama  --fast  --seed <n>  --json")}
   oathra battle [scenario]           several brains, same scenario, one card ${dim("--agent <brain> …  --markdown  --svg <file>  --png <file>")}
 
 ${bold("Real phone")}
   oathra setup phone                 guided API-key, voice-engine and carrier setup (.env is updated)
-                                     ${dim("--engine gpt-live|realtime|pipeline  --provider twilio|plivo|sip  --skip-test")}
+                                     ${dim("--engine gpt-live|gemini-live|character-tts|pipeline  --provider twilio|plivo|sip  --skip-test")}
   oathra phone add|list|remove       manage carriers (twilio, plivo, sip)
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
-  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|realtime|pipeline  --provider <id>")}
+                                     ${dim("--level conversation --engine character-tts --voice-preset character-female|character-male [--max-usd 0.05] [--out dir]: whole call, no carrier")}
+  oathra call --request-file <json> --dry-run  review a saved phone request without dialing
+  oathra call --request-file <json> --approve-request  explicitly place the reviewed call
+  oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|gemini-live|character-tts|pipeline  --provider <id>")}
 
 ${bold("Trust")}
   oathra verify <json | ->           check your final transcripts locally; JSON output, no API key
@@ -477,6 +594,7 @@ ${bold("Extend")}
 
 ${bold("Check")}
   oathra doctor                      runtime, keys, brains, phone readiness
+  oathra --version                   print the CLI version
 
 ${dim("Docs   https://github.com/FORIFOR/oathra")}
 `;

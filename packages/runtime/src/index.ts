@@ -9,6 +9,7 @@ import { checkConstraints, isPermitted, renderIntakeConsentPrompt, requiredField
 import { EvidenceEngine, evaluate, type ConnectionState, type Utterance, type VerifiedResult } from "@oathra/evidence";
 import {
   denyAll,
+  phoneReferenceDate,
   EventLog,
   StateMachine,
   summarizeLatency,
@@ -45,6 +46,11 @@ export type RunOptions = {
   onEvent?: (e: CallEvent) => void;
   /** If the callee has not spoken this long after connect, the agent opens. */
   openingTimeoutMs?: number;
+  /**
+   * Voice lines with a runtime brain (not speech-to-speech): after the agent's line, this much callee silence makes
+   * the agent check in briefly; after two unanswered check-ins it says goodbye. 0 turns it off. Default 8000.
+   */
+  silenceCheckMs?: number;
   /**
    * Spoken at the start of the agent's first turn (see `recordingNotice`). Carriers that play the notice
    * themselves before the media stream starts must leave this unset, or the callee hears it twice.
@@ -121,6 +127,7 @@ export class CallRuntime {
     this.intakeStatus = opts.contract.intake ? "not_started" : "disabled";
     const engineOpts: ConstructorParameters<typeof EvidenceEngine>[0] = { language: opts.contract.language };
     if (opts.now) engineOpts.now = opts.now;
+    else if(opts.contract.goal==='phone.message'&&opts.contract.language==='ja')engineOpts.now=phoneReferenceDate(Date.now());
     if (opts.contract.confirmation) engineOpts.confirmation = opts.contract.confirmation;
     this.engine = new EvidenceEngine(engineOpts);
     if (opts.onEvent) this.log.subscribe(opts.onEvent);
@@ -146,6 +153,10 @@ export class CallRuntime {
     const gate = this.opts.permissionGate ?? denyAll;
     let endReason: EndReason = "completed";
     const start = Date.now();
+    // Wall-clock budget. The per-turn check below only runs when the callee speaks; a silent or held
+    // line would otherwise stay open (and billed) forever.
+    let budgetTimer: NodeJS.Timeout | undefined;
+    let budgetFired = false;
 
     this.emit({
       type: "call.started",
@@ -163,14 +174,24 @@ export class CallRuntime {
       this.session = await transport.connect(contract.target, { language: contract.language, contract });
       const session = this.session;
       const iterator = session.events[Symbol.asyncIterator]();
+      budgetTimer = setTimeout(() => {
+        budgetFired = true;
+        void session.hangup("budget_exceeded").catch(() => undefined);
+      }, Math.max(1000, contract.budget.maxDurationMs));
+      budgetTimer.unref?.();
 
       let agentHungUp = false;
       let calleeSpoke = false;
       let openTurnId: string | undefined;
       const openingTimeout = this.opts.openingTimeoutMs ?? 1500;
+      // Only a live voice line with our own brain needs this: speech-to-speech models handle silence themselves,
+      // and text simulations have no silence to fill.
+      const silenceCheck = !transport.speaksItself && typeof session.ack === "function" ? (this.opts.silenceCheckMs ?? 8000) : 0;
+      let silentChecks = 0;
 
       const nextEvent = async (timeoutMs?: number): Promise<SessionEvent | undefined> => {
-        const p = iterator.next();
+        const p = pendingNext ?? iterator.next();
+        pendingNext = undefined;
         if (timeoutMs === undefined) return (await p).value as SessionEvent | undefined;
         let timer: NodeJS.Timeout | undefined;
         const timeout = new Promise<"timeout">((res) => (timer = setTimeout(() => res("timeout"), timeoutMs)));
@@ -187,7 +208,19 @@ export class CallRuntime {
 
       while (!this.cancelled && !agentHungUp) {
         let ev: SessionEvent | undefined;
-        if (pendingNext) {
+        if (silenceCheck > 0 && this.connection === "active" && this.turnIndex > 0 && !openTurnId) {
+          ev = await nextEvent(silenceCheck);
+          if (ev === undefined && pendingNext) {
+            // The callee has said nothing since our line: check in once or twice, then say goodbye.
+            silentChecks++;
+            const hint = silentChecks >= 3
+              ? "The callee has stayed silent through two check-ins. Say a short, polite goodbye and end the call (action \"hangup\")."
+              : "The callee has said nothing for a while since your last line. Check in once, very briefly and naturally (for example, whether they can hear you or whether now is a bad time). Do not repeat your previous line.";
+            agentHungUp = await this.agentTurn(session, brain, gate, this.now(), [hint]);
+            if (agentHungUp) break;
+            continue;
+          }
+        } else if (pendingNext) {
           const r = await pendingNext;
           pendingNext = undefined;
           ev = r.value as SessionEvent | undefined;
@@ -226,7 +259,7 @@ export class CallRuntime {
         }
         if (ev.type === "error") {
           const fatal = ev.fatal !== false;
-          this.emit({ type: "error", message: ev.message, fatal });
+          this.emit({ type: "error", message: ev.message, fatal, ...(ev.code ? { code: ev.code } : {}) });
           if (!fatal) continue;
           endReason = "error";
           this.connection = "failed";
@@ -241,10 +274,10 @@ export class CallRuntime {
           const turnId = newId("turn");
           this.emit({ type: "agent.speech.started", turnId, text: ev.text, t: ev.startMs });
           this.emit({ type: "agent.speech.ended", turnId, startMs: ev.startMs, endMs: ev.endMs, interrupted: ev.interrupted ?? false, t: ev.endMs });
-          this.emit({ type: "transcript.final", turnId, source: "caller", text: ev.text, startMs: ev.startMs, endMs: ev.endMs, t: ev.endMs });
-          this.transcript.push({ id: turnId, source: "caller", text: ev.text, t: ev.endMs });
+          this.emit({ type: "transcript.final", turnId, source: "caller", text: ev.text, interrupted: ev.interrupted ?? false, startMs: ev.startMs, endMs: ev.endMs, t: ev.endMs });
+          this.transcript.push({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, ...(ev.interrupted ? { interrupted: true } : {}) });
           this.observeIntakeQuestion(ev.text);
-          this.ingest({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, audio: { startMs: ev.startMs, endMs: ev.endMs } });
+          if (!ev.interrupted) this.ingest({ id: turnId, source: "caller", text: ev.text, t: ev.endMs, audio: { startMs: ev.startMs, endMs: ev.endMs } });
           const trace: TurnTrace = { turnId, speechEndMs: ev.startMs - (ev.ttfaMs ?? 0), playbackStartMs: ev.startMs };
           if (ev.ttfaMs !== undefined) trace.ttfaMs = ev.ttfaMs;
           this.traces.push(trace);
@@ -279,6 +312,7 @@ export class CallRuntime {
         }
         if (ev.type === "speech") {
           calleeSpoke = true;
+          silentChecks = 0;
           // Coalesce utterances that queued up while the agent was busy
           // (thinking / speaking) so the brain answers the latest state of the
           // conversation instead of replying to each stale fragment in turn.
@@ -358,6 +392,7 @@ export class CallRuntime {
         }
       }
 
+      if (budgetFired) endReason = "budget_exceeded";
       if (this.cancelled) endReason = "cancelled";
       if (agentHungUp) endReason = "agent_hangup";
       if (this.connection !== "failed") this.connection = "completed";
@@ -366,6 +401,10 @@ export class CallRuntime {
       this.emit({ type: "error", message: (e as Error).message, fatal: true });
       this.connection = "failed";
       endReason = "error";
+      // A brain or TTS failure must not leave a real line open.
+      await this.session?.hangup("error").catch(() => undefined);
+    } finally {
+      if (budgetTimer) clearTimeout(budgetTimer);
     }
 
     if (this.state.state !== "ENDED") this.state.transition("ENDED");
@@ -404,6 +443,7 @@ export class CallRuntime {
     for (const ev of r.created) this.emit({ type: "evidence.created", evidence: { ...ev } });
     for (const ev of r.verified) this.emit({ type: "evidence.verified", evidence: { ...ev } });
     const view = this.missionView();
+    if (this.opts.transport.speaksItself) this.session?.updateContext?.(view);
     this.emit({ type: "mission.progress", verified: Object.keys(view.verified), missing: view.missing, pending: Object.keys(view.pending) });
   }
 
@@ -413,7 +453,7 @@ export class CallRuntime {
     const pending: Record<string, unknown> = {};
     // Only the callee's pending offers are surfaced: the agent must never
     // "accept" its own unverified proposals.
-    for (const f of new Set([...required, ...Object.keys(this.opts.contract.constraints)])) {
+    for (const f of new Set([...required, ...Object.keys(this.opts.contract.constraints), ...(this.opts.contract.goal === "phone.message" && this.opts.contract.input.conversationMode !== "chat" ? ["date", "time", "partySize", "price", "confirmed"] : [])])) {
       const p = this.engine.pendingOffer(f);
       if (p) pending[f] = p.value;
     }
@@ -617,7 +657,7 @@ export class CallRuntime {
   }
 
   /** Run one agent turn. Returns true if the agent ended the call. */
-  private async agentTurn(session: CallSession, brain: BrainProvider, gate: PermissionGate, speechEndMs: number): Promise<boolean> {
+  private async agentTurn(session: CallSession, brain: BrainProvider, gate: PermissionGate, speechEndMs: number, hints?: string[]): Promise<boolean> {
     const { contract } = this.opts;
     const turnId = newId("turn");
     const trace: TurnTrace = { turnId, speechEndMs, turnConfirmMs: this.now() };
@@ -633,6 +673,7 @@ export class CallRuntime {
       permitted,
       elapsedMs: this.now(),
       turnIndex: this.turnIndex,
+      ...(hints?.length ? { hints } : {}),
     };
     this.emit({ type: "brain.request", turnId, brain: brain.name });
     trace.brainStartMs = this.now();
@@ -685,6 +726,7 @@ export class CallRuntime {
     // Permission check: deterministic, outside the LLM.
     let text = response.text;
     if (!text.trim()) text = contract.language === "ja" ? "少々お待ちください。" : "One moment, please.";
+    const withNotice = Boolean(this.opts.openingNotice && !this.noticeSpoken);
     if (this.opts.openingNotice && !this.noticeSpoken) {
       this.noticeSpoken = true;
       text = `${this.opts.openingNotice}${contract.language === "ja" ? "" : " "}${text}`;
@@ -710,17 +752,25 @@ export class CallRuntime {
     this.state.transition("SYNTHESIZING");
     this.emit({ type: "agent.speech.started", turnId, text });
     this.state.transition("SPEAKING");
-    const spoke = await session.speak({ text, language: contract.language });
+    const spoke = await session.speak({ text, language: contract.language, ...(trace.brainStartMs !== undefined ? { inputUntilMs: trace.brainStartMs } : {}) });
+    if (spoke.skipped) {
+      // The callee spoke after this reply was written and nothing of it was played: it is not part of the
+      // conversation. The newer words are answered on the next turn (and a notice not yet heard is said then).
+      if (withNotice) this.noticeSpoken = false;
+      this.emit({ type: "agent.speech.ended", turnId, startMs: spoke.startMs, endMs: spoke.endMs, interrupted: true, t: spoke.endMs });
+      this.state.transition("LISTENING");
+      return false;
+    }
     trace.ttsFirstAudioMs = spoke.startMs;
     trace.playbackStartMs = spoke.startMs;
     trace.ttfaMs = Math.max(0, Math.round(spoke.startMs - speechEndMs));
     this.emit({ type: "agent.speech.ended", turnId, startMs: spoke.startMs, endMs: spoke.endMs, interrupted: spoke.interrupted, t: spoke.endMs });
-    this.emit({ type: "transcript.final", turnId, source: "caller", text, startMs: spoke.startMs, endMs: spoke.endMs, t: spoke.endMs });
+    this.emit({ type: "transcript.final", turnId, source: "caller", text, interrupted: spoke.interrupted, startMs: spoke.startMs, endMs: spoke.endMs, t: spoke.endMs });
     this.traces.push(trace);
     this.emit({ type: "turn.trace", trace });
 
-    this.transcript.push({ id: turnId, source: "caller", text, t: spoke.endMs });
-    this.ingest({ id: turnId, source: "caller", text, t: spoke.endMs, audio: { startMs: spoke.startMs, endMs: spoke.endMs } });
+    this.transcript.push({ id: turnId, source: "caller", text, t: spoke.endMs, ...(spoke.interrupted ? { interrupted: true } : {}) });
+    if (!spoke.interrupted) this.ingest({ id: turnId, source: "caller", text, t: spoke.endMs, audio: { startMs: spoke.startMs, endMs: spoke.endMs } });
     this.turnIndex++;
 
     if (response.action === "hangup") {

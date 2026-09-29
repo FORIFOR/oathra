@@ -7,17 +7,17 @@
 - The canonical confirmation field is `confirmed` (callee-only evidence). Scenario `win` fields must appear in `mission.require` or `mission.constraints`.
 - Scripted characters live in `providers/simulator/src/characters/` and must implement `truth()` so eval can detect false completions. `pnpm oathra eval` must report `False Completion 0`.
 - Product goal: `docs/GOAL.md`. Architecture: `docs/ARCHITECTURE.md`.
-- Arena visual QA without the Chrome extension: start `oathra demo --no-open`, then `node scripts/qa-arena.mjs <outDir>` (drives local Google Chrome headless over CDP and writes PNGs).
+- `oathra demo` opens the app (apps/gateway, practice mode; `apps/gateway/demo.mjs`). Arena was retired on 2026-09-29; the managed page's markup lives in `apps/gateway/public/phone/base/`. Visual QA without the Chrome extension: `node scripts/ui/gateway-app.mjs` / `gateway-local.mjs` (local Chrome over CDP, PNGs in artifacts/ui).
 - Trust gate: `oathra eval --adversarial 10000` must print `False Completion: 0 / 10000`.
-- Phone Layer (`packages/phone`) + Voice Layer (`packages/voice`): carriers (`providers/phone-*`) and engines (`providers/openai-realtime` engines, `providers/voice-pipeline`) never import each other; the bridge in `packages/phone/src/bridge.ts` converts audio. LiveKit is the first `SipGateway` implementation, not the spec.
-- Every call opens with `recordingNotice(language)` from `@oathra/core` (「この通話は録音されています。」). Simulated calls get it from the runtime (`openingNotice`); the Twilio direct carrier plays it itself before the media stream, only when it records (`recordDir`). Never set both. The gateway keeps a transcript and no audio, and says that instead.
+- Phone Layer (`packages/phone`) + Voice Layer (`packages/voice`): carriers (`providers/phone-*`) and engines (`providers/openai-realtime`, `providers/gemini-live`, `providers/voice-pipeline`) never import each other (shared prompts, desk tools and farewell detection live in `providers/voice-kit`); the bridge in `packages/phone/src/bridge.ts` converts audio. LiveKit is the first `SipGateway` implementation, not the spec.
+- Every call opens with `recordingNotice(language)` from `@oathra/core` (「この通話は録音されています。」). Simulated calls get it from the runtime (`openingNotice`); the Twilio direct carrier plays it itself before the media stream, only when it records (`recordDir`). Never set both. A call that keeps a transcript and no audio (the gateway, Arena's web phone) says `transcriptNotice(language)` (「この通話は記録されています。」) instead; pass `transcriptNotice: true` to `PhoneTransport`.
 - Real-call verification order: `oathra phone test --level local` (¥0 telephony, few yen of API) → `--level gateway` → `--level pstn` only with the user's explicit go.
 - `apps/gateway`, `sdk/`, `plugins/` are plain ESM outside the pnpm workspace. Test them with `pnpm test:gateway` (needs the build; the gateway imports `packages/*/dist`). `pnpm lint:deps` also enforces `sdk → nothing`, `plugins → sdk`, `gateway → sdk, plugins, built packages`; the core never imports from them.
 - Appointment-style outcomes (sales meetings) use `confirmation: "callee_acceptance"` on the contract. The verdict still comes from `evaluate()`; never add gateway-local agreement rules. `packages/evidence/src/appointment-fuzz.test.ts` must stay at 0 false completions over 10,000 seeded dialogues.
 
 ## UI work
 - UIを新規実装・変更するときは `/ui-craft`（`.claude/skills/ui-craft/SKILL.md`）の手順で進める。自動起動しなくても読んで適用する。
-- 公開サイト（`site/`）、アプリUI（`apps/gateway/public`・`apps/arena/public`）、`apps/ios` は別の対象。サイトの基準は `docs/design/` の PRODUCT・DESIGN・CONTENT・ACCEPTANCE、アプリUIの基準は `docs/design/ui/` の brief と acceptance。
+- 公開サイト（`site/`）、アプリUI（`apps/gateway/public`）、`apps/ios` は別の対象。サイトの基準は `docs/design/` の PRODUCT・DESIGN・CONTENT・ACCEPTANCE、アプリUIの基準は `docs/design/ui/` の brief と acceptance。
 - コードを読むこと、画面を撮ること、画像を開いて見ることは別の作業。`pnpm test:ui` が実操作して `artifacts/ui/*.png` を保存する。見た目を語る前に、その画像をReadで開く。
 - 実装者の自己評価で完了にしない。`ui-reviewer`（読み取り専用）に brief・acceptance・画像・操作結果を渡す。自己評価や点数は渡さない。P0/P1から直し、最大3回で止めて未達を報告する。
 - 実施していない確認は UNVERIFIED。テストの削除・緩和や基準画像の無断更新で合格させない。競合より優れていると、同条件の比較なしに書かない。

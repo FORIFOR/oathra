@@ -1,5 +1,6 @@
+import { phoneMemory } from "@oathra/core";
 import { describe, expect, it } from "vitest";
-import { defineCall, renderIntakeConsentPrompt, type CallContract } from "@oathra/contract";
+import { defineCall, preparePhoneRequest, renderIntakeConsentPrompt, type CallContract } from "@oathra/contract";
 import type { BrainContext, BrainProvider, BrainResponse, CallSession, MissionView, PermissionGate, SessionEvent, SpeakInput, SpeakResult, TransportProvider } from "@oathra/core";
 import { CallRuntime, runCall, VOICEMAIL_RE } from "./index.js";
 
@@ -239,14 +240,15 @@ describe("CallRuntime: how calls end", () => {
   });
 
   it("ends on a fatal transport error and keeps going after a recoverable one", async () => {
-    const recoverable = new FakeSession([[{ type: "error", message: "stt hiccup", fatal: false }, { type: "hangup" }]]);
+    const recoverable = new FakeSession([[{ type: "error", message: "stt hiccup", code: "stt_hiccup", fatal: false }, { type: "hangup" }]]);
     const a = await runCall({ contract: reservation(), transport: fakeTransport(recoverable, "はい、テスト店です。"), brain: new ScriptBrain(["予約をお願いします。"]), now: NOW });
     expect(a.endReason).toBe("callee_hangup");
-    expect(a.events.find((e) => e.type === "error")).toMatchObject({ fatal: false });
+    expect(a.events.find((e) => e.type === "error")).toMatchObject({ fatal: false, code: "stt_hiccup" });
 
-    const fatal = new FakeSession([{ type: "error", message: "media stream lost" }]);
+    const fatal = new FakeSession([{ type: "error", message: "media stream lost", code: "media_stream_lost" }]);
     const b = await runCall({ contract: reservation(), transport: fakeTransport(fatal, "はい、テスト店です。"), brain: new ScriptBrain(["予約をお願いします。"]), now: NOW });
     expect(b.endReason).toBe("error");
+    expect(b.events.find((e) => e.type === "error")).toMatchObject({ fatal: true, code: "media_stream_lost" });
     expect(b.result.status).not.toBe("completed");
   });
 
@@ -474,5 +476,98 @@ describe("CallRuntime: consent-gated intake", () => {
     expect(session.spoken).toEqual(["恐れ入ります、必要な情報をもう一度確認させてください。"]);
     expect(out.intake.status).toBe("not_started");
     expect(out.intake.askedQuestions).toBe(0);
+  });
+});
+
+// Bounded interruption fixture: test returned transcripts, not an external phone service.
+it.each([true,false])('preserves interrupted readbacks through RunResult and note reconstruction (self-speaking=%s)',async speaksItself=>{
+ const session=new FakeSession(['hangup']);
+ const speak=session.speak.bind(session);session.speak=async input=>({...await speak(input),interrupted:true});
+ const first:SessionEvent[]=[{type:'speech',text:'19時半でしたら空いております。',startMs:0,endMs:100}];
+ if(speaksItself)first.push({type:'agent.speech',text:'では、19時半でお願いします。',startMs:120,endMs:200,interrupted:true},{type:'hangup'});
+ const out=await runCall({contract:defineCall({goal:'phone.message'}),transport:fakeTransport(session,first,{speaksItself}),brain:new ScriptBrain(['では、19時半でお願いします。']),now:NOW});
+ const caller=out.transcript.find(t=>t.source==='caller');expect(caller?.interrupted).toBe(true);
+ expect(out.events.find(e=>e.type==='transcript.final'&&e.source==='caller')).toMatchObject({interrupted:true});
+ const request=preparePhoneRequest({phone:'+819000000000',name:'条件確認',instruction:'19時の空席を確認'});
+ expect(phoneMemory(request,out.transcript,NOW.getTime()).notes.find(n=>n.field==='time')).toMatchObject({value:'19:30',status:'proposed'});
+});
+
+describe("audit 2026-09-26: the line is never left open", () => {
+  const budget = (maxDurationMs: number) => defineCall({ goal: "restaurant.reservation", language: "ja", require: { date: true, time: true, partySize: true, confirmed: true }, permissions: { ask: true, reserve: true }, budget: { maxTurns: 20, maxDurationMs, maxCostUsd: 1 } });
+
+  it("hangs up when the brain throws mid-call", async () => {
+    const contract = budget(30_000);
+    const session = new FakeSession([]);
+    const transport = fakeTransport(session, "はい、こちらレストランです。");
+    const brain: BrainProvider = { name: "broken", respond: async () => { throw new Error("model down"); } };
+    const outcome = await runCall({ contract, transport, brain });
+    expect(outcome.endReason).toBe("error");
+    expect(session.hangups.length).toBeGreaterThan(0);
+  });
+
+  it("ends a silent line when the wall-clock budget runs out", async () => {
+    // Never yields a callee turn after connecting, so the per-turn budget check would never run.
+    const contract = budget(1000);
+    const session = new FakeSession([]);
+    const transport = fakeTransport(session, undefined, { speaksItself: true });
+    const brain: BrainProvider = { name: "quiet", respond: async () => ({ text: "" }) };
+    const started = Date.now();
+    const outcome = await Promise.race([
+      runCall({ contract, transport, brain }),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("still open after 5 s")), 5000)),
+    ]);
+    expect(outcome.endReason).toBe("budget_exceeded");
+    expect(Date.now() - started).toBeLessThan(4000);
+  });
+});
+
+describe("CallRuntime: a voice line with the runtime's brain", () => {
+  it("checks in when the callee goes silent after the agent's line, twice, then says goodbye", async () => {
+    // Nothing is delivered after each agent line (undefined replies): the callee is silent.
+    const session = new FakeSession([], true);
+    const brain = new ScriptBrain(["こんにちは、少しお話しできますか。", "もしもし、聞こえてますか？", "今は難しいかな？", { text: "また改めてかけますね。失礼します。", action: "hangup" }]);
+    const out = await runCall({ contract: reservation(), transport: fakeTransport(session, "もしもし"), brain, now: NOW, silenceCheckMs: 30 });
+    expect(session.spoken).toEqual(["こんにちは、少しお話しできますか。", "もしもし、聞こえてますか？", "今は難しいかな？", "また改めてかけますね。失礼します。"]);
+    expect(brain.contexts[0]!.hints).toBeUndefined();
+    expect(brain.contexts[1]!.hints?.[0]).toMatch(/said nothing/);
+    expect(brain.contexts[2]!.hints?.[0]).toMatch(/said nothing/);
+    expect(brain.contexts[3]!.hints?.[0]).toMatch(/goodbye/);
+    expect(out.endReason).toBe("agent_hangup");
+  });
+
+  it("an answer resets the silence count; a text simulation (no ack) never checks in", async () => {
+    const session = new FakeSession([undefined as never, "うん、元気だよ", "hangup"], true);
+    const brain = new ScriptBrain(["元気？", "もしもし？", "よかった！"]);
+    await runCall({ contract: reservation(), transport: fakeTransport(session, "もしもし"), brain, now: NOW, silenceCheckMs: 30 });
+    expect(brain.contexts.map((c) => c.hints?.length ?? 0)).toEqual([0, 1, 0]);
+    const text = new FakeSession(["hangup"]);
+    const quiet = new ScriptBrain(["こんにちは。"]);
+    const started = Date.now();
+    const sim = runCall({ contract: reservation(), transport: fakeTransport(text, "もしもし"), brain: quiet, now: NOW, silenceCheckMs: 30 });
+    await sim;
+    expect(quiet.contexts.every((c) => !c.hints)).toBe(true);
+    expect(Date.now() - started).toBeLessThan(5000);
+  });
+
+  it("a reply the voice line dropped as stale is not part of the conversation; the newer words are answered", async () => {
+    const session = new FakeSession(["hangup"], true);
+    let first = true;
+    const speak = session.speak.bind(session);
+    const inputs: Array<number | undefined> = [];
+    session.speak = async (input) => {
+      inputs.push(input.inputUntilMs);
+      if (first) {
+        // The callee said 「もしもし」 while the greeting was being written: nothing of the greeting is played.
+        first = false;
+        session.say("もしもし");
+        return { startMs: session.now(), endMs: session.now(), interrupted: true, skipped: true };
+      }
+      return speak(input);
+    };
+    const brain = new ScriptBrain(["こんにちは、突然すみません。", { text: "あ、もしもし！田中さんの代わりにお電話しているAIです。", action: "hangup" }]);
+    const out = await runCall({ contract: reservation(), transport: fakeTransport(session, undefined), brain, now: NOW, openingTimeoutMs: 10, silenceCheckMs: 0 });
+    expect(inputs[0]).toBeTypeOf("number");
+    expect(out.transcript.map((t) => `${t.source}:${t.text}`)).toEqual(["callee:もしもし", "caller:あ、もしもし！田中さんの代わりにお電話しているAIです。"]);
+    expect(brain.contexts[1]!.transcript.map((t) => t.text)).toEqual(["もしもし"]);
   });
 });

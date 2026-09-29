@@ -1,7 +1,6 @@
 ---
 paths:
   - "apps/gateway/public/**"
-  - "apps/arena/public/**"
   - "apps/ios/**/*.swift"
   - "site/**/*.{html,css,js}"
   - "scripts/ui/**"
@@ -10,7 +9,7 @@ paths:
 # UI engineering rules
 
 ## Design contract
-- アプリUI（Gateway・Arena）は docs/design/ui/ の brief と acceptance を基準にする。公開サイト（site/）は docs/design/ の PRODUCT・DESIGN・CONTENT・ACCEPTANCE が基準で、混ぜない。ユーザーの明示指示を最優先する。
+- アプリUI（Gateway）は docs/design/ui/ の brief と acceptance を基準にする。公開サイト（site/）は docs/design/ の PRODUCT・DESIGN・CONTENT・ACCEPTANCE が基準で、混ぜない。ユーザーの明示指示を最優先する。
 - ブランド名を隠してもプロダクトの目的が伝わるコンテンツ・構成を選ぶ。
 - 情報構造・日本語コピー・操作導線を、背景装飾より先に直す。
 - 原則として既存の色・文字・余白・角丸・影・motionトークンを再利用する。
@@ -37,7 +36,5 @@ paths:
 
 ## This repository
 - 画面の実操作と撮影は `pnpm test:ui`（scripts/ui/*.mjs、ローカルのChromeをCDPで操作、依存なし）。失敗したら非ゼロで終わる。
-- Arenaを `dist/bin.js demo` で配信するときのアセットは packages/cli/assets/arena（`node scripts/bundle-cli.mjs` がコピー）。CSS/JSを変えたら再bundleしてから確認する。Gatewayの public/ はリクエストごとに読まれる。
-- apps/arena/public/style-base.css はテストでハッシュ固定。レイアウト変更は後から読み込むCSSで行う。
-- scripts/verify-evidence-workspace.py（CI）が使う要素IDを変えるときは、そのスクリプトも同じPRで直す。
+- `dist/bundle/bin.js demo`（npm版）が配信するアプリは packages/cli/assets/gateway-root（`node scripts/bundle-cli.mjs` がコピー）。CSS/JSを変えたら再bundleしてから確認する。Gatewayの public/ はリクエストごとに読まれる。
 - 利用者の好み（2026-09-19）: 「1枚」とは、ウィンドウに収まり整理されたダッシュボードのこと。縦に長い1列ではない。内部のフィールド名やエラーコードを画面に出さない。
