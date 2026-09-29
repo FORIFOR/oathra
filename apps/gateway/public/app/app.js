@@ -149,7 +149,7 @@ async function route() {
   clearTimeout(app.timer);
   if (/^#setup=/.test(location.hash)) return renderLogin();
   // A sign-in link from `oathra demo` (another device): the token rides in the fragment, never in a request line.
-  const linked = /^#token=([a-f0-9]{64})$/.exec(location.hash)?.[1];
+  const linked = /^#token=([A-Za-z0-9_-]{32,128})$/.exec(location.hash)?.[1];
   if (linked) {
     history.replaceState(null, '', location.pathname + location.search + '#/');
     try { await signIn('/v1/session', {}, { Authorization: 'Bearer ' + linked }); app.boot = null; } catch (e) { renderLogin('token'); toast(e.message); return; }
