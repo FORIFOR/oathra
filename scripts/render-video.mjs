@@ -1,5 +1,5 @@
 // Oathra launch video renderer.
-//  1. capture real Arena footage (present mode, dark) at 1920×1080 via headless Chrome
+//  1. capture real app footage (練習 › AIの電話を見る, dark) at 1920×1080 via headless Chrome
 //  2. render video/template.html deterministically frame by frame (30 fps)
 //  3. encode MP4 (h264) + poster + README GIF with ffmpeg
 // usage: node packages/cli/dist/bin.js demo --no-open --port 4242 &   node scripts/render-video.mjs [--skip-capture] [--out docs/media]
@@ -62,7 +62,7 @@ async function capture() {
   rmSync(FOOT, { recursive: true, force: true }); mkdirSync(FOOT, { recursive: true });
   const c = await chrome(CAPTURE_PORT);
   await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
-  await c.send("Page.navigate", { url: `${BASE}/?present=1&theme=dark&lang=${LANG}&autostart=${SCENARIO}&mode=watch` });
+  await c.send("Page.navigate", { url: `${BASE}/?theme=dark#/practice/${SCENARIO}/run` });
   await sleep(1200);
   const t0 = Date.now();
   const times = [];
@@ -72,22 +72,15 @@ async function capture() {
     const at = Date.now() - t0;
     await c.shot(join(FOOT, `f${String(n++).padStart(4, "0")}.png`));
     times.push(at);
-    const done = await c.evaluate(`!!document.body.innerText.match(/MISSION COMPLETE|INCOMPLETE|CONSTRAINT VIOLATION|FAILED/)`);
+    const done = await c.evaluate(`/練習が終わりました/.test(document.body.innerText)`);
     if (done && !doneAt) doneAt = Date.now();
     if (doneAt && Date.now() - doneAt > 3500) break;
     const next = t0 + (n * 1000) / CAP_FPS;
     await sleep(Math.max(0, next - Date.now()));
   }
-  // the call id, to align captions with real events
-  const callId = await c.evaluate(`(window.__oathraCallId || (document.querySelector('[data-call-id]')||{}).dataset?.callId || '')`).catch(() => "");
   c.close();
-  let events = [];
-  try {
-    const list = await (await fetch(`${BASE}/api/calls`)).json();
-    const latest = list.sort((a, b) => b.startedAt - a.startedAt)[0];
-    const call = await (await fetch(`${BASE}/api/calls/${callId || latest.id}`)).json();
-    events = call.events || [];
-  } catch { /* captions fall back to fixed timing */ }
+  // The app replays a finished practice line by line, not on the call clock: captions use their fixed timing.
+  const events = [];
   writeFileSync(join(WORK, "footage.json"), JSON.stringify({ frames: n, times, events }, null, 2));
   console.log(`footage: ${n} frames over ${(times.at(-1) / 1000).toFixed(1)}s`);
 }

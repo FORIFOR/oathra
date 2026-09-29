@@ -8,11 +8,11 @@ disable-model-invocation: true
 対象: $ARGUMENTS
 
 ## 0. Read and bound
-CLAUDE.md、docs/design/ui/{brief-gateway,brief-arena,acceptance,tokens}.md、既存の画面・部品を読む。
+CLAUDE.md、docs/design/ui/{brief-gateway,acceptance,tokens}.md、既存の画面・部品を読む。
 公開サイト（site/）が対象なら docs/design/ の PRODUCT・DESIGN・CONTENT・ACCEPTANCE を読む。
 未記入項目はリポジトリとユーザーの要望から埋め、推定だと明示する。
 設計済みブランドを勝手に変更しない。ユーザーの未コミット変更を壊さない。
-検証コマンド: `pnpm build`、`pnpm test`、`pnpm test:gateway`、`pnpm test:ui`（= scripts/ui/gateway-flow.mjs と arena-flow.mjs）。
+検証コマンド: `pnpm build`、`pnpm test`、`pnpm test:gateway`、`pnpm test:ui`（= scripts/ui/gateway-flow.mjs・gateway-app.mjs・gateway-local.mjs）。
 参照URLのHTMLしか読めない場合は視覚確認とは扱わない。
 
 ## 1. Establish the design target
@@ -36,7 +36,7 @@ ui-quality.config.jsonがconfigured:trueで導入済みの場合に限り、作�
 
 ## 4. Drive the application
 実際にアプリを起動して主操作を行う。まず `pnpm test:ui`（scripts/ui/cdp.mjs のヘルパーでローカルのChromeを操作）。新しい操作を足したら、同じファイルに期待値として書き足す。Chrome拡張が使えるなら併用してよい。
-テストは一時ディレクトリに自分用のGateway/Arenaを立てる。開発者の .oathra/ や :4242/:4244 のサーバーには触れない。起動不能ならBLOCKEDを記録する。
+テストは一時ディレクトリに自分用のGatewayを立てる。開発者の .oathra/ や :4242/:4244 のサーバーには触れない。起動不能ならBLOCKEDを記録する。
 apps/ios は別途その実アプリを確認する。Web表示だけで全体PASSとしない。
 規定サイズ・状態の画像が artifacts/ui/ に保存される。必ずReadで画像として開いて見る。
 スクロール、hover、focus、通常motion、reduced-motion、エラー復帰を対象範囲に応じて確認する。

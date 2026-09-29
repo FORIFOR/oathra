@@ -1,6 +1,6 @@
 {
   "name": "oathra",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "Local transcript evidence checks and playable phone agents. No API key needed for verification.",
   "license": "Apache-2.0",
   "type": "module",
@@ -37,7 +37,6 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@oathra/arena": "workspace:*",
     "@oathra/contract": "workspace:*",
     "@oathra/core": "workspace:*",
     "@oathra/deepgram": "workspace:*",

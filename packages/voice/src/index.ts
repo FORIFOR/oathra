@@ -141,7 +141,7 @@ export interface VoiceSession {
   /** Agent audio and control, in the engine's native format. */
   readonly output: AsyncIterable<VoiceOutput>;
   /** Pipeline engines: synthesize and play a reply produced by the runtime's brain. */
-  speak?(text: string): Promise<{ startMs: number; endMs: number; interrupted: boolean }>;
+  speak?(text: string, opts?: { inputUntilMs?: number }): Promise<{ startMs: number; endMs: number; interrupted: boolean; skipped?: boolean }>;
   /** Pipeline engines: play a pre-synthesized acknowledgement. */
   ack?(): void;
   /** Speech-to-speech engines: ground the model in the evidence state. */

@@ -1,11 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
-  <title>Oathra Arena</title>
+  <title>Oathra</title>
+  <link rel="icon" type="image/png" href="assets/oathra-mark-original.png" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/png" href="assets/oathra-mark-white.png" media="(prefers-color-scheme: dark)" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="v2.css" />
+  <link rel="stylesheet" href="ringzero.css" />
+  <link rel="stylesheet" href="records.css" />
 </head>
 <body>
   <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
@@ -14,12 +19,14 @@
     <button type="button" class="btn" id="navigation-back" disabled><span aria-hidden="true">← </span><span data-i18n="back">Back</span></button>
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-icon" aria-hidden="true"></span>
       <span class="brand-name">Oathra</span>
       <span class="brand-sub" data-i18n="arena">Arena</span>
     </div>
     <div class="topbar-right">
       <button type="button" class="btn" id="home-open" data-i18n="home">Home</button>
       <button type="button" class="btn" id="contacts-open" data-i18n="contacts">Contacts</button>
+      <button type="button" class="btn" id="records-open" aria-controls="replays-panel" aria-expanded="false">Records</button>
       <div class="transport-toggle" role="group" data-i18n-aria="transport" aria-label="Transport">
         <button type="button" class="tt-btn is-on" data-transport="simulator" aria-pressed="true">
           <span class="dot" aria-hidden="true"></span><span data-i18n="simulator">Simulator</span>
@@ -65,7 +72,10 @@
     <!-- ============ START SCREEN ============ -->
     <section class="screen" id="screen-start">
       <div class="start-inner">
-        <h1 class="start-title" data-i18n-html="startTitle">Give your agent<br />a mission.</h1>
+        <div class="rail-head">
+          <h1 class="start-title" data-i18n-html="startTitle">Give your agent<br />a mission.</h1>
+          <span class="rail-count" id="scenario-count"></span>
+        </div>
 
         <p class="practice-note" data-i18n="practice"></p>
         <button type="button" class="btn" id="resume-call" hidden data-i18n="resumeCall"></button>
@@ -98,7 +108,13 @@
           <button type="button" class="link-btn" id="replays-link" aria-expanded="false" aria-controls="replays-panel" data-i18n="replays">Replays</button>
         </div>
         <div class="replays-panel" id="replays-panel" hidden>
-          <ul class="replay-list" id="replay-list"></ul>
+          <h3 class="replays-title" id="replays-title" data-i18n="replays">Records</h3>
+          <div class="replay-filter" id="replay-filter" role="group">
+            <button type="button" class="rf-btn is-on" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="rf-btn" data-filter="real" aria-pressed="false">Real</button>
+            <button type="button" class="rf-btn" data-filter="practice" aria-pressed="false">Practice</button>
+          </div>
+          <ul class="replay-list" id="replay-list" aria-labelledby="replays-title"></ul>
         </div>
       </div>
     </section>
@@ -194,11 +210,16 @@
               <p id="phone-voice-note" class="note" data-i18n="phoneVoiceNote"></p></div>
             </details>
           </fieldset>
-          <p id="phone-error" role="alert" hidden></p>
-          <div class="phone-form-actions">
-            <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
-            <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
-          </div>
+          <div class="phone-aside" id="phone-aside"><!-- phone-aside -->
+            <h3 class="phone-aside-h" data-i18n="phoneSummaryTitle">Before calling</h3>
+            <dl class="phone-summary" id="phone-summary"></dl>
+            <p class="note phone-aside-note" data-i18n="phoneSummaryNote"></p><!-- /phone-aside-head -->
+            <p id="phone-error" role="alert" hidden></p>
+            <div class="phone-form-actions">
+              <button type="submit" class="btn primary" data-i18n="phoneReview">Review call details</button>
+              <button type="button" class="btn" id="phone-clear" data-i18n="phoneClear">Clear</button>
+            </div>
+          </div><!-- /phone-aside -->
         </form>
         <section id="phone-review" hidden aria-labelledby="phone-review-title" tabindex="-1">
           <h3 id="phone-review-title" data-i18n="phoneReviewTitle">Call draft · not sent</h3>
@@ -220,7 +241,7 @@
           <h3 id="phone-live-title" data-i18n="phoneProgress"></h3>
           <p id="phone-live-state" role="status"></p><p id="phone-live-recipient"></p>
           <p id="phone-live-error" role="alert" hidden></p>
-          <div class="phone-live-actions"><button type="button" class="btn" id="phone-refresh" data-i18n="phoneRefresh"></button><button type="button" class="btn" id="phone-hangup" hidden data-i18n="endCall"></button><button type="button" class="btn" id="phone-resolve" hidden data-i18n="phoneResolve"></button></div>
+          <div class="phone-live-actions"><button type="button" class="btn" id="phone-refresh" data-i18n="phoneRefresh"></button><button type="button" class="btn" id="phone-hangup" hidden data-i18n="endCall"></button><button type="button" class="btn" id="phone-resolve" hidden data-i18n="phoneResolve"></button><button type="button" class="btn" id="phone-open-record" hidden></button></div>
           <pre id="phone-live-summary"></pre><details><summary data-i18n="phoneTranscript"></summary><div id="phone-live-transcript"></div></details>
         </section>
         <details id="phone-history-section"><summary data-i18n="phoneHistory"></summary>
@@ -237,9 +258,18 @@
         <div class="call-head">
           <div class="call-title-wrap">
             <button type="button" class="back-btn" id="call-back" data-i18n-aria="backToMissions" aria-label="Back to missions">←</button>
-            <h2 class="call-title" id="call-title">—</h2>
+            <div class="call-title-text">
+              <h2 class="call-title" id="call-title">—</h2>
+              <p class="call-sub" id="call-sub"></p>
+            </div>
           </div>
-          <div class="call-controls"><button type="button" class="btn" id="call-hangup" hidden data-i18n="endCall">End call</button><span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span></div>
+          <div class="call-controls">
+            <div class="meters" aria-hidden="true">
+              <div class="meter" id="meter-agent"><span class="meter-label" data-i18n="meterAgent">AI</span><span class="meter-bars"></span></div>
+              <div class="meter" id="meter-callee"><span class="meter-label" id="meter-callee-label">—</span><span class="meter-bars"></span></div>
+            </div>
+            <div class="call-clock"><span class="call-status" id="call-status"></span><span class="call-timer" id="call-timer">00:00</span></div>
+            <button type="button" class="btn" id="call-hangup" hidden data-i18n="endCall">End call</button><span class="live" id="live-badge"><span class="dot" aria-hidden="true"></span><span id="live-text">LIVE</span></span></div>
         </div>
 
         <div class="parties">
@@ -284,8 +314,10 @@
 
         <div class="panels">
           <section class="panel" aria-labelledby="mission-h">
-            <h3 class="panel-title mono" id="mission-h" data-i18n="mission">MISSION</h3>
+            <h3 class="panel-title mono" id="mission-h"><span data-i18n="mission">MISSION</span> <span class="count" id="mission-count"></span></h3>
+            <div class="verdict-progress" id="mission-progress" aria-hidden="true"></div>
             <ul class="mission-list" id="mission-list"></ul>
+            <div class="sheet-actions" id="sheet-actions"></div>
           </section>
           <section class="panel" aria-labelledby="evidence-h">
             <h3 class="panel-title mono" id="evidence-h"><span data-i18n="evidence">EVIDENCE</span> <span class="count" id="evidence-count">0</span></h3>
@@ -298,6 +330,7 @@
             <ul class="intake-list" id="intake-list"></ul>
             <p class="intake-note" id="intake-note"></p>
           </section>
+          <div class="result-wrap" id="result-wrap" hidden></div>
         </div>
 
         <div class="metrics mono" id="metrics">
@@ -306,9 +339,9 @@
           <span><span data-i18n="cost">Cost</span> <b id="m-cost">$0.000</b></span>
           <span class="sep" aria-hidden="true">·</span>
           <span><b id="m-elapsed">00:00</b></span>
+          <span class="proof-legend" data-i18n="proofLegend">Underlined: the words the verdict rests on</span>
         </div>
 
-        <div class="result-wrap" id="result-wrap" hidden></div>
 
         <div class="drawer">
           <button type="button" class="drawer-toggle mono" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-body" data-i18n="details">Details</button>
@@ -347,5 +380,6 @@
 
   <script src="orb/orb.js"></script>
 <script src="app.js"></script>
+<script src="ringzero.js"></script>
 </body>
 </html>

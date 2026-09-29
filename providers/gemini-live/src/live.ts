@@ -15,7 +15,7 @@ import type { Action, CallContract } from "@oathra/contract";
 import { DEFAULT_GEMINI_VOICE, GEMINI_VOICES, requiredFields } from "@oathra/contract";
 import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler } from "@oathra/audio-kit";
 import type { MissionView, SessionEvent } from "@oathra/core";
-import { callInstructions, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
+import { callInstructions, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 import type { AgentBridge } from "./index.js";
 
 export const DEFAULT_GEMINI_LIVE_MODEL = "gemini-3.8-live";
@@ -41,6 +41,8 @@ export type GeminiLiveAgentOptions = {
   /** The restaurant's reservation desk. Only a `phone.reception` contract gets the tools that reach it. */
   desk?: ReservationDesk;
   onDesk?: (event: DeskEvent) => void;
+  /** A decision the model made within 任せる範囲 (its own account; never evidence). */
+  onDecision?: (event: DecisionEvent) => void;
   /** The clock used to read dates back ("あさって"); defaults to the wall clock. */
   today?: () => Date;
 };
@@ -54,6 +56,32 @@ const LIVE_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativ
 function hasAudiblePcm(pcm: Int16Array, threshold = 256): boolean {
   for (const sample of pcm) if (Math.abs(sample) >= threshold) return true;
   return false;
+}
+
+/**
+ * The one place the session setup is written (gemini-3.8-live). Never add thinkingConfig, enableAffectiveDialog or
+ * proactivity: 3.8 rejects them (affective dialog closed the session with 1007 when it would speak, 2026-09-26) and
+ * proactive audio is always on. Turn taking: the server's automatic activity detection with a 650 ms silence, 200 ms
+ * of lead-in and a low end-of-speech sensitivity, so a pause mid-sentence is not taken as the end of the turn
+ * (starting values to tune on Japanese calls, not measured optima). The callee's speech interrupts the reply.
+ * sessionResumption asks for handles so a goAway (or a dropped socket) can resume the same conversation;
+ * contextWindowCompression keeps a long call inside the context window.
+ */
+export function liveSetup(opts: { model: string; voice: string; instructions: string; tools: Json[]; handle?: string }): Json {
+  return {
+    model: `models/${opts.model}`,
+    generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: opts.voice } } } },
+    systemInstruction: { parts: [{ text: opts.instructions }] },
+    tools: [{ functionDeclarations: opts.tools }],
+    inputAudioTranscription: {},
+    outputAudioTranscription: {},
+    realtimeInputConfig: {
+      activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
+      automaticActivityDetection: { disabled: false, prefixPaddingMs: 200, silenceDurationMs: 650, endOfSpeechSensitivity: "END_SENSITIVITY_LOW" },
+    },
+    sessionResumption: opts.handle ? { handle: opts.handle } : {},
+    contextWindowCompression: { slidingWindow: {} },
+  };
 }
 
 /** Gemini takes OpenAPI-style declarations; the shared tools are written in OpenAI's function shape. */
@@ -105,6 +133,10 @@ export class GeminiLiveAgent {
   private sentMission: string | undefined;
   private readonly said: string[] = [];
   private readonly deskCalls = new Set<string>();
+  /** The latest handle the server gave to resume this conversation on a new socket. */
+  private resumeHandle: string | undefined;
+  private reconnecting = false;
+  private tools: Json[] = [];
   private readonly toLive = new StreamResampler(8000, IN_RATE);
   private readonly toCarrier = new StreamResampler(OUT_RATE, 8000);
   /** Only a reception contract reaches the desk, whatever options were passed. */
@@ -120,28 +152,8 @@ export class GeminiLiveAgent {
   async connect(bridge: AgentBridge): Promise<void> {
     if (!this.apiKey) throw new Error("GEMINI_API_KEY is not set. Get one at https://aistudio.google.com/apikey");
     this.bridge = bridge;
-    const base = this.opts.url ?? LIVE_URL;
-    const ws = new WebSocket(`${base}${base.includes("?") ? "&" : "?"}key=${encodeURIComponent(this.apiKey)}`);
+    const ws = await this.openSocket();
     this.ws = ws;
-    await new Promise<void>((res, rej) => {
-      const timer = setTimeout(() => rej(new Error("Gemini Live: connection timeout")), 15000);
-      ws.once("open", () => { clearTimeout(timer); res(); });
-      ws.once("error", (e) => { clearTimeout(timer); rej(new Error(`Gemini Live: ${(e as Error).message}`)); });
-    });
-    ws.on("message", (data) => {
-      let msg: Json;
-      try { msg = JSON.parse(data.toString()) as Json; } catch { return; }
-      this.onMessage(msg);
-    });
-    ws.on("close", () => {
-      if (!this.closed) {
-        this.closed = true;
-        this.flushIn();
-        this.flushOut();
-        this.bridge?.emit({ type: "hangup", reason: "live_closed" });
-      }
-    });
-    ws.on("error", (e) => this.bridge?.emit({ type: "error", message: `Gemini Live: ${(e as Error).message}` }));
 
     const casual = this.opts.contract.goal.startsWith("chat.");
     const tools: Json[] = [
@@ -151,19 +163,10 @@ export class GeminiLiveAgent {
     // keeps speaking while the call is pending and can say 「予約できました」 before book_table has returned.
     if (!casual) tools.push({ name: "request_action", behavior: "BLOCKING", description: "Ask for permission before an action outside your permitted list (payment, cancel, share_address, share_phone, modify).", parameters: { type: "object", properties: { action: { type: "string" }, detail: { type: "string" } }, required: ["action", "detail"] } });
     if (this.desk) tools.push(...(DESK_TOOLS as unknown as Json[]).map((tool) => ({ ...functionDeclaration(tool), behavior: "BLOCKING" })));
-    this.send({
-      setup: {
-        model: `models/${this.model}`,
-        // No enableAffectiveDialog: removed from the API for gemini-3.8-live (model page). Sent anyway, the session
-        // accepts the setup and then closes with 1007 when it would speak (measured 2026-09-26).
-        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } } },
-        systemInstruction: { parts: [{ text: this.instructions() }] },
-        tools: [{ functionDeclarations: tools }],
-        inputAudioTranscription: {},
-        outputAudioTranscription: {},
-        realtimeInputConfig: { automaticActivityDetection: { silenceDurationMs: 700 } },
-      },
-    });
+    // Recording a decision must not hold the conversation: the model keeps talking and the answer is silent.
+    if (recordsDecisions(this.opts.contract)) tools.push({ ...functionDeclaration(DECISION_TOOL as unknown as Json), behavior: "NON_BLOCKING" });
+    this.tools = tools;
+    this.send({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools }) });
     await new Promise<void>((res, rej) => {
       const timer = setTimeout(() => rej(new Error("Gemini Live: setupComplete not received")), 15000);
       const check = setInterval(() => {
@@ -171,6 +174,61 @@ export class GeminiLiveAgent {
         if (this.closed) { clearTimeout(timer); clearInterval(check); rej(new Error("Gemini Live: closed before setup completed")); }
       }, 20);
     });
+  }
+
+  /** A socket to the Live API, open and wired; messages and closes count only while it is the current one. */
+  private async openSocket(): Promise<WebSocket> {
+    const base = this.opts.url ?? LIVE_URL;
+    const ws = new WebSocket(`${base}${base.includes("?") ? "&" : "?"}key=${encodeURIComponent(this.apiKey)}`);
+    await new Promise<void>((res, rej) => {
+      const timer = setTimeout(() => rej(new Error("Gemini Live: connection timeout")), 15000);
+      ws.once("open", () => { clearTimeout(timer); res(); });
+      ws.once("error", (e) => { clearTimeout(timer); rej(new Error(`Gemini Live: ${(e as Error).message}`)); });
+    });
+    ws.on("message", (data) => {
+      let msg: Json;
+      try { msg = JSON.parse(data.toString()) as Json; } catch { return; }
+      if (ws === this.ws) this.onMessage(msg);
+      else if (ws === this.pending && msg.setupComplete !== undefined) this.swapTo(ws);
+    });
+    ws.on("close", () => {
+      if (ws !== this.ws || this.closed) return;
+      // A dropped socket with a resume handle gets one attempt to carry on; otherwise the call ends as before.
+      if (this.resumeHandle && !this.reconnecting) { void this.reconnect(); return; }
+      if (this.reconnecting) return;
+      this.closed = true;
+      this.flushIn();
+      this.flushOut();
+      this.bridge?.emit({ type: "hangup", reason: "live_closed" });
+    });
+    ws.on("error", (e) => this.bridge?.emit({ type: "error", message: `Gemini Live: ${(e as Error).message}`, fatal: false }));
+    return ws;
+  }
+  private pending: WebSocket | undefined;
+  /** goAway (or a drop): the same conversation on a new socket, from the last handle. The call never re-dials. */
+  private async reconnect(): Promise<void> {
+    if (this.closed || this.reconnecting || !this.resumeHandle) return;
+    this.reconnecting = true;
+    try {
+      const next = await this.openSocket();
+      this.pending = next;
+      next.send(JSON.stringify({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools: this.tools, handle: this.resumeHandle }) }));
+      setTimeout(() => { if (this.pending === next) { this.pending = undefined; try { next.close(); } catch { /* gone */ } this.giveUp(); } }, 10000).unref?.();
+    } catch { this.giveUp(); }
+  }
+  private swapTo(next: WebSocket): void {
+    const old = this.ws;
+    this.pending = undefined; this.ws = next; this.reconnecting = false;
+    try { old?.close(); } catch { /* already closing */ }
+  }
+  private giveUp(): void {
+    this.reconnecting = false;
+    if (this.closed) return;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return; // the old socket is still there; keep talking on it
+    this.closed = true;
+    this.flushIn();
+    this.flushOut();
+    this.bridge?.emit({ type: "hangup", reason: "live_closed" });
   }
 
   /** What the model is told at session start; mission updates follow through `updateContext`. */
@@ -337,8 +395,11 @@ export class GeminiLiveAgent {
     if (call?.functionCalls) { for (const fc of call.functionCalls) this.onToolCall(String(fc.id ?? ""), String(fc.name ?? ""), fc.args ?? {}); return; }
     const cancel = msg.toolCallCancellation as { ids?: string[] } | undefined;
     if (cancel?.ids) { for (const id of cancel.ids) this.pendingActions.delete(id); return; }
+    const resumption = msg.sessionResumptionUpdate as { newHandle?: string; resumable?: boolean } | undefined;
+    if (resumption) { if (resumption.resumable !== false && resumption.newHandle) this.resumeHandle = resumption.newHandle; return; }
     if (msg.goAway !== undefined) {
-      // The server will close the connection soon; the close handler reports the hangup.
+      // The server will close this socket soon: carry the conversation over now, while it still works.
+      void this.reconnect();
       return;
     }
     if (msg.error !== undefined) {
@@ -350,6 +411,12 @@ export class GeminiLiveAgent {
   private onToolCall(id: string, name: string, args: Json): void {
     const b = this.bridge;
     if (!b || !id) return;
+    if (name === "record_decision") {
+      const event = decisionEvent(args);
+      if (event) { try { this.opts.onDecision?.(event); } catch { /* observers never break the call */ } }
+      this.send({ toolResponse: { functionResponses: [{ id, name, response: { ok: Boolean(event), scheduling: "SILENT" } }] } });
+      return;
+    }
     if (name === "end_call") {
       this.endRequested = String(args.reason ?? "agent_hangup");
       const note = this.opts.contract.language === "ja"

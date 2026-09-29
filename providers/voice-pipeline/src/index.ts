@@ -62,6 +62,8 @@ class PipelineVoiceSession implements VoiceSession {
   private playStartMs: number | undefined;
   private fillers: Uint8Array[] = [];
   private fillerIdx = 0;
+  /** When the callee last began real words (not a nod), call clock: a reply written before that is stale. */
+  private calleeWordsAtMs: number | undefined;
 
   constructor(
     private readonly opts: Required<Pick<PipelineEngineOptions, "stt" | "tts">> & PipelineEngineOptions,
@@ -112,15 +114,19 @@ class PipelineVoiceSession implements VoiceSession {
   private onStt(e: DeepgramLiveEvent): void {
     switch (e.type) {
       case "speech_started":
-        // VAD alone is too noise-prone to stop our playback; it only opens a segment.
-        this.beginSegment(this.audioToCallMs(e.t));
+        // VAD alone is too noise-prone to count as the callee speaking: a segment opens with the first words.
+        // (A VAD-opened segment with no words once stayed open for 38 s on a real call and held its turn.)
         break;
       case "partial":
+        if (!e.text.trim()) break;
         this.beginSegment(this.audioToCallMs(e.startMs));
+        this.noteWords(e.text, e.startMs);
         this.maybeBargeIn(e.text);
         break;
       case "final":
+        if (!e.text.trim()) { if (e.speechFinal) this.flushSegment(); break; }
         this.beginSegment(this.audioToCallMs(e.startMs));
+        this.noteWords(e.text, e.startMs);
         this.maybeBargeIn(e.text);
         this.segmentFinals.push({ text: e.text, endMs: this.audioToCallMs(e.endMs), confidence: e.confidence });
         if (e.speechFinal) this.flushSegment();
@@ -134,6 +140,12 @@ class PipelineVoiceSession implements VoiceSession {
       default:
         break;
     }
+  }
+
+  private noteWords(text: string, audioStartMs: number): void {
+    if (!isBargeIn(text, this.language)) return;
+    const at = this.audioToCallMs(audioStartMs);
+    if (this.calleeWordsAtMs === undefined || at > this.calleeWordsAtMs) this.calleeWordsAtMs = at;
   }
 
   private emit(event: SessionEvent): void {
@@ -187,8 +199,12 @@ class PipelineVoiceSession implements VoiceSession {
     if (filler) this.pushAudio(filler);
   }
 
-  async speak(text: string): Promise<{ startMs: number; endMs: number; interrupted: boolean }> {
+  async speak(text: string, opts: { inputUntilMs?: number } = {}): Promise<{ startMs: number; endMs: number; interrupted: boolean; skipped?: boolean }> {
     if (this.closed) return { startMs: this.now(), endMs: this.now(), interrupted: false };
+    // The callee said something real after this reply was written (e.g. 「もしもし」 while the greeting was being
+    // prepared): playing it would talk past them. Drop it before any audio; the runtime answers the newer words.
+    const stale = () => opts.inputUntilMs !== undefined && this.calleeWordsAtMs !== undefined && this.calleeWordsAtMs > opts.inputUntilMs;
+    if (stale()) return { startMs: this.now(), endMs: this.now(), interrupted: true, skipped: true };
     const tts = this.opts.tts;
     const lead = this.opts.leadMs ?? 400;
     this.playing = true;
@@ -199,6 +215,7 @@ class PipelineVoiceSession implements VoiceSession {
     let firstFrameMs: number | undefined;
     let sentMs = 0;
     let carry = new Uint8Array(0);
+    let skipped = false;
     const sendFrames = (bytes: Uint8Array) => {
       this.pushAudio(bytes);
       sentMs += mulawDurationMs(bytes);
@@ -216,6 +233,7 @@ class PipelineVoiceSession implements VoiceSession {
     try {
       for await (const chunk of source) {
         if (this.stopSending) break;
+        if (firstFrameMs === undefined && stale()) { skipped = true; break; }
         const buf = new Uint8Array(carry.length + chunk.length);
         buf.set(carry, 0);
         buf.set(chunk, carry.length);
@@ -229,7 +247,7 @@ class PipelineVoiceSession implements VoiceSession {
           if (sentMs - elapsed > lead) await new Promise((r) => setTimeout(r, 100));
         }
       }
-      if (!this.stopSending && carry.length) {
+      if (!skipped && !this.stopSending && carry.length) {
         const last = new Uint8Array(MULAW_FRAME_BYTES).fill(0xff);
         last.set(carry, 0);
         sendFrames(last);
@@ -256,6 +274,7 @@ class PipelineVoiceSession implements VoiceSession {
     }
     const endMs = this.now();
     this.playing = false;
+    if (skipped) return { startMs: endMs, endMs, interrupted: true, skipped: true };
     return { startMs: firstFrameMs ?? startMs, endMs, interrupted: this.interrupted };
   }
 

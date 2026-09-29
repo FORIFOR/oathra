@@ -28,10 +28,6 @@ The first-proof path should remain useful with no paid telephony account and sho
 ## Source checkout: first success and recovery
 
 Node 22+ and pnpm 10.12.2. Run `pnpm install`, then `pnpm first-proof`.
-The default demo exposes only the built-in, offline scripted agent. Choose a mission, read the other party's transcript beside its evidence, then choose **Download evidence JSON**. This file includes the result, contract, transcript, evidence events, and decision memo. The simulator is a product feature, not a real booking or a live model quality benchmark.
+The app opens in practice mode with only the built-in, offline scripted agent. In **練習**, choose a practice and **AIの電話を見る**: the other party's words settle each field (the ring closes, the words are marked), and the run is saved to `.oathra/calls/`, listed under **記録**. Choose **自分が相手役** to answer the AI's call yourself.
 
-On the first screen, open **Edit a practice response**, edit the restaurant response, and open practice. The text is copied into the reply box; review it and press Send. Choose **Play** to answer yourself; the suggested response chips populate an editable input. Confirmed statements and tentative statements should produce different evidence. A failed/incomplete result is a valid outcome, not a broken application.
-
-A saved result says **Saved locally** and is available under **Past calls**. If saving fails, keep the page open, download the artifact, fix the directory's write access and choose **Retry saving**. This retries the write, not the call. Reloading a call URL resumes the same call; after server restart, it opens its saved recording if available. An unsaved result is lost when the server exits. When disconnected, choose **Check this call again**; do not blindly start a new call.
-
-Only explicitly run `pnpm oathra demo --allow-models` when you intend to enable external model providers and their data transmission/API costs. No real telephone call is made by Arena. See the [source compatibility contract](quality/arena-contract.md) and [verification record](quality/verification.md).
+Only explicitly run `pnpm oathra demo --allow-models` when you intend to enable external model providers and their data transmission/API costs. No real telephone call is made in practice. See the [source compatibility contract](quality/arena-contract.md) and [verification record](quality/verification.md).

@@ -143,3 +143,19 @@ describe("voice presets", () => {
     expect(text).not.toContain("大げさな演技や過剰な明るさは避けて");
   });
 });
+
+describe("GeminiLiveAgent record_decision", () => {
+  it("reports a decision within 任せる範囲 silently, never as an event that settles anything", () => {
+    const decisions: unknown[] = [];
+    const contract = defineCall({ goal: "phone.message", language: "ja", input: { request: "予約を取って。\n\n【任せる範囲】\nその場で決めてよい：席の種類はどれでも\nしない：支払い・カード番号を伝える、AIであることを隠す" }, permissions: { ask: true } });
+    const agent = new GeminiLiveAgent({ contract, apiKey: "test", onDecision: (e) => decisions.push(e) }) as unknown as { bridge: unknown; ws: unknown; onMessage: (m: Record<string, unknown>) => void };
+    const sent: Record<string, unknown>[] = [], events: unknown[] = [];
+    agent.bridge = { sendAudio: () => {}, clearAudio: () => {}, emit: (e: unknown) => events.push(e), now: () => 0 };
+    agent.ws = { readyState: 1, send: (raw: string) => sent.push(JSON.parse(raw)) };
+    agent.onMessage({ toolCall: { functionCalls: [{ id: "d1", name: "record_decision", args: { decision: "テーブル席にしました", within: "席の種類はどれでも" } }] } });
+    expect(decisions).toEqual([{ type: "decision.made", decision: "テーブル席にしました", within: "席の種類はどれでも" }]);
+    const reply = sent.find((m) => m.toolResponse) as { toolResponse: { functionResponses: Array<{ id: string; response: { ok: boolean; scheduling: string } }> } };
+    expect(reply.toolResponse.functionResponses[0]).toMatchObject({ id: "d1", response: { ok: true, scheduling: "SILENT" } });
+    expect(events).toHaveLength(0);
+  });
+});

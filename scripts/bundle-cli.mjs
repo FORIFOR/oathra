@@ -1,5 +1,5 @@
 // Bundle the CLI (and every @oathra/* workspace package) into one file so
-// `npx oathra demo` needs a single npm package. Copies Arena assets + scenarios.
+// `npx oathra demo` needs a single npm package. Copies the app (apps/gateway) + scenarios.
 import { build } from "esbuild";
 import { cpSync, mkdirSync, rmSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -22,6 +22,20 @@ await build({
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
   external: [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})],
   define: { "process.env.OATHRA_VERSION": JSON.stringify(pkg.version) },
+  logLevel: "warning",
+});
+
+// The Gateway app for `oathra demo` (practice mode). Loaded by bin.js with import(); its runtime files come from
+// assets/gateway-root, which keeps the repository layout (apps/gateway/lib/paths.mjs, OATHRA_GATEWAY_ROOT).
+await build({
+  entryPoints: [resolve(root, "apps/gateway/demo.mjs")],
+  outfile: resolve(out, "gateway.js"),
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  target: "node22",
+  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+  external: [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})],
   logLevel: "warning",
 });
 
@@ -57,8 +71,13 @@ for (const file of ["evidence", "transcript"]) {
 
 const assets = resolve(cli, "assets");
 rmSync(assets, { recursive: true, force: true });
-cpSync(resolve(root, "apps/arena/public"), resolve(assets, "arena"), { recursive: true });
 cpSync(resolve(root, "scenarios"), resolve(assets, "scenarios"), { recursive: true });
+const gatewayRoot = resolve(assets, "gateway-root");
+cpSync(resolve(root, "apps/gateway/public"), resolve(gatewayRoot, "apps/gateway/public"), { recursive: true });
+cpSync(resolve(root, "apps/gateway/lib/phone.mjs"), resolve(gatewayRoot, "apps/gateway/lib/phone.mjs")); // plugin identity digest
+cpSync(resolve(root, "plugins"), resolve(gatewayRoot, "plugins"), { recursive: true, filter: (f) => !/\.test\.|node_modules/.test(f) });
+cpSync(resolve(root, "scenarios"), resolve(gatewayRoot, "scenarios"), { recursive: true });
+
 cpSync(resolve(root, "README.md"), resolve(cli, "README.md"));
 cpSync(resolve(root, "LICENSE"), resolve(cli, "LICENSE"));
 writeFileSync(resolve(out, ".gitkeep"), "");

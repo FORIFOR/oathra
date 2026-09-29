@@ -1,6 +1,6 @@
 /**
  * A whole phone-request call without a carrier: the same request → contract → CallRuntime → engine → brain
- * path as the Arena web phone, with the telephone line replaced by a local loop and the callee played from a
+ * path as a real call, with the telephone line replaced by a local loop and the callee played from a
  * short script. Nothing rings; the voice APIs are real and paid. Normal lines wait for the agent's reply to
  * finish playing; one line interrupts on purpose to check barge-in.
  */

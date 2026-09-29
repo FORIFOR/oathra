@@ -1,7 +1,8 @@
 import { phoneMemory } from '../../../packages/core/dist/index.js';
-import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS } from '../../../packages/contract/dist/index.js';
+import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
+import { repoUrl } from './paths.mjs';
 
 /**
  * What was measured about each voice (scripts/voice-samples.mjs): median pitch and how long the same sentence
@@ -10,7 +11,7 @@ import { readFileSync } from 'node:fs';
  */
 function voiceDetails() {
  try {
-  const measured=JSON.parse(readFileSync(new URL('../public/phone/voices/voices.json',import.meta.url),'utf8')).voices??{};
+  const measured=JSON.parse(readFileSync(repoUrl('apps/gateway/public/phone/voices/voices.json'),'utf8')).voices??{};
   const details=Object.fromEntries(PHONE_VOICES.filter(v=>Number.isFinite(measured[v]?.pitchHz)).map(v=>{const {pitchHz,seconds,phoneCer,phoneLevel}=measured[v];
    return [v,{pitchHz,seconds,phoneCer,phoneLevel,pitch:pitchHz<150?'low':pitchHz<195?'mid':pitchHz<250?'high':'very-high',pace:seconds<=5.2?'fast':seconds>=6.4?'slow':'medium',quiet:Number.isFinite(phoneLevel)&&phoneLevel<QUIET_LEVEL,sample:`/phone/voices/${v}.wav`}];}));
   recommend(details);return details;
@@ -48,7 +49,7 @@ export function phoneReadiness(service,config,user) {
   issues.push('運営者の設定が整えば、利用者はこの画面から発信できます。');
  }
  // Each engine has its own voices; the measured details only exist for GPT-Live's.
- const engines=(config.voiceEngines??[{id:'gpt-live',label:'GPT-Live',ready:true}]).map(e=>({...e,voices:e.id==='gemini-live'?[...GEMINI_VOICES]:[...PHONE_VOICES],defaultVoice:e.id==='gemini-live'?DEFAULT_GEMINI_VOICE:DEFAULT_PHONE_VOICE,...(e.id==='gemini-live'?{voiceTraits:{...GEMINI_VOICE_TRAITS}}:{}),presetVoices:{...PRESET_VOICES[e.id]}}));
+ const engines=(config.voiceEngines??[{id:'gpt-live',label:'GPT-Live',ready:true}]).map(e=>({...e,voices:e.id!=='gpt-live'?[...GEMINI_VOICES]:[...PHONE_VOICES],defaultVoice:e.id==='character-tts'?ENGINE_DEFAULT_VOICE['character-tts']:e.id==='gemini-live'?DEFAULT_GEMINI_VOICE:DEFAULT_PHONE_VOICE,...(e.id!=='gpt-live'?{voiceTraits:{...GEMINI_VOICE_TRAITS}}:{}),presetVoices:{...PRESET_VOICES[e.id]}}));
  const defaultEngine=config.defaultVoiceEngine??'gpt-live';
  return {ready,reception:config.inbound?.restaurant&&config.inbound.owner===user?.id?config.inbound.restaurant.name:null,provider:'Twilio',engine:defaultEngine==='gemini-live'?'Google':'OpenAI',recording:false,voices:[...PHONE_VOICES],defaultVoice:DEFAULT_PHONE_VOICE,voiceDetails:VOICE_DETAILS,engines,defaultEngine,voicePresets:{...VOICE_PRESET_LABELS},newsAvailable:config.newsAvailable===true,
   issues,
@@ -56,13 +57,15 @@ export function phoneReadiness(service,config,user) {
   creditQuote:service.credits.quote(config.mode)};
 }
 export function phoneRecord(service,m) {
- const transcript=m.transcript??service.store.events(m.id,m.owner).filter(e=>e.type==='transcript.final').map(e=>({id:e.turnId,source:e.source,text:e.text,t:e.t,...(e.interrupted?{interrupted:true}:{})}));
+ const transcript=m.transcript??service.store.events(m.id,m.owner).filter(e=>e.type==='transcript.final').map(e=>({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})}));
  const reachedTimeLimit=!m.stopReason&&!m.stopNeedsReconciliation&&['INCOMPLETE','COMPLETED'].includes(m.status)&&m.carrierStatus==='completed'&&m.maxSeconds>0&&m.billing?.carrier?.durationSeconds>=m.maxSeconds;
  const map={DRAFT:'draft',QUEUED:'starting',DIALING:'starting',ACTIVE:'running',CANCEL_REQUESTED:'stopping',UNKNOWN:'unknown',FAILED:'failed',CANCELLED:'ended',COMPLETED:'ended',INCOMPLETE:'ended',DECLINED:'ended'};
  const voiceSetting=service.store.events(m.id,m.owner).find(e=>e.type==='voice.setting')?.setting??null;
  return {id:m.id,direction:m.direction==='inbound'?'inbound':'outbound',request:m.phoneRequest,voiceSetting,memory:m.memory?.turnCount===transcript.length&&m.memory?.lastTurnId===(transcript.at(-1)?.id??null)?m.memory:phoneMemory(m.inbound?.reception?{...m.phoneRequest,conversationMode:'chat'}:m.phoneRequest,transcript,m.approvedAt??m.createdAt),state:map[m.status]??'unknown',createdAt:new Date(m.createdAt).toISOString(),updatedAt:new Date(m.finishedAt??m.approvedAt??m.createdAt).toISOString(),creditState:service.credits.status(m),creditQuote:m.creditQuote,creditUsage:service.credits.usage(m),
   billing:m.billing?{state:m.billing.state,durationSeconds:m.billing.carrier?.durationSeconds,cost:m.billing.cost}:undefined,
   news:service.store.events(m.id,m.owner).filter(e=>e.type==='news.lookup').map(e=>e.result),
+  // What the AI says it decided within 任せる範囲: its own account, shown as such; never evidence.
+  decisions:service.store.events(m.id,m.owner).filter(e=>e.type==='decision.made').map(e=>({decision:e.decision,...(e.within?{within:e.within}:{}),...(typeof e.t==='number'?{t:e.t}:{})})),
   // What the desk wrote down on this call (the ledger's own record, not something read out of the transcript).
   ...(m.inbound?.reception?{booking:(b=>b?(({phone,owner,team,...rest})=>rest)(b):null)(service.store.all('table-booking',m.owner).find(b=>b.callId===m.id))}:{}),
   spending:m.billing?.spending,error:m.stopReason==='credit_limit'?'credit_limit_reached':reachedTimeLimit?'call_time_limit_reached':m.error,summary:m.stopReason==='credit_limit'&&!m.stopNeedsReconciliation&&['CANCELLED','INCOMPLETE','FAILED'].includes(m.status)?'利用クレジットの上限に達したため通話を終了しました。':reachedTimeLimit?`通話時間の上限（${m.maxSeconds}秒）に達しました。`:m.result?.caveat,transcript,persistence:'saved'};

@@ -1,4 +1,4 @@
-// Drives the locally installed Google Chrome over CDP. No dependencies, like scripts/qa-arena.mjs.
+// Drives the locally installed Google Chrome over CDP. No dependencies.
 // Shared by the UI flow checks: they operate the real page, assert, and save PNGs a person (or reviewer) then opens.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -77,6 +77,11 @@ export async function launch({ width = 1440, height = 900 } = {}) {
       await sleep(120);
     },
     type: (text) => send("Input.insertText", { text }),
+    // A real pointer click at the element's centre: a trusted user gesture (media playback needs one; click() is not).
+    tap: async (selector) => {
+      const r = JSON.parse(await page.js(`JSON.stringify((()=>{const b=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:b.left+b.width/2,y:b.top+b.height/2}})())`));
+      for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: r.x, y: r.y, button: "left", clickCount: 1 });
+    },
     focused: () => page.js("(()=>{const n=document.activeElement;if(!n)return null;const cs=getComputedStyle(n);return {id:n.id,tag:n.tagName,text:(n.textContent||'').trim().slice(0,20),outline:cs.outlineStyle!=='none'&&parseFloat(cs.outlineWidth)>0}})()"),
     emulateReducedMotion: () => send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }),
     viewport,

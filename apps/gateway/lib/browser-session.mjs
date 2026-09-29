@@ -13,7 +13,8 @@ export class BrowserSessions {
     const value=entries[0].slice(this.name.length+1);
     return /^[A-Za-z0-9_-]{43}$/.test(value)?value:null;
   }
-  sameOrigin(req) { assert(req.headers.origin===this.service.config.publicUrl,'cross_origin_request_denied',403); }
+  // The local app (`oathra demo`) is also opened by LAN address or through a tunnel: config.origins lists those pages.
+  sameOrigin(req) { const o=req.headers.origin;assert(o===this.service.config.publicUrl||(o!==undefined&&(this.service.config.origins??[]).includes(o)),'cross_origin_request_denied',403); }
   cookie(value,maxAge) { return `${this.name}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${this.secure?'; Secure':''}`; }
   create(req,res,user,expectedVersion) {
     this.sameOrigin(req);

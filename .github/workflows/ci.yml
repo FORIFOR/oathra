@@ -31,14 +31,14 @@ jobs:
         run: |
           pnpm test:gateway
           node scripts/ui/email-login.mjs
-      - name: Arena real HTTP, persistence and browser recovery regression
-        run: pnpm test:arena-outcome
-      - name: Keep Arena failure evidence
+      - name: Local app (oathra demo) in a real browser — no sign-in here, sign-in link elsewhere, practice records
+        run: pnpm test:local-app
+      - name: Keep UI failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: arena-quality-evidence
-          path: artifacts/quality/
+          name: ui-quality-evidence
+          path: artifacts/ui/
       - name: UI evidence gate (its own tests; the gate is a local consistency check, not a design judge)
         run: pnpm ui:gate:test
       - name: Scenarios validate

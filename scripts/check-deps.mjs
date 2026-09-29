@@ -28,7 +28,6 @@ const LAYER = {
   "@oathra/ollama": 5,
   "@oathra/replay": 6,
   "@oathra/eval": 6,
-  "@oathra/arena": 7,
   oathra: 8,
 };
 

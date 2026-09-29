@@ -26,9 +26,6 @@
       "path": "packages/eval"
     },
     {
-      "path": "apps/arena"
-    },
-    {
       "path": "providers/ollama"
     },
     {

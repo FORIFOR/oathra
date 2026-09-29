@@ -1,5 +1,5 @@
 name: Cannot start / 起動・操作の不具合
-description: Installation, Arena, CLI, or browser errors. インストール・画面・コマンドの不具合。
+description: Installation, app, CLI, or browser errors. インストール・画面・コマンドの不具合。
 title: "[Bug] "
 body:
   - type: markdown

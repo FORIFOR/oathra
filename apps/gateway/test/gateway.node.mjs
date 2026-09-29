@@ -190,3 +190,17 @@ test('LINE refuses a registered name without a phone and returns an actionable m
   assert.equal(f.store.list('mission').length,0);
   assert.match(f.store.list('outbox')[0].payload.text,/電話番号がありません/);
 }));
+test('a monthly cap stops a call whose estimate would pass it, per Japanese calendar month; removing it lifts it',withFixture(f=>{
+  f.service.saveMonthlyCap(f.u,1);
+  const cost=(m,usd)=>{const x=f.store.get('mission',m.id);x.estimatedMaximumUsd=usd;f.store.put('mission',x);return x;};
+  const first=cost(f.draft(),0.6); approve(f,first,'m1');
+  const done=f.store.get('mission',first.id); done.status='COMPLETED'; f.store.put('mission',done);
+  assert.deepEqual({used:f.service.monthUsage(f.u).usedUsd,cap:f.service.monthUsage(f.u).capUsd},{used:0.6,cap:1});
+  const second=cost(f.draft(),0.6);
+  assert.throws(()=>approve(f,second,'m2'),/monthly_cap_reached/);
+  f.service.saveMonthlyCap(f.u,null);
+  assert.equal(approve(f,second,'m3').status,'QUEUED');
+  assert.throws(()=>f.service.saveMonthlyCap(f.u,-1),/invalid_monthly_cap/);
+  // The next month starts from zero (JST month boundary).
+  f.advance(40*86400_000); assert.equal(f.service.monthUsage(f.u).usedUsd,0);
+}));

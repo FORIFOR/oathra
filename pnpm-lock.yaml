@@ -24,30 +24,6 @@ importers:
         specifier: ^3.2.0
         version: 3.2.7(@types/node@22.20.2)(tsx@4.23.13)(yaml@2.9.0)
 
-  apps/arena:
-    dependencies:
-      '@oathra/contract':
-        specifier: workspace:*
-        version: link:../../packages/contract
-      '@oathra/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@oathra/eval':
-        specifier: workspace:*
-        version: link:../../packages/eval
-      '@oathra/replay':
-        specifier: workspace:*
-        version: link:../../packages/replay
-      '@oathra/runtime':
-        specifier: workspace:*
-        version: link:../../packages/runtime
-      '@oathra/scenario':
-        specifier: workspace:*
-        version: link:../../packages/scenario
-      '@oathra/simulator':
-        specifier: workspace:*
-        version: link:../../providers/simulator
-
   packages/cli:
     dependencies:
       '@livekit/rtc-node':
@@ -66,9 +42,6 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@oathra/arena':
-        specifier: workspace:*
-        version: link:../../apps/arena
       '@oathra/contract':
         specifier: workspace:*
         version: link:../contract

@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
+import { repoUrl } from './paths.mjs';
 
-/** Reuse Arena's phone/contacts view; detect contract drift before serving a broken screen. */
+/** The managed service's phone/contacts page, built from the former Arena markup (public/phone/base); detect drift before serving a broken screen. */
 export function phonePage() {
-  let html = readFileSync(new URL('../../arena/public/index.html', import.meta.url), 'utf8');
-  const account = readFileSync(new URL('../public/phone/account.html', import.meta.url), 'utf8');
-  const bookings = readFileSync(new URL('../public/phone/bookings.html', import.meta.url), 'utf8');
+  let html = readFileSync(repoUrl('apps/gateway/public/phone/base/index.html'), 'utf8');
+  const account = readFileSync(repoUrl('apps/gateway/public/phone/account.html'), 'utf8');
+  const bookings = readFileSync(repoUrl('apps/gateway/public/phone/bookings.html'), 'utf8');
   const patch = (slot, replacement) => {
     const updated = html.replace(slot, replacement);
     if (updated === html) throw new Error('Managed phone markup slot is missing: ' + slot);
@@ -22,8 +23,21 @@ export function phonePage() {
   patch(/<fieldset class="phone-step">\s*<legend[^>]*>[^<]*<\/legend>/g, '');
   patch(/<\/fieldset>/g, '');
   patch(/<p id="phone-caller-hint"[^>]*><\/p>/, '');
+  patch(/<div class="phone-aside" id="phone-aside"><!-- phone-aside -->[\s\S]*?<!-- \/phone-aside-head -->/, '');
+  patch('</div><!-- /phone-aside -->', '');
   patch(' aria-describedby="phone-caller-hint"', '');
   patch('href="style.css"', 'href="/phone-style/style.css"');
+  // Arena's v2 look is Arena-only for now; the managed page keeps its current styles until it is redesigned.
+  patch(/\s*<link rel="stylesheet" href="v2.css" \/>/, '');
+  // Arena's records list (practice and real calls together) is Arena-only; the managed page has its own history.
+  patch(/\s*<link rel="stylesheet" href="records.css" \/>/, '');
+  // The Ring Zero theme files are Arena's; the managed page keeps its own look for now.
+  patch(/\s*<link rel="stylesheet" href="ringzero.css" \/>/, '');
+  patch(/\s*<script src="ringzero.js"><\/script>/, '');
+  patch(/\s*<button type="button" class="btn" id="records-open"[^>]*>Records<\/button>/, '');
+  // The Arena's icons live under assets/; the gateway serves its own copies at the root.
+  patch(/href="assets\/oathra-mark-original\.png"/, 'href="/oathra-mark-original.png"');
+  patch(/href="assets\/oathra-mark-white\.png"/, 'href="/oathra-mark.png"');
   patch('</head>', '<link rel="stylesheet" href="/managed-phone.css"></head>');
   patch(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   patch(/<section id="phone-review"([\s\S]*?)<\/section>/, (_, inside) =>

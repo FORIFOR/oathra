@@ -38,9 +38,15 @@ export type SpeakInput = {
   /** Pre-synthesised audio when the runtime already ran TTS. */
   audio?: AsyncIterable<AudioFrame>;
   language: Language;
+  /**
+   * When the brain started writing this reply (call clock, ms): the latest callee input it could have seen.
+   * A voice line may drop the reply unplayed when the callee said something real after that (`skipped`).
+   */
+  inputUntilMs?: number;
 };
 
-export type SpeakResult = { startMs: number; endMs: number; interrupted: boolean };
+/** `skipped`: nothing was played because the reply was stale; the runtime answers the newer input instead. */
+export type SpeakResult = { startMs: number; endMs: number; interrupted: boolean; skipped?: boolean };
 
 export interface CallSession {
   /** Stream of far-end events. Ends when the call ends. */

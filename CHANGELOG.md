@@ -2,13 +2,10 @@
 
 Release notes live in `docs/launch/release-notes-<version>.md`; this file lists them. Assets are attached to the matching [GitHub Release](https://github.com/FORIFOR/oathra/releases).
 
-## Unreleased
+## Oathra v0.1.19 — 2026-09-29
 
-- Gemini Live (`gemini-3.8-live`) as a second speech-to-speech engine, selectable per call (`--engine gemini-live`, the 「音声AI」 select in the Arena and the Gateway). Shared prompts moved to `providers/voice-kit`.
-- Evidence engine: a bare 「承りました」 no longer confirms; English "not confirmed yet" / "will be confirmed" never do; 「2万5千円」 parses as 25,000; per-head prices and portions are not party sizes; durations are not times or dates; cancellation policies are not cancellations; 「その時間は難しい」 after a booking takes it back.
-- `oathra demo --tunnel / --allow-remote` is token-gated; a tunnel binds loopback only.
-- Runtime hangs up on brain/TTS exceptions and ends silent lines at `maxDurationMs`.
-- `oathra --version`; `doctor` checks ngrok instead of unused keys.
+v0.1.19 replaces the Arena with the Oathra app: `oathra demo` opens it in practice mode on your computer (watch the AI call, or answer it yourself), with records, sign-in links for other devices, other practice AIs and real calls behind flags.
+[Release notes](docs/launch/release-notes-0.1.19.md) · [GitHub Release](https://github.com/FORIFOR/oathra/releases/tag/v0.1.19)
 
 ## Oathra v0.1.18 — 2026-09-19
 

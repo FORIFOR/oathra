@@ -1,7 +1,7 @@
-// Battle video v2: a desktop "screen recording" of three real Arena windows replaying real calls,
+// Battle video v2: a desktop "screen recording" of three real app windows (練習 › 記録) replaying real calls,
 // with the recorded lines voiced, keystrokes, ringback and a hang-up. Frames are rendered by
 // video/battle2.html through headless Chrome; audio is mixed by ffmpeg from video/.work/{tts,sfx}.
-// usage: node packages/cli/dist/bin.js demo --no-open --port 4242 &
+// usage: node scripts/battle-to-calls.mjs … (saves to .oathra/calls) && node packages/cli/dist/bin.js demo --no-open --port 4242 &
 //        node scripts/render-battle2.mjs --data video/.work/battle.json --name oathra-battle-ja [--preview 2000,12000] [--out docs/media]
 import { spawn, execSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs";
@@ -39,7 +39,7 @@ await send("Page.enable"); await send("Emulation.setDeviceMetricsOverride", { wi
 // durations must be known before the template builds its timeline
 await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__DUR__ = ${JSON.stringify(DUR)}; window.__DATA__ = ${JSON.stringify(DATA)};` });
 await send("Page.navigate", { url: pathToFileURL(TEMPLATE).href + `?base=${encodeURIComponent(BASE)}&lang=${LANG}` });
-for (let i = 0; i < 60; i++) { await sleep(500); if (await evaluate("window.__READY__ && window.__READY__()")) break; if (i === 59) throw new Error("Arena iframes did not become ready — is the demo server running on " + BASE + "?"); }
+for (let i = 0; i < 60; i++) { await sleep(500); if (await evaluate("window.__READY__ && window.__READY__()")) break; if (i === 59) throw new Error("App windows did not become ready — is the demo server running on " + BASE + "?"); }
 await sleep(800);
 const shot = async (file) => { const r = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(file, Buffer.from(r.data, "base64")); };
 const duration = await evaluate("window.__DURATION__");

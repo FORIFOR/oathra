@@ -12,6 +12,29 @@ export class Service {
   write(u) { assert(['admin','operator'].includes(u.role), 'read_only_account', 403); }
   own(kind, id, u) { const r = this.store.get(kind, id); assert(r && r.owner === u.id, 'not_found', 404); return r; }
   account(u) { return this.store.get('account', u.id) ?? { id: u.id, owner: u.id, consentVersion: null, verifiedPhone: null }; }
+  // A monthly cap on what this person's approved calls may cost at most (their estimated maximums, which are
+  // conservative), in the Japanese calendar month. null removes it. Checked at the start, like the daily limit.
+  saveMonthlyCap(u, value) { this.write(u); const cap = value === null || value === '' || value === undefined ? null : Number(value); assert(cap === null || (Number.isFinite(cap) && cap >= 0.01 && cap <= 100000), 'invalid_monthly_cap'); this.store.audit(u.id, 'account.monthly_cap_saved', u.id, { cap }); return this.store.put('account', { ...this.account(u), monthlyCapUsd: cap }); }
+  monthUsage(u) {
+    const tokyo = new Date(this.store.now() + 9 * 3600_000), start = Date.UTC(tokyo.getUTCFullYear(), tokyo.getUTCMonth(), 1) - 9 * 3600_000;
+    const usedUsd = this.store.list('reservation', u.id).filter(x => x.approvedAt >= start).reduce((n, x) => n + x.estimatedMaximumUsd, 0);
+    return { usedUsd: Math.round(usedUsd * 100) / 100, capUsd: this.account(u).monthlyCapUsd ?? null, since: new Date(start).toISOString() };
+  }
+  // How calls to this person's number are answered (the server still decides whether incoming calls are on and whose
+  // number it is): the AI takes a message, forwards to their verified phone, or does not answer; within hours if set.
+  saveInbound(u, input) {
+    this.write(u);
+    const mode = input?.mode ?? 'ai'; assert(['ai', 'forward', 'decline'].includes(mode), 'invalid_inbound_mode');
+    const hhmm = v => { assert(typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v), 'invalid_inbound_hours'); return v; };
+    const hours = input?.hours ? { from: hhmm(input.hours.from), to: hhmm(input.hours.to) } : null;
+    assert(!hours || hours.from !== hours.to, 'invalid_inbound_hours');
+    const name = String(input?.name ?? '').trim(); assert(name.length <= 40 && !/[\d@<>{}\r\n]|https?:/i.test(name), 'invalid_caller_name');
+    if (mode === 'forward') { const a = this.account(u); assert(a.verifiedPhone && a.phoneVerificationProvider !== 'simulator', 'verify_your_phone_first'); assert(!this.credits.enabled, 'forward_not_available_with_credits', 409); }
+    this.store.audit(u.id, 'account.inbound_saved', u.id, { mode, hours: Boolean(hours) });
+    return this.store.put('account', { ...this.account(u), inbound: { mode, hours, name: name || null } });
+  }
+  // The name the AI gives on this person's calls (their company or their own name). Each account sets its own.
+  saveCallerName(u, value) { this.write(u); const name = String(value ?? '').trim(); assert(name.length <= 40 && !/[\d@<>{}\r\n]|https?:/i.test(name), 'invalid_caller_name'); this.store.audit(u.id, 'account.caller_name_saved', u.id, {}); return this.store.put('account', { ...this.account(u), callerName: name || null }); }
   saveConsent(u, version) { this.write(u); assert(version === this.config.consentVersion, 'review_current_privacy_notice'); this.store.audit(u.id, 'consent.saved', u.id, { version }); return this.store.put('account', { ...this.account(u), consentVersion: version, consentAt: this.store.now() }); }
   product(u, input) {
     this.write(u); assert(input.reviewed === true, 'product_facts_require_review');
@@ -113,7 +136,7 @@ export class Service {
     const estimate = this.config.mode === 'simulator' ? 0 : Math.ceil((seconds + 30) / 60) * this.config.rateCeilingUsd * 2 + this.config.setupFeeUsd;
     assert(estimate <= maxUsd, 'estimated_cost_exceeds_budget');
     const m = { id: randomUUID(), owner: u.id, team: u.team, revision: 1, status: 'DRAFT', product, target, request, goal,
-      candidateSlots: slots, testOnMe: self, mode: this.config.mode, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
+      candidateSlots: slots, testOnMe: self, mode: this.config.mode, callerName: this.account(u).callerName || this.config.businessName || null, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
       creditQuote: this.credits.quote(this.config.mode,target.phone), callerId: this.config.callerId ?? 'simulator', callPluginIdentity: this.config.callPluginIdentity ?? null, createdAt: this.store.now(), origin, sourceKey, result: null };
     this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); });
     return m;
@@ -127,7 +150,7 @@ export class Service {
     const changed = { ...replacement, id: m.id, createdAt: m.createdAt, origin: m.origin, sourceKey: m.sourceKey, revision: m.revision + 1 };
     this.store.put('mission', changed); this.store.audit(u.id, 'mission.edited', m.id, { mission: m.id, revision: changed.revision, goal: changed.goal }); return changed;
   }
-  fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode,m.callPluginIdentity??null,m.creditQuote??null,m.kind??null,m.phoneRequest??null])); }
+  fingerprint(m) { return hash(JSON.stringify([m.revision,m.product,m.target,m.request,m.goal,m.candidateSlots,m.maxSeconds,m.maxUsd,m.callerId,m.mode,m.callPluginIdentity??null,m.creditQuote??null,m.kind??null,m.phoneRequest??null,...(m.callerName?[m.callerName]:[])])); }
   checkContact(u, m) {
     if (m.kind === 'phone-request') return;
     assert(!m.target.registrationRequired, 'contact_registration_required', 409);
@@ -179,6 +202,8 @@ export class Service {
       this.checkPolicy(u, m);
       const recent = this.store.list('reservation', u.id).filter(x => x.approvedAt > this.store.now() - 86400_000);
       assert((this.config.dailyCalls===0||recent.length < this.config.dailyCalls) && (this.config.dailyUsd===0||recent.reduce((n,x) => n + x.estimatedMaximumUsd, 0) + m.estimatedMaximumUsd <= this.config.dailyUsd), 'daily_limit_reached', 429);
+      const month = this.monthUsage(u);
+      assert(month.capUsd === null || month.usedUsd + m.estimatedMaximumUsd <= month.capUsd + 1e-9, 'monthly_cap_reached', 429);
       // Across every owner: two colleagues must not ring the same person at once from the same caller id.
       assert(!this.store.some('mission', x => x.id !== m.id && x.target.phone === m.target.phone && ((x.status !== 'DRAFT' && !terminal(x.status)) || x.status === 'UNKNOWN' || x.stopNeedsReconciliation)), 'recipient_has_active_call', 409);
       this.credits.reserveTx(m);

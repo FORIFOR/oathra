@@ -7,3 +7,5 @@ export { DESK_TOOLS, deskTool, notReadBack, receptionGreeting, restaurantRecepti
 export { callInstructions, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, type CallInstructionOptions } from "./call-instructions.js";
 export { S2SVoiceSession, type AgentLike } from "./s2s-session.js";
 export { voiceSettingRecord, type VoiceSettingRecord } from "./voice-setting.js";
+export { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt } from "./text-brain.js";
+export { DECISION_TOOL, decisionEvent, decisionInstruction, delegatedScope, recordsDecisions, SCOPE_HEAD, type DecisionEvent } from "./decision.js";

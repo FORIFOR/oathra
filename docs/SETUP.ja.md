@@ -1,6 +1,6 @@
 # 初心者向けセットアップ
 
-未公開のソース変更: [Arenaの互換性・権限・復帰契約](quality/arena-contract.md)、[最初のローカル成果物](FIRST_PROOF.md)。既定のデモはオフライン専用です。外部モデルは `demo --allow-models` で明示的に有効化します。
+未公開のソース変更: [最初のローカル成果物](FIRST_PROOF.md)。既定のデモはオフライン専用です。外部モデルは `demo --allow-models` で明示的に有効化します。
 
 Oathra は、まず API キーなしで判定機能を確認し、その後に音声エンジンと電話会社を追加する順番が一番迷いません。電話を発信しない範囲なら、ブラウザの[証拠ラボ](https://forifor.github.io/oathra/check.html)ですぐに試せます。
 
@@ -81,10 +81,10 @@ pnpm oathra setup phone
 pnpm oathra setup phone --engine gpt-live --provider twilio --skip-test
 ```
 
-公開パッケージを使う場合は、v0.1.18 の GitHub 配布版を明示します。
+公開パッケージを使う場合は、v0.1.19 の GitHub 配布版を明示します。
 
 ```bash
-npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz oathra setup phone
+npx --yes --package=https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz oathra setup phone
 ```
 
 ウィザードは次の順で進みます。
@@ -133,13 +133,13 @@ pnpm oathra call --to +819012345678 --scenario ./my-scenario.yaml
 
 診断結果に秘密値を貼り付けず、発生したコマンド、赤くなった項目、プロバイダ名だけを Issue に記載してください。
 
-Arenaで練習中に一覧へ戻っても「進行中の通話に戻る」から再開できます。次の練習は現在の通話を終了してから開始します。レストランの練習日は再現性のため2026年9月12日に固定されています。
+練習はアプリの「練習」から始めます。「AIの電話を見る」か「自分が相手役」（AIからの電話にお店として文字で答える）を選べます。記録は `.oathra/calls/` に残り、「記録」で見返せます。レストランの練習日は再現性のため2026年9月12日に固定されています。
 
 ## 電話番号と内容を画面から入力する
 
-Arenaの「電話をかける」で、電話番号・相手の名前・目的を入力します。目的は12種類のテンプレートか「過去の目的を再利用」から選べます。テンプレートの `{{項目}}` は具体的な内容に置き換えてください。「発信前に内容を確認」の後、送信先・料金・保存内容を確認し、同意して「この内容で電話をかける」を押します。確認や履歴の再利用だけでは発信しません。
+アプリの「電話を頼む」で、相手・電話番号・目的を入力します。目的は種類ごとのテンプレートか履歴から選べます。テンプレートの `{{項目}}` は具体的な内容に置き換えてください。確認画面で送信先・料金・保存内容を確かめてから承認します。確認や履歴の再利用だけでは発信しません。
 
-Web発信はTwilioと gpt-live / gemini-live に対応するexperimental機能です。画面の「音声AI」で、API キーが設定されているエンジンを通話ごとに選べます。`.env` のTwilio/OpenAI設定と `.oathra/phone.yaml` に加え、`OATHRA_PUBLIC_WS_URL` に既存の公開 `wss://` 接続先が必要です。この接続先はTwilio音声ポート（既定4243、phone.yamlのportで変更）へ転送してください。ArenaのHTTPポートとは別です。画面から公開トンネルは作成しません。未設定項目は入力画面に表示します。再起動後や設定変更後はもう一度内容を確認してください。実回線の接続・切断・料金はまだ未検証です。
+実際の電話は `pnpm oathra demo --live --tunnel`（このパソコンの `.env` の電話会社・音声AIのキーを使う）か、サーバーとして動かす Gateway（[apps/gateway/README.md](../apps/gateway/README.md)）で行います。準備の状態は起動時と「設定」に出ます。
 
 通話中は「通話を終了」を押します。終了確認が取れなければ「結果未確認」を維持します。通信会社側で終了したことを確かめてから、画面の確認操作を行ってください。自動で再発信しません。履歴と会話テキストは端末内の `.oathra/phone-history` に保存します。音声ファイルは保存しません。詳細は [Web発信の契約](quality/web-phone.md) を参照してください。
 

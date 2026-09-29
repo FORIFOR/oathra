@@ -3,7 +3,7 @@
 ## Dependency direction
 
 ```
-contract → evidence → core → scenario → runtime → providers → replay / eval → arena → cli
+contract → evidence → core → scenario → runtime → providers → replay / eval → cli   (apps/gateway: the app, on built packages)
 ```
 
 `scripts/check-deps.mjs` fails CI on any import that goes the wrong way. Providers never import from core's consumers; the UI only drives the runtime.
@@ -56,8 +56,8 @@ Speech-to-speech engines implement `VoiceEngine` from `packages/voice`: `provide
 
 ## Managed phone application (experimental Gateway v1)
 
-The managed adapter reuses Arena's phone and contacts HTML/CSS. It does not run the
-Arena simulator script or duplicate charging rules. Missing HTML integration slots
+The managed adapter reuses the former Arena phone and contacts HTML/CSS (apps/gateway/public/phone/base). It does not run the
+simulator script or duplicate charging rules. Missing HTML integration slots
 fail explicitly in `apps/gateway/lib/phone-ui.mjs` instead of serving an incomplete UI.
 
 ```mermaid

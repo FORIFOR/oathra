@@ -3,6 +3,7 @@
  * Gemini Live speaks them: who the agent is, what the contract requires, and the rules that keep
  * completion out of the model's hands.
  */
+import { decisionInstruction } from "./decision.js";
 import type { CallContract } from "@oathra/contract";
 import { renderIntakeConsentPrompt, requiredFields } from "@oathra/contract";
 import type { MissionView } from "@oathra/core";
@@ -25,7 +26,7 @@ export type CallInstructionOptions = {
 
 export function callInstructions(opts: CallInstructionOptions): string {
   const c = opts.contract;
-  if (c.goal === "phone.message") return phoneMessageInstructions(c, opts.newsAvailable === true);
+  if (c.goal === "phone.message") return [phoneMessageInstructions(c, opts.newsAvailable === true), decisionInstruction(c)].filter(Boolean).join("\n");
   if (c.goal === "phone.inbound") return phoneInboundInstructions(c);
   if (c.goal === "phone.reception") return restaurantReceptionInstructions(c);
   const ja = c.language === "ja";

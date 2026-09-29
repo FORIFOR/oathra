@@ -13,9 +13,6 @@
   ],
   "references": [
     {
-      "path": "../../apps/arena"
-    },
-    {
       "path": "../../packages/contract"
     },
     {
