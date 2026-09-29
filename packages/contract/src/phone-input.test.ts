@@ -71,7 +71,8 @@ it("a request may name the voice that speaks, only from the voices the engine ac
   expect(preparePhoneRequest({ ...base, voice: "vesper" }).voice).toBe("vesper");
   expect(PHONE_VOICES).toContain(DEFAULT_PHONE_VOICE);
   expect(new Set(PHONE_VOICES).size).toBe(PHONE_VOICES.length);
-  for (const voice of ["alloy", "", "MARIN", 3]) expect(() => preparePhoneRequest({ ...base, voice: voice as never })).toThrow();
+  expect(PHONE_VOICES).toHaveLength(22);
+  for (const voice of ["notavoice", "", "MARIN", 3]) expect(() => preparePhoneRequest({ ...base, voice: voice as never })).toThrow();
 });
 
 it("a request may say on whose behalf the call is: a name, never contact details", () => {

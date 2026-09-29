@@ -50,6 +50,50 @@ try {
   await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
   catch (e) { console.log("VIEW:", await page.text("#view"), "ERR:", page.pageErrors.join(" | ")); throw e; }
+  await page.js("location.hash='#/new'"); await page.until("!!document.querySelector('#ask-engine')", { label: "engine select" });
+  const engines = await page.js("[...document.querySelectorAll('#ask-engine option')].map(o=>o.textContent)");
+  c.ok(engines.some(t => /gpt-live-1/.test(t)) && engines.some(t => /gemini-3\.8-live/.test(t)), "電話を頼む: 音声AI names the model (gpt-live-1 / gemini-3.8-live)", engines.join(" | "));
+  // As on a server with the keys set: every voice AI can be chosen (the worker never runs here; nothing is dialled).
+  const engineReady = (config.voiceEngines ?? []).map((e) => e.ready); for (const e of config.voiceEngines ?? []) e.ready = true;
+  await page.js("location.hash='#/'"); await page.until("/ホーム/.test(document.querySelector('#view').textContent)");
+  await page.js("app.status=null;location.hash='#/new'"); await page.until("!!document.querySelector('[data-group=\"people\"]')", { label: "ask form" });
+  // 声: every voice of the chosen engine, and the choice is what the request sends.
+  const voiceCounts = await page.js("(()=>{const s=document.querySelector('#ask-engine'),n=id=>{s.value=id;s.dispatchEvent(new Event('change'));return document.querySelectorAll('#ask-voice-name option').length-1;};const r={gpt:n('gpt-live'),gemini:n('gemini-live')};s.value='gpt-live';s.dispatchEvent(new Event('change'));return r;})()");
+  c.ok(voiceCounts.gpt === 22 && voiceCounts.gemini === 30, "電話を頼む › 声: GPT-Live lists 22 voices and Gemini Live 30", JSON.stringify(voiceCounts));
+  await page.js("(()=>{const v=document.querySelector('#ask-voice-name');v.value='shimmer';v.dispatchEvent(new Event('change'));const s=document.querySelector('#ask-engine');s.value='gemini-live';s.dispatchEvent(new Event('change'));})()");
+  c.ok(await page.js("document.querySelector('#ask-voice-name').value===''"), "電話を頼む › 声: a voice the new engine does not have goes back to おまかせ");
+  await page.js("(()=>{const s=document.querySelector('#ask-engine');s.value='gpt-live';s.dispatchEvent(new Event('change'));})()");
+  c.ok(await page.js("document.querySelector('#ask-voice-name').value==='shimmer'"), "電話を頼む › 声: back on GPT-Live, the voice chosen there comes back");
+  await page.js("(()=>{const p=document.querySelector('#ask-voice');p.value='sales-female';p.dispatchEvent(new Event('change'));})()");
+  c.ok(/口調だけ/.test(await page.text("#ask-voice-note")) && /口調のみ/.test(await page.text(".ask-side")) && !/女性声/.test(await page.text(".ask-side")), "a chosen voice with a 話し方: the note and the brief say the 話し方 sets only the tone");
+  await page.js("(()=>{const p=document.querySelector('#ask-voice');p.value='';p.dispatchEvent(new Event('change'));})()");
+  await page.js("(()=>{const s=document.querySelector('#ask-engine');s.value='gpt-live';s.dispatchEvent(new Event('change'));const v=document.querySelector('#ask-voice-name');v.value='shimmer';v.dispatchEvent(new Event('change'));})()");
+  c.ok(/shimmer/.test(await page.text(".ask-side")), "AIへの指示書 names the chosen voice");
+  await page.js("document.querySelector('#ask-voice-name').scrollIntoView({block:'center'})"); await sleep(200);
+  await page.screenshot(join(out, "gateway-app-ask-voice.png"));
+  await page.js("window.scrollTo(0,0)");
+  await page.js("(()=>{const v=document.querySelector('#ask-voice-name');v.value='';v.dispatchEvent(new Event('change'));})()");
+  await page.js("[...document.querySelectorAll('[data-group]')].find(b=>b.dataset.group==='people').click()");
+  await page.js("document.querySelector('[data-kind=\"ai-news\"]').click()");
+  const news = await page.js("({engine:document.querySelector('#ask-engine').value,others:[...document.querySelectorAll('#ask-engine option')].filter(o=>o.value!=='gpt-live').every(o=>o.disabled),note:document.querySelector('#ask-engine-note').hidden?'':document.querySelector('#ask-engine-note').textContent,text:document.querySelector('#ask-instruction').value})");
+  c.ok(news.engine === "gpt-live" && news.others && /GPT-Live/.test(news.note) && /満足/.test(news.text) && /他にどういった分野/.test(news.text), "電話を頼む › AIニュースを届ける: the request is written, and the voice AI is GPT-Live (the one with the news lookup)", news.note);
+  await page.screenshot(join(out, "gateway-app-ask-ai-news.png"));
+  await page.js("document.querySelector('[data-kind=\"chat\"]').click()");
+  await page.js("(()=>{const s=document.querySelector('#ask-engine');s.value='gemini-live';s.dispatchEvent(new Event('change'));document.querySelector('[data-kind=\"ai-news\"]').click();document.querySelector('[data-kind=\"chat\"]').click();})()");
+  c.ok(await page.js("document.querySelector('#ask-engine-note').hidden && [...document.querySelectorAll('#ask-engine option')].some(o=>o.value==='gemini-live'&&!o.disabled) && document.querySelector('#ask-engine').value==='gemini-live'"), "電話を頼む: choosing another kind gives the other voice AIs back, and the one chosen before");
+  c.ok(await page.js("getComputedStyle(document.querySelector('.brief blockquote')).whiteSpace==='pre-line'"), "AIへの指示書 keeps the request's line breaks");
+  // A live server without GPT-Live: the AI news call cannot be checked or placed, and says why.
+  await page.js("location.hash='#/'"); await page.until("/ホーム/.test(document.querySelector('#view').textContent)");
+  await page.js("app.status.ready=true;app.status.engines.find(e=>e.id==='gpt-live').ready=false;location.hash='#/new'"); await page.until("!!document.querySelector('[data-group=\"people\"]')", { label: "ask form" });
+  await page.js("[...document.querySelectorAll('[data-group]')].find(b=>b.dataset.group==='people').click();document.querySelector('[data-kind=\"ai-news\"]').click()");
+  const noLive = await page.js("({check:[...document.querySelectorAll('button')].find(b=>b.textContent==='内容を確かめる').disabled,warn:[...document.querySelectorAll('.warnbox')].map(w=>w.textContent).join('|')})");
+  c.ok(noLive.check && /GPT-Live が使えないため/.test(noLive.warn), "AIニュース without GPT-Live: 内容を確かめる is off and the reason is shown", noLive.warn);
+  await page.js("document.querySelector('[data-kind=\"chat\"]').click()");
+  c.ok(await page.js("![...document.querySelectorAll('.warnbox')].some(w=>/GPT-Live が使えないため/.test(w.textContent))"), "another kind drops that warning");
+  await page.js("app.status=null");
+  (config.voiceEngines ?? []).forEach((e, i) => { e.ready = engineReady[i]; });
+  await page.js("app.status=null");
+  await page.js("location.hash='#/'"); await page.until("/ホーム/.test(document.querySelector('#view').textContent)");
   const home = await page.text("#view");
   c.ok(/あなたの確認が必要なものが 3 件/.test(home) && await page.text("#attention-badge") === "3", "ホーム: three things need you (an unknown outcome, two drafts), also on the 依頼 tab", home.slice(0, 80));
   c.ok(/前回かけた電話/.test(home) && /焼肉 たけ/.test(home) && /最近の電話/.test(home), "ホーム: the last call and the recent calls");
@@ -112,6 +156,25 @@ try {
   await page.js("location.hash='#/contacts'"); await page.until("/この相手に電話を頼む/.test(document.querySelector('#view').textContent)");
   c.ok(/03-5555-0142/.test(await page.text("#view")), "連絡先: the list and the selected contact, number as written in Japan");
   await page.screenshot(join(out, "gateway-app-contacts.png"));
+  // Add with a number as people write it, edit it in the same form, then delete it (confirm() is answered by the page stub).
+  const fill = (v) => page.js(`(()=>{const f=[...document.querySelectorAll('form')].find(f=>f.elements.basis);for(const [k,x] of Object.entries(${JSON.stringify(v)}))f.elements[k].value=x;f.requestSubmit();})()`);
+  await page.js("[...document.querySelectorAll('button')].find(b=>b.textContent==='＋ 追加').click()");
+  await fill({ name: "山田", phone: "090-1234-5678" });
+  await page.until("/山田/.test(document.querySelector('.headline')?.textContent)", { label: "contact added" });
+  c.ok(/090-1234-5678/.test(await page.text("#view")), "連絡先: a number written 090-1234-5678 is saved and shown as written");
+  await page.js("[...document.querySelectorAll('button')].find(b=>b.textContent==='編集').click()");
+  c.ok(await page.js("(()=>{const f=[...document.querySelectorAll('form')].find(f=>f.elements.basis);return !f.hidden&&/連絡先を編集/.test(f.textContent)&&f.elements.name.value==='山田'&&f.elements.phone.value==='090-1234-5678';})()"), "連絡先: 編集 opens the form filled with the contact");
+  c.ok(await page.js("[...document.querySelectorAll('.card')].every(el=>el.hidden||!/この相手に電話を頼む/.test(el.textContent)||el.tagName==='FORM')"), "連絡先: while editing, the detail card and its buttons step aside");
+  await page.js("(()=>{const f=[...document.querySelectorAll('form')].find(f=>f.elements.basis);f.elements.basis.value='途中';f.dispatchEvent(new Event('input',{bubbles:true}));window.confirm=()=>false;[...document.querySelectorAll('.list .item')].find(b=>/佐藤/.test(b.textContent)).click();})()");
+  await sleep(300);
+  c.ok(await page.js("(()=>{const f=[...document.querySelectorAll('form')].find(f=>f.elements.basis);return !f.hidden&&f.elements.basis.value==='途中'&&/#\\/contacts\\//.test(location.hash)&&!/佐藤/.test(document.querySelector('.headline')?.textContent||'');})()"), "連絡先: choosing another contact with unsaved edits asks first; 'no' keeps the typing");
+  await page.screenshot(join(out, "gateway-app-contact-edit.png"));
+  await fill({ name: "山田 花子", phone: "080-9999-0000" });
+  await page.until("/山田 花子/.test(document.querySelector('.headline')?.textContent)", { label: "contact edited" });
+  c.ok(/080-9999-0000/.test(await page.text("#view")) && (await api("/contacts")).filter((x) => /山田/.test(x.name)).length === 1, "連絡先: editing changes the same contact, not a new one");
+  await page.js("window.confirm=()=>true;[...document.querySelectorAll('button')].find(b=>b.textContent==='削除').click()");
+  await page.until("!/山田/.test(document.querySelector('#view').textContent)", { label: "contact deleted" });
+  c.ok(!(await api("/contacts")).some((x) => /山田/.test(x.name)) && /焼肉 たけ/.test(await page.text("#view")), "連絡先: 削除 removes it and shows the rest");
   await page.js("location.hash='#/settings/out'"); await page.until("/かける設定/.test(document.querySelector('#view').textContent)");
   c.ok(/田中の代わりにお電話している/.test(await page.text("#view")) && /常にオン/.test(await page.text("#view")), "設定: the name the AI gives, and approval that cannot be turned off");
   await page.screenshot(join(out, "gateway-app-settings.png"));

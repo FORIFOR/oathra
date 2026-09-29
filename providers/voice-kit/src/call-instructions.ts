@@ -125,6 +125,6 @@ export function openingLine(contract: CallContract, agentSpoke = false): string 
 }
 
 /** "Hang up" is a request to end the call even without a goodbye word. */
-export const HANGUP_REQUEST_RE = /(?:電話|でんわ)?(?:を)?切って|もう切る|切ってい?い|hang up|end the call/i;
+export const HANGUP_REQUEST_RE = /(?:電話|でんわ)?(?:を)?切って|もう切(?:る|ります)|(?:電話|でんわ)(?:を)?切ります|切ってい?い|hang up|end the call/i;
 /** Farewells only. 「それじゃ」「では」 are conjunctions mid-sentence and must not end a call. */
 export const GOODBYE_RE = /ばいば[ー〜]*い|バイバ[ー〜]*イ|またね[ー〜]*|じゃあね[ー〜]*|じゃあ(?:また)?今度|また(?:今度|連絡)|切る(?:ね|よ)|失礼(?:いた)?します|おやすみ|\bbye\b|talk (?:to you )?later|see you/i;

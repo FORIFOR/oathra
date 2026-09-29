@@ -66,9 +66,11 @@ test('a phone request may choose the voice; unknown voices are refused and the l
  const app=await createGateway(config,{env:{}});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
  try{
   const base='http://127.0.0.1:'+app.server.address().port,headers={authorization:'Bearer '+token,'content-type':'application/json'};
-  const status=await(await fetch(base+'/v1/phone/status',{headers})).json();assert.equal(status.defaultVoice,'marin');assert.equal(status.voices.length,13);assert.ok(status.voices.includes('vesper'));
+  const status=await(await fetch(base+'/v1/phone/status',{headers})).json();assert.equal(status.defaultVoice,'marin');assert.equal(status.voices.length,22);assert.ok(status.voices.includes('vesper')&&status.voices.includes('shimmer'));
   // Each voice is described by what was measured on its sample, and the sample itself can be listened to.
-  assert.deepEqual(Object.keys(status.voiceDetails).sort(),[...status.voices].sort());
+  // The 13 voices recorded on 2026-09-21 have samples; the 9 added on 2026-09-29 are selectable but not yet recorded.
+  assert.deepEqual(Object.keys(status.voiceDetails).sort(),['beacon','bossa','cinder','delta','gleam','marin','meridian','quartz','ripple','stone','tempo','vesper','willow']);
+  assert.ok(Object.keys(status.voiceDetails).every(v=>status.voices.includes(v)));
   for(const [name,d] of Object.entries(status.voiceDetails)){assert.ok(d.pitchHz>60&&d.pitchHz<400,name);assert.ok(['low','mid','high','very-high'].includes(d.pitch));assert.ok(['fast','medium','slow'].includes(d.pace));assert.equal(d.sample,'/phone/voices/'+name+'.wav');}
   assert.equal(status.voiceDetails.vesper.pitch,'low');assert.equal(status.voiceDetails.marin.pitch,'high');
   // A recommendation follows from the measurements: the default, and per other pitch group at most one voice that was
@@ -87,7 +89,9 @@ test('a phone request may choose the voice; unknown voices are refused and the l
   const draft=body=>fetch(base+'/v1/phone/draft',{method:'POST',headers,body:JSON.stringify({phone:'+819000000000',name:'local',instruction:'Only local validation; no phone execution.',...body})});
   const chosen=await draft({voice:'vesper'});assert.equal(chosen.status,201);assert.equal((await chosen.json()).mission.phoneRequest.voice,'vesper');
   const plain=await draft({});assert.equal(plain.status,201);assert.equal((await plain.json()).mission.phoneRequest.voice,undefined);
-  assert.equal((await draft({voice:'alloy'})).status,400);
+  assert.equal((await draft({voice:'notavoice'})).status,400);
+  // All 22 GPT-Live voices (the 9 added 2026-09-29 each opened a real session) are accepted.
+  const added=await draft({voice:'shimmer'});assert.equal(added.status,201);assert.equal((await added.json()).mission.phoneRequest.voice,'shimmer');
   // On whose behalf: kept with the request, refused when it is not a name.
   const named=await draft({callerName:'堀尾'});assert.equal(named.status,201);assert.equal((await named.json()).mission.phoneRequest.callerName,'堀尾');assert.equal((await draft({callerName:'090-1234-5678'})).status,400);
  }finally{await app.close();rmSync(dir,{recursive:true,force:true})}

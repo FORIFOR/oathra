@@ -7,14 +7,19 @@ describe('editable purpose templates',()=>{
    for(const template of PHONE_PURPOSE_TEMPLATES) for(const language of ['ja','en'] as const) {
      expect(template.title[language].length).toBeGreaterThan(0);
      expect(template.instruction[language].length).toBeLessThanOrEqual(2000);
-     // Chat is ready to edit/use without requiring the caller to provide their own name.
-     expect(PhoneRequestFieldsSchema.shape.instruction.safeParse(template.instruction[language]).success).toBe(template.id === 'chat');
+     // Chat and the AI news briefing are ready to use without requiring the caller to provide their own name.
+     expect(PhoneRequestFieldsSchema.shape.instruction.safeParse(template.instruction[language]).success).toBe(template.id === 'chat' || template.id === 'ai-news');
    }
  });
  it('exposes a named chat template with explicit mode rather than inferring permissions from text',()=>{
    const chat=PHONE_PURPOSE_TEMPLATES.find(t=>t.id==='chat')!;
    expect(chat.title.ja).toBe('雑談');expect(chat.conversationMode).toBe('chat');
    expect(chat.instruction.ja).toContain('ニュース');
+ });
+ it('the AI news briefing is a chat call (the only kind with the news lookup) and walks through the requested steps',()=>{
+   const news=PHONE_PURPOSE_TEMPLATES.find(t=>t.id==='ai-news')!;
+   expect(news.conversationMode).toBe('chat');
+   for(const step of ['解説','知っておいた方が良い情報','AIとしての考え','満足','これからも','他にどういった分野','調べ直して','特にない','別のニュース','反応や様子を伺い','「失礼します」']) expect(news.instruction.ja).toContain(step);
  });
  it('accepts a user-written purpose without substitution markup',()=>{
    expect(PhoneRequestFieldsSchema.shape.instruction.safeParse('電話の使い方について、説明を聞きたいと伝えてください。').success).toBe(true);

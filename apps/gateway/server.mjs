@@ -62,7 +62,8 @@ export function configuration(env=process.env){
 const assets=new Map([['/',['app/index.html','text/html; charset=utf-8']],['/workspace',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']],['/managed-phone.js',['managed-phone.js','text/javascript; charset=utf-8']],['/managed-phone.css',['managed-phone.css','text/css; charset=utf-8']],['/oathra-mark.png',['oathra-mark.png','image/png']],['/oathra-mark-original.png',['oathra-mark-original.png','image/png']],['/app',['app/index.html','text/html; charset=utf-8']],['/app/',['app/index.html','text/html; charset=utf-8']],['/app/app.js',['app/app.js','text/javascript; charset=utf-8']],['/app/style.css',['app/style.css','text/css; charset=utf-8']],['/app/mark.png',['app/mark.png','image/png']]]);
 for (const name of ['main','dom','messages','receipt','news','client','contacts','account','bookings']) assets.set(`/phone/${name}.js`,[`phone/${name}.js`,'text/javascript; charset=utf-8']);
 // One short recorded sample per voice, from the fixed voice list only; never a path taken from the request.
-for (const voice of PHONE_VOICES) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
+// Only recorded samples are served; a voice without one (the 9 added 2026-09-29) has no route.
+for (const voice of PHONE_VOICES) if (existsSync(repoUrl(`apps/gateway/public/phone/voices/${voice}.wav`))) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
 /** Behind a reverse proxy every socket belongs to the proxy; without this all clients would share one bucket. */
 export function clientIp(req,trustProxy){
   const direct=req.socket?.remoteAddress??'local';if(!trustProxy)return direct;
@@ -219,6 +220,8 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/products')return send(res,201,service.product(u,data));
       if(method==='POST'&&path==='/v1/contacts')return send(res,201,service.contact(u,data,req.headers['idempotency-key']));
       if(method==='GET'&&path==='/v1/contacts')return send(res,200,store.list('contact',u.id));
+      const contactPath=path.match(/^\/v1\/contacts\/([a-f0-9-]{36})$/);
+      if(method==='DELETE'&&contactPath)return send(res,200,service.removeContact(u,contactPath[1]));
       if(method==='POST'&&path==='/v1/phone/verify')return send(res,200,await phone.verifyNumber(u,data));
       if(method==='POST'&&path==='/v1/links')return send(res,201,{message:'連携 '+service.linkCode(u),expiresInSeconds:300});
       if(method==='POST'&&path==='/v1/missions/draft')return send(res,201,service.prepare(u,data));
