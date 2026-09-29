@@ -85,10 +85,12 @@ const PhoneNumberSchema = z.string().transform((value, ctx) => {
 });
 
 /**
- * Voices the GPT-Live engine accepts (checked against the API on 2026-09-21; an unknown name is refused
- * there with "Voice session access denied"). A voice is fixed for the whole call.
+ * Voices the GPT-Live engine accepts: all 22 of the API's BuiltInVoice. Each one opened a session
+ * (session.started) on 2026-09-21 (the first 13) and 2026-09-29 (alloy … verse); an unknown name is refused
+ * there with "Voice session access denied". A voice is fixed for the whole call.
  */
-export const PHONE_VOICES = ["marin", "quartz", "ripple", "vesper", "willow", "stone", "gleam", "meridian", "bossa", "tempo", "beacon", "delta", "cinder"] as const;
+export const PHONE_VOICES = ["marin", "quartz", "ripple", "vesper", "willow", "stone", "gleam", "meridian", "bossa", "tempo", "beacon", "delta", "cinder",
+  "alloy", "ash", "ballad", "cedar", "coral", "echo", "sage", "shimmer", "verse"] as const;
 export const DEFAULT_PHONE_VOICE = "marin";
 /**
  * Engines a request may ask for. Absent keeps the server's configured engine. `gpt-live` and `gemini-live` are

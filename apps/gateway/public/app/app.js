@@ -55,6 +55,9 @@ const ERRORS = {
   contact_relationship_required: '営業の電話には、連絡先に「この相手との関係」（問い合わせ・既存のお客さま・同意済み）が必要です。連絡先で登録してください。',
   contact_basis_required: '営業の電話には、連絡先に「電話してよい根拠」が必要です。連絡先で書いてください。',
   select_one_reviewed_product: '紹介する商品を選んでください（設定の「商品」で登録できます）。',
+  contact_has_active_call: 'この相手への電話が進行中です。終わってから削除してください。',
+  invalid_contact_phone: '電話番号を確かめてください（例：090-1234-5678、03-5555-0142、+81 90-1234-5678）。',
+  phone_has_trunk_prefix_after_country_code: '+81 のあとの最初の 0 は外してください（例：+81 90-1234-5678）。',
   select_one_contact: '連絡先から相手を選んでください。', contact_phone_required: 'この相手には電話番号がありません。',
   product_facts_require_review: '内容を確かめたことにチェックを入れてください。',
   unknown_practice_brain: 'このAIは、いまの起動では使えません。', unknown_practice_record: 'この記録は見つかりません。', unknown_practice: 'この練習は見つかりません。',
@@ -346,7 +349,7 @@ async function ask() {
   const st = app.status, b = app.boot, contacts = b.contacts.filter(c => c.phone);
   const from = app.history.find(r => r.id === (params.get('again') || params.get('draft')));
   const pre = from?.request ?? {}, preContact = params.get('contact') ? b.contacts.find(c => c.id === params.get('contact')) : null;
-  const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '', engine: pre.engine ?? '',
+  const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '', voiceName: pre.voice ?? '', engine: pre.engine ?? '',
     purpose: from?.sales ? from.goal : pre.conversationMode === 'chat' ? 'chat' : '', contactId: preContact?.id ?? (from ? b.contacts.find(c => c.phone === pre.phone)?.id : undefined) ?? null, productId: from?.product?.id ?? b.products[0]?.id ?? '' };
   const scoped = splitScope(form.instruction); form.instruction = scoped.body; form.ok = scoped.ok; form.hold = scoped.hold;
   let review = null, suggested = !form.instruction;
@@ -354,18 +357,18 @@ async function ask() {
   // What kind of call: grouped the way people think of them. A template kind brings fields for its {{…}} blanks;
   // the sales kinds need a contact and a product; 自由に書く is a request in plain words.
   const GROUPS = [['shop', 'お店・窓口', ['reserve', 'availability', 'opening-hours', 'stock', 'delivery', 'lost-property', 'change-policy', 'business-contact']],
-    ['people', '知り合い', ['friend-check-in', 'meetup', 'late', 'callback', 'thanks', 'chat']], ['work', '仕事（営業）', ['meeting', 'materials', 'introduce']], ['free', '自由に書く', ['']]];
+    ['people', '知り合い', ['friend-check-in', 'meetup', 'late', 'callback', 'thanks', 'chat', 'ai-news']], ['work', '仕事（営業）', ['meeting', 'materials', 'introduce']], ['free', '自由に書く', ['']]];
   const SALES_TITLE = { meeting: '商談の日時を決める', materials: '資料を送ってよいか聞く', introduce: '商品を説明する' };
   const kindTitle = k => k === '' ? '自由に書く' : SALES_TITLE[k] ?? app.templates.find(t => t.id === k)?.title?.ja ?? k;
   const tpl = () => app.templates.find(t => t.id === form.kind);
   const blanks = () => [...new Set([...(tpl()?.instruction?.ja ?? '').matchAll(/\{\{([^{}]+)\}\}/g)].map(m => m[1]))];
-  form.kind = from?.sales ? from.goal : pre.task === 'reservation' ? 'reserve' : pre.conversationMode === 'chat' ? 'chat' : (params.get('kind') ?? '');
+  form.kind = from?.sales ? from.goal : pre.task === 'reservation' ? 'reserve' : pre.conversationMode === 'chat' ? (pre.instruction && pre.instruction === app.templates.find(t => t.id === 'ai-news')?.instruction?.ja ? 'ai-news' : 'chat') : (params.get('kind') ?? '');
   form.fill = {};
   const SALES_TEXT = { meeting: n => `${n}に商品を説明して、興味があれば15分の商談の日時を相談してください。`, materials: n => `${n}に商品を簡単に説明して、資料を送ってよいか聞いてください。`, introduce: n => `${n}に商品を簡単に説明してください。` };
   const isSales = () => Boolean(SALES_TEXT[form.purpose]);
   if (tpl()) { form.mode = tpl().conversationMode ?? ''; if (form.kind === 'chat') form.purpose = 'chat'; }
   if (SALES_TEXT[form.kind]) form.purpose = form.kind;
-  const setKind = k => { form.kind = k; form.purpose = SALES_TEXT[k] ? k : k === 'chat' ? 'chat' : ''; form.mode = tpl()?.conversationMode ?? ''; form.fill = {}; suggested = true; drawKind(); suggest(); changed(); };
+  const setKind = k => { form.kind = k; form.purpose = SALES_TEXT[k] ? k : k === 'chat' ? 'chat' : ''; form.mode = tpl()?.conversationMode ?? ''; form.fill = {}; suggested = true; drawKind(); syncEngine(); suggest(); changed(); };
   // 音声AI: which engine speaks, shown with its model (gpt-live-1, gemini-3.8-live). The acting voice is the slow one.
   const engineName = e => e.id === 'character-tts' ? '演技する声（Gemini TTS）' : e.label.replace(/\s*\((.+)\)$/, '（$1）');
   const engineNote = e => !e.ready ? '（このサーバーでは使えません）' : e.id === 'character-tts' ? ' · 返事まで2〜3秒' : ' · すぐ返事';
@@ -379,13 +382,50 @@ async function ask() {
   const name = el('input', { type: 'text', id: 'ask-name', value: form.name, placeholder: '相手の名前' });
   const instruction = el('textarea', { id: 'ask-instruction', placeholder: '例：10月3日（土）の夜に2名で予約を取ってほしい。できれば19時。名前は田中。' }); instruction.value = form.instruction;
 
-  const voice = el('select', { id: 'ask-voice' }, el('option', { value: '', text: '標準の声' }),
+  const voice = el('select', { id: 'ask-voice' }, el('option', { value: '', text: '標準' }),
     ...Object.entries(st.voicePresets ?? {}).map(([id, label]) => el('option', { value: id, text: label })));
   voice.value = form.preset;
-  const sampleFor = preset => { const id = engineFor(), eng = (st.engines ?? []).find(e => e.id === id); if (id !== 'gpt-live' || !eng) return ''; const v = (preset && eng.presetVoices?.[preset]) || eng.defaultVoice; return st.voiceDetails?.[v]?.sample ?? ''; };
+  // 声: every voice the chosen engine accepts (GPT-Live 22, Gemini 30). おまかせ keeps the 話し方's own voice.
+  const PITCH_JA = { low: '低め', mid: 'ふつう', high: '高め', 'very-high': 'かなり高め' };
+  const voiceName = el('select', { id: 'ask-voice-name', 'aria-describedby': 'ask-voice-note' });
+  const voiceNote = el('p', { class: 'note', id: 'ask-voice-note' });
+  // The voice last chosen for each engine comes back when that engine is chosen again.
+  const voiceByEngine = {};
+  function fillVoices() {
+    const eng = (st.engines ?? []).find(e => e.id === engineFor()), keep = voiceByEngine[engineFor()] ?? form.voiceName;
+    voiceName.replaceChildren(el('option', { value: '', text: 'おまかせ（話し方に合わせる）' }), ...(eng?.voices ?? []).map(v => {
+      const d = st.voiceDetails?.[v], trait = eng.voiceTraits?.[v] ?? (d ? `高さ ${PITCH_JA[d.pitch] ?? d.pitch}` : '');
+      return el('option', { value: v, text: [v, trait, v === eng.defaultVoice ? '標準' : ''].filter(Boolean).join(' · ') });
+    }));
+    voiceName.value = (eng?.voices ?? []).includes(keep) ? keep : '';
+    form.voiceName = voiceName.value;
+    noteVoice();
+  }
+  // A chosen voice outranks the 話し方's own voice; the 話し方 then sets only the way of speaking.
+  function noteVoice() {
+    voiceNote.textContent = voiceName.value
+      ? `声は ${voiceName.value} を使います。話し方は口調だけに効きます。${st.voiceDetails?.[voiceName.value]?.sample ? '' : 'この声は試聴できません。'}`
+      : '試聴できるのは、計測済みの GPT-Live の声だけです。';
+  }
+  const sampleFor = preset => { const id = engineFor(), eng = (st.engines ?? []).find(e => e.id === id); if (id !== 'gpt-live' || !eng) return ''; const v = voiceName.value || (preset && eng.presetVoices?.[preset]) || eng.defaultVoice; return st.voiceDetails?.[v]?.sample ?? ''; };
   const voiceSample = sampleButton(sampleFor(form.preset));
   const resample = () => { sampleAudio?.pause(); voiceSample.dataset.url = sampleFor(voice.value); voiceSample.hidden = !voiceSample.dataset.url; voiceSample.setAttribute('aria-pressed', 'false'); voiceSample.textContent = '▶ 声を聞く'; };
-  engineSel.addEventListener('change', () => { form.engine = engineSel.value; resample(); changed(); });
+  fillVoices(); resample();
+  engineSel.addEventListener('change', () => { form.engine = engineSel.value; fillVoices(); resample(); changed(); });
+  voiceName.addEventListener('change', () => { form.voiceName = voiceName.value; voiceByEngine[engineFor()] = voiceName.value; noteVoice(); resample(); changed(); });
+  // AIニュースを届ける needs the news lookup, which only GPT-Live has; the other voices would have to say they cannot check.
+  const engineHint = el('p', { class: 'note', id: 'ask-engine-note', hidden: true });
+  let engineBeforeNews = null;
+  function syncEngine() {
+    const news = form.kind === 'ai-news', live = (st.engines ?? []).find(e => e.id === 'gpt-live');
+    for (const o of engineSel.options) o.disabled = !(st.engines ?? []).find(e => e.id === o.value)?.ready || (news && o.value !== 'gpt-live');
+    if (news && live?.ready && engineSel.value !== 'gpt-live') { engineBeforeNews = engineSel.value; engineSel.value = 'gpt-live'; form.engine = 'gpt-live'; fillVoices(); resample(); }
+    // Leaving AIニュース gives back the voice AI chosen before it.
+    if (!news && engineBeforeNews) { engineSel.value = engineBeforeNews; form.engine = engineBeforeNews; engineBeforeNews = null; fillVoices(); resample(); }
+    engineHint.hidden = !news;
+    engineHint.textContent = live?.ready ? 'ニュースを調べられるのは GPT-Live だけなので、この電話は GPT-Live で話します。' : 'このサーバーでは GPT-Live が使えないため、この電話ではニュースを調べられません。';
+  }
+  syncEngine();
   voice.addEventListener('change', () => { sampleAudio?.pause(); voiceSample.dataset.url = sampleFor(voice.value); voiceSample.hidden = !voiceSample.dataset.url; voiceSample.setAttribute('aria-pressed', 'false'); voiceSample.textContent = '▶ 声を聞く'; });
   const chips = el('div', { class: 'chips', role: 'group', 'aria-label': '連絡先から選ぶ' }, ...contacts.slice(0, 8).map(c => el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c.id === form.contactId), 'data-id': c.id, text: c.name || c.company,
     onclick: () => { phone.value = displayPhone(c.phone); name.value = c.name || c.company; form.contactId = c.id; suggest(); changed(); } })));
@@ -448,7 +488,7 @@ async function ask() {
   const consented = b.account?.consentVersion === b.configuration.consentVersion;
   const consentAgree = el('input', { type: 'checkbox', id: 'ask-consent' });
 
-  function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value, engine: engineSel.value }; }
+  function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value, voiceName: voiceName.value, engine: engineSel.value }; }
   function changed() {
     review = null; consentBox.checked = false;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
@@ -481,7 +521,8 @@ async function ask() {
       el('dt', { text: '通話の上限' }), el('dd', { text: `${Math.round((review?.mission.maxSeconds ?? 180) / 60)}分で切ります` }),
       el('dt', { text: '費用の目安' }), el('dd', { text: review ? (review.mission.mode === 'simulator' ? '練習なので0円' : review.mission.creditQuote?.mode === 'credits' ? `${review.mission.creditQuote.amount} クレジット（確保）` : `最大 約$${review.mission.estimatedMaximumUsd.toFixed(2)}（上限 $${review.mission.maxUsd}）`) : '内容を確かめると表示します' }),
       el('dt', { text: '音声AI' }), el('dd', { class: 'num', text: engineLabel(v.engine) }),
-      el('dt', { text: '声' }), el('dd', { text: v.preset ? (st.voicePresets[v.preset] ?? v.preset) : '標準の声' }));
+      el('dt', { text: '話し方' }), el('dd', { text: v.preset ? (v.voiceName ? (st.voicePresets[v.preset] ?? v.preset).replace(/・(女性|男性)声$/, '（口調のみ）') : (st.voicePresets[v.preset] ?? v.preset)) : '標準' }),
+      el('dt', { text: '声' }), el('dd', { class: 'num', text: v.voiceName || 'おまかせ' }));
     const warns = [];
     // The setup details are for whoever runs the server: one line here, the details in 設定.
     if (!st.ready) warns.push(el('p', { class: 'warnbox' }, b.configuration.mode === 'live' ? '本番の電話の設定が終わっていないので、まだかけられません。' : '練習モードなので、実際の電話はかけられません。', el('a', { href: '#/settings', text: '設定で確かめる' })));
@@ -492,7 +533,10 @@ async function ask() {
     // Sales calls also run in practice mode (the scripted partner answers); other requests need a real line.
     const practiceSales = isSales() && b.configuration.mode === 'simulator';
     if (practiceSales) warns.splice(0, warns.length, ...warns.filter(w => !/練習モードなので/.test(w.textContent)), el('p', { class: 'warnbox', text: '練習モード：実際の電話はかからず、練習用の相手と話します。費用はかかりません。' }));
-    const canCheck = !blocked && !liveNow && (st.ready || practiceSales);
+    // AIニュースを届ける is pointless without the news lookup: no GPT-Live, no such call.
+    const newsBlocked = form.kind === 'ai-news' && !(st.engines ?? []).find(e => e.id === 'gpt-live')?.ready;
+    if (newsBlocked && st.ready) warns.push(el('p', { class: 'warnbox', text: 'このサーバーでは GPT-Live が使えないため、ニュースを調べられません。この種類の電話はかけられません。' }));
+    const canCheck = !blocked && !liveNow && !newsBlocked && (st.ready || practiceSales);
     check.disabled = !canCheck || Boolean(review);
     go.disabled = !review || !consentBox.checked;
     side.replaceChildren(
@@ -521,7 +565,7 @@ async function ask() {
         const empty = blanks().filter(k => !(form.fill[k] ?? '').trim());
         if (tpl() && form.kind !== 'chat' && suggested && empty.length) throw new Error(`「${empty.join('」「')}」を入れてください。`);
         review = await api('/phone/draft', { method: 'POST', body: { phone: v.phone, name: v.name, instruction: v.instruction, ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
-        ...(form.mode ? { conversationMode: form.mode } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}) } });
+        ...(form.mode ? { conversationMode: form.mode } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}), ...(engine && v.voiceName ? { voice: v.voiceName } : {}) } });
       }
       review.key = crypto.randomUUID();
       renderSide(); consentBox.focus();
@@ -546,8 +590,9 @@ async function ask() {
       field('何をしてほしいか', 'ふだんの言葉で。種類から作った文も書き換えられます', instruction, productRow),
       scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
       voiceField = field('声', '話すAIと声。判定は、どれでも同じです', el('div', { class: 'stack tight' },
-        el('label', { class: 'lbl', for: 'ask-engine', text: '音声AI' }), engineSel,
-        el('label', { class: 'lbl', for: 'ask-voice', text: '声' }), el('div', { class: 'play-row' }, voice, voiceSample)),
+        el('label', { class: 'lbl', for: 'ask-engine', text: '音声AI' }), engineSel, engineHint,
+        el('label', { class: 'lbl', for: 'ask-voice', text: '話し方' }), voice,
+        el('label', { class: 'lbl', for: 'ask-voice-name', text: '声' }), el('div', { class: 'play-row' }, voiceName, voiceSample), voiceNote),
         el('p', { class: 'note', text: b.account?.callerName ? `AIは「${b.account.callerName}の代わり」と名乗ります。` : 'AIが名乗る名前は、設定の「かける設定」で決められます。' }))),
     side);
   drawKind();
@@ -869,33 +914,51 @@ async function contacts(id) {
   const items = el('div', { class: 'list' });
   const draw = () => {
     const w = q.value.trim(), shown = list.filter(c => !w || [c.name, c.company, c.phone].some(x => x && x.includes(w)));
-    items.replaceChildren(...(shown.length ? shown.map(c => el('button', { class: 'item', type: 'button', 'aria-current': String(c.id === sel?.id), onclick: () => { location.hash = `#/contacts/${c.id}`; } },
+    items.replaceChildren(...(shown.length ? shown.map(c => el('button', { class: 'item', type: 'button', 'aria-current': String(c.id === sel?.id), onclick: () => { if (keepEdits()) location.hash = `#/contacts/${c.id}`; } },
       el('span', { class: 'avatar', text: (c.name || c.company || '?').slice(0, 1) }), el('span', {}, el('b', { text: c.name || c.company }), el('span', { class: 'num', text: [c.company && c.name ? c.company : '', displayPhone(c.phone) || '電話番号なし'].filter(Boolean).join(' · ') }))))
       : [el('p', { class: 'empty', text: list.length ? '見つかりません。' : 'まだ連絡先がありません。' })]));
   };
   q.addEventListener('input', draw); draw();
-  const addForm = el('form', { class: 'card stack', hidden: true, onsubmit: async e => {
+  // One form adds a contact or edits the selected one; editing sends its id and every field shown.
+  let editing = null, dirty = false;
+  // Unsaved typing is not dropped silently: leaving it asks first.
+  const keepEdits = () => addForm.hidden || !dirty || confirm('保存していない変更があります。変更を捨てますか？');
+  const formTitle = el('h2', { text: '連絡先を追加' });
+  const addForm = el('form', { class: 'card stack contact-form', hidden: true, oninput: () => { dirty = true; }, onsubmit: async e => {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    try { const saved = await api('/contacts', { method: 'POST', body: { name: f.get('name'), company: f.get('company'), phone: f.get('phone'), notes: f.get('notes'), relationship: f.get('relationship'), basis: f.get('basis') } }); app.boot = null; await loadAll(); location.hash = `#/contacts/${saved.id}`; toast('保存しました。'); }
+    try { const saved = await api('/contacts', { method: 'POST', body: { ...(editing ? { id: editing.id } : {}), name: f.get('name'), company: f.get('company'), phone: f.get('phone'), notes: f.get('notes'), relationship: f.get('relationship'), basis: f.get('basis') } }); app.boot = null; await loadAll(); if (location.hash === `#/contacts/${saved.id}`) route(); else location.hash = `#/contacts/${saved.id}`; toast('保存しました。'); }
     catch (err) { toast(err.message); }
-  } }, el('h2', { text: '連絡先を追加' }),
+  } }, formTitle,
     el('label', { class: 'lbl', text: '名前' }), el('input', { type: 'text', name: 'name' }),
     el('label', { class: 'lbl', text: '会社・お店（任意）' }), el('input', { type: 'text', name: 'company' }),
     el('label', { class: 'lbl', text: '電話番号（任意）' }), el('input', { type: 'tel', name: 'phone' }),
     el('label', { class: 'lbl', text: 'この相手との関係（営業の電話に必要）' }), el('select', { name: 'relationship' }, el('option', { value: '', text: '指定しない' }), el('option', { value: 'inquiry', text: '問い合わせをもらった' }), el('option', { value: 'customer', text: '既存のお客さま' }), el('option', { value: 'consented', text: '電話の同意をもらった' })),
     el('label', { class: 'lbl', text: '電話してよい根拠（営業の電話に必要）' }), el('input', { type: 'text', name: 'basis', placeholder: '例：9/20 に資料請求フォームから問い合わせ' }),
     el('label', { class: 'lbl', text: 'メモ（任意・AIには渡しません）' }), el('textarea', { name: 'notes' }),
-    el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'submit', text: '保存する' })));
+    el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'button', text: 'やめる', onclick: () => { if (keepEdits()) closeForm(); } }), el('button', { class: 'btn primary', type: 'submit', text: '保存する' })));
+  const closeForm = () => { addForm.hidden = true; dirty = false; if (detail) detail.hidden = false; };
+  const openForm = c => {
+    if (!keepEdits()) return;
+    editing = c; dirty = false; if (detail) detail.hidden = !!c; formTitle.textContent = c ? '連絡先を編集' : '連絡先を追加'; addForm.reset();
+    if (c) for (const [k, v] of Object.entries({ name: c.name, company: c.company, phone: displayPhone(c.phone), relationship: c.relationship, basis: c.basis, notes: c.notes })) addForm.elements[k].value = v ?? '';
+    addForm.hidden = false; addForm.querySelector('input').focus();
+  };
+  const remove = async () => {
+    if (!confirm(`「${sel.name || sel.company}」を連絡先から削除しますか？\n過去の通話の記録と、「今後は連絡しない」の設定は残ります。`)) return;
+    try { await api(`/contacts/${sel.id}`, { method: 'DELETE' }); app.contactSel = null; app.boot = null; await loadAll(); if (location.hash === '#/contacts') route(); else location.hash = '#/contacts'; toast('削除しました。'); }
+    catch (err) { toast(err.message); }
+  };
   const calls = sel ? app.history.filter(r => r.request.phone === sel.phone) : [];
   const detail = sel ? el('div', { class: 'card' },
     el('div', { class: 'metric-k' }, el('div', { class: 'split' }, el('span', { class: 'avatar big', text: (sel.name || sel.company || '?').slice(0, 1) }), el('div', {}, el('h1', { class: 'headline', text: sel.name || sel.company }), el('span', { text: sel.name ? sel.company : '' }))),
-      sel.phone ? el('a', { class: 'btn primary', href: `#/new?contact=${sel.id}`, text: 'この相手に電話を頼む' }) : null),
+      el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'button', text: '編集', onclick: () => openForm(sel) }), el('button', { class: 'btn', type: 'button', text: '削除', onclick: remove }),
+        sel.phone ? el('a', { class: 'btn primary', href: `#/new?contact=${sel.id}`, text: 'この相手に電話を頼む' }) : null)),
     el('dl', { class: 'defs left' }, el('dt', { text: '電話番号' }), el('dd', { class: 'num', text: displayPhone(sel.phone) || '—' }), el('dt', { text: 'メール' }), el('dd', { text: sel.email || '—' }), el('dt', { text: 'メモ' }), el('dd', { text: sel.notes || '—' }),
       el('dt', { text: '関係' }), el('dd', { text: { inquiry: '問い合わせをもらった', customer: '既存のお客さま', consented: '電話の同意をもらった' }[sel.relationship] ?? '—（営業の電話には必要）' }), el('dt', { text: '根拠' }), el('dd', { text: sel.basis || '—' })),
     el('h2', { class: 'section-h', text: 'この番号への電話' }), el('p', { class: 'note', text: '電話番号で照合しています。メモや履歴は、AIに自動では渡しません。' }), callRows(calls, 'まだありません。'))
     : el('div', { class: 'card' }, el('p', { class: 'muted', text: '連絡先を追加すると、ここに出ます。' }));
   return el('div', { class: 'page' }, el('div', { class: 'split-page' },
-    el('div', { class: 'stack' }, el('div', { class: 'page-h' }, el('h1', { text: '連絡先' }), el('button', { class: 'btn', type: 'button', text: '＋ 追加', onclick: () => { addForm.hidden = !addForm.hidden; if (!addForm.hidden) addForm.querySelector('input').focus(); } })), q, items),
+    el('div', { class: 'stack' }, el('div', { class: 'page-h' }, el('h1', { text: '連絡先' }), el('button', { class: 'btn', type: 'button', text: '＋ 追加', onclick: () => { if (addForm.hidden || editing) openForm(null); else if (keepEdits()) closeForm(); } })), q, items),
     el('div', { class: 'stack' }, addForm, detail)));
 }
 

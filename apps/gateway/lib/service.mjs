@@ -69,11 +69,24 @@ export class Service {
     assert(name || company, 'contact_name_or_company_required');
     const relationship = optional(input.relationship, 30);
     assert(!relationship || ['inquiry','customer','consented'].includes(relationship), 'contact_relationship_required');
-    const record = { id: old?.id ?? randomUUID(), owner: u.id, name, company, phone: input.phone == null || (typeof input.phone === 'string' && !input.phone.trim()) ? '' : phone(input.phone), relationship,
+    // The number as people write it (090-1234-5678) is saved as E.164, as the call form does.
+    let contactPhone = '';
+    if (!(input.phone == null || (typeof input.phone === 'string' && !input.phone.trim()))) {
+      try { contactPhone = phone(normalizePhoneNumber(String(input.phone))); }
+      catch (error) { if (error instanceof Fault) throw error; throw new Fault(400, 'invalid_contact_phone'); }
+    }
+    const record = { id: old?.id ?? randomUUID(), owner: u.id, name, company, phone: contactPhone, relationship,
       notes: optional(input.notes, 4000), lastCallNotes: optional(input.lastCallNotes, 4000), basis: optional(input.basis, 1000), email: String(input.email ?? '').trim(), crmId: String(input.crmId ?? '').trim(), simulationOnly: input.simulationOnly === undefined ? (old?.simulationOnly ?? false) : input.simulationOnly === true };
     assert(!record.crmId || /^\d{1,30}$/.test(record.crmId), 'invalid_crm_contact_id');
     assert(!record.email || /^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/.test(record.email), 'invalid_email');
     this.store.audit(u.id, 'contact.saved', record.id); return this.store.put('contact', record);
+  }
+  // Deleting a contact keeps the team's do-not-contact list (keyed by number) and past calls; a call on its way is not orphaned.
+  removeContact(u, id) {
+    this.write(u); const c = this.own('contact', id, u);
+    assert(!this.store.all('mission', u.id).some(m => m.target?.id === c.id && m.status !== 'DRAFT' && !terminal(m.status)), 'contact_has_active_call', 409);
+    this.store.tx(() => { this.store.remove('contact', c.id); this.store.audit(u.id, 'contact.deleted', c.id); });
+    return { deleted: true };
   }
   phoneRequest(u, input, origin, sourceKey) {
     assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);

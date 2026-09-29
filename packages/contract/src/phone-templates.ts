@@ -8,6 +8,15 @@ export const PHONE_PURPOSE_TEMPLATES = [
       en: "Chat naturally as an AI conversation partner about their day, hobbies, food or weekend plans. Do not fire off questions: react to what they share, agree, offer an analogy, a shared view or a light piece of advice, and let it build like a talk between friends. When asked about news, check current information and mention its date and source.",
     },
   },
+  // A news briefing: a chat call (only chat calls get the public news lookup, and only on GPT-Live), no blanks to fill.
+  {
+    id: "ai-news", conversationMode: "chat",
+    title: { ja: "AIニュースを届ける", en: "Share AI news" },
+    instruction: {
+      ja: "AI・テック系のニュースを届ける電話です。です・ます調の丁寧な言葉で、一度に話しすぎないように話してください。\n1. AIによる代理電話であることを伝え、今少し話せるか確認して、返事を待ってください。\n2. 話せる場合は、直近のAI・テック系ニュースを調べて一つ選び、ニュースの解説、知っておいた方が良い情報、それに対するAIとしての考えの順に話してください。一方的に話し続けず、一つ話すごとに相手の反応や様子を伺い、相手の興味に合わせて話を深めたり短くしたりしてください。\n3. 話し終えたら、欲しかった情報で満足できたかを聞いて返事を待ち、次に、これからもこのような情報が欲しいかを聞いてください。質問は一度に一つにしてください。\n4. いらない・満足していないと言われたら、他にどういった分野の情報が欲しいかを聞き、その分野について調べ直して、おすすめの情報を同じように解説してください。\n5. 特にないと言われたら、AI分野の別のニュースを調べ、先ほどとは違う話題を選んで同じように伝えてください。\n6. 相手が忙しい、もう十分と言ったらお礼を伝えて終了し、「切って」と言われたら「失礼します」とだけ言ってすぐに切ってください。",
+      en: "A call that shares AI and tech news. Speak politely and do not say too much at once.\n1. Say this is an AI calling on someone's behalf, ask whether now is a good time, and wait for the answer.\n2. If it is, look up recent AI and tech news, pick one story, and give an explanation of it, what is worth knowing, and your view as an AI, in that order. Do not talk at them: after each part, check how they are taking it, and go deeper or keep it short to match their interest.\n3. Then ask whether that was the information they wanted and wait; next ask whether they would like news like this in future. One question at a time.\n4. If they do not want it or were not satisfied, ask what kind of information they would like, look that field up again, and explain a recommended item the same way.\n5. If they have nothing in mind, look up a different AI story and share it the same way.\n6. If they are busy or have heard enough, thank them and end the call; if they ask you to hang up, just say goodbye and hang up at once.",
+    },
+  },
   // The one template that books: it carries task "reservation" (definePhoneRequest widens only that call).
   {id:'reserve',task:'reservation',title:{ja:'予約を取る',en:'Make a reservation'},instruction:{ja:'{{自分の名前}}の代理として、{{希望日時}}に{{人数}}で予約を取ってください。予約の名前は{{予約の名前}}です。希望の時間が空いていない場合は、任せる範囲の中なら別の時間で予約し、範囲の外のことは決めずに持ち帰ってください。',en:'On behalf of {{your name}}, book {{party size}} for {{preferred date and time}} under the name {{booking name}}. If that time is taken, book another time only within what you were allowed to decide; bring anything else back undecided.'}},
   {id:'friend-check-in',title:{ja:'友人に近況を聞く',en:'Check in with a friend'},instruction:{ja:'{{相手に伝える自分の名前}}のAI代理として、今少し話せるか確認し、最近の様子を聞いてください。話せない場合は都合のよい折り返し時間を聞いて終了してください。',en:'As the AI assistant for {{your name}}, ask whether this is a good time and how they have been. If busy, ask for a suitable callback time and end the call.'}},

@@ -204,3 +204,14 @@ test('a monthly cap stops a call whose estimate would pass it, per Japanese cale
   // The next month starts from zero (JST month boundary).
   f.advance(40*86400_000); assert.equal(f.service.monthUsage(f.u).usedUsd,0);
 }));
+test('contacts accept a number as people write it and save it as E.164',withFixture(f=>{assert.equal(f.service.contact(f.u,{name:'山田',phone:'090-1234-5678'}).phone,'+819012345678');assert.equal(f.service.contact(f.u,{name:'店',phone:'03-5555-0142'}).phone,'+81355550142');assert.throws(()=>f.service.contact(f.u,{name:'x',phone:'12345'}),/invalid_contact_phone/);assert.throws(()=>f.service.contact(f.u,{name:'x',phone:'+81 090-1234-5678'}),/phone_has_trunk_prefix/);}));
+test('contacts can be edited in place and deleted; deletion keeps the do-not-contact list and waits for a call on its way',withFixture(f=>{
+  const c=f.service.contact(f.u,{name:'佐藤',phone:'090-1111-2222',notes:'memo'});
+  const edited=f.service.contact(f.u,{id:c.id,name:'佐藤さん',phone:'090-1111-3333',notes:''});
+  assert.equal(edited.id,c.id);assert.equal(edited.name,'佐藤さん');assert.equal(edited.phone,'+819011113333');assert.equal(edited.notes,'');
+  assert.throws(()=>f.service.removeContact(f.config.users.find(x=>x.role==='viewer'),c.id),/read_only_account/);
+  assert.throws(()=>f.service.removeContact(f.config.users[1],c.id),/not_found/);
+  f.store.suppress('one',edited.phone);assert.deepEqual(f.service.removeContact(f.u,c.id),{deleted:true});
+  assert.equal(f.store.get('contact',c.id),null);assert(f.store.suppressed('one','+819011113333'));assert.throws(()=>f.service.removeContact(f.u,c.id),/not_found/);
+  approve(f,f.draft());assert.throws(()=>f.service.removeContact(f.u,f.contact.id),/contact_has_active_call/);
+}));

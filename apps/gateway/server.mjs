@@ -219,6 +219,8 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/products')return send(res,201,service.product(u,data));
       if(method==='POST'&&path==='/v1/contacts')return send(res,201,service.contact(u,data,req.headers['idempotency-key']));
       if(method==='GET'&&path==='/v1/contacts')return send(res,200,store.list('contact',u.id));
+      const contactPath=path.match(/^\/v1\/contacts\/([a-f0-9-]{36})$/);
+      if(method==='DELETE'&&contactPath)return send(res,200,service.removeContact(u,contactPath[1]));
       if(method==='POST'&&path==='/v1/phone/verify')return send(res,200,await phone.verifyNumber(u,data));
       if(method==='POST'&&path==='/v1/links')return send(res,201,{message:'連携 '+service.linkCode(u),expiresInSeconds:300});
       if(method==='POST'&&path==='/v1/missions/draft')return send(res,201,service.prepare(u,data));

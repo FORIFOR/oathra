@@ -42,6 +42,7 @@ export class Store {
     if (status !== undefined) { sql += ' AND status=?'; args.push(status); }
     return this.db.prepare(sql + ' ORDER BY updated DESC LIMIT 1000').all(...args).map(r => this.open(r.body));
   }
+  remove(kind, id) { this.db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind, id); }
   /** Every record of a kind for an owner: a ledger cannot stop at the newest thousand. */
   all(kind, owner) { return this.db.prepare('SELECT body FROM records WHERE kind=? AND owner=?').all(kind, owner).map(r => this.open(r.body)); }
   /** Safety checks must consider every record, including those outside a UI listing page. */
