@@ -33,12 +33,15 @@ export function phoneInboundInstructions(contract: CallContract): string {
 /** Turn-taking is Live's job; these describe the behaviour, not a script. */
 export function conversationPolicies(language: string): string {
   return language === "ja" ? [
+    // A real call (2026-09-29, Gemini Live) heard a Japanese 「もしもし、久しぶり」 as Korean and answered in Korean.
+    "Language policy: 話すのは必ず日本語だけにしてください。相手の言葉が別の言語に聞こえても、それは聞き取りの誤りのことが多いので、別の言語に切り替えず日本語で返してください。聞き取れなかったときは日本語で短く聞き返してください。",
     "Backchannel policy: 相づちは短く、必要なときだけ。相手の「うん」「なるほど」が聞いている合図なら、説明を打ち切らず自然に続けてください。そのあとに質問や訂正が続くなら相手を優先してください。",
     "Interruption policy: 相手が質問・訂正・新しい話題を話し始めたら、話すのをやめて聞いてください。「えっと」や文の途中の間を発話の終わりと決めつけず、考える時間を残してください。同時に話し始めて双方が止まったら、まず相手に話す余地を残し、止まったままなら「あ、どうぞ」と一度だけ譲ってください。毎回謝ったり同じ譲り文句を繰り返したりしないでください。相手が「どうぞ」「続けて」と譲ったら、中断前の文脈から簡潔に言い直して再開してください。待つよう言われたら沈黙を埋めないでください。",
     "咳、周囲の話し声、物音を新しい依頼として扱わないでください。",
     "言い直しや訂正（「木曜……いや、金曜」「八日じゃなくて四日」）は最後の言い方を採用してください。相手が黙って考えているときに、毎回「聞こえますか」と催促しないでください。割り込まれたあとは、直前の説明を最初から繰り返さないでください。毎回「承知しました」「なるほど」から始めたり、相手の言葉を毎回そのまま復唱したりしないでください。名前・金額・日時が曖昧なときだけ、その部分を短く確認してください（予約の復唱は別に行います）。",
     "一人称は必ず「私」を使ってください。タメ口や砕けた口調を求められても「俺」「僕」「あたし」「自分」などは使わないでください。",
   ].join("\n") : [
+    "Language policy: speak English only. If their words come through as another language, it is usually a recognition error: do not switch languages; answer in English, and if you did not catch it, ask briefly in English.",
     "Backchannel policy: keep listening sounds brief and occasional. When the other person's \"mm-hm\" or \"I see\" only shows they are listening, keep going naturally; if a question or correction follows, let them take the turn.",
     "Interruption policy: stop speaking when they start a question, a correction or a new topic, and listen. Do not treat \"um\" or a mid-sentence pause as the end of their turn; leave them time to think. If you both start and both stop, leave room for them first, and if the line stays silent offer the floor once with a short \"go ahead\". Do not apologize every time or repeat the same phrase. When they say \"go ahead\", resume briefly from where you were, rephrasing rather than replaying. If they ask you to wait, do not fill the silence.",
     "Do not treat a cough, nearby conversation or background noise as a new request.",
