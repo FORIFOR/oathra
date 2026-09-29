@@ -82,9 +82,11 @@ export class Service {
     this.store.audit(u.id, 'contact.saved', record.id); return this.store.put('contact', record);
   }
   // Deleting a contact keeps the team's do-not-contact list (keyed by number) and past calls; a call on its way is not orphaned.
+  // Phone requests carry no contact id, so a call is matched by the contact or its number, as recipient_has_active_call is.
   removeContact(u, id) {
     this.write(u); const c = this.own('contact', id, u);
-    assert(!this.store.all('mission', u.id).some(m => m.target?.id === c.id && m.status !== 'DRAFT' && !terminal(m.status)), 'contact_has_active_call', 409);
+    assert(!this.store.all('mission', u.id).some(m => (m.target?.id === c.id || (c.phone && m.target?.phone === c.phone))
+      && ((m.status !== 'DRAFT' && !terminal(m.status)) || m.status === 'UNKNOWN' || m.stopNeedsReconciliation)), 'contact_has_active_call', 409);
     this.store.tx(() => { this.store.remove('contact', c.id); this.store.audit(u.id, 'contact.deleted', c.id); });
     return { deleted: true };
   }

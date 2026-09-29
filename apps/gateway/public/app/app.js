@@ -426,7 +426,7 @@ async function ask() {
     engineHint.textContent = live?.ready ? 'ニュースを調べられるのは GPT-Live だけなので、この電話は GPT-Live で話します。' : 'このサーバーでは GPT-Live が使えないため、この電話ではニュースを調べられません。';
   }
   syncEngine();
-  voice.addEventListener('change', () => { sampleAudio?.pause(); voiceSample.dataset.url = sampleFor(voice.value); voiceSample.hidden = !voiceSample.dataset.url; voiceSample.setAttribute('aria-pressed', 'false'); voiceSample.textContent = '▶ 声を聞く'; });
+  voice.addEventListener('change', resample);
   const chips = el('div', { class: 'chips', role: 'group', 'aria-label': '連絡先から選ぶ' }, ...contacts.slice(0, 8).map(c => el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c.id === form.contactId), 'data-id': c.id, text: c.name || c.company,
     onclick: () => { phone.value = displayPhone(c.phone); name.value = c.name || c.company; form.contactId = c.id; suggest(); changed(); } })));
   let group = GROUPS.find(g => g[2].includes(form.kind))?.[0] ?? 'shop';

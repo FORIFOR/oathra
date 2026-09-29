@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -214,4 +214,11 @@ test('contacts can be edited in place and deleted; deletion keeps the do-not-con
   f.store.suppress('one',edited.phone);assert.deepEqual(f.service.removeContact(f.u,c.id),{deleted:true});
   assert.equal(f.store.get('contact',c.id),null);assert(f.store.suppressed('one','+819011113333'));assert.throws(()=>f.service.removeContact(f.u,c.id),/not_found/);
   approve(f,f.draft());assert.throws(()=>f.service.removeContact(f.u,f.contact.id),/contact_has_active_call/);
+}));
+test('a phone request (no contact id) to the number, or an unknown outcome, also holds a contact deletion',withFixture(f=>{
+  const c=f.service.contact(f.u,{name:'鈴木',phone:'090-2222-3333'});
+  const call=status=>f.store.put('mission',{id:randomUUID(),owner:f.u.id,team:'one',status,kind:'phone-request',target:{name:'鈴木',phone:'+819022223333'}});
+  const live=call('ACTIVE');assert.throws(()=>f.service.removeContact(f.u,c.id),/contact_has_active_call/);
+  f.store.put('mission',{...live,status:'UNKNOWN'});assert.throws(()=>f.service.removeContact(f.u,c.id),/contact_has_active_call/);
+  f.store.put('mission',{...live,status:'COMPLETED'});call('DRAFT');assert.deepEqual(f.service.removeContact(f.u,c.id),{deleted:true});
 }));
