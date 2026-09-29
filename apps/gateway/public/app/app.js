@@ -346,7 +346,7 @@ async function ask() {
   const st = app.status, b = app.boot, contacts = b.contacts.filter(c => c.phone);
   const from = app.history.find(r => r.id === (params.get('again') || params.get('draft')));
   const pre = from?.request ?? {}, preContact = params.get('contact') ? b.contacts.find(c => c.id === params.get('contact')) : null;
-  const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '',
+  const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '', engine: pre.engine ?? '',
     purpose: from?.sales ? from.goal : pre.conversationMode === 'chat' ? 'chat' : '', contactId: preContact?.id ?? (from ? b.contacts.find(c => c.phone === pre.phone)?.id : undefined) ?? null, productId: from?.product?.id ?? b.products[0]?.id ?? '' };
   const scoped = splitScope(form.instruction); form.instruction = scoped.body; form.ok = scoped.ok; form.hold = scoped.hold;
   let review = null, suggested = !form.instruction;
@@ -366,18 +366,26 @@ async function ask() {
   if (tpl()) { form.mode = tpl().conversationMode ?? ''; if (form.kind === 'chat') form.purpose = 'chat'; }
   if (SALES_TEXT[form.kind]) form.purpose = form.kind;
   const setKind = k => { form.kind = k; form.purpose = SALES_TEXT[k] ? k : k === 'chat' ? 'chat' : ''; form.mode = tpl()?.conversationMode ?? ''; form.fill = {}; suggested = true; drawKind(); suggest(); changed(); };
-  const actingReady = st.engines?.find(e => e.id === 'character-tts')?.ready === true;
-  const engineFor = preset => preset?.startsWith('character-') && actingReady ? 'character-tts' : '';
+  // 音声AI: which engine speaks, shown with its model (gpt-live-1, gemini-3.8-live). The acting voice is the slow one.
+  const engineName = e => e.id === 'character-tts' ? '演技する声（Gemini TTS）' : e.label.replace(/\s*\((.+)\)$/, '（$1）');
+  const engineNote = e => !e.ready ? '（このサーバーでは使えません）' : e.id === 'character-tts' ? ' · 返事まで2〜3秒' : ' · すぐ返事';
+  const engineSel = el('select', { id: 'ask-engine', 'aria-describedby': 'ask-engine-note' }, ...(st.engines ?? []).map(e => el('option', { value: e.id, disabled: !e.ready, text: engineName(e) + engineNote(e) })));
+  const firstReady = (st.engines ?? []).find(e => e.id === (form.engine || st.defaultEngine) && e.ready) ?? (st.engines ?? []).find(e => e.ready);
+  engineSel.value = firstReady?.id ?? st.defaultEngine ?? '';
+  const engineFor = () => engineSel.value;
+  const engineLabel = id => { const e = (st.engines ?? []).find(x => x.id === id); return e ? engineName(e) : id; };
 
   const phone = el('input', { type: 'tel', id: 'ask-phone', value: displayPhone(form.phone), autocomplete: 'off', placeholder: '090-1234-5678' });
   const name = el('input', { type: 'text', id: 'ask-name', value: form.name, placeholder: '相手の名前' });
   const instruction = el('textarea', { id: 'ask-instruction', placeholder: '例：10月3日（土）の夜に2名で予約を取ってほしい。できれば19時。名前は田中。' }); instruction.value = form.instruction;
 
-  const voice = el('select', { id: 'ask-voice' }, el('option', { value: '', text: '標準の声（すぐ返事）' }),
-    ...Object.entries(st.voicePresets ?? {}).map(([id, label]) => el('option', { value: id, text: `${label}${engineFor(id) ? '（演技・返事まで2〜3秒）' : ''}` })));
+  const voice = el('select', { id: 'ask-voice' }, el('option', { value: '', text: '標準の声' }),
+    ...Object.entries(st.voicePresets ?? {}).map(([id, label]) => el('option', { value: id, text: label })));
   voice.value = form.preset;
-  const sampleFor = preset => { const id = engineFor(preset) || st.defaultEngine, eng = (st.engines ?? []).find(e => e.id === id); if (id !== 'gpt-live' || !eng) return ''; const v = (preset && eng.presetVoices?.[preset]) || eng.defaultVoice; return st.voiceDetails?.[v]?.sample ?? ''; };
+  const sampleFor = preset => { const id = engineFor(), eng = (st.engines ?? []).find(e => e.id === id); if (id !== 'gpt-live' || !eng) return ''; const v = (preset && eng.presetVoices?.[preset]) || eng.defaultVoice; return st.voiceDetails?.[v]?.sample ?? ''; };
   const voiceSample = sampleButton(sampleFor(form.preset));
+  const resample = () => { sampleAudio?.pause(); voiceSample.dataset.url = sampleFor(voice.value); voiceSample.hidden = !voiceSample.dataset.url; voiceSample.setAttribute('aria-pressed', 'false'); voiceSample.textContent = '▶ 声を聞く'; };
+  engineSel.addEventListener('change', () => { form.engine = engineSel.value; resample(); changed(); });
   voice.addEventListener('change', () => { sampleAudio?.pause(); voiceSample.dataset.url = sampleFor(voice.value); voiceSample.hidden = !voiceSample.dataset.url; voiceSample.setAttribute('aria-pressed', 'false'); voiceSample.textContent = '▶ 声を聞く'; });
   const chips = el('div', { class: 'chips', role: 'group', 'aria-label': '連絡先から選ぶ' }, ...contacts.slice(0, 8).map(c => el('button', { type: 'button', class: 'chip', 'aria-pressed': String(c.id === form.contactId), 'data-id': c.id, text: c.name || c.company,
     onclick: () => { phone.value = displayPhone(c.phone); name.value = c.name || c.company; form.contactId = c.id; suggest(); changed(); } })));
@@ -440,7 +448,7 @@ async function ask() {
   const consented = b.account?.consentVersion === b.configuration.consentVersion;
   const consentAgree = el('input', { type: 'checkbox', id: 'ask-consent' });
 
-  function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value }; }
+  function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value, engine: engineSel.value }; }
   function changed() {
     review = null; consentBox.checked = false;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
@@ -472,6 +480,7 @@ async function ask() {
     const facts = el('dl', { class: 'defs left' },
       el('dt', { text: '通話の上限' }), el('dd', { text: `${Math.round((review?.mission.maxSeconds ?? 180) / 60)}分で切ります` }),
       el('dt', { text: '費用の目安' }), el('dd', { text: review ? (review.mission.mode === 'simulator' ? '練習なので0円' : review.mission.creditQuote?.mode === 'credits' ? `${review.mission.creditQuote.amount} クレジット（確保）` : `最大 約$${review.mission.estimatedMaximumUsd.toFixed(2)}（上限 $${review.mission.maxUsd}）`) : '内容を確かめると表示します' }),
+      el('dt', { text: '音声AI' }), el('dd', { class: 'num', text: engineLabel(v.engine) }),
       el('dt', { text: '声' }), el('dd', { text: v.preset ? (st.voicePresets[v.preset] ?? v.preset) : '標準の声' }));
     const warns = [];
     // The setup details are for whoever runs the server: one line here, the details in 設定.
@@ -501,7 +510,8 @@ async function ask() {
     err.hidden = true; const v = values();
     try {
       if (!consented) { if (!consentAgree.checked) throw new Error('会話データの取り扱いへの同意にチェックを入れてください。'); await api('/consent', { method: 'POST', body: { version: b.configuration.consentVersion } }); b.account.consentVersion = b.configuration.consentVersion; }
-      const engine = engineFor(v.preset);
+      // Only an engine this server runs is sent; in practice mode none is, and the practice partner answers.
+      const engine = (st.engines ?? []).find(e => e.id === v.engine)?.ready ? v.engine : '';
       if (isSales()) {
         if (!form.contactId) throw new Error('営業の電話は、連絡先から相手を選んでください（連絡先の画面で登録できます）。');
         if (!form.productId) throw new Error('紹介する商品を選んでください（設定の「商品」で登録できます）。');
@@ -535,7 +545,9 @@ async function ask() {
       field('何の電話か', '種類を選ぶと、必要なことを聞きます', purposeChips),
       field('何をしてほしいか', 'ふだんの言葉で。種類から作った文も書き換えられます', instruction, productRow),
       scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
-      voiceField = field('声', '話し方と声。判定は、どの声でも同じです', el('div', { class: 'play-row' }, voice, voiceSample),
+      voiceField = field('声', '話すAIと声。判定は、どれでも同じです', el('div', { class: 'stack tight' },
+        el('label', { class: 'lbl', for: 'ask-engine', text: '音声AI' }), engineSel,
+        el('label', { class: 'lbl', for: 'ask-voice', text: '声' }), el('div', { class: 'play-row' }, voice, voiceSample)),
         el('p', { class: 'note', text: b.account?.callerName ? `AIは「${b.account.callerName}の代わり」と名乗ります。` : 'AIが名乗る名前は、設定の「かける設定」で決められます。' }))),
     side);
   drawKind();
@@ -565,7 +577,7 @@ async function call(id) {
     // The report: when and what it cost, the verdict and a one-line summary, then one row per field with the value,
     // what was asked for, the callee's words that settled it and where they are in the call.
     const summary = [r.request.name, ...notes.filter(n => n.status === 'verified' && n.field !== 'confirmed').map(n => fmtValue(n.field, n.value) + (n.field === 'time' ? 'から' : ''))].join(' · ');
-    const meta = [new Date(r.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' }), seconds ? `通話 ${Math.round(seconds)}秒` : '', r.creditUsage?.consumed ? `${r.creditUsage.consumed} クレジット` : ''].filter(Boolean).join(' · ');
+    const meta = [new Date(r.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' }), seconds ? `通話 ${Math.round(seconds)}秒` : '', r.creditUsage?.consumed ? `${r.creditUsage.consumed} クレジット` : '', r.voiceSetting?.model ? `${r.voiceSetting.model}${r.voiceSetting.voiceSent ? `（${r.voiceSetting.voiceSent}）` : ''}` : ''].filter(Boolean).join(' · ');
     head.replaceChildren(el('div', { class: 'report-top' },
       el('div', {}, el('p', { class: 'meta num', text: meta }), el('h1', { class: 'verdict', text: o.text }), el('p', { class: 'summary', text: summary })),
       ringFor(notes.length, notes.map(n => n.status === 'verified'))));

@@ -50,6 +50,10 @@ try {
   await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
   catch (e) { console.log("VIEW:", await page.text("#view"), "ERR:", page.pageErrors.join(" | ")); throw e; }
+  await page.js("location.hash='#/new'"); await page.until("!!document.querySelector('#ask-engine')", { label: "engine select" });
+  const engines = await page.js("[...document.querySelectorAll('#ask-engine option')].map(o=>o.textContent)");
+  c.ok(engines.some(t => /gpt-live-1/.test(t)) && engines.some(t => /gemini-3\.8-live/.test(t)), "電話を頼む: 音声AI names the model (gpt-live-1 / gemini-3.8-live)", engines.join(" | "));
+  await page.js("location.hash='#/'"); await page.until("/ホーム/.test(document.querySelector('#view').textContent)");
   const home = await page.text("#view");
   c.ok(/あなたの確認が必要なものが 3 件/.test(home) && await page.text("#attention-badge") === "3", "ホーム: three things need you (an unknown outcome, two drafts), also on the 依頼 tab", home.slice(0, 80));
   c.ok(/前回かけた電話/.test(home) && /焼肉 たけ/.test(home) && /最近の電話/.test(home), "ホーム: the last call and the recent calls");

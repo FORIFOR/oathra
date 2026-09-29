@@ -297,3 +297,4 @@ mark.proof-fill { background: linear-gradient(transparent 55%, var(--ok-line) 55
 .play-note { margin: 0 0 24px; max-width: 64ch; }
 .voice-list { margin-top: 12px; }
 .note.warn { color: var(--amber); }
+.stack.tight > * + * { margin-top: 6px; }
