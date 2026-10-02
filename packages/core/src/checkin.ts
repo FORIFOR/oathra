@@ -27,6 +27,10 @@ const ASKED: { topic: CheckInTopic; re: RegExp }[] = [
   { topic: "help", re: /(?:困(?:って|った|り)|お手伝い|心配な?こと|不安な?こと|伝えておきたい|伝えてほしい|気になること)/ },
   { topic: "condition", re: /(?:体調|お体|お身体|具合|お加減|調子|お変わり|元気)/ },
 ];
+const CARRIED: { topic: CheckInTopic; noun: RegExp; verb: RegExp }[] = [
+  { topic: "medication", noun: /薬|くすり/, verb: /飲|服用/ },
+  { topic: "meal", noun: /ご飯|ごはん|食事|朝食|昼食|夕食/, verb: /食べ|召し上が|済ま|とられ|摂/ },
+];
 const QUESTION = /[?？]|ですか|ますか|ましたか|でしょうか|ませんか|かな[?？]?$|いかが|どう(?:です|でした)/;
 const HEDGE = /たぶん|多分|かな(?:あ|ぁ)?|かも|っけ|だっけ|覚えてな|おぼえてな|忘れ(?:た|ちゃ|て)|わから|分から|どうだった|さあ|はず|と思う|気がする|ような/;
 // Words of having done it. They never make an answer "yes" (see DONE below); beside a negation they make it unclear.
@@ -40,33 +44,51 @@ const FINE = /元気|大丈夫|だいじょうぶ|変わりな|変わりあり|�
 // The answer, with punctuation and spaces removed, must be: a bare affirmative alone; or (an affirmative and) the
 // finished action of the topic that was asked, about the speaker and about now. Anything else in the answer — another
 // person, another time, a wish, a condition, a reason, a "but" — breaks the shape and the answer is not yes.
-const squash = (line: string) => line.replace(/[\s、。,.!！…・「」〜~]/g, "");
-const FILL = "(?:えーと|えっと|ええと|えー|あのね|あのう?|そうねえ?|そうですね|そうだね|んー|うーん|まあ|ああ|あ)*";
-const AFF = "(?:はい(?:はい)?|ええ|うん(?:うん)?|そうです(?:ね)?|そうだね|そうね|そう)?";
-const TAIL = "(?:よ|ね|よね|わ|わよ|わね|の|のよ|で|んです|んですよ|です|ですよ|ですね)?";
+// Katakana is read as hiragana: a transcript may come in either.
+const squash = (line: string) => line.replace(/[\s、。,.!！…・「」〜~]/g, "").replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
+const FILL = "(?:えーと|えっと|ええと|えっとね|えー|あのね|あのう?|そうねえ?|そうですね|そうだね|んー|うーん|まあ|ああ|あ)*";
+const AFF = "(?:はい(?:はい)?|ええ|うん(?:うん)?|そうです(?:ね)?|そうだね|そうね|そう|おう)?";
+// Sentence endings, standard and regional (ばい, がね, やで, けん …). A closed list: anything else breaks the shape.
+const TAIL = "(?:よ|ね|よね|わ|わよ|わね|の|のよ|で|やで|ぞ|ぜ|さ|な|なあ|なぁ|ばい|たい|がね|がや|けん|のう|っちゃ|とよ|と|ですわ|んです|んですよ|んよ|んや|んだ|んだよ|んじゃ|でよ|がな|わい|です|ですよ|ですね|よー|よお)?";
 const THANKS = "(?:ありがとう(?:ございます)?|おかげさまで|どうも)?";
+// A time of today, before the verb: 「朝ごはんのあとに飲みました」「さっき食べた」. Never yesterday, never another person.
+const TODAY = "(?:朝|昼|晩)?(?:ごはん|ご飯|食事?)の(?:あと|後)に?|食後に|朝食後に|朝いちばんに|朝一番に|朝いちに|起きてすぐに?|朝に|お昼に|昼に|さっき|ついさっき|今さっき|先ほど|今朝は?|けさは?|今日は|今日も|きょうは|きょうも";
+const HOW = "もう|ちゃんと|きちんと|しっかり|忘れずに|いつも通り|いつもどおり|ちゃあんと";
+// After the verb: 「食べたよ、ちゃんと」「飲んだよ、朝いちばんに」.
+const after = (extra: string) => `(?:(?:${TODAY}|${HOW}${extra ? `|${extra}` : ""})(?:ね|よ)?){0,2}(?:はい|ええ|うん)?`;
 const BARE = new RegExp(`^${FILL}(?:はい(?:はい)?|ええ|うん(?:うん)?|(?:はい|ええ)?そうです(?:よ)?|うんそう(?:だよ|よ)?)${THANKS}$`);
-const shape = (pre: string, core: string) => new RegExp(`^${FILL}${AFF}(?:${pre})*(?:${core})${TAIL}${THANKS}$`);
+// The finished action may be said twice (「飲んだ飲んだ」「変わりないよ、元気元気」); every part is from the closed list.
+const shape = (pre: string, core: string, post = "") => new RegExp(`^${FILL}${AFF}(?:(?:${TODAY}|${HOW}|${pre})*(?:${core})${TAIL}){1,3}${after(post)}${THANKS}$`);
 const DONE: Record<Exclude<CheckInTopic, "help">, RegExp> = {
   medication: shape(
-    "お?(?:薬|くすり)(?:は|も|を|なら)?|今日は|今日も|今朝は?|けさは?|朝は?|朝の分は?|さっき|先ほど|もう|ちゃんと|きちんと|忘れずに|しっかり|食後に|ご飯の後に|朝食後に|いつも通り|いつもどおり",
-    "(?:飲み|のみ|いただき|頂き|済ませ|服用し)ました|(?:飲ん|のん)(?:だ|できました|でます|でいます|でおります|どる|どります)|済みました|済んだ"),
+    "お?(?:薬|くすり)(?:は|も|を|なら)?|朝の分は?",
+    "(?:飲み|のみ|いただき|頂き|済ませ|すませ|服用し)ました|(?:飲ん|のん)(?:だ|できました|でます|でいます|でおります|どる|どります|どいた|でおいた|でおきました|どきました)|飲みましてん|済みました|済んだ"),
   meal: shape(
-    "(?:朝|昼|晩|夕|夜)?(?:ご飯|ごはん|お?食事|朝食|昼食|夕食|お昼)(?:は|も|を|なら)?|今日は|今日も|今朝は?|さっき|先ほど|もう|ちゃんと|きちんと|しっかり|全部|ぜんぶ|残さず|おいしく|美味しく|たくさん|いっぱい|いつも通り|いつもどおり|よく",
-    "(?:食べ|たべ|いただき|頂き|済ませ|とり|摂り|完食し)ました|食べた|たべた|食べてきました|いただいた|済みました|済んだ|完食です"),
+    "(?:朝|昼|晩|夕|夜)?(?:ご飯|ごはん|お?食事|朝食|昼食|夕食|お昼)(?:は|も|を|なら)?|全部|ぜんぶ|残さず|おいしく|美味しく|たくさん|いっぱい|よく|よう",
+    "(?:食べ|たべ|いただき|頂き|済ませ|すませ|とり|摂り|完食し)ました|食べた|たべた|食べだ|食った|食っだ|くった|食うた|食べてきました|いただいた|食べましてん|済みました|済んだ|完食です",
+    "全部|ぜんぶ|残さず|おいしく"),
   sleep: shape(
-    "夜は|昨夜は?|昨日は|昨晩は?|ゆうべは?|夕べは?|今日は|よく|ぐっすり|しっかり|ちゃんと|朝まで|おかげさまで|久しぶりに|たっぷり",
-    "(?:眠れ|寝られ|寝れ|寝|眠り|休め|休み)ました|眠れた|寝られた|寝れた|寝た|休めた|(?:眠れ|寝られ|寝れ)て(?:い)?ます|ぐっすり(?:です|でした)?"),
+    "夜は|昨夜は?|昨日は|昨晩は?|ゆうべは?|夕べは?|よく|よう|よぐ|よーく|ぐっすり|朝まで|おかげさまで|おかげさんで|久しぶりに|たっぷり",
+    "(?:眠れ|ねむれ|寝られ|ねられ|寝れ|ねれ|寝|ね|眠り|ねむり|休め|休み)ました|眠れた|ねむれた|寝られた|寝れた|寝た|寝だ|ねた|休めた|(?:眠れ|寝られ|寝れ)て(?:い)?ます|ぐっすり(?:です|でした)?",
+    "ぐっすり|よく|朝まで|夜は|昨夜は?|昨日は|昨晩は?|ゆうべは?|夕べは?"),
   condition: shape(
-    "おかげさまで|おかげさんで|今日は|今日も|体調は|体は|調子は|具合は|特に|別に|相変わらず|いつも通り|いつもどおり|とても|すごく|まあ|ずっと|変わらず|私は",
-    "元気(?:です|だ|や|にして(?:い)?ます|にしております|にやってます|いっぱいです)?|大丈夫(?:です|だ|や)?|だいじょうぶ(?:です)?|お?変わり(?:は)?(?:ありません|ないです|ない|なし|なく元気です)|かわりない(?:です)?|問題(?:は)?(?:ありません|ないです|ない|なし)|(?:調子(?:は|が)?)?(?:いい|良い|よい)(?:です)?|好調です|快調です|絶好調(?:です)?|ぼちぼち(?:です|や|でんな)?|まあまあ(?:です)?|普通(?:です)?|ふつう(?:です)?|悪くない(?:です)?|悪くありません|なんともない(?:です)?|何ともありません|どこも悪くない(?:です)?|順調(?:です)?|良好(?:です)?|おかげさまで"),
+    "おかげさまで|おかげさんで|体調は|体は|調子は|具合は|特に|別に|相変わらず|とても|とっても|すごく|すこぶる|ほんまに?|ほんに|毎日|まあ|ずっと|変わらず|私は",
+    "(?:元気|げんき)(?:(?:に|で)(?:して|やって|過ごして|すごして)(?:(?:い|お)?(?:ます|ります)|い?る)|(?:に|で)(?:し|やっ)と(?:る|う|ります)|です|だ|や|じゃ|いっぱいです)?|達者(?:です|や|じゃ)?|大丈夫(?:です|だ|や)?|だいじょうぶ(?:です)?|お?変わり(?:は)?(?:ありません|ないです|ない|なし|なく元気です)|かわりない(?:です)?|問題(?:は)?(?:ありません|ないです|ない|なし)|(?:調子(?:は|が)?)?(?:いい|良い|よい)(?:です)?|調子(?:は|が)?ええ(?:です)?|ええ(?:です|で|よ)|好調です|快調です|絶好調(?:です)?|ぼちぼち(?:です|や|でんな)?|まあまあ(?:です)?|普通(?:です)?|ふつう(?:です)?|悪くない(?:です)?|悪くありません|なんとも(?:ない|ねぇ|ねえ|あらへん)(?:です)?|何ともありません|どこも悪くない(?:です)?|順調(?:です)?|良好(?:です)?|おかげさまで"),
 };
 // 「お薬は飲み忘れていませんか」「眠れませんでしたか」: a bare はい to a negative question cannot be read either way.
 const NEGATIVE_QUESTION = /ませんか|ないですか|ませんでしたか|忘れて/;
 // "nothing to raise" is likewise a set phrase and nothing more.
-const NOTHING_SHAPE = new RegExp(`^(?=.*(?:いいえ|いえ|ううん|特に|とくに|別に|べつに|何も|なにも|なんも|ありません|ない|なし|ございません|大丈夫|だいじょうぶ|困って|結構|あらへん))${FILL}(?:いいえ|いえ|いや|ううん)?${THANKS}(?:今は|今のところは?|特には?|とくには?|別に|べつに|何も|なにも|なんも|全然|困っていることは|困りごとは|心配事は|心配なことは)*(?:ありません|ないです|ない|なし|ございません|大丈夫です|大丈夫|だいじょうぶです|だいじょうぶ|困っていません|困ってないです|困ってません|結構です|あらへん)?${TAIL}${THANKS}$`);
+const NOTHING_PRE = "今は|いまは|今のところは?|いまのところは?|特には?|とくには?|別に|べつに|何も|何にも|なにも|なんも|なーんも|なんにも|全然|困っていることは|困りごとは|心配事は|心配なことは";
+const NOTHING_CORE = "ないない|あらせん|ありゃあせん|ありません|ありませんわ|ないです|ない|なか(?:です)?|ねぇ|ねえ|なし|ございません|ありゃせん|ありゃしません|あらへん|ありまへん|大丈夫です|大丈夫|だいじょうぶです|だいじょうぶ|困っていません|困ってないです|困ってません|困っとらん|結構です";
+// One or two set phrases in a row (「大丈夫です、ありません」「ないよ、なんもありゃせん」), with regional negatives (なか, ねぇ, ありゃせん).
+const NOTHING_SHAPE = new RegExp(`^(?!.*(?:大丈夫|だいじょうぶ)(?:じゃ|では|で|や)?(?:な|あら|ありま))(?=.*(?:いいえ|いえ|ううん|特に|とくに|別に|べつに|何も|なにも|なんも|ありません|ない|なか|ねぇ|ねえ|なし|ございません|ありゃせん|あらせん|ありまへん|大丈夫|だいじょうぶ|困って|結構|あらへん))${FILL}(?:いいえ|いえ|いや|ううん)?${THANKS}(?:(?:${NOTHING_PRE})*(?:${NOTHING_CORE})${TAIL}|(?:${NOTHING_PRE})+){0,3}${THANKS}$`);
 // A callee line that takes an earlier answer back.
 const CORRECTION = /ごめん|間違|まちが|勘違い|やっぱ|実は|じつは|ほんとは|本当は|ほんまは|嘘|うそ|違(?:う|い|った)|ちがう|ちごた|(?:て|で)(?:い)?なかった|てへんかった|とらんかった|どらんかった|じゃなかった|^(?:あ、?)?(?:いや|いえ)|まだだ|まだで|忘れてた|待って|まって|つもり|というか|っていうか|てゆうか|じゃなくて|ではなくて|と思った(?:ら|けど|んだけど)|言おうと|残っ(?:て|と)/;
+const BUT = /^(?:あ、?|ああ、?|まあ、?)?(?:でも|けど|だけど|けれど|ただ|しかし|ところが|とはいえ|それが|といっても|と言っても|ほんでも|せやけど|じゃけど|ばってん)/;
+// A line left hanging on a contrast: 「夜通しラジオを聞いていましたがね。」
+const TRAILS = /(?:けど|けども|けれど|がね|んだが|のに|けんど|やけど)(?:ね|な|なあ)?[。.…]*$/;
+const TROUBLE = /けど|のに|困|分から|わから|さっぱり|でき(?:な|ん|へん)|苦情|心配|不安|どうし(?:たら|よう)|なくて|れん|せん|へん/;
+const ABOUT: Record<CheckInTopic, RegExp> = { medication: /飲|の(?:ん|み|む)|薬|くすり|錠/, meal: /食|たべ|ご飯|ごはん|口に|箸/, sleep: /眠|寝|ねむ|起き|目が覚|夢|夜|晩|朝方|うとうと|横にな/, condition: /元気|調子|具合|体調|体が|気分/, help: /$^/ };
 const ADDS = /ひとつ|一つ|そういえば|そういや|ただ|でも|あと(?:は|、)|それと|それから|ちょっと/;
 // Courtesies that contain a negative form and deny nothing.
 const COURTESY = /すみません|申し訳(?:ありません|ございません)|とんでもない|かまいません|構いません|お構いなく|変わりない|変わりありません/g;
@@ -86,7 +108,9 @@ function classify(topic: CheckInTopic, text: string, question = ""): CheckInAnsw
   if (!distressed && !HEDGE.test(line)) {
     if (DONE[topic].test(whole)) return "yes";
     // A bare はい answers a yes/no question. 「いかがですか」→「はい」 says nothing about how they are.
-    if (bare && !(topic === "condition" ? /いかが|どう/.test(question) : NEGATIVE_QUESTION.test(question))) return "yes";
+    // Two sentences about one topic are one question: 「体調はいかがですか。お元気ですか。」 can be answered はい.
+    const openEnded = question.split(/(?<=[。？?])/).filter((q) => q.trim()).every((q) => /いかが|どう/.test(q));
+    if (bare && !(topic === "condition" ? openEnded : NEGATIVE_QUESTION.test(question))) return "yes";
   }
   if (HEDGE.test(line)) return "unclear";
   if (topic === "condition") {
@@ -115,9 +139,16 @@ export function checkInReport(turns: readonly CheckInTurn[]): CheckInReport {
     if (turn.source === "caller") {
       // Each question sentence opens the topics it names; one sentence may ask about two things.
       const asked = text.split(/(?<=[。？?！!])/).filter((s) => QUESTION.test(s)).flatMap((s) => {
-        const hit = ASKED.find((a) => a.re.test(s));
+        // 「今日のお薬についてうかがいます。もうお飲みになりましたか。」: the topic is named in the sentence before, the
+        // question carries only its verb.
+        const hit = ASKED.find((a) => a.re.test(s)) ?? CARRIED.find((c) => c.verb.test(s) && c.noun.test(text.slice(0, text.indexOf(s))));
         return hit ? [{ topic: hit.topic, question: s.trim() }] : [];
-      });
+      }).reduce<{ topic: CheckInTopic; question: string }[]>((all, a) => {
+        // The same topic asked in two sentences is one question; only different topics make an answer ambiguous.
+        const same = all.find((x) => x.topic === a.topic);
+        if (same) same.question += a.question; else all.push(a);
+        return all;
+      }, []);
       if (asked.length) {
         for (const a of asked) if (!items.has(a.topic) || items.get(a.topic)!.answer === "no_answer") items.set(a.topic, { topic: a.topic, answer: "no_answer", question: a.question });
         open = asked;
@@ -136,11 +167,13 @@ export function checkInReport(turns: readonly CheckInTurn[]): CheckInReport {
         let next: CheckInAnswer = before.answer;
         if (q.topic === "help") {
           // After "nothing", a line that adds something (「あ、ひとつだけ…」「そういえば…」) or states a lack is something raised.
-          if (before.answer === "no" && (heard.length || (said === "yes" && (corrects || ADDS.test(text) || NO.test(text.replace(COURTESY, "")))))) next = "yes";
+          if (before.answer === "no" && (heard.length || (said === "yes" && (corrects || ADDS.test(text) || BUT.test(text.trim()) || TROUBLE.test(text) || NO.test(text.replace(COURTESY, "")))))) next = "yes";
         } else if (before.answer === "yes") {
           if (corrects && said === "no") next = "no";
           // Any negation after a recorded yes is for a human to read: a wrong yes hides a missed medicine, an unclear costs one look.
-          else if (corrects || (q.topic !== "condition" && NO.test(text.replace(COURTESY, ""))) || (q.topic === "condition" && (said === "no" || heard.length))) next = "unclear";
+          // So is a line that opens with "but", and any line about the same thing that is not itself a plain confirmation:
+          // 「眠れました」…「でも怖い夢を見て夜中に起きてからは、朝まで起きてた」 has no negation in it.
+          else if (corrects || BUT.test(text.trim()) || TRAILS.test(text.trim()) || (q.topic !== "condition" && NO.test(text.replace(COURTESY, ""))) || (ABOUT[q.topic].test(text) && said !== "yes") || (q.topic === "condition" && (said === "no" || heard.length))) next = "unclear";
         } else if (before.answer === "no" && corrects && said !== "no") next = "unclear";
         if (next !== before.answer) items.set(q.topic, { ...before, answer: next, quote: before.quote ? `${before.quote} / ${turn.text.trim()}` : turn.text.trim(), ...(turn.id ? { turn: turn.id } : {}) });
       }
@@ -153,7 +186,10 @@ export function checkInReport(turns: readonly CheckInTurn[]): CheckInReport {
       // A later answer to the same question replaces an earlier one only by being clear, or by contradicting it.
       // Asked again after a yes (「何を召し上がりましたか」), a hedged line that takes it back or negates is not a yes any more.
       const retracts = q.topic !== "help" && before.answer === "yes" && answer === "unclear" && (CORRECTION.test(text.trim()) || /[、。\s]いや[、。\s]/.test(text) || NO.test(text.replace(COURTESY, "")));
-      const next = before.answer === "no_answer" ? answer : retracts || (before.answer !== answer && answer !== "unclear") ? "unclear" : before.answer;
+      // Asked again as a yes/no question (「しっかり召し上がれましたか」), anything but a plain yes is for a human;
+      // a follow-up for detail (「何を召し上がりましたか」→「パンと卵」) leaves the yes alone.
+      const unconfirmed = q.topic !== "help" && before.answer === "yes" && answer !== "yes" && !/何を|何時|いつ|どの|どんな|どれ|いくつ|何回|どちら/.test(q.question);
+      const next = before.answer === "no_answer" ? answer : retracts || unconfirmed || (before.answer !== answer && answer !== "unclear") ? "unclear" : before.answer;
       items.set(q.topic, { ...before, answer: next, quote: before.quote ? `${before.quote} / ${turn.text.trim()}` : turn.text.trim(), ...(turn.id ? { turn: turn.id } : {}) });
     }
     last = open;
