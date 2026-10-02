@@ -159,6 +159,7 @@ export async function createGateway(config,options={}){
   const channels=options.channels??new Channels(service,env,registry,options.fetchImpl??fetch);
   const execute=(m,hooks)=>{registry.demand(callPlugin,'call:execute');return registry.capability(callPlugin).execute(freezeData(jsonData(m)),{signal:hooks.signal,onEvent:hooks.onEvent,control:hooks.control});};
   const alerts=new Alerts(service,alertConfiguration(env),{...(options.fetchImpl?{fetchImpl:options.fetchImpl}:{}),...(options.resolve?{resolve:options.resolve}:{})});
+  phone.alerts=alerts;
   const schedules=new Schedules(service,alerts);
   // Each contact says whether this team has stopped calling it, so the list can show that and offer the release.
   const contactsView=u=>store.list('contact',u.id).map(x=>{const stop=x.phone?store.suppression(u.team,x.phone):null;return {...x,suppressed:!!stop,...(stop?{suppressedBy:stop.by,suppressedHow:stop.how,suppressedAt:stop.at}:{})};});
@@ -302,6 +303,13 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&teamCall)return send(res,200,teamRecord(service,u,teamCall[1]));
       if(method==='GET'&&path==='/v1/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-calls.csv"');return send(res,200,ownCallsCsv(service,u),'text/csv; charset=utf-8');}
       if(method==='POST'&&path==='/v1/contacts/import')return send(res,200,importContacts(service,u,data.contacts));
+      // People who could not get through and asked to be called back. The person who owns the line sees them; so does their manager.
+      if(method==='GET'&&path==='/v1/callbacks'){const supervisor=['admin','manager'].includes(u.role),rows=[];
+        for(const row of store.db.prepare("SELECT body FROM records WHERE kind='callback-request' ORDER BY updated DESC LIMIT 500").iterate()){const r=store.open(row.body);if(r.owner===u.id||(supervisor&&r.team===u.team))rows.push({id:r.id,status:r.status,phone:r.phone,reason:r.reason,createdAt:new Date(r.createdAt).toISOString(),...(r.doneAt?{doneAt:new Date(r.doneAt).toISOString(),doneBy:r.doneBy}:{})});}
+        return send(res,200,{callbacks:rows,open:rows.filter(r=>r.status==='OPEN').length});}
+      const callbackDone=/^\/v1\/callbacks\/([A-Za-z0-9_-]{6,80})\/done$/.exec(path);
+      if(method==='POST'&&callbackDone){service.write(u);const r=store.get('callback-request',callbackDone[1]);assert(r&&(r.owner===u.id||(['admin','manager'].includes(u.role)&&r.team===u.team)),'not_found',404);
+        assert(r.status==='OPEN','callback_already_done',409);store.put('callback-request',{...r,status:'DONE',doneAt:store.now(),doneBy:u.id});store.audit(u.id,'call.callback_done',r.id);return send(res,200,{done:true});}
       if(path==='/v1/batches/preview'&&method==='POST')return send(res,200,batches.preview(u,data));
       if(path==='/v1/batches'&&method==='POST')return send(res,201,batches.create(u,data,req.headers['idempotency-key']));
       if(path==='/v1/batches'&&method==='GET'){service.write(u);return send(res,200,batches.list(u));}

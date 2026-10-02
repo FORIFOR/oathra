@@ -166,11 +166,15 @@ export class Phone {
     const onBehalf=reception?cfg.restaurant.name:cfg?.business?cfg.name:earlier?.phoneRequest?.callerName??(earlier?null:pref?.name??this.service.account(owner||{id:''}).callerName??cfg?.name);
     const announce=reason=>{
       if(known)this.store.audit(ownerId??'system','call.inbound_not_answered',callSid,{reason,from:this.store.phoneRef(from),earlier:earlier?.id??null});
-      const token=random();if(known&&owner)this.store.setKey('inbound-optout',token,this.store.seal({team:owner.team,owner:owner.id,phone:from}),3600_000);
+      const token=random();if(known&&owner)this.store.setKey('inbound-optout',token,this.store.seal({team:owner.team,owner:owner.id,phone:from,reason,callback:!!(reception||cfg?.business)&&['busy','outside_business_hours','rate_limited'].includes(reason)}),3600_000);
       const who=earlier?(earlier.phoneRequest?.callerName?`先ほどのお電話は、${earlier.phoneRequest.callerName}さんのご依頼で、AIが代わりにおかけしたものです。`:'先ほどのお電話は、お知り合いの方のご依頼で、AIが代わりにおかけしたものです。'):'';
       const stop=known&&owner?`<Gather numDigits="1" timeout="6" action="${xml(this.config.publicUrl+'/hooks/twilio/inbound-optout/'+token)}" method="POST"><Say language="ja-JP" voice="${NOTICE_VOICE}">今後、この番号からのお電話を希望されない場合は、数字の2を押してください。</Say></Gather>`:'';
       // A shop's or a company's own line is not "a number for outgoing calls": say whose line it is and when to try again.
-      if(reception||cfg?.business)return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。${xml(reception?cfg.restaurant.name:cfg.name)}です。${reason==='outside_business_hours'?'ただいまの時間は、お電話の受付時間外です。':'ただいま、お電話をお受けできません。'}おそれいりますが、時間をおいて、おかけ直しください。</Say>${stop}<Hangup/></Response>`;
+      if(reception||cfg?.business){
+        // Every line in use, or outside the hours: a caller on a business line can leave a request to be called back with one key.
+        const callback=known&&owner&&['busy','outside_business_hours','rate_limited'].includes(reason)?`<Gather numDigits="1" timeout="7" action="${xml(this.config.publicUrl+'/hooks/twilio/inbound-optout/'+token)}" method="POST"><Say language="ja-JP" voice="${NOTICE_VOICE}">折り返しのお電話をご希望の場合は、数字の1を押してください。</Say></Gather>`:stop;
+        return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。${xml(reception?cfg.restaurant.name:cfg.name)}です。${reason==='outside_business_hours'?'ただいまの時間は、お電話の受付時間外です。':reason==='busy'?'ただいま、電話が混み合っております。':'ただいま、お電話をお受けできません。'}おそれいりますが、時間をおいて、おかけ直しください。</Say>${callback}<Hangup/></Response>`;
+      }
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。こちらは、AIによる代理電話サービス、${xml(this.env.OATHRA_BUSINESS_NAME??'Oathra')}の発信用の番号です。${xml(who)}ただいま、この番号ではお電話をお受けできません。</Say>${stop}<Hangup/></Response>`;
     };
     if(!known)return announce('unknown_caller');
@@ -241,6 +245,17 @@ export class Phone {
     const saved=this.store.key('inbound-optout',token);
     if(saved&&params.Digits==='2'){const info=this.store.open(saved);this.store.suppress(info.team,info.phone,'inbound_dtmf');this.store.audit(info.owner,'contact.suppressed',params.CallSid??token,{target:this.store.phoneRef(info.phone),source:'inbound_dtmf'});
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">承りました。今後、この番号からお電話することはありません。</Say><Hangup/></Response>`;}
+    // 1 means "call me back" only where that was offered.
+    if(saved&&params.Digits==='1'&&this.store.open(saved).callback){
+      const info=this.store.open(saved),id=this.store.phoneRef(info.phone);
+      // One open request per caller: pressing again, or calling again, does not pile them up. Nothing is promised.
+      if(!this.store.all('callback-request',info.owner).some(r=>r.id===id&&r.status==='OPEN')){
+        this.store.put('callback-request',{id,owner:info.owner,team:info.team,status:'OPEN',phone:info.phone,reason:info.reason??'busy',createdAt:this.store.now()});
+        this.store.audit(info.owner,'call.callback_requested',params.CallSid??token,{from:id,reason:info.reason??'busy'});
+        this.alerts?.raise({id:`callback:${id}:${this.store.now()}`,owner:info.owner,team:info.team,origin:null,target:{name:'着信'}},'callback','notice');
+      }
+      return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">承りました。折り返しのご希望を、担当者に伝えます。</Say><Hangup/></Response>`;
+    }
     return '<Response><Hangup/></Response>';
   }
   optOut(saved,callSid) {

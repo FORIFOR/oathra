@@ -144,6 +144,7 @@ export class Store {
     // Settled occurrences, finished lists and ended schedules hold names and numbers: they go on the same schedule as calls.
     this.db.prepare("DELETE FROM records WHERE kind='schedule-run' AND status<>'RUNNING' AND updated<?").run(cutoff);
     this.db.prepare("DELETE FROM records WHERE kind IN ('batch','schedule') AND status IN ('FINISHED','ENDED') AND updated<?").run(cutoff);
+    this.db.prepare("DELETE FROM records WHERE kind='callback-request' AND updated<?").run(cutoff);
     // Keep every approval for the entire current Japanese calendar month, even after its mission is deleted.
     this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-35*86400_000);
     this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);

@@ -167,7 +167,7 @@ test('outside the line’s hours nobody is connected, and a shop’s line says s
 });
 test('a shop’s line that cannot answer never calls itself a number for outgoing calls',using(f=>{
  f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
- const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/ビストロ灯です。ただいま、お電話をお受けできません。おそれいりますが、時間をおいて、おかけ直しください。/);assert.doesNotMatch(twiml,/発信用の番号/);
+ const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/ビストロ灯です。ただいま、電話が混み合っております。おそれいりますが、時間をおいて、おかけ直しください。/);assert.doesNotMatch(twiml,/発信用の番号/);
 },{extra:{OATHRA_RESTAURANT_JSON:desk}}));
 test('hours are HH:MM-HH:MM or off, and anything else stops the service from starting',()=>{
  const base=extra=>{const f=setup({extra});const c=f.config;f.close();return c;};
@@ -198,3 +198,18 @@ test('a business line answers as the business, carries only its own answers, and
  for(const bad of ['{','[{"q":"a"}]','[{"q":"","a":"x"}]',JSON.stringify(Array(31).fill({q:'q',a:'a'})),'[{"q":"q","a":"a","run":"x"}]'])
   assert.throws(()=>setup({extra:{...extra,OATHRA_INBOUND_GUIDANCE_JSON:bad}}),/configure_inbound_guidance_json/,bad);
 });
+test('a caller who cannot get through on a business line can ask to be called back; it is recorded once and promises nothing',using(f=>{
+ f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
+ const {twiml}=f.ring('+819011112222');
+ assert.equal(answered(twiml),false);assert.match(twiml,/丸山商事です。ただいま、電話が混み合っております。/);assert.match(twiml,/折り返しのお電話をご希望の場合は、数字の1を押してください。/);
+ const reply=f.press(twiml,'1');assert.match(reply,/折り返しのご希望を、担当者に伝えます。/);assert.doesNotMatch(reply,/必ず|いたします。<\/Say>.*折り返します/);
+ const requests=f.store.all('callback-request','owner');
+ assert.deepEqual(requests.map(r=>[r.status,r.phone,r.reason,r.team]),[['OPEN','+819011112222','busy','home']]);
+ f.press(f.ring('+819011112222').twiml,'1');assert.equal(f.store.all('callback-request','owner').length,1);
+ assert.equal(f.store.suppressed('home','+819011112222'),false,'asking for a call back is not a request to stop');
+ assert.match(f.press(f.ring('+819022223333').twiml,'9'),/<Hangup\/>/);assert.equal(f.store.all('callback-request','owner').length,1);
+},{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true'}}));
+test('a personal line that cannot answer offers no call back',using(f=>{
+ f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
+ assert.doesNotMatch(f.ring('+819011112222').twiml,/数字の1/);
+}));
