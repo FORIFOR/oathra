@@ -66,8 +66,9 @@ export class Batches {
         : kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required'
         // One approval reaches many people, so each needs it written down why they may be called, sales or not.
         : !c.basis?.trim() ? 'contact_basis_required' : null;
-      return { contactId: c.id, name: c.name || c.company, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
-    });
+      return { contactId: c.id, name: c.name || c.company, ref: c.phone ? this.store.phoneRef(c.phone) : null, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
+    // The same number saved twice is one person: they are called once.
+    }).map((item, index, all) => item.state === 'PENDING' && item.ref && all.findIndex(x => x.state === 'PENDING' && x.ref === item.ref) < index ? { ...item, state: 'SKIPPED', reason: 'same_number_as_another_contact' } : item);
   }
   /** The same answer `create` would give about each contact, without creating anything. */
   preview(owner, input) {
@@ -134,6 +135,8 @@ export class Batches {
         const owner = s.user(batch.owner); s.write(owner);
         assert(batch.consentVersion === s.config.consentVersion, 'privacy_consent_required', 403);
         const contact = s.own('contact', item.contactId, owner);
+        // The number that was on the screen when the list was approved, not whatever the contact holds now.
+        assert(!item.ref || this.store.phoneRef(contact.phone ?? '') === item.ref, 'contact_changed_review_again', 409);
         const draft = batch.kind === 'sales'
           ? s.prepare(owner, { ...batch.spec, contactId: contact.id }, null, null, true, true)
           : prepareManagedPhone(s, owner, { ...batch.spec, phone: contact.phone, name: contact.name || contact.company });

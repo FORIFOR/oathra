@@ -126,7 +126,8 @@ test('paused schedules do nothing; resuming and ending are the owner’s alone; 
   f.schedules.set(f.alice,s.id,'PAUSED');f.at(start+10*min);await f.pass();assert.equal(f.dialed.length,0);
   f.schedules.set(f.alice,s.id,'ACTIVE');await f.pass();assert.equal(f.dialed.length,1);
   f.at(start+31*86400_000);await f.pass();assert.equal(f.store.get('schedule',s.id).status,'ENDED');assert.equal(f.dialed.length,1);
-  assert.equal(f.schedules.list(f.alice)[0].runs.length,1);assert.deepEqual(f.schedules.list(f.config.users[2]),[]);
+  // The occurrences that came and went in the last week before it ended are written down, not dropped.
+  assert.ok(f.schedules.list(f.alice)[0].runs.some(r=>r.state==='ANSWERED'));assert.ok(f.schedules.list(f.alice)[0].runs.some(r=>r.reason==='service_was_not_running'));assert.deepEqual(f.schedules.list(f.config.users[2]),[]);
 }));
 test('when the contact’s number changed or consent was withdrawn, the schedule stops instead of calling',using(async f=>{
   const s=f.create();f.store.put('contact',{...f.contact,phone:'+819000000077'});f.at(start+10*min);await f.pass();
@@ -178,9 +179,10 @@ test('a call refused before it was dialled is still reported: the last word on t
 }));
 test('retries that run out of day end the occurrence with an alert, not silently',using(async f=>{
   f.create({times:['20:30'],retries:{count:2,minutes:180},windowMinutes:60});f.answers(false);
-  f.at(Date.parse('2026-10-02T20:31:00+09:00'));await f.pass();await f.pass();assert.equal(f.dialed.length,1);assert.equal(f.alertsRaised(),0);
-  f.at(Date.parse('2026-10-03T00:05:00+09:00'));await f.pass();
+  // The retry would fall at 23:31. Nobody is rung at night: the occurrence ends at once, and says so.
+  f.at(Date.parse('2026-10-02T20:31:00+09:00'));await f.pass();await f.pass();
   assert.equal(f.dialed.length,1);assert.deepEqual(f.runs().map(r=>r.state),['UNANSWERED']);assert.equal(f.alertsRaised(),1);
+  f.at(Date.parse('2026-10-02T23:40:00+09:00'));await f.pass();assert.equal(f.dialed.length,1);
 }));
 test('a call already placed is settled even after its schedule was paused; the person who stops the calls is reported',using(async f=>{
   const s=f.create({retries:{count:1,minutes:10}});f.answers(false);f.at(start+10*min);await f.pass();
@@ -208,11 +210,23 @@ test('days the service was not running are written down as skipped and reported,
     ['2026-10-02','09:00','ANSWERED',null],['2026-10-02','18:00','SKIPPED','service_was_not_running'],
     ['2026-10-03','09:00','SKIPPED','service_was_not_running'],['2026-10-03','18:00','SKIPPED','service_was_not_running'],
     ['2026-10-04','09:00','SKIPPED','service_was_not_running'],['2026-10-04','18:00','SKIPPED','service_was_not_running']]);
-  assert.equal(f.alertsRaised(),5);assert.equal(f.dialed.length,1,'nothing is made up late');
-  await f.pass();assert.equal(f.runs().length,6);assert.equal(f.alertsRaised(),5,'written once');
+  assert.equal(f.alertsRaised(),1,'one notice for the whole gap');assert.equal(f.dialed.length,1,'nothing is made up late');
+  await f.pass();assert.equal(f.runs().length,6);assert.equal(f.alertsRaised(),1,'written once');
   f.at(Date.parse('2026-10-05T09:01:00+09:00'));await f.pass();assert.equal(f.dialed.length,2,'and today goes ahead');
 }));
 test('a paused schedule owes nothing for the days it was paused',using(async f=>{
   const s=f.create();f.schedules.set(f.alice,s.id,'PAUSED');f.at(start+3*86400_000);f.schedules.set(f.alice,s.id,'ACTIVE');await f.pass();
   assert.deepEqual(f.runs().filter(r=>r.reason==='service_was_not_running').length,0);
+}));
+
+test('a first attempt delayed past the calling hours is skipped and said, not dialled at night',using(async f=>{
+  f.create({times:['20:30'],windowMinutes:240});
+  // The line was busy until 21:10.
+  f.at(Date.parse('2026-10-02T21:10:00+09:00'));await f.pass();
+  assert.equal(f.dialed.length,0);assert.deepEqual(f.runs().map(r=>[r.state,r.reason]),[['SKIPPED','outside_calling_hours']]);assert.equal(f.alertsRaised(),1);
+}));
+test('a schedule that reached its end while the service was down still reports what it missed',using(async f=>{
+  const s=f.create({until:new Date(start+3*86400_000).toISOString()});f.at(start+4*86400_000);await f.pass();
+  assert.equal(f.store.get('schedule',s.id).status,'ENDED');
+  assert.deepEqual(f.runs().map(r=>[r.date,r.state]),[['2026-10-02','SKIPPED'],['2026-10-03','SKIPPED'],['2026-10-04','SKIPPED']]);assert.equal(f.alertsRaised(),1);
 }));

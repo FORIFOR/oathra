@@ -10,7 +10,7 @@ import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
-  constructor(service, channels, execute, alerts=null, schedules=null, batches=null) { this.schedules=schedules; this.batches=batches; this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.running=new Map(); this.busy=false; }
+  constructor(service, channels, execute, alerts=null, schedules=null, batches=null) { this.schedules=schedules; this.batches=batches; this.awaitAlerts=true; /* tests drive one pass at a time; the server turns this off */ this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.running=new Map(); this.busy=false; }
   /** How many calls may be in progress at once (OATHRA_MAX_CONCURRENT_CALLS; one unless the operator raised it). */
   get limit() { return Math.max(1,this.service.config.maxConcurrentCalls??1); }
   /** The call in progress, when there is one; with several, the earliest. `activeFor(id)` finds a particular one. */
@@ -54,7 +54,8 @@ export class Worker {
     try {
       await this.processQueue('inbox',j=>this.channels.process(j));
       await this.processQueue('outbox',j=>this.channels.send(j));
-      if(this.alerts?.config) await this.processQueue('alert',j=>this.alerts.send(j));
+      // Alert delivery runs beside the loop, one at a time: an endpoint that is slow or down must not delay a call being claimed.
+      if(this.alerts?.config&&!this.alerting){this.alerting=this.processQueue('alert',j=>this.alerts.send(j)).catch(e=>this.log('alert.queue_failed',e)).finally(()=>{this.alerting=null;});if(this.awaitAlerts)await this.alerting;}
       for(const a of this.running.values()) if(this.store.get('mission',a.id)?.status==='CANCEL_REQUESTED') a.abort.abort();
       if(this.draining||this.running.size>=this.limit)return;
       // Standing requests place their next due call into the queue; the claim below treats it like any other.

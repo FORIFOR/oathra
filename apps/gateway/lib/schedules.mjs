@@ -8,7 +8,7 @@
 import { randomUUID } from 'node:crypto';
 import { preparePhoneRequest } from '../../../packages/contract/dist/index.js';
 import { prepareManagedPhone } from './phone-service.mjs';
-import { terminal } from './service.mjs';
+import { terminal, withinHours } from './service.mjs';
 import { assert, hash, Fault } from './security.mjs';
 
 const KEYS = ['request', 'times', 'weekdays', 'until', 'retries', 'windowMinutes', 'acknowledged'];
@@ -96,6 +96,8 @@ export class Schedules {
   end(schedule, reason) { schedule.status = 'ENDED'; schedule.endedReason = reason; this.store.put('schedule', schedule); this.store.audit(schedule.owner, 'schedule.ended', schedule.id, { schedule: schedule.id, reason }); }
   note(schedule, run, level = 'concern') { this.alerts?.raise({ id: run.id, owner: schedule.owner, team: schedule.team, origin: null, target: { name: schedule.request.name } }, 'schedule', level, { categories: [run.reason ?? run.state] }); }
 
+  /** The hours a scheduled call may ring: the operator's hours for ordinary requests, else 07:00-21:00. Checked when dialling, not only when the schedule is made. */
+  inHours(ms) { return withinHours(ms, this.service.config.callHours?.request ?? { from: '07:00', to: '21:00' }); }
   saveRun(run) { run.status = run.state; this.store.put('schedule-run', run); }
   /** Settles what was started, then starts what is due onto free lines. Safe to call as often as the worker likes. */
   tick() {
@@ -115,7 +117,8 @@ export class Schedules {
       if (m.status === 'DECLINED' || this.store.suppressed(schedule.team, schedule.request.phone)) { done('DECLINED', 'recipient_asked_not_to_be_called'); if (schedule.status !== 'ENDED') this.end(schedule, 'recipient_asked_not_to_be_called'); this.note(schedule, run); continue; }
       if (m.status === 'CANCELLED') { done('CANCELLED'); continue; }
       if (m.answered) { done('ANSWERED'); continue; }
-      const retryable = schedule.status === 'ACTIVE' && now < schedule.until && run.attempts.length <= schedule.retries.count && jst(now).date === run.date;
+      // A retry never rings at night, whatever time the first attempt was: past the hours, the occurrence is over.
+      const retryable = schedule.status === 'ACTIVE' && now < schedule.until && run.attempts.length <= schedule.retries.count && jst(now).date === run.date && this.inHours(now + Math.max(0, (m.finishedAt ?? now) + schedule.retries.minutes * 60_000 - now));
       if (!retryable) {
         // The last word on this occurrence. Raised here as well as by the worker (same alert id, so once): a call that was
         // refused before dialling, or whose retries ran out of day, never reaches the worker's own check.
@@ -128,22 +131,24 @@ export class Schedules {
     }
     // 2. Start what is due. A time that passed while the line was busy or the service was down is skipped, not made up late.
     for (const schedule of this.store.everyStatus('schedule', 'ACTIVE')) {
-      if (now >= schedule.until) { this.end(schedule, 'reached_end_date'); continue; }
       // Days the service was not running leave no trace on their own. Each occurrence that came and went since this
       // schedule was last planned is written down as skipped and reported, so a missed day is never silent.
       if (schedule.plannedDay !== today.date) {
-        const since = Math.max(schedule.createdAt, schedule.resumedAt ?? 0), from = Math.max(since, Date.parse(`${schedule.plannedDay ?? jst(schedule.createdAt).date}T00:00:00+09:00`), now - 7 * 86400_000);
+        const caughtUp = [], since = Math.max(schedule.createdAt, schedule.resumedAt ?? 0), from = Math.max(since, Date.parse(`${schedule.plannedDay ?? jst(schedule.createdAt).date}T00:00:00+09:00`), now - 7 * 86400_000);
         for (let t = from; jst(t).date < today.date; t += 86400_000) {
           const d = jst(t); if (!schedule.weekdays.includes(d.weekday)) continue;
           for (const time of schedule.times) {
             const at = Date.parse(`${d.date}T${time}:00+09:00`), id = `${schedule.id}:${d.date}:${time}`;
             if (at <= since || at >= schedule.until || this.store.get('schedule-run', id)) continue;
             const missed = { id, owner: schedule.owner, scheduleId: schedule.id, date: d.date, time, attempts: [], state: 'SKIPPED', reason: 'service_was_not_running' };
-            this.saveRun(missed); this.note(schedule, missed);
+            this.saveRun(missed); caughtUp.push(missed);
           }
         }
+        // One notice for the whole gap, however many occurrences it held: a restart must not bury a real emergency under dozens of alerts.
+        if (caughtUp.length) this.alerts?.raise({ id: `${schedule.id}:gap:${today.date}`, owner: schedule.owner, team: schedule.team, origin: null, target: { name: schedule.request.name } }, 'schedule', 'notice', { categories: ['service_was_not_running', `${caughtUp.length}`] });
         schedule.plannedDay = today.date; this.store.put('schedule', schedule);
       }
+      if (now >= schedule.until) { this.end(schedule, 'reached_end_date'); continue; }
       if (!schedule.weekdays.includes(today.weekday)) continue;
       for (const time of schedule.times) {
         const id = `${schedule.id}:${today.date}:${time}`, at = minutesOf(time);
@@ -152,7 +157,8 @@ export class Schedules {
         // A schedule made at 10:00 does not owe the 09:00 call of that day.
         const created = jst(Math.max(schedule.createdAt, schedule.resumedAt ?? 0));
         if (created.date === today.date && created.minutes > at) continue;
-        if (today.minutes >= at + schedule.windowMinutes) { run.state = 'SKIPPED'; run.reason = 'window_passed'; this.saveRun(run); this.note(schedule, run); continue; }
+        // Past its window, or past the hours a call may be placed: skipped and said, never dialled late.
+        if (today.minutes >= at + schedule.windowMinutes || !this.inHours(now)) { run.state = 'SKIPPED'; run.reason = today.minutes >= at + schedule.windowMinutes ? 'window_passed' : 'outside_calling_hours'; this.saveRun(run); this.note(schedule, run); continue; }
         if (inUse >= lines) continue;
         if (this.dispatch(schedule, run)) inUse++;
         if (schedule.status !== 'ACTIVE') break;
@@ -162,6 +168,7 @@ export class Schedules {
   /** One occurrence attempt through the ordinary approval path. Returns true when a call was queued. */
   dispatch(schedule, run) {
     const s = this.service, attempt = run.attempts.length;
+    if (!this.inHours(this.store.now())) { run.state = attempt ? 'UNANSWERED' : 'SKIPPED'; run.reason = 'outside_calling_hours'; this.saveRun(run); this.note(schedule, run); return false; }
     try {
       const m = this.store.tx(() => {
         const owner = s.user(schedule.owner); s.write(owner);

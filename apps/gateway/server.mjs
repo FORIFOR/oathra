@@ -175,7 +175,7 @@ export async function createGateway(config,options={}){
   // Each contact says whether this team has stopped calling it, so the list can show that and offer the release.
   const contactsView=u=>store.list('contact',u.id).map(x=>{const stop=x.phone?store.suppression(u.team,x.phone):null;return {...x,suppressed:!!stop,...(stop?{suppressedBy:stop.by,suppressedHow:stop.how,suppressedAt:stop.at}:{})};});
   const batches=new Batches(service,alerts);
-  const worker=new Worker(service,channels,execute,alerts,schedules,batches),limits=new Map();worker.planEveryMs=options.planEveryMs??5000;
+  const worker=new Worker(service,channels,execute,alerts,schedules,batches),limits=new Map();worker.planEveryMs=options.planEveryMs??5000;worker.awaitAlerts=false;
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
     try{
@@ -318,9 +318,12 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-calls.csv"');return send(res,200,ownCallsCsv(service,u),'text/csv; charset=utf-8');}
       if(method==='POST'&&path==='/v1/contacts/import')return send(res,200,importContacts(service,u,data.contacts));
       // People who could not get through and asked to be called back. The person who owns the line sees them; so does their manager.
-      if(method==='GET'&&path==='/v1/callbacks'){const supervisor=['admin','manager'].includes(u.role),rows=[];
-        for(const row of store.db.prepare("SELECT body FROM records WHERE kind='callback-request' ORDER BY updated DESC LIMIT 500").iterate()){const r=store.open(row.body);if(r.owner===u.id||(supervisor&&r.team===u.team))rows.push({id:r.id,status:r.status,phone:r.phone,reason:r.reason,createdAt:new Date(r.createdAt).toISOString(),...(r.doneAt?{doneAt:new Date(r.doneAt).toISOString(),doneBy:r.doneBy}:{})});}
-        return send(res,200,{callbacks:rows,open:rows.filter(r=>r.status==='OPEN').length});}
+      if(method==='GET'&&path==='/v1/callbacks'){const supervisor=['admin','manager'].includes(u.role),mine=store.all('callback-request',u.id),rows=[...mine];
+        // A supervisor also sees teammates' lines; each owner's own records are read, never a page of everyone's.
+        if(supervisor)for(const other of config.users)if(other.id!==u.id&&other.team===u.team)rows.push(...store.all('callback-request',other.id));
+        const out=rows.sort((a,b)=>b.createdAt-a.createdAt).slice(0,500).map(r=>({id:r.id,status:r.status,phone:r.phone,reason:r.reason,createdAt:new Date(r.createdAt).toISOString(),...(r.doneAt?{doneAt:new Date(r.doneAt).toISOString(),doneBy:r.doneBy}:{})}));
+        if(out.length)store.audit(u.id,'callbacks.viewed',u.id,{count:out.length});
+        return send(res,200,{callbacks:out,open:out.filter(r=>r.status==='OPEN').length});}
       const callbackDone=/^\/v1\/callbacks\/([A-Za-z0-9_-]{6,80})\/done$/.exec(path);
       if(method==='POST'&&callbackDone){service.write(u);const r=store.get('callback-request',callbackDone[1]);assert(r&&(r.owner===u.id||(['admin','manager'].includes(u.role)&&r.team===u.team)),'not_found',404);
         assert(r.status==='OPEN','callback_already_done',409);store.put('callback-request',{...r,status:'DONE',doneAt:store.now(),doneBy:u.id});store.audit(u.id,'call.callback_done',r.id);return send(res,200,{done:true});}
@@ -360,7 +363,7 @@ export async function createGateway(config,options={}){
       }
       if(path==='/v1/session'&&method==='POST'){assert(auth?.startsWith('Bearer '),'bearer_required',401);sessions.create(req,res,u);return send(res,200,{signedIn:true,expiresInSeconds:8*3600});}
       if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:contactsView(u),missions:store.list('mission',u.id).filter(m=>m.direction!=='inbound').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
-        alertsConfigured:!!alerts.config,scheduleHours:config.callHours?.request??{from:'07:00',to:'21:00'},...(u.role==='admin'?{failedJobs:store.failedJobs(),undeliveredAlerts:store.countStatus('alert',['pending','processing'])}:{}),
+        alertsConfigured:!!alerts.config,scheduleHours:config.callHours?.request??{from:'07:00',to:'21:00'},...(['admin','manager'].includes(u.role)?{undeliveredAlerts:store.countStatus('alert',['pending','processing'])}:{}),...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         // Lets the page hide what cannot work here instead of offering it and failing.
         available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl,prerelease:config.prerelease??{enabled:false},voiceEngines:(config.voiceEngines??[]).map(({id,label,ready})=>({id,label,ready})),inbound:config.inbound?{owner:config.inbound.owner===u.id,restaurant:Boolean(config.inbound.restaurant)}:null}});

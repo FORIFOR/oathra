@@ -14,7 +14,7 @@
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
  */
-import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE, HEDGE_RE, REFUSAL_RE, RETRACTION_RE, UNAVAILABLE_RE } from "./extract.js";
+import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE, HEDGE_RE, REFUSAL_RE, RETRACTION_RE, UNABLE_RE, UNAVAILABLE_RE } from "./extract.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 /**
@@ -92,7 +92,9 @@ export class EvidenceEngine {
       u.source === "caller" ? this.pendingOffers : this.pendingProposals;
     const appointment = this.confirmation === "callee_acceptance";
     const commitment = appointment && isCalleeCommitment(u.text, u.source);
-    const resolves = u.source === "caller" ? acceptance : agreement || commitment;
+    // 「了解です、その日は不在です」: an agreement word beside a statement that the terms cannot be met settles nothing.
+    const unable = appointment && u.source === "callee" && UNABLE_RE.test(u.text);
+    const resolves = u.source === "caller" ? acceptance : !unable && (agreement || commitment);
     const restated = new Map(positive.map((c) => [c.field, c] as const));
 
     if (resolves) {

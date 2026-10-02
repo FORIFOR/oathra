@@ -226,6 +226,14 @@ export const UNAVAILABLE_RE =
  * the callee commits to it. 「9月25日の15時でお願いします」 from the callee is that commitment; in a
  * reservation the same words from a shop would only be an offer.
  */
+/**
+ * Appointment mode: words that say the proposed terms cannot be met, or that the line is not an answer at all
+ * (a hold, a request to repeat, "I can hear you"). 「はい、その日は不在です」 opens with yes and is a no.
+ */
+export const UNABLE_RE = /不在|お?休み(?:です|を|で|いただ|にな)|留守|厳し|きびし|足り(?:な|ませ)|扱って(?:い|お)?(?:な|ませ|りませ)|取り扱(?:って|い)(?:が)?(?:な|ませ|ござ)|間に合って|無理|会議|予定が(?:あ|入|ござ)|都合が(?:悪|つか|つき)|先約|出張|外出|難し|むずかし|(?:でき|いたし|お受けし)かね|いっぱい|埋まって|もう一度|もういちど|聞こえ|聞き取れ|在庫を(?:見|確|調)|見てき|調べ(?:て|ま)|確認して(?:き|まい|み)|お待ち(?:くだ|いただ)|わかりかね|分かりかね|担当(?:者)?(?:が|は)|out of (?:office|stock)|can't make|cannot make|not (?:available|possible)|say that again|can you hear/i;
+/** What may follow a bare opening 「はい」 for it to be a yes to the terms: nothing, courtesy, or the terms themselves. */
+const AFTER_YES_RE = /^(?:(?:よろしく)?お願い(?:します|いたします|致します)|ありがとうございます|わかりました|分かりました|結構です|それで|そちらで|その(?:日|時間|日程|内容)|では|please|thank you|thanks)/i;
+
 /** Something else that a callee may be agreeing to instead of the proposed terms. */
 export const OTHER_MATTER_RE = /資料|見積|カタログ|パンフレット|メール|ファッ?クス|FAX|送付|郵送|送って|折り返し|申し伝え|伝えて|伝えます|伝えておき|担当(?:者|の者)?(?:に|へ|から)|上(?:司|長|の者)(?:に|へ)|検討|の件|brochure|quote|e-?mail|pass (?:it|that) on|get back to you/i;
 /** Words that tie an agreement to the terms themselves: a date, a time, the meeting, the delivery, a number. */
@@ -242,11 +250,17 @@ export function isCalleeCommitment(text: string, source: Speaker): boolean {
   // 「はい、少々お待ちください」 (checking the stock, fetching someone) is a hold, not a yes.
   if (HOLD_RE.test(t)) return false;
   if (/[?？]|でしょうか|ですか|ますか|ませんか/.test(t)) return false;
+  if (UNABLE_RE.test(t)) return false;
   if (CALLEE_COMMIT_RE.test(t)) return true;
   // 「資料の送付は承知しました」「担当に伝えておきます、承知しました」 agrees to something, but not to the slot or the
   // order on the table. A bare yes that names another matter and says nothing of the terms is not a commitment to them.
   if (OTHER_MATTER_RE.test(t) && !TERMS_RE.test(t)) return false;
-  return AGREEMENT_RE.test(t) || AFFIRMATIVE_RE.test(t);
+  if (AGREEMENT_RE.test(t)) return true;
+  if (!AFFIRMATIVE_RE.test(t)) return false;
+  // A bare opening yes commits only when what follows is nothing, a courtesy, or the terms: 「はい、どうも。」 and
+  // 「ええ、聞こえています」 answer something, but not the proposal.
+  const rest = t.replace(AFFIRMATIVE_RE, "").replace(/^[\s、,。.!！」]+/, "").trim();
+  return rest === "" || AFTER_YES_RE.test(rest) || TERMS_RE.test(rest);
 }
 
 /** "…で合っておりますでしょうか？" is the callee asking back, not agreeing. */

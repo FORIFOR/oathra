@@ -32,3 +32,11 @@ describe("words that mean someone should read this line", () => {
     expect(detectDistress("痛いところはないけど、夜眠れなくて").map((s) => s.category)).toEqual(["mood"]);
   });
 });
+
+describe("lines a second review showed were missed", () => {
+  it.each(["転んでから足が動かない。", "転んでしまって、起きられない。", "頭が痛くてたまらない。", "めまいがして立っていられない。", "痛いけど誰も来てくれない。", "動けん。", "立てへん。", "もう死んでもええ。", "腰が動かんのよ、いや腰が動かないの。"])(
+    "flagged: %s", (text) => expect(level(text)).not.toBeNull());
+  it.each(["転んでから足が動かない。", "転んでしまって、起きられない。", "めまいがして立っていられない。", "動けん。", "立てへん。", "もう死んでもええ。"])(
+    "emergency: %s", (text) => expect(level(text)).toBe("emergency"));
+  it.each(["痛いところは特にないです", "転んだりはしておりません", "痛いとかはありません", "めまいはないです"])("still a denial: %s", (text) => expect(level(text)).toBeNull());
+});

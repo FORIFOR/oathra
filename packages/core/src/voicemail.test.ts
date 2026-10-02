@@ -11,3 +11,8 @@ describe("a recording is not an answer", () => {
     "はい、山田です", "もしもし", "今ちょっと出られないのであとでかけ直します", "母は留守です", "伝言をお願いできますか", "ピーマンは苦手です", "電話に出るのが遅くなってすみません", "メッセージは受け取りました", "",
   ])("person: %s", (text) => expect(isMachineGreeting(text)).toBe(false));
 });
+
+describe("carrier announcements a second review showed were taken for a person", () => {
+  it.each(["お留守番サービスに接続します。合図の音がしましたら、ご用件をお話しください。", "おかけになった電話をお呼びしましたが、お出になりません。", "ただいま電話に出られません。", "ピーッと鳴りましたらお名前とご用件をどうぞ。"])(
+    "machine: %s", (text) => expect(isMachineGreeting(text)).toBe(true));
+});

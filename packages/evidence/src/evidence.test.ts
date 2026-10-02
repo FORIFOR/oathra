@@ -626,3 +626,23 @@ describe("agreeing to something else is not agreeing to the terms", () => {
   it.each(["承知しました。", "はい、大丈夫です。", "その日程は承知しました。", "10月5日の14時で承知しました。資料もその時にお願いします。", "では5日の14時にお待ちしております。", "その時間でお願いします。"])(
     "settled: %s", (reply) => expect(settled(reply)).toBe(true));
 });
+
+describe("a reply that opens with yes is not always a yes (appointment mode)", () => {
+  const meeting = defineCall({ goal: "sales.meeting", language: "ja", require: { date: true, time: true, confirmed: true }, confirmation: "callee_acceptance" });
+  const order = defineCall({ goal: "phone.message", language: "ja", require: { quantity: true, date: true, confirmed: true }, confirmation: "callee_acceptance" });
+  const settled = (contract: ReturnType<typeof defineCall>, ask: string, reply: string) => {
+    const engine = new EvidenceEngine({ language: "ja", now: new Date("2026-10-02T12:00:00+09:00"), confirmation: "callee_acceptance" });
+    engine.ingest({ id: "a", source: "caller", text: ask, t: 0 });
+    engine.ingest({ id: "b", source: "callee", text: reply, t: 1 });
+    return evaluate(contract, engine, "completed").complete;
+  };
+  const visit = "10月20日の15時に伺いたいのですが、よろしいでしょうか。", cases = "50ケースを10月20日納品でお願いしたいのですが、可能でしょうか。";
+  it.each(["はい、その日は不在です。", "はい、15時は会議です。", "はい、間に合ってます。", "はい、どうも。", "ええ、聞こえています。", "はい、もう一度お願いします。", "了解です、その日は出張です。", "はい、担当が休みでして。", "はい、その日は予定が入っております。", "はい、都合が悪いんです。", "はい、少し難しいですね。"])(
+    "meeting not settled: %s", (reply) => expect(settled(meeting, visit, reply)).toBe(false));
+  it.each(["はい、在庫を見てきます。", "はい、50ケースは厳しいです。", "はい、うちでは扱っていないんです。", "はい、もう一度お願いします。", "ええ、聞こえています。", "はい、50ケースは足りないですね。", "はい、確認してきます。"])(
+    "order not settled: %s", (reply) => expect(settled(order, cases, reply)).toBe(false));
+  it.each(["はい。", "はい、お願いします。", "はい、大丈夫です。", "はい、10月20日の15時ですね、お待ちしております。", "ええ、その日程で結構です。", "はい、わかりました。", "承知しました。"])(
+    "meeting settled: %s", (reply) => expect(settled(meeting, visit, reply)).toBe(true));
+  it.each(["はい、50ケース、10月20日納品で大丈夫です。", "はい、承知しました。", "はい、お願いします。"])(
+    "order settled: %s", (reply) => expect(settled(order, cases, reply)).toBe(true));
+});

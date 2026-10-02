@@ -231,3 +231,21 @@ test('two businesses on one gateway: the number that was rung decides who answer
   '[{"number":"+815011110000","owner":"owner","name":"x"},{"number":"+815011110000","owner":"owner","name":"y"}]','[{"number":"+815011110000","owner":"owner","name":"x","admin":true}]'])
   assert.throws(()=>setup({extra:{OATHRA_INBOUND_LINES_JSON:bad}}),/configure_inbound_lines_json/,bad);
 });
+
+test('with several lines, a call to a number that is none of them is not answered as the main line; odd To values are not lines',async()=>{
+ const lines=JSON.stringify([{number:'+815011110000',owner:'colleague',name:'ひかり苑'}]);
+ await using(f=>{
+  for(const To of ['+815099999999','constructor','__proto__',''])assert.equal(answered(f.ring('+819011112222',{To}).twiml),false,To);
+  assert.equal(f.store.list('mission').length,0);
+  assert.ok(answered(f.ring('+819011112222').twiml),'the main number still answers');
+ },{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_LINES_JSON:lines}})();
+});
+test('a caller who asks two businesses for a call back leaves one request with each; a flood is capped',async()=>{
+ const lines=JSON.stringify([{number:'+815011110000',owner:'colleague',name:'ひかり苑',hours:closed}]);
+ await using(f=>{
+  f.press(f.ring('+819011112222').twiml,'1');f.press(f.ring('+819011112222',{To:'+815011110000'}).twiml,'1');
+  assert.deepEqual([f.store.all('callback-request','owner').length,f.store.all('callback-request','colleague').length],[1,1]);
+  for(let i=0;i<40;i++)f.press(f.ring('+8190'+String(20000000+i)).twiml,'1');
+  assert.equal(f.store.all('callback-request','owner').length,30,'thirty an hour per owner');
+ },{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_HOURS:closed,OATHRA_INBOUND_LINES_JSON:lines}})();
+});

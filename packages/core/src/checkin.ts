@@ -30,8 +30,10 @@ const ASKED: { topic: CheckInTopic; re: RegExp }[] = [
 const QUESTION = /[?？]|ですか|ますか|ましたか|でしょうか|ませんか|かな[?？]?$|いかが|どう(?:です|でした)/;
 const HEDGE = /たぶん|多分|かな(?:あ|ぁ)?|かも|っけ|だっけ|覚えてな|おぼえてな|忘れ(?:た|ちゃ|て)|わから|分から|どうだった|さあ|はず|と思う|気がする|ような/;
 // "yes" needs words for a finished action (or a bare affirmation) and nothing that negates or postpones it.
-const YES = /^(?:はい|ええ|うん|そう(?:です|だ))|(?:飲み|のみ|食べ|たべ|いただき|眠れ|寝られ|済ませ)ました|(?:飲んだ|のんだ|食べた|たべた|眠れた|寝られた|寝た|済んだ)|ぐっすり/;
-const NO = /いいえ|^いえ|いや|ううん|まだ|ない|ません|なかった|なく(?:て|な)|忘れ|抜い|あとで|後で|これから|ところ|切らし|食欲/;
+const YES = /^(?:はい|ええ(?!と|っと|ー)|うん|そう(?:です|だ))|(?:飲み|のみ|食べ|たべ|いただき|眠れ|寝られ|済ませ)ました|(?:飲んだ|のんだ|食べた|たべた|眠れた|寝られた|寝た|済んだ)|ぐっすり/;
+// Standard and dialect negations, things put off, and things half done. Broad on purpose: a wrong "no" sends a person to
+// look; a wrong "yes" hides a missed medicine.
+const NO = /いいえ|^いえ|いや|ううん|まだ|ない|ません|なかった|なく(?:て|な)|忘れ|抜い|あとで|後で|これから|今から|いまから|ところ|切らし|食欲|へん|とらん|どらん|てらん|れん(?:よ|わ|の|かった|[。、\s]|$)|らん(?:よ|わ|の|かった|[。、\s]|$)|ておらん|たり[^。]{0,10}たり/;
 const FINE = /元気|大丈夫|だいじょうぶ|変わりな|変わりあり|かわりな|問題な|調子(?:は|が)?(?:いい|良い|よい)|おかげさま|普通|ぼちぼち|まあまあ/;
 const NOTHING = /特に(?:ない|ありません|なし)|別に(?:ない|ありません)?|ない(?:です|よ|ね)?$|ありません|大丈夫|だいじょうぶ|いいえ|^いえ|ございません/;
 
@@ -41,7 +43,9 @@ function classify(topic: CheckInTopic, text: string): CheckInAnswer {
   if (HEDGE.test(line)) return "unclear";
   if (topic === "condition") {
     // "yes" = said they are well. Any sign of trouble makes it "no"; both at once is for a human to read.
-    const troubled = detectDistress(line).length > 0, fine = FINE.test(line);
+    // 「元気がないです」「大丈夫じゃないです」 contain the word for well and mean the opposite.
+    const unwell = /元気(?:が|は|も)?(?:な|出な|でな|ありま)|大丈夫(?:じゃ|では)(?:な|あり)|(?:よ|良)く(?:は)?(?:な|ありま)|すぐれ|優れ(?:な|ませ)|いまいち|今ひとつ|あまり(?:よ|良)/.test(line);
+    const troubled = unwell || detectDistress(line).length > 0, fine = !unwell && FINE.test(line);
     return troubled && fine ? "unclear" : troubled ? "no" : fine ? "yes" : "unclear";
   }
   if (topic === "help") {

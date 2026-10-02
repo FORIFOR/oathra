@@ -99,3 +99,13 @@ describe("the note for a relative", () => {
     expect(checkInNote(checkInReport([]), who)).toBe("山本 ハルさんへのひかり苑からのお電話（10月2日 9時ごろ）のご報告です。\nお電話に出られなかったか、お話ができませんでした。\nこの内容は電話での応答の記録で、ご本人の様子を確かめたものではありません。");
   });
 });
+
+describe("answers a second review showed were recorded as yes", () => {
+  const one = (question: string, reply: string, topic: string) => Object.fromEntries(checkInReport([{ source: "caller", text: question }, { source: "callee", text: reply }]).items.map((i) => [i.topic, i.answer]))[topic];
+  it.each([
+    ["体調はいかがですか。", "元気がないです。", "condition", "no"], ["体調はいかがですか。", "大丈夫じゃないです。", "condition", "no"], ["お体の調子はいかがですか。", "あまりよくないです。", "condition", "no"],
+    ["お薬は飲みましたか。", "はい、今から飲みます。", "medication", "unclear"], ["お薬は飲みましたか。", "うん、飲んどらん。", "medication", "unclear"], ["お薬は飲みましたか。", "ええと、飲んでへんわ。", "medication", "no"],
+    ["朝ご飯は食べましたか。", "食べたくても食べれんのよ。", "meal", "unclear"], ["朝ご飯は食べましたか。", "はい、食べとらんよ。", "meal", "unclear"], ["よく眠れましたか。", "寝たり起きたりで。", "sleep", "unclear"],
+    ["体調はいかがですか。", "元気ですよ。", "condition", "yes"], ["お薬は飲みましたか。", "ええ、飲みました。", "medication", "yes"],
+  ])("%s → %s is %s: %s", (question, reply, topic, expected) => expect(one(question, reply, topic)).toBe(expected));
+});

@@ -467,8 +467,8 @@ test('draft: a suppressed contact, a simulation-only contact and a contact witho
   assert.equal(f.store.unsuppress('one', f.contact.phone), 'released');
   assert.equal(callSalesTool(f.service, me, 'oathra_sales_draft', draftInput(f, { operationKey: key(4) })).state, 'DRAFT');
   assert.equal(callSalesTool(f.service, me, 'oathra_sales_context').contacts.find(c => c.id === f.contact.id).callPermitted, true);
-  // Another team's refusal protects the person too.
-  f.store.suppress('two', f.contact.phone, 'manual');
+  // What the person told another team protects them here too (a stop a staff member set by hand is that team's own).
+  f.store.suppress('two', f.contact.phone, 'transcript');
   fails(() => callSalesTool(f.service, me, 'oathra_sales_draft', draftInput(f, { operationKey: key(5) })), 'recipient_suppressed', 403);
 }));
 

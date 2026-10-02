@@ -91,3 +91,9 @@ test('a stop the person made by key press is never written over, so nothing can 
   // The other order still records the key press.
   const q='+819000000002';f.store.suppress('one',q,'manual');f.store.suppress('one',q,'dtmf');assert.equal(f.store.unsuppress('one',q),'opted_out_by_recipient');
 }));
+
+test('a stop a staff member set by hand is their team’s own; what the person said or did binds every team',using(f=>{
+  const p='+819000000003',q='+819000000004';
+  f.store.suppress('two',p,'manual');assert.equal(f.store.suppressed('two',p),true);assert.equal(f.store.suppressed('one',p),false);
+  f.store.suppress('two',q,'transcript');assert.equal(f.store.suppressed('one',q),true);
+}));

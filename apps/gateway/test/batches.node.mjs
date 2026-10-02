@@ -138,3 +138,12 @@ test('a paused list expires like any other',using(async f=>{
   const b=f.sales([f.contact(1).id]);f.batches.set(f.alice,b.id,'PAUSED');f.advance(8*86400_000);await f.pass();
   assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>[i.state,i.reason]),[['SKIPPED','batch_expired']]);assert.equal(f.batches.list(f.alice)[0].status,'FINISHED');
 }));
+
+test('the same number saved twice is called once; a number changed after the approval is not called',using(async f=>{
+  const a=f.contact(1),twin=f.service.contact(f.alice,{name:'取引先1の別名',phone:a.phone,relationship:'customer',basis:'既存の取引先'}),b=f.contact(2);
+  const made=f.sales([a.id,twin.id,b.id]);
+  assert.deepEqual(made.items.map(i=>[i.state,i.reason??null]),[['PENDING',null],['SKIPPED','same_number_as_another_contact'],['PENDING',null]]);
+  f.store.put('contact',{...b,phone:'+819000000299'});
+  await f.pass();await f.pass();await f.pass();
+  assert.deepEqual(f.dialed,['取引先1']);assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>[i.state,i.reason??null]),[['DONE',null],['SKIPPED','same_number_as_another_contact'],['FAILED','contact_changed_review_again']]);
+}));

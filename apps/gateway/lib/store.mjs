@@ -63,7 +63,8 @@ export class Store {
     const k = mac(this.cipherKey, phone);
     // The person's own key press is never written over: a later manual or transcript entry must not make it releasable.
     // The value is "<how>@<when>": enough to tell the person looking at the contact how and when the calls were stopped.
-    for (const scope of [`suppress:${team}`, 'suppress:*']) if (!/dtmf/.test(this.key(scope, k) ?? '')) this.setKey(scope, k, `${source}@${this.now()}`);
+    // What the person said or did binds every team; a stop a staff member set by hand is that team's own decision.
+    for (const scope of source === 'manual' ? [`suppress:${team}`] : [`suppress:${team}`, 'suppress:*']) if (!/dtmf/.test(this.key(scope, k) ?? '')) this.setKey(scope, k, `${source}@${this.now()}`);
   }
   /** How this team's stop on a number came about: 'recipient' (their own key press), 'other', or null when there is none. */
   suppressionSource(team, phone) { return this.suppression(team, phone)?.by ?? null; }

@@ -154,7 +154,9 @@ export class Phone {
     const from=String(params.From??''),callSid=String(params.CallSid??''),known=/^\+[1-9]\d{7,14}$/.test(from)&&/^CA[a-f0-9]{32}$/i.test(callSid);
     // A shared caller ID cannot identify which customer a shop is calling back. Never guess between owners.
     // Several businesses can share one gateway, each on its own number: the number that was rung picks the line.
-    const to=String(params.To??''),lined=!!this.config.inboundLines?.[to],cfg=inboundLine(this.config,to),reception=!!cfg?.restaurant,candidates=[];
+    const to=String(params.To??''),lined=!!this.config.inboundLines&&Object.hasOwn(this.config.inboundLines,to),
+      // With several lines, a call to a number that is none of them is not the main line's to answer or pay for.
+      stray=!!this.config.inboundLines&&!lined&&to!==this.config.callerId,cfg=stray?null:inboundLine(this.config,to),reception=!!cfg?.restaurant,candidates=[];
     if(known&&!reception&&!cfg?.business)for(const row of this.store.db.prepare("SELECT body FROM records WHERE kind='mission'").iterate()) {
       const x=this.store.open(row.body);
       if(x.kind==='phone-request'&&x.direction!=='inbound'&&x.target?.phone===from&&x.carrierSid&&(x.approvedAt??0)>this.store.now()-30*86400_000)candidates.push(x);
@@ -248,7 +250,11 @@ export class Phone {
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">承りました。今後、この番号からお電話することはありません。</Say><Hangup/></Response>`;}
     // 1 means "call me back" only where that was offered.
     if(saved&&params.Digits==='1'&&this.store.open(saved).callback){
-      const info=this.store.open(saved),id=this.store.phoneRef(info.phone);
+      // One open request per caller per line owner; a caller who rings two businesses leaves one with each.
+      const info=this.store.open(saved),id=this.store.phoneRef(info.owner+':'+info.phone),hour=Math.floor(this.store.now()/3600_000),made=Number(this.store.key('callback-rate',`${hour}:${info.owner}`)??0);
+      // A flood of spoofed callers must not bury the real requests: a ceiling per owner on open requests and per hour.
+      if(made>=30||this.store.all('callback-request',info.owner).filter(r=>r.status==='OPEN').length>=200)return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">おそれいりますが、時間をおいて、おかけ直しください。</Say><Hangup/></Response>`;
+      this.store.setKey('callback-rate',`${hour}:${info.owner}`,String(made+1),3600_000);
       // One open request per caller: pressing again, or calling again, does not pile them up. Nothing is promised.
       if(!this.store.all('callback-request',info.owner).some(r=>r.id===id&&r.status==='OPEN')){
         this.store.put('callback-request',{id,owner:info.owner,team:info.team,status:'OPEN',phone:info.phone,reason:info.reason??'busy',createdAt:this.store.now()});

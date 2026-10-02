@@ -66,6 +66,9 @@ function pinnedPost(url, address, headers, body) {
   return new Promise((resolve, reject) => {
     const req = request(url, { method: 'POST', headers: { ...headers, 'content-length': Buffer.byteLength(body) }, timeout: 10_000, lookup: (_host, options, cb) => options?.all ? cb(null, [{ address, family: 4 }]) : cb(null, address, 4) },
       res => { res.resume(); res.on('end', () => resolve(res.statusCode >= 200 && res.statusCode < 300)); res.on('error', reject); });
+    // `timeout` is idle time; an endpoint that trickles bytes would hold the connection for ever without a total deadline.
+    const deadline = setTimeout(() => req.destroy(new Error('alert_timeout')), 12_000); deadline.unref?.();
+    req.on('close', () => clearTimeout(deadline));
     req.on('timeout', () => req.destroy(new Error('alert_timeout'))); req.on('error', reject); req.end(body);
   });
 }
