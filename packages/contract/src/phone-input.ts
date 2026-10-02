@@ -164,6 +164,16 @@ export const PhoneRequestFieldsSchema = z.object({
   // Optional: a reservation request may book what was approved (date, time, party, name) — the one task that widens
   // what the AI may do. Purchases, payments, card numbers and further calls stay forbidden. Absent: ask-only.
   task: z.enum(["reservation"]).optional(),
+  // Optional, machine-checkable completion conditions. Arbitrary prose is never a success predicate.
+  success: z.object({
+    required: z.array(z.enum(["date", "time", "partySize", "price", "confirmed"])).min(1).max(5),
+    expected: z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      time: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).optional(),
+      partySize: z.number().int().min(1).max(1000).optional(),
+      price: z.number().finite().min(0).optional(),
+    }).strict().default({}),
+  }).strict().optional(),
   // Optional: which speech-to-speech engine speaks. Absent keeps the server's configured engine.
   engine: z.enum(PHONE_ENGINES).optional(),
   // Optional: which voice speaks. Absent keeps the engine's default. A voice belongs to one engine.
@@ -181,7 +191,7 @@ export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, c
 });
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset" | "task">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset" | "task" | "success">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

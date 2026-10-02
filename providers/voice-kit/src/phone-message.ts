@@ -117,7 +117,9 @@ function businessPreset(preset: unknown): boolean {
 export function phoneMessageInstructions(contract: CallContract, newsAvailable = false): string {
   const callerName = extractCallerName(contract);
   const who = callerName ? `${callerName}さん` : "依頼者";
-  const input = `Input: ${JSON.stringify({ name: contract.target.name, ...(callerName ? { callerName } : {}), request: contract.input.request })}`;
+  const input = `Input: ${JSON.stringify({ name: contract.target.name, ...(callerName ? { callerName } : {}), request: contract.input.request,
+    ...(Object.keys(contract.constraints).length ? { requiredConditions: contract.constraints, conditionsPolicy: '依頼文よりこの条件を優先し、違う条件で確定しない。満たせない場合は持ち帰る。' } : {}),
+    ...(Object.keys(contract.require).length ? { fieldsToConfirm: Object.keys(contract.require).filter(k => contract.require[k]) } : {}) })}`;
   // Someone who does not know who is calling hangs up. "誰?" outranks whatever was being said.
   const identity = contract.language === "ja"
     ? `相手が「誰?」「どちら様?」「何の電話?」のように相手や用件を尋ねたら、話していた内容を止めて最優先で答えてください: あなたはAIであること、${callerName ? `${callerName}さんに頼まれて代わりに電話していること` : "相手の知り合いの方に頼まれて代わりに電話していること（依頼者の名前は預かっていないと正直に伝える）"}、そして用件を一、二文で。答えたあとは相手の反応を待ってください。名乗るときは「${callerName ? `${callerName}さんの代わりにお電話しているAIです` : "知り合いの方の代わりにお電話しているAIです"}」のように、誰の代わりかを必ず含めてください。相手が驚いていたり戸惑っている様子なら「突然のお電話ですみません！」と優しく添えて安心させてください。`
@@ -178,4 +180,3 @@ export function phoneMessageInstructions(contract: CallContract, newsAvailable =
     "When closing the call or when the callee says 'bye', 'okay thanks', or wants to hang up, reply with a warm, friendly goodbye (matching their casual/polite tone) before using end_call. Never abruptly hang up without a closing remark.",
   ].join("\n");
 }
-
