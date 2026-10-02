@@ -226,6 +226,11 @@ export const UNAVAILABLE_RE =
  * the callee commits to it. 「9月25日の15時でお願いします」 from the callee is that commitment; in a
  * reservation the same words from a shop would only be an offer.
  */
+/** Something else that a callee may be agreeing to instead of the proposed terms. */
+export const OTHER_MATTER_RE = /資料|見積|カタログ|パンフレット|メール|ファッ?クス|FAX|送付|郵送|送って|折り返し|申し伝え|伝えて|伝えます|伝えておき|担当(?:者|の者)?(?:に|へ|から)|上(?:司|長|の者)(?:に|へ)|検討|の件|brochure|quote|e-?mail|pass (?:it|that) on|get back to you/i;
+/** Words that tie an agreement to the terms themselves: a date, a time, the meeting, the delivery, a number. */
+export const TERMS_RE = /日程|日時|時間|その日|当日|打ち?合わ?せ|商談|面談|お約束|ご?予約|納期|納品|数量|[0-9０-９]|[一二三四五六七八九十]+(?:日|時|月)|曜|that (?:time|day|date)|the (?:meeting|date|time)/i;
+
 export const CALLEE_COMMIT_RE =
   /でお願い(?:します|いたします)|で大丈夫です|で結構です|で構いません|で問題(?:ありません|ございません)|伺います|お待ちして(?:おり)?ます|お約束(?:します|いたします)|確定です|絶対(?:に)?行く|行く行く|行きます|空けと(?:く|きます)|空けてお(?:く|きます)|(?:それ|そこ)で(?:いい|オッケー|おっけー|OK)|I'm in|count me in|I'll be there|works for me|that works|see you then|sounds good|confirmed|let's do (?:that|it)/i;
 
@@ -237,7 +242,11 @@ export function isCalleeCommitment(text: string, source: Speaker): boolean {
   // 「はい、少々お待ちください」 (checking the stock, fetching someone) is a hold, not a yes.
   if (HOLD_RE.test(t)) return false;
   if (/[?？]|でしょうか|ですか|ますか|ませんか/.test(t)) return false;
-  return CALLEE_COMMIT_RE.test(t) || AGREEMENT_RE.test(t) || AFFIRMATIVE_RE.test(t);
+  if (CALLEE_COMMIT_RE.test(t)) return true;
+  // 「資料の送付は承知しました」「担当に伝えておきます、承知しました」 agrees to something, but not to the slot or the
+  // order on the table. A bare yes that names another matter and says nothing of the terms is not a commitment to them.
+  if (OTHER_MATTER_RE.test(t) && !TERMS_RE.test(t)) return false;
+  return AGREEMENT_RE.test(t) || AFFIRMATIVE_RE.test(t);
 }
 
 /** "…で合っておりますでしょうか？" is the callee asking back, not agreeing. */

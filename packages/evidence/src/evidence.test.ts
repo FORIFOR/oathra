@@ -612,3 +612,17 @@ describe("audit 2026-09-26: what must not complete", () => {
     expect(parseDates("14日でお願いします", NOW).map((d) => d.value)).toEqual(["2026-09-14"]);
   });
 });
+
+describe("agreeing to something else is not agreeing to the terms", () => {
+  const meeting = defineCall({ goal: "sales.meeting", language: "ja", require: { date: true, time: true, confirmed: true }, confirmation: "callee_acceptance" });
+  const settled = (reply: string) => {
+    const engine = new EvidenceEngine({ language: "ja", now: new Date("2026-10-02T12:00:00+09:00"), confirmation: "callee_acceptance" });
+    engine.ingest({ id: "a", source: "caller", text: "10月5日の14時からお打ち合わせはいかがでしょうか。", t: 0 });
+    engine.ingest({ id: "b", source: "callee", text: reply, t: 1 });
+    return evaluate(meeting, engine, "completed").complete;
+  };
+  it.each(["資料の送付は承知しました。", "お見積もりの送付は承知しました。", "メールの件、了解です。", "担当に伝えておきます、承知しました。", "資料は送ってください、承知しました。", "カタログだけ送っていただければ結構です、はい。", "検討します、承知しました。", "折り返しご連絡します、承知しました。"])(
+    "not settled: %s", (reply) => expect(settled(reply)).toBe(false));
+  it.each(["承知しました。", "はい、大丈夫です。", "その日程は承知しました。", "10月5日の14時で承知しました。資料もその時にお願いします。", "では5日の14時にお待ちしております。", "その時間でお願いします。"])(
+    "settled: %s", (reply) => expect(settled(reply)).toBe(true));
+});
