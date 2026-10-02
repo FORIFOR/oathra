@@ -580,9 +580,14 @@ input[type=file] { width: 100%; min-height: 44px; padding: 8px 0; font-size: 14p
 .band-k time { font-size: 12px; color: var(--muted); }
 .band blockquote { margin: 6px 0 0; padding-left: 12px; border-left: 2px solid var(--line-2); font-size: 16px; line-height: 1.8; overflow-wrap: anywhere; }
 .band.emergency blockquote { border-left-color: var(--coral); }
-.band .band-note { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); }
-.warnbox.no-answer { margin: 0 0 24px; font-size: 14px; }
-.warnbox.no-answer b { display: block; font-size: 17px; }
+.band .band-act { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-2); font-size: 15px; font-weight: 400; color: var(--ink); }
+.band .band-note { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.lvl.miss { border: 1px solid var(--ink-2); background: var(--panel); color: var(--ink); }
+.lvl.miss::before { content: "×"; margin-right: 6px; }
+.flag-line { margin-top: 8px; }
+.call-when { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.workspace-active .warnbox.no-answer { margin: -10px 0 0; font-size: 14px; }
+.workspace-active .call-main:has(> .no-answer) .request-details { margin-top: 20px; }
 .checkin { margin: 0 0 8px; }
 .workspace-active .checkin .page-h { flex-wrap: wrap; gap: 4px 16px; margin-bottom: 10px; }
 .checkin-table, .team-table { width: 100%; border-collapse: collapse; }
@@ -679,3 +684,54 @@ input[type=file] { width: 100%; min-height: 44px; padding: 8px 0; font-size: 14p
   .checkin-table th, .checkin-table td { padding: 2px 0; border: 0; }
   .checkin-table td:nth-child(2) { width: auto; }
 }
+
+/* 2026-10-02 round 2: the approval of a standing request is read on the page, not in a scrolling box. */
+.workspace-active .ask-side.rep-open { position: static; max-height: none; overflow: visible; }
+.rep-sum { margin: 4px 0 0; }
+.workspace-active .ask-side .rep-sum { grid-template-columns: 92px minmax(0, 1fr); }
+.rep-sum dt, .rep-sum dd { padding: 8px 0; }
+#rep-hours { margin: 6px 0 0; }
+.workspace-active .ask-form textarea#ask-instruction { resize: none; overflow: hidden; }
+.contacts-layout > .stack > [hidden] + * { margin-top: 0; }
+/* 名簿にまとめて電話 */
+.pick-bar h2 { margin: 0 0 6px; font-size: 15px; }
+.pick-count { margin: 0; font-size: 14px; }
+.btn[aria-disabled] { opacity: .45; cursor: not-allowed; }
+.page-actions .btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+label.item.pick { min-height: 56px; cursor: pointer; }
+label.item.pick input { width: 20px; height: 20px; flex: none; accent-color: var(--ink); }
+.list-picked { margin: 0 0 8px; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.workspace-active .list-h { margin: 6px 0 0; font-size: 15px; }
+.list-who { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); font-size: 13px; }
+.list-who li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); line-height: 1.7; }
+.list-who b { min-width: 0; overflow-wrap: anywhere; }
+.list-who.no span { color: var(--amber); }
+.list-items { margin-top: 18px; border-top: 1px solid var(--line); }
+.list-items .team-table tbody th { font-weight: 700; }
+.list-items .team-table td:nth-child(3) { white-space: normal; }
+.list-items .link { display: inline-flex; align-items: center; min-height: 44px; }
+/* チームの電話: この7日間 */
+.team-sum { min-height: 150px; margin: 0 0 24px; }
+.sum-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.sum-tile { padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.sum-tile dt { font-size: 13px; color: var(--muted); }
+.sum-tile dd { margin: 4px 0 0; }
+.sum-tile b { display: block; font-family: var(--mono); font-size: 24px; }
+.sum-tile dd span { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.sum-days { list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 12px 0 0; padding: 0; }
+.sum-days li { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 84px; padding: 8px 2px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); font-size: 12px; }
+.sum-days time { font-size: 12px; } .sum-days .wd { color: var(--muted); }
+.sum-days b { font-size: 14px; }
+.sum-days .at { min-height: 18px; font-size: 11px; font-weight: 700; color: var(--amber); white-space: nowrap; }
+.sum-days li.has { border-color: var(--amber-line); }
+@media (max-width: 860px) {
+  .team-table td.none { display: none; }
+  .team-table td[data-label^="話したこと"] { grid-column: 1 / -1; }
+  .glance { flex-direction: column; }
+}
+@media (max-width: 560px) {
+  .sum-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sum-days .at { font-size: 10px; }
+}
+label.item.pick b { color: var(--ink); }
+.runs .lvl { justify-self: start; }

@@ -83,7 +83,11 @@ const ERRORS = {
   privacy_consent_required: '会話データの取り扱いへの同意が必要です。「電話を頼む」で同意してから、もう一度お試しください。',
   explicit_schedule_approval_required: '決まりを読んだことにチェックを入れてください。',
   schedule_ended: 'この定期の電話は、すでに終了しています。', idempotency_conflict: '内容が変わりました。もう一度お試しください。',
-  recipient_opted_out: '相手が電話中のボタン操作で連絡を止めたため、解除できません。', not_suppressed: 'この相手は、連絡停止になっていません。',
+  recipient_opted_out: '相手が通話中にボタンを押して連絡を止めたため、解除できません。', not_suppressed: 'この相手は、連絡停止になっていません。',
+  batch_1_to_100_contacts: '名簿は1〜100人で作ってください。', batch_has_no_callable_contact: 'かけられる相手がいません。連絡先の電話番号・関係・根拠を確かめてください。',
+  batch_cannot_reserve: '予約を取る電話は、名簿ではかけられません。', invalid_batch_retry: 'かけ直しは0〜2回、間隔は30分〜24時間で選んでください。',
+  explicit_batch_approval_required: '決まりを読んだことにチェックを入れてください。', batch_ended: 'この名簿は、すでに終わっています。',
+  insufficient_connection_credits: 'クレジットが足りません。設定の「費用とクレジット」から追加できます。', outside_calling_hours: '電話をかけてよい時間の外です。',
   supervisor_required: 'この操作は、管理者かマネージャーだけができます。', release_reason_required: '解除する理由を5〜300文字で書いてください。',
   suppression_confirmation_required: '確かめたことにチェックを入れてください。', import_1_to_500_rows: '一度に取り込めるのは1〜500件です。',
   invalid_contact_row: '読み取れない行です。列の名前と内容を確かめてください。',
@@ -230,7 +234,7 @@ function renderBar() {
 }
 
 // ---------------------------------------------------------------- router
-const routes = { '': home, requests, schedule, new: ask, call, practice, contacts, settings, standing, team: (id) => id ? call(id, undefined, true) : team() };
+const routes = { '': home, requests, schedule, new: ask, call, practice, contacts, settings, standing, team: (id) => id ? call(id, undefined, true) : team(), lists: (id) => id === 'new' ? listNew() : lists() };
 let routeVersion = 0;
 function renderRouteError(view, error) {
   const retry = error.readOnlyRetry === false ? el('a', { class: 'btn primary', href: '#/', text: 'ホームで状態を確認' }) : el('button', { class: 'btn primary', type: 'button', text: 'もう一度読み込む', onclick: async () => {
@@ -258,7 +262,7 @@ async function route() {
   const [name = '', id, sub] = routeHash.split('?')[0].replace(/^#\/?/, '').split('/');
   const view = $('#view');
   for (const a of document.querySelectorAll('[data-tab]')) {
-    const tab = a.dataset.tab, on = tab === (name || 'home') || (tab === 'requests' && ['new', 'call', 'standing', 'team'].includes(name));
+    const tab = a.dataset.tab, on = tab === (name || 'home') || (tab === 'requests' && ['new', 'call', 'standing', 'team', 'lists'].includes(name));
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   }
   if (!app.boot) {
@@ -415,7 +419,7 @@ async function requests() {
   const need = app.history.filter(needsYou), live = app.history.filter(r => LIVE.includes(r.state)), done = app.history.filter(r => !needsYou(r) && !LIVE.includes(r.state));
   const page = el('div', { class: 'page' });
   page.append(el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '依頼' }), el('p', { class: 'page-intro', text: '発信前の確認と、終わった電話の報告をまとめています。' })),
-    el('div', { class: 'actions page-actions' }, el('a', { class: 'btn', href: '#/standing', text: '定期の電話' }), isSupervisor() ? el('a', { class: 'btn', href: '#/team', text: 'チームの電話' }) : null)));
+    el('div', { class: 'actions page-actions' }, el('a', { class: 'btn', href: '#/standing', text: '定期の電話' }), el('a', { class: 'btn', href: '#/lists', text: '名簿の電話' }), isSupervisor() ? el('a', { class: 'btn', href: '#/team', text: 'チームの電話' }) : null)));
   page.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'あなたの確認が必要' }), need.length ? el('span', { class: 'sub', text: `${need.length}件` }) : null));
   page.append(need.length ? el('div', { class: 'need' }, ...need.map(needCard)) : el('p', { class: 'muted', text: '確認が必要なものはありません。' }));
   if (live.length) { page.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: '進行中' }))); page.append(callRows(live, '')); }
@@ -615,17 +619,23 @@ async function ask() {
   const consented = b.account?.consentVersion === b.configuration.consentVersion;
   const consentAgree = el('input', { type: 'checkbox', id: 'ask-consent' });
 
+  // Who the AI says it calls for. A kind that names a facility or requester of its own (見守り, お薬の声かけ) uses that
+  // one name, so the call does not introduce two different callers; a name the request cannot carry is left out.
+  const callerFor = () => { const own = Object.entries(form.fill).find(([k]) => /^施設名/.test(k))?.[1]?.trim();
+    return own === undefined ? (b.account?.callerName ?? '') : own.length <= 40 && !/[\d@<>{}]|https?:/i.test(own) ? own : ''; };
   function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value, voiceName: voiceName.value, engine: engineSel.value }; }
   function changed() {
     review = null; consentBox.checked = false; rep.on = false; rep.key = null; repOn.checked = false; repAck.checked = false; repGo.disabled = true;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
     for (const c of kindCards.children) c.setAttribute('aria-pressed', String(c.dataset.kind === form.kind));
-    productRow.hidden = !isSales(); voiceField.hidden = isSales(); paceField.hidden = isSales(); scopeField.hidden = !usesScope();
+    fitText(); productRow.hidden = !isSales(); voiceField.hidden = isSales(); paceField.hidden = isSales(); scopeField.hidden = !usesScope();
     renderSide();
   }
   // Typing a number by hand means it is not the chosen contact any more.
   phone.addEventListener('input', () => { form.contactId = contacts.find(c => displayPhone(c.phone) === phone.value.trim() || c.phone === phone.value.trim())?.id ?? null; });
   instruction.addEventListener('input', () => { suggested = false; });
+  const fitText = () => { if (!instruction.isConnected) return; instruction.style.height = 'auto'; instruction.style.height = `${instruction.scrollHeight + 2}px`; };
+  instruction.addEventListener('input', fitText);
   for (const n of [phone, name, instruction, voice]) n.addEventListener('input', changed);
   voice.addEventListener('change', changed);
 
@@ -634,7 +644,7 @@ async function ask() {
   // contact only (never a sales call or a booking); the server checks the same and each call again when it is due.
   const tokyoDay = (offset = 0) => new Date(Date.now() + 9 * 3600e3 + offset * 86400e3).toISOString().slice(0, 10);
   const rep = { on: false, key: null };
-  const repOn = el('input', { type: 'checkbox', id: 'rep-on', onchange: () => { rep.on = repOn.checked; rep.key = null; repAck.checked = false; renderSide(); (rep.on ? repTimes.querySelector('input') : repOn)?.focus(); } });
+  const repOn = el('input', { type: 'checkbox', id: 'rep-on', onchange: () => { rep.on = repOn.checked; rep.key = null; repAck.checked = false; repChanged(); renderSide(); (rep.on ? repTimes.querySelector('input') : repOn)?.focus(); } });
   const repTimes = el('div', { class: 'rep-times' });
   const timeRow = value => { const input = el('input', { type: 'time', value, 'aria-label': 'かける時刻', required: true });
     const row = el('div', { class: 'play-row' }, input, el('button', { class: 'btn', type: 'button', text: '外す', 'aria-label': 'この時刻を外す', onclick: () => { row.remove(); repChanged(); } })); return row; };
@@ -647,6 +657,8 @@ async function ask() {
   const repGap = el('select', { id: 'rep-gap', 'aria-label': 'かけ直すまでの間隔' }, ...[10, 15, 30, 60, 120, 180].map(n => el('option', { value: String(n), text: `${n}分後に` })));
   repGap.value = '30';
   const repBound = el('p', { class: 'rep-bound', role: 'status' });
+  const hours = b.scheduleHours ?? { from: '07:00', to: '21:00' };
+  const repHours = el('p', { class: 'note', id: 'rep-hours' }), repSum = el('dl', { class: 'defs left rep-sum', 'aria-label': '承認する内容' });
   const repAck = el('input', { type: 'checkbox', id: 'rep-ack' });
   const repGo = el('button', { class: 'btn primary big', type: 'button', text: '定期の電話を登録する', disabled: true });
   const repValues = () => ({ times: [...repTimes.querySelectorAll('input')].map(i => i.value).filter(Boolean), weekdays: [...repDays.children].filter(c => c.getAttribute('aria-pressed') === 'true').map(c => Number(c.dataset.day)),
@@ -656,30 +668,47 @@ async function ask() {
     const v = repValues(), rows = repTimes.querySelectorAll('.play-row');
     addTime.hidden = rows.length >= 4; for (const r of rows) r.querySelector('button').hidden = rows.length <= 1;
     repGap.hidden = v.count === 0;
-    // The most it can do, counted the way the server reports it afterwards: every time on every remaining day, with every retry.
-    const days = v.until ? Math.max(0, Math.ceil((Date.parse(`${v.until}T23:59:59+09:00`) - Date.now()) / 86400e3)) : 0;
-    repBound.textContent = v.times.length && v.weekdays.length && days ? `終了日までに、最大 ${days * v.times.length * (1 + v.count)} 回かけます（かけ直しを含む上限。選んだ曜日だけなら、これより少なくなります）。` : '時刻・曜日・終了日を入れると、かける回数の上限が出ます。';
+    // The most it can do, counted as the server counts it: the days it rings on from today to the end date (Japan time),
+    // times a day, with every retry.
+    let days = 0; const end = v.until ? Date.parse(`${v.until}T23:59:59+09:00`) : 0;
+    for (let t = Date.now(); t < end && days < 100; t += 86400e3) if (v.weekdays.includes(new Date(t + 9 * 3600e3).getUTCDay())) days++;
+    const ready = v.times.length && v.weekdays.length && days, most = days * v.times.length * (1 + v.count);
+    const parts = `かける日 ${days}日 × 1日${v.times.length}回${v.count ? ` × かけ直しを含め${1 + v.count}回` : ''}`;
+    repBound.textContent = ready ? `終了日までに、最大 ${most} 回かけます（${parts}）。` : '時刻・曜日・終了日を入れると、かける回数の上限が出ます。';
+    const late = v.times.filter(t => t < hours.from || t >= hours.to);
+    repHours.textContent = late.length ? `${late.join('、')} は登録できません。かけられる時刻は ${hours.from}〜${hours.to} です。` : `かけられる時刻は ${hours.from}〜${hours.to} です（夜間は登録できません）。`;
+    repHours.classList.toggle('warn', late.length > 0);
+    repSum.replaceChildren(
+      el('dt', { text: '相手' }), el('dd', {}, name.value.trim(), ' ', el('span', { class: 'num', text: displayPhone(phone.value.trim()) })),
+      el('dt', { text: 'かける時刻' }), el('dd', { class: 'num', text: v.times.length ? [...v.times].sort().join('、') : '未入力' }),
+      el('dt', { text: '曜日' }), el('dd', { text: v.weekdays.length === 7 ? '毎日' : v.weekdays.length ? `毎週 ${v.weekdays.map(d => WEEK[d]).join('・')}` : '未選択' }),
+      el('dt', { text: 'いつまで' }), el('dd', { text: v.until ? `${fmtDate(v.until)}まで` : '未入力' }),
+      el('dt', { text: '回数の上限' }), el('dd', { text: ready ? `最大 ${most} 回（${parts}）` : '—' }),
+      el('dt', { text: '出ないとき' }), el('dd', { text: v.count ? `${v.minutes}分後にかけ直す（${v.count}回まで）` : 'かけ直さない' }),
+      el('dt', { text: '止め方' }), el('dd', { text: '「依頼」›「定期の電話」で、いつでも一時停止・終了できます。' }));
     repGo.disabled = true;
   }
   for (const n of [repUntil, repCount, repGap]) n.addEventListener('change', repChanged);
   repTimes.addEventListener('change', repChanged);
   repAck.addEventListener('change', () => { repGo.disabled = !review || !repAck.checked || isPaused(b.configuration); });
   repChanged();
-  const repRules = ['連絡先に保存し、「電話してよい根拠」が書かれている相手だけにかけます。予約を取る電話は定期にできません。', '終了日を過ぎると、自動で終わります（最長92日）。夜間の時刻は登録できません。', '1回ごとに、ふつうの電話と同じ確認をして、同じように費用がかかります。',
+  const repRules = ['連絡先に保存し、「電話してよい根拠」が書かれている相手だけにかけます。予約を取る電話は定期にできません。', '終了日を過ぎると、自動で終わります（最長92日）。', '1回ごとに、ふつうの電話と同じ確認をして、同じように費用がかかります。',
     'かけ直すのは、相手が出なかったときだけです。', '時刻を過ぎてかけられなかった回は、遅れてかけずに見送ります。', '相手が「もう電話しないで」と言えば、そこで終わります。', 'いつでも「定期の電話」の画面で、一時停止・終了できます。'];
   const repPanel = el('div', { class: 'rep-panel stack tight' },
-    el('span', { class: 'lbl', text: 'かける時刻（日本時間）' }), repTimes, addTime,
+    el('span', { class: 'lbl', text: 'かける時刻（日本時間）' }), repTimes, repHours, addTime,
     el('span', { class: 'lbl', text: 'かける曜日' }), repDays,
     el('label', { class: 'lbl', for: 'rep-until', text: '終了日（この日まで）' }), repUntil,
     el('label', { class: 'lbl', for: 'rep-count', text: '相手が出なかったとき' }), el('div', { class: 'two rep-retry' }, repGap, repCount),
     repBound,
     el('ul', { class: 'rep-rules' }, ...repRules.map(t => el('li', { text: t }))),
+    el('span', { class: 'lbl', text: '承認する内容' }), repSum,
     el('label', { class: 'check' }, repAck, '上の決まりを読みました。終了日まで、この内容で繰り返し電話をかけることを承認します。'), repGo);
   repGo.addEventListener('click', async () => {
     if (!review?.request || !repAck.checked || isPaused(b.configuration)) return;
     const v = repValues(); err.hidden = true;
     if (!v.times.length || new Set(v.times).size !== v.times.length) { err.textContent = ERRORS.invalid_schedule_times; err.hidden = false; return; }
     if (!v.weekdays.length) { err.textContent = ERRORS.invalid_schedule_weekdays; err.hidden = false; return; }
+    if (v.times.some(t => t < hours.from || t >= hours.to)) { err.textContent = `かける時刻は ${hours.from}〜${hours.to} の間にしてください。夜間の時刻は登録できません。`; err.hidden = false; return; }
     if (!v.until) { err.textContent = ERRORS.schedule_end_required_within_92_days; err.hidden = false; return; }
     repGo.disabled = true; rep.key ??= crypto.randomUUID();
     try {
@@ -690,7 +719,7 @@ async function ask() {
     } catch (e) {
       // A refusal is final for this key; an unknown outcome keeps it, so pressing again cannot register twice.
       if (e.status) rep.key = null;
-      err.textContent = e.message; err.hidden = false; repGo.disabled = !repAck.checked;
+      err.textContent = e.code === 'schedule_time_outside_calling_hours' ? `かける時刻は ${hours.from}〜${hours.to} の間にしてください。夜間の時刻は登録できません。` : e.message; err.hidden = false; repGo.disabled = !repAck.checked;
     }
   });
 
@@ -706,11 +735,11 @@ async function ask() {
       el('blockquote', { text: v.body || '入力した用件がここに表示されます。' }),
       ...(usesScope() && form.ok.length ? [el('p', { class: 'nomargin' }, 'その場で決めてよいこと：', el('mark', { text: form.ok.join('、') }))] : []),
       ...(usesScope() && form.hold.length ? [el('p', { class: 'nomargin' }, '次の話が出たら、決めずに持ち帰ります：', el('mark', { class: 'hold', text: form.hold.join('、') }))] : []),
-      el('p', { text: `最初に、AIであること・${b.account?.callerName ? `${b.account.callerName}の代わりであること・` : ''}記録していることを伝えます。支払いの約束はしません。` }));
+      el('p', { text: `最初に、AIであること・${callerFor() ? `${callerFor()}の代わりであること・` : ''}記録していることを伝えます。支払いの約束はしません。` }));
     const facts = el('dl', { class: 'defs left' },
       el('dt', { text: '通話の上限' }), el('dd', { text: `${Math.round((review?.mission.maxSeconds ?? Math.min(180, b.configuration.maxSeconds)) / 60)}分で切ります` }),
       el('dt', { text: '費用の目安' }), el('dd', { text: review ? (review.mission.mode === 'simulator' ? '練習なので0円' : review.mission.creditQuote?.mode === 'credits' ? `${review.mission.creditQuote.amount} クレジット（確保）` : `最大 約$${review.mission.estimatedMaximumUsd.toFixed(2)}（上限 $${review.mission.maxUsd}）`) : '内容を確かめると表示します' }),
-      el('dt', { text: '音声AI' }), el('dd', { class: 'num', text: engineLabel(v.engine) }),
+      el('dt', { text: '音声AI' }), el('dd', { text: engineLabel(v.engine).replace(/（[^）]*）$/, '') }),
       el('dt', { text: '話し方' }), el('dd', { text: v.preset ? (v.voiceName ? (st.voicePresets[v.preset] ?? v.preset).replace(/・(女性|男性)声$/, '（口調のみ）') : (st.voicePresets[v.preset] ?? v.preset)) : '標準' }),
       el('dt', { text: '声' }), el('dd', { class: 'num', text: v.voiceName || 'おまかせ' }),
       ...(form.pace && !isSales() ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : []));
@@ -731,6 +760,7 @@ async function ask() {
     const canCheck = !blocked && !liveNow && !newsBlocked && (st.ready || practiceSales);
     check.disabled = !canCheck || Boolean(review);
     go.disabled = !review || !consentBox.checked || isPaused(b.configuration);
+    side.classList.toggle('rep-open', Boolean(review && rep.on));
     side.replaceChildren(
       el('div', { class: 'side-h' }, el('small', { text: 'AIへの指示書' }), el('b', { text: review ? '発信前の最終確認' : '依頼内容を確認' })),
       brief, facts,
@@ -746,6 +776,7 @@ async function ask() {
         form.kind === 'reserve' ? el('p', { class: 'note', text: '予約を取る電話は、定期の電話にできません。' })
           : !form.contactId ? el('p', { class: 'note' }, '定期の電話（決めた時刻に繰り返す）にできるのは、連絡先に保存した相手だけです。', el('a', { href: '#/contacts', text: ' 連絡先へ' }))
           : !b.contacts.find(x => x.id === form.contactId)?.basis?.trim() ? el('p', { class: 'note' }, '定期の電話にするには、この相手の連絡先に「電話してよい根拠」（本人や家族の同意など）を書いてください。', el('a', { href: `#/contacts/${form.contactId}`, text: ' 連絡先を開く' }))
+          : form.pace && !b.alertsConfigured ? el('p', { class: 'note', text: 'ゆっくり・やさしく話す電話を定期にするには、要確認の知らせを受け取る通知先が必要です。このサーバーにはまだ設定がありません。管理者に設定を頼んでください。' })
           : el('label', { class: 'check' }, repOn, el('span', {}, el('b', { text: '定期の電話にする' }), el('span', { class: 'note rep-help', text: '1回だけではなく、決めた時刻に繰り返しかけます。' }))),
         ...(rep.on ? [repPanel] : []))] : []));
   }
@@ -761,10 +792,12 @@ async function ask() {
         const m = await api('/missions/draft', { method: 'POST', body: { request: v.body, productId: form.productId, goal: form.purpose, contactId: form.contactId, maxSeconds: Math.min(180, b.configuration.maxSeconds) } });
         review = { ...(await api(`/missions/${m.id}/review`, { method: 'POST', body: {} })), readiness: st };
       } else {
+        const left = blanks().filter(k => v.body.includes(`（${k}）`));
+        if (left.length) throw new Error(`「${left.join('」「')}」を入れてください（文の中に、まだ（${left[0]}）が残っています）。`);
         const empty = blanks().filter(k => !(form.fill[k] ?? '').trim());
         if (tpl() && form.kind !== 'chat' && suggested && empty.length) throw new Error(`「${empty.join('」「')}」を入れてください。`);
         const requestBody = { phone: v.phone, name: v.name, instruction: v.instruction, ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
-        ...(form.mode ? { conversationMode: form.mode } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}), ...(engine && v.voiceName ? { voice: v.voiceName } : {}), ...(form.pace ? { pace: 'gentle' } : {}) };
+        ...(form.mode ? { conversationMode: form.mode } : {}), ...(callerFor() ? { callerName: callerFor() } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}), ...(engine && v.voiceName ? { voice: v.voiceName } : {}), ...(form.pace ? { pace: 'gentle' } : {}) };
         review = await api('/phone/draft', { method: 'POST', body: requestBody });
         review.request = requestBody;
       }
@@ -801,22 +834,28 @@ async function ask() {
   drawKind();
   if ((form.purpose || tpl()) && !form.instruction) suggest();
   changed();
+  requestAnimationFrame(fitText);
   return view;
 }
 
 // ---------------------------------------------------------------- 電話中 / 報告
 // What a wellbeing call heard, in plain words. Always "said", never "did": the call only knows what was said on the phone.
 const CHECK_TOPIC = { condition: '体調', meal: '食事', medication: '服薬', sleep: '睡眠', help: '相談や困りごと' };
-const CHECK_SAID = { condition: { yes: '元気・変わりないと話しました', no: '不調や困りごとを話しました' }, meal: { yes: '食べたと話しました', no: 'まだ・食べていないと話しました' },
-  medication: { yes: '飲んだと話しました', no: 'まだ・飲んでいないと話しました' }, sleep: { yes: '眠れたと話しました', no: '眠れなかったと話しました' }, help: { yes: '相談や困りごとを話しました', no: '特にないと話しました' } };
-const CHECK_SHORT = { condition: { yes: '元気', no: '不調' }, meal: { yes: '食べた', no: 'まだ' }, medication: { yes: '飲んだ', no: 'まだ' }, sleep: { yes: '眠れた', no: '眠れず' }, help: { yes: 'あり', no: 'なし' } };
+const CHECK_SAID = { condition: { yes: '元気・変わりないと話しました', no: '不調や困りごとを話しました' }, meal: { yes: '食べたと話しました', no: 'まだ食べていないと話しました' },
+  medication: { yes: '飲んだと話しました', no: 'まだ飲んでいないと話しました' }, sleep: { yes: '眠れたと話しました', no: '眠れなかったと話しました' }, help: { yes: '相談や困りごとを話しました', no: '特にないと話しました' } };
+const CHECK_SHORT = { condition: { yes: '元気と話した', no: '不調を話した' }, meal: { yes: '食べたと話した', no: 'まだと話した' }, medication: { yes: '飲んだと話した', no: 'まだと話した' }, sleep: { yes: '眠れたと話した', no: '眠れなかったと話した' }, help: { yes: '困りごとを話した', no: '特にないと話した' } };
 const checkSaid = (topic, answer) => answer === 'unclear' ? 'はっきりしない返事でした' : answer === 'no_answer' ? '返答なし' : answer === 'not_asked' ? '聞いていません' : CHECK_SAID[topic]?.[answer] ?? '—';
-const checkShort = (topic, answer) => answer === 'unclear' ? '要確認' : answer === 'no_answer' ? '返答なし' : CHECK_SHORT[topic]?.[answer] ?? '';
+const checkShort = (topic, answer) => answer === 'unclear' ? 'はっきりしない返事' : answer === 'no_answer' ? '返答なし' : CHECK_SHORT[topic]?.[answer] ?? '';
 // An answer a person should read: trouble said, something raised, or nothing clear.
 const checkWorry = (topic, answer) => answer === 'unclear' || answer === 'no_answer' || (topic === 'help' ? answer === 'yes' : answer === 'no');
 const SIGNAL = { life: '助けを求める言葉・動けない', self_harm: '死にたい気持ちの言葉', breathing: '息や胸の苦しさ・しびれ', fall: '転んだ・ぶつけた', pain: '痛み・つらさ', illness: '体調がよくない', intake: '食事や薬がとれていない', mood: '眠れない・不安・さびしさ' };
 const LEVEL = { emergency: '緊急', concern: '要確認' };
-const levelTag = level => el('span', { class: `lvl ${level}`, text: LEVEL[level] });
+const levelTag = (level, text = LEVEL[level]) => el('span', { class: `lvl ${level}`, text });
+// A word and a mark for a call that did not reach the person (never colour alone).
+const missTag = text => el('span', { class: 'lvl miss', text });
+// The level of each flagged line, so the banner, the check-in row and the conversation say the same thing about it.
+const turnLevels = r => { const m = new Map(); for (const x of r.attention?.signals ?? r.checkIn?.signals ?? []) if (x.turn && m.get(x.turn) !== 'emergency') m.set(x.turn, x.level === 'emergency' ? 'emergency' : 'concern'); return m; };
+const japanTime = iso => new Date(iso).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 const attentionOf = r => r.attention?.level ?? (r.checkIn && r.checkIn.attention !== 'none' ? r.checkIn.attention : null);
 // Lines a person should read now, quoted from the conversation. It never says what happened, only what was said.
 function attentionBand(r) {
@@ -831,19 +870,21 @@ function attentionBand(r) {
       el('blockquote', { text: `「${words}」` }));
   });
   return el('section', { class: `band ${level}`, 'aria-label': level === 'emergency' ? '緊急の確認' : '要確認' },
-    el('h2', {}, levelTag(level), level === 'emergency' ? 'すぐに会話を確かめてください' : '会話を確かめてください'),
+    el('h2', {}, levelTag(level), level === 'emergency' ? 'ご本人の様子を、すぐに確かめてください' : 'ご本人の様子を確かめてください'),
     items.length ? el('ul', { class: 'band-lines' }, ...items) : el('p', { text: '気になる返事がありました。下の「見守りの聞き取り」を確かめてください。' }),
-    el('p', { class: 'band-note', text: 'これは診断ではありません。相手の言葉に、人が確かめたほうがよい表現があったことだけを示しています。AIは、救急や家族などへの連絡をしていません。' }));
+    el('p', { class: 'band-act', text: 'AIはどこにも連絡していません。ご本人の様子は、人が確かめてください。' }),
+    el('p', { class: 'band-note', text: 'これは診断ではありません。電話で話された言葉に、人が確かめたほうがよい表現があったことだけを示しています。' }));
 }
 function checkInTable(r) {
   const c = r.checkIn; if (!c || !c.answered) return null;
+  const levels = turnLevels(r), worry = i => checkWorry(i.topic, i.answer) && i.answer !== 'not_asked';
   return el('section', { class: 'checkin' },
     el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: '見守りの聞き取り' }), el('span', { class: 'sub', text: '電話で本人が話したことです。実際の様子を確かめたものではありません' })),
     el('table', { class: 'checkin-table' },
       el('thead', {}, el('tr', {}, el('th', { scope: 'col', text: '項目' }), el('th', { scope: 'col', text: '返事' }), el('th', { scope: 'col', text: '本人の言葉' }))),
-      el('tbody', {}, ...c.items.map(i => el('tr', { class: checkWorry(i.topic, i.answer) && i.answer !== 'not_asked' ? 'worry' : '' },
+      el('tbody', {}, ...c.items.map(i => el('tr', { class: worry(i) ? 'worry' : '' },
         el('th', { scope: 'row', text: CHECK_TOPIC[i.topic] ?? i.topic }),
-        el('td', { 'data-label': '返事' }, el('span', { class: i.answer === 'not_asked' ? 'muted' : '', text: checkSaid(i.topic, i.answer) }), checkWorry(i.topic, i.answer) && i.answer !== 'not_asked' ? levelTag('concern') : null),
+        el('td', { 'data-label': '返事' }, el('span', { class: i.answer === 'not_asked' ? 'muted' : '', text: checkSaid(i.topic, i.answer) }), levels.get(i.turn) === 'emergency' ? levelTag('emergency') : worry(i) || levels.has(i.turn) ? levelTag('concern') : null),
         el('td', { 'data-label': '本人の言葉', class: 'said' }, i.quote ? `「${i.quote}」` : el('span', { class: 'muted', text: '—' })))))));
 }
 // `team`: a supervisor reading a teammate's call (#/team/<id>). The same report, with nothing to press but the way back.
@@ -857,6 +898,7 @@ async function call(id, _sub, team = false) {
   const head = el('div', { class: 'head' },
     notes.length ? ringFor(notes.length, notes.map(n => n.status === 'verified')) : null,
     el('div', {},
+      r.createdAt ? el('p', { class: 'call-when num' }, el('time', { datetime: r.createdAt, text: japanTime(r.createdAt) }), r.attempt ? `　定期の電話・${r.attempt.number}回目` : '') : null,
       el('div', { class: `state-line ${live ? 'state-live' : ''}` }, live ? el('span', { class: 'dot' }) : null, live ? '電話中' : r.state === 'failed' || r.state === 'unknown' ? o.text : '電話が終わりました', seconds ? el('time', { class: 'num', text: ` ${mmss(seconds)}` }) : null,
         live ? el('span', { class: 'muted small', text: ' · 上限の時間になると、あいさつして切ります' }) : null),
       el('h1', { class: 'headline', text: live ? (r.transcript?.length ? '相手と話しています' : '発信しています') : o.text })));
@@ -865,15 +907,16 @@ async function call(id, _sub, team = false) {
     ...(team ? [el('p', { class: 'note', text: `頼んだ人：${r.owner === app.boot.user.id ? '自分' : r.owner}。読むだけの画面です。${r.owner === app.boot.user.id ? '' : '開いたことは記録されます。'}` })] : []),
     attentionBand(r),
     head,
-    !live && unanswered(r) ? el('p', { class: 'warnbox no-answer', role: 'status' }, el('b', { text: '応答がありませんでした。' }), '相手は電話に出なかったか、何も話しませんでした。様子は確かめられていません。') : null,
+    !live && unanswered(r) ? el('p', { class: 'warnbox no-answer', role: 'status' }, '相手は電話に出なかったか、何も話しませんでした。様子は確かめられていません。',
+      r.attempt ? (r.attempt.last ? `${r.attempt.number}回目の電話で、この回のかけ直しはここまでです。` : `${r.attempt.number}回目の電話です。時間をおいて、もう一度かけ直します。`) : '') : null,
     !live ? checkInTable(r) : null);
-  const flagged = new Set((r.attention?.signals ?? r.checkIn?.signals ?? []).map(x => x.turn).filter(Boolean));
+  const flagged = turnLevels(r);
   const turnOf = id => r.transcript?.find(t => t.id === id);
   if (notes.length && !live && r.state !== 'unknown') {
     // The report: when and what it cost, the verdict and a one-line summary, then one row per field with the value,
     // what was asked for, the callee's words that settled it and where they are in the call.
     const summary = [r.request.name, ...notes.filter(n => n.status === 'verified' && n.field !== 'confirmed').map(n => fmtValue(n.field, n.value) + (n.field === 'time' ? 'から' : ''))].join(' · ');
-    const meta = [new Date(r.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' }), seconds ? `通話 ${Math.round(seconds)}秒` : '', r.creditUsage?.consumed ? `${r.creditUsage.consumed} クレジット` : '', r.voiceSetting?.model ? `${r.voiceSetting.model}${r.voiceSetting.voiceSent ? `（${r.voiceSetting.voiceSent}）` : ''}` : ''].filter(Boolean).join(' · ');
+    const meta = [japanTime(r.createdAt), seconds ? `通話 ${Math.round(seconds)}秒` : '', r.creditUsage?.consumed ? `${r.creditUsage.consumed} クレジット` : '', r.voiceSetting?.model ? `${r.voiceSetting.model}${r.voiceSetting.voiceSent ? `（${r.voiceSetting.voiceSent}）` : ''}` : ''].filter(Boolean).join(' · ');
     head.replaceChildren(el('div', { class: 'report-top' },
       el('div', {}, el('p', { class: 'meta num', text: meta }), el('h1', { class: 'verdict', text: o.text }), el('p', { class: 'summary', text: summary })),
       ringFor(notes.length, notes.map(n => n.status === 'verified'))));
@@ -927,8 +970,8 @@ async function call(id, _sub, team = false) {
       el('div', { class: 'who' }, t.source === 'callee' ? r.request.name : 'AI', typeof t.startMs === 'number' ? el('time', { text: mmss(t.startMs / 1000) }) : typeof t.t === 'number' ? el('time', { text: mmss(t.t / 1000) }) : null),
       marked(t.text, t.source === 'callee' ? notes.map((n, k) => ({ quote: n.status === 'verified' && n.turnId === t.id ? (n.span || n.quote) : n.status === 'verified' && !n.turnId ? n.quote : '', n: k + 1 })) : []),
       t.source !== 'callee' && CLAIMS_DONE.test(t.text) ? el('span', { class: 'claim', text: 'AIの発言・判定に数えません' }) : null,
-      flagged.has(t.id) ? el('span', { class: 'claim flag', text: '要確認の発言' }) : null,
-      !live && typeof t.startMs === 'number' && typeof t.endMs === 'number' ? el('span', { class: 'span num', text: `${clock(t.startMs)} – ${clock(t.endMs)}` }) : null))
+      flagged.has(t.id) ? el('div', { class: 'flag-line' }, levelTag(flagged.get(t.id), flagged.get(t.id) === 'emergency' ? '緊急の発言' : '要確認の発言')) : null,
+      !live && !r.checkIn && typeof t.startMs === 'number' && typeof t.endMs === 'number' ? el('span', { class: 'span num', text: `${clock(t.startMs)} – ${clock(t.endMs)}` }) : null))
       : [el('p', { class: 'empty', text: live ? 'つながると、ここに会話が出ます。' : '会話の記録はありません。' })]));
   const side = el('aside', { class: 'call-side', 'aria-label': live ? '会話' : '会話の記録' }, el('div', { class: 'side-top' }, el('b', { text: live ? '会話' : '会話の記録' }), el('span', { class: 'muted small', text: live ? '文字起こしは自動・音声は保存しません' : '相手とAIの発言・時刻' })), transcript);
   if (live) app.timer = setTimeout(async () => { if (location.hash.startsWith(here)) { const y = window.scrollY; const t = $('.transcript'); const atEnd = t && t.scrollHeight - t.scrollTop - t.clientHeight < 40; await route(); if (!location.hash.startsWith(here)) return; window.scrollTo(0, y); if (atEnd) { const n = $('.transcript'); if (n) n.scrollTop = n.scrollHeight; } } }, 1500);
@@ -1036,11 +1079,11 @@ function scheduleCard(s) {
       ...(s.status === 'ENDED' ? [el('dt', { text: '終了の理由' }), el('dd', { text: SCHED_ENDED[s.endedReason] ?? '終了しました。' })] : [el('dt', { text: '次の回' }), el('dd', { text: next ?? (s.status === 'PAUSED' ? '一時停止中はかけません' : '8日以内の予定はありません') })]),
       el('dt', { text: '終了日' }), el('dd', { text: fmtDate(new Date(Date.parse(s.until) + 9 * 3600e3).toISOString().slice(0, 10)) }),
       el('dt', { text: '出ないとき' }), el('dd', { text: s.retries.count ? `${s.retries.minutes}分後にかけ直す（${s.retries.count}回まで）` : 'かけ直さない' }),
-      ...(s.status === 'ENDED' ? [] : [el('dt', { text: '回数の上限' }), el('dd', { text: `終了日までに最大 ${s.bounds.callsUpperBound} 回` })]),
+      ...(s.status === 'ENDED' ? [] : [el('dt', { text: '回数の上限' }), el('dd', { text: `終了日までに最大 ${s.bounds.callsUpperBound} 回（かける日 ${s.bounds.days}日 × 1日${s.times.length}回${s.retries.count ? ` × かけ直しを含め${1 + s.retries.count}回` : ''}）` })]),
       ...(s.request.pace === 'gentle' ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : [])),
     el('h3', { class: 'section-h', text: 'これまでの回' }),
     s.runs.length ? el('ul', { class: 'runs' }, ...s.runs.slice(0, 7).map(run => el('li', {},
-      el('time', { text: `${fmtDate(run.date)} ${run.time}` }), el('b', { class: 'run-state', text: RUN_STATE[run.state] ?? run.state }),
+      el('time', { text: `${fmtDate(run.date)} ${run.time}` }), ['UNANSWERED', 'FAILED', 'DECLINED'].includes(run.state) ? missTag(RUN_STATE[run.state]) : el('b', { class: 'run-state', text: RUN_STATE[run.state] ?? run.state }),
       el('span', { class: 'run-why', text: [runReason(run), run.attempts > 1 ? `${run.attempts}回かけました。` : ''].filter(Boolean).join(' ') }),
       run.missionId && run.reason !== 'record_deleted' ? el('a', { class: 'link', href: `#/call/${run.missionId}`, text: '報告を開く' }) : null)))
       : el('p', { class: 'muted small', text: 'まだかけていません。' }),
@@ -1063,6 +1106,140 @@ async function standing() {
     box);
 }
 
+// ---------------------------------------------------------------- 名簿にまとめて電話
+// One approval for the same call to many saved contacts (lib/batches.mjs). The calls leave one at a time, each through
+// the ordinary checks. Who will not be called is worked out here from the contact's own fields with the server's rules,
+// so it is on screen before the approval; the server decides again when the list is registered.
+const SKIP_WHY = { contact_phone_required: '電話番号がありません', recipient_suppressed: '連絡停止中です', simulator_contact_not_valid_for_live: '練習用の連絡先です', contact_relationship_required: '「この相手との関係」が登録されていません',
+  contact_basis_required: '「電話してよい根拠」が書かれていません', ended_by_owner: '名簿を終了したため、かけていません', batch_expired: '7日の期限が過ぎたため、かけていません' };
+const skipWhy = (c, kind, live) => !c.phone ? 'contact_phone_required' : c.suppressed ? 'recipient_suppressed' : c.simulationOnly && live ? 'simulator_contact_not_valid_for_live'
+  : kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required' : !c.basis?.trim() ? 'contact_basis_required' : null;
+const LIST_GOAL = { materials: ['資料を送ってよいか聞く', '商品を簡単に説明して、資料を送ってよいか聞いてください。'], meeting: ['商談の日時を決める', '商品を説明して、興味があれば15分の商談の日時を相談してください。'], introduce: ['商品を説明する', '商品を簡単に説明してください。'] };
+async function listNew() {
+  await loadAll();
+  const b = app.boot, live = b.configuration.mode === 'live', picked = b.contacts.filter(c => app.listPick?.has(c.id));
+  if (!picked.length) return el('div', { class: 'page' }, el('div', { class: 'page-h' }, el('h1', { text: '名簿にまとめて電話' })),
+    el('p', { class: 'about', text: '先に、連絡先の画面で「名簿にまとめて電話」を押して、相手を選んでください。' }), el('div', { class: 'actions' }, el('a', { class: 'btn primary', href: '#/contacts', text: '連絡先で相手を選ぶ' })));
+  const form = { kind: 'request', key: null }, consented = b.account?.consentVersion === b.configuration.consentVersion;
+  const kindPick = el('div', { class: 'two', role: 'radiogroup', 'aria-label': '何の電話か' }, ...[['request', 'ふつうの依頼', '同じ用件を、ひとりずつに頼みます（納期の確認など）'], ['sales', '営業の電話', b.products.length ? '確認済みの商品を1つ紹介します' : '先に、設定で商品を登録してください']].map(([v, l, d]) =>
+    el('label', { class: 'option' }, el('input', { type: 'radio', name: 'list-kind', value: v, checked: v === form.kind, disabled: v === 'sales' && !b.products.length, onchange: () => { form.kind = v; changed(); } }), el('span', {}, el('b', { text: l }), el('span', { class: 'muted small', text: d })))));
+  const product = el('select', { id: 'list-product' }, ...b.products.map(x => el('option', { value: x.id, text: x.name })));
+  const goal = el('select', { id: 'list-goal' }, ...Object.entries(LIST_GOAL).map(([v, [l]]) => el('option', { value: v, text: l })));
+  const salesText = el('textarea', { id: 'list-sales-text', maxlength: '2000' }); salesText.value = LIST_GOAL.materials[1];
+  let salesEdited = false; salesText.addEventListener('input', () => { salesEdited = true; });
+  goal.addEventListener('change', () => { if (!salesEdited) salesText.value = LIST_GOAL[goal.value][1]; });
+  const text = el('textarea', { id: 'list-text', maxlength: '2000', placeholder: '例：ご注文いただいている品の、納品の予定日を確認してください。日付を復唱して確かめてください。' });
+  const gentle = el('input', { type: 'checkbox', id: 'list-gentle' });
+  const count = el('select', { id: 'list-retry' }, ...[['0', 'かけ直さない'], ['1', '1回かけ直す'], ['2', '2回までかけ直す']].map(([v, l]) => el('option', { value: v, text: l })));
+  const gap = el('select', { id: 'list-gap', 'aria-label': 'かけ直すまでの間隔' }, ...[[30, '30分後に'], [60, '1時間後に'], [120, '2時間後に'], [240, '4時間後に'], [1440, '翌日に']].map(([v, l]) => el('option', { value: String(v), text: l })));
+  gap.value = '60';
+  const salesBox = el('div', { class: 'stack tight' }, el('label', { class: 'lbl', for: 'list-product', text: '紹介する商品' }), product, el('label', { class: 'lbl', for: 'list-goal', text: '電話の目的' }), goal,
+    el('label', { class: 'lbl', for: 'list-sales-text', text: 'AIに頼むこと' }), salesText, el('p', { class: 'note', text: '商品の説明は、確認済みの内容だけを使います。値引き・契約・支払いは約束しません。' }));
+  const requestBox = el('div', { class: 'stack tight' }, el('label', { class: 'lbl', for: 'list-text', text: '頼むこと（全員に同じ内容。相手の名前は、ひとりずつ入ります）' }), text,
+    el('label', { class: 'check' }, gentle, 'ゆっくり・やさしく話す'), el('p', { class: 'note', text: '高齢の方や、耳の遠い方に。ゆっくり、やさしい言葉で話し、返事を長めに待ちます。予約を取る電話は、名簿ではかけられません。' }));
+  const side = el('aside', { class: 'ask-side rep-open', 'aria-label': '名簿の確認' });
+  const ack = el('input', { type: 'checkbox', id: 'list-ack' }), err = el('p', { class: 'errbox', role: 'alert', hidden: true });
+  const go = el('button', { class: 'btn primary big', type: 'button', text: 'この名簿で電話を始める', disabled: true });
+  const paused = isPaused(b.configuration);
+  const split = () => { const yes = [], no = []; for (const c of picked) { const why = skipWhy(c, form.kind, live); (why ? no : yes).push({ c, why }); } return { yes, no }; };
+  const sync = () => { go.disabled = !ack.checked || !split().yes.length || paused || !consented; };
+  ack.addEventListener('change', sync);
+  const who = c => c.name || c.company;
+  function changed() {
+    form.key = null; ack.checked = false; err.hidden = true;
+    salesBox.hidden = form.kind !== 'sales'; requestBox.hidden = form.kind !== 'request'; gap.hidden = count.value === '0';
+    const { yes, no } = split(), retry = count.value === '0' ? 'かけ直しません。' : `出なかった相手には、${gap.selectedOptions[0].textContent}、${count.value}回までかけ直します。`;
+    side.replaceChildren(
+      el('div', { class: 'side-h' }, el('small', { text: '名簿の確認' }), el('b', { text: '発信前の最終確認' })),
+      el('h2', { class: 'section-h list-h', text: `電話をかける相手　${yes.length}人` }),
+      yes.length ? el('ul', { class: 'list-who' }, ...yes.map(({ c }) => el('li', {}, el('b', { text: who(c) }), el('span', { class: 'num', text: displayPhone(c.phone) })))) : el('p', { class: 'warnbox', text: 'かけられる相手がいません。' }),
+      ...(no.length ? [el('h2', { class: 'section-h list-h', text: `かけない相手　${no.length}人` }),
+        el('ul', { class: 'list-who no' }, ...no.map(({ c, why }) => el('li', {}, el('b', { text: who(c) }), el('span', { text: SKIP_WHY[why] })))),
+        el('p', { class: 'note', text: '連絡先を直すと、次の名簿からかけられます。登録するときに、サーバーでもう一度確かめます。' })] : []),
+      el('dl', { class: 'defs left' }, el('dt', { text: '内容' }), el('dd', { text: form.kind === 'sales' ? `営業の電話（${b.products.find(x => x.id === product.value)?.name ?? '商品'}・${LIST_GOAL[goal.value][0]}）` : `ふつうの依頼${gentle.checked ? '（ゆっくり・やさしく話す）' : ''}` }),
+        el('dt', { text: '出ないとき' }), el('dd', { text: retry }), el('dt', { text: '期限' }), el('dd', { text: '登録から7日で終わります' })),
+      el('ul', { class: 'rep-rules' }, ...['1件ごとに、ふつうの電話と同じ確認をして、同じように費用がかかります。電話は1件ずつ順にかけます。',
+        form.kind === 'sales' ? '営業の電話をかけてよい時間の外では、かけずに待ちます。' : '朝8時から夜9時まで（運営者が時間を決めている場合はその時間）だけかけます。時間の外では、かけずに待ちます。',
+        'クレジットや月の上限が足りなくなると、名簿は一時停止します。', '登録から7日たつと、残りはかけずに終わります。', '断った相手には、もうかけません。その番号は連絡停止になります。', '「名簿の電話」の画面で、いつでも一時停止・終了できます。'].map(t => el('li', { text: t }))),
+      ...(live ? [] : [el('p', { class: 'warnbox', text: '練習モード：実際の電話はかかりません。費用もかかりません。' })]),
+      ...(paused ? [el('p', { class: 'warnbox', text: '発信の受付を一時停止しています。名簿は登録できません。' })] : []),
+      ...(consented ? [] : [el('p', { class: 'warnbox' }, '会話データの取り扱いへの同意が必要です。', el('a', { href: '#/new', text: '「電話を頼む」で同意する' }))]),
+      err,
+      el('label', { class: 'check' }, ack, `上の決まりを読みました。この${yes.length}人に、同じ内容で電話をかけることを承認します。`), go);
+    sync();
+  }
+  for (const n of [product, goal, gentle, count, gap]) n.addEventListener('change', changed);
+  go.addEventListener('click', async () => {
+    const body = form.kind === 'sales' ? salesText.value.trim() : text.value.trim(); err.hidden = true;
+    if (!body) { err.textContent = '頼むことを書いてください。'; err.hidden = false; (form.kind === 'sales' ? salesText : text).focus(); return; }
+    go.disabled = true; form.key ??= crypto.randomUUID();
+    try {
+      await api('/batches', { method: 'POST', headers: { 'Idempotency-Key': form.key }, body: { kind: form.kind, contactIds: picked.map(c => c.id),
+        ...(form.kind === 'sales' ? { sales: { productId: product.value, request: body, goal: goal.value } } : { request: { instruction: body, ...(gentle.checked ? { pace: 'gentle' } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}) } }),
+        retry: { count: Number(count.value), minutes: Number(gap.value) }, acknowledged: true } });
+      app.listPick = null; app.boot = null; toast('名簿を登録しました。順に電話をかけます。'); location.hash = '#/lists';
+    } catch (e) { if (e.status) form.key = null; err.textContent = e.message; err.hidden = false; sync(); }
+  });
+  for (const n of [text, salesText]) n.addEventListener('input', () => { form.key = null; });
+  const field = (k, d, ...content) => el('div', { class: 'field' }, el('div', { class: 'k' }, el('b', { text: k }), d ? el('span', { text: d }) : null), el('div', {}, ...content));
+  changed();
+  return el('div', { class: 'ask' },
+    el('section', { class: 'ask-form' },
+      el('div', { class: 'crumb' }, el('a', { href: '#/contacts', text: '連絡先' }), ' ›'), el('div', { class: 'ask-h' }, el('h1', { text: '名簿にまとめて電話' }),
+        el('ol', { class: 'steps', 'aria-label': '手順' }, el('li', { class: 'done', text: '① 相手を選ぶ' }), el('li', { class: 'on', 'aria-current': 'step', text: '② 内容を決めて確認' }), el('li', { text: '③ 進み具合を見る' }))),
+      field('だれに', `連絡先で選んだ ${picked.length}人`, el('p', { class: 'list-picked', text: picked.map(who).join('、') }), el('a', { class: 'link', href: '#/contacts', text: '相手を選び直す' })),
+      field('何の電話か', '全員に同じ内容でかけます', kindPick, el('div', { class: 'gap' }), salesBox, requestBox),
+      field('出なかったとき', 'だれも出なかった相手だけ。断られた相手にはかけ直しません', el('div', { class: 'two' }, gap, count))),
+    side);
+}
+const BATCH_STATE = { ACTIVE: '進行中', PAUSED: '一時停止中', ENDED: '終了', FINISHED: '完了' };
+const ITEM_OUTCOME = { COMPLETED: '電話が終わりました', INCOMPLETE: '電話が終わりました（決まっていないことがあります）', DECLINED: '断られました。今後はかけません', CANCELLED: '取り消しました', RECORD_DELETED: '電話の記録が削除されています' };
+function batchCard(bt) {
+  const act = (path, done, ask) => async e => {
+    if (ask && !confirm(ask)) return;
+    const btn = e.currentTarget; btn.disabled = true;
+    try { const next = batchCard(await api(`/batches/${bt.id}/${path}`, { method: 'POST', body: {} })); node.replaceWith(next); toast(done); (next.querySelector('.actions .btn') ?? next.querySelector('a'))?.focus(); }
+    catch (x) { toast(x.message); btn.disabled = false; }
+  };
+  const total = bt.items.length, finished = bt.counts.done + bt.counts.skipped + bt.counts.failed, bar = el('i'); bar.style.width = `${Math.round(finished / total * 100)}%`;
+  const state = i => i.state === 'CALLING' ? '電話中' : i.state === 'PENDING' ? (i.attempts ? 'かけ直しを待っています' : 'これからかけます')
+    : i.state === 'SKIPPED' ? missTag('かけていません') : i.state === 'FAILED' || i.outcome === 'FAILED' ? missTag('かけられませんでした') : i.outcome === 'UNANSWERED' ? missTag('応答なし') : i.outcome === 'UNKNOWN' ? missTag('要照合') : '終わりました';
+  const more = i => [i.state === 'SKIPPED' ? `${SKIP_WHY[i.reason] ?? '対象外です'}。` : i.state === 'FAILED' ? (ERRORS[i.reason] ?? `（問い合わせ用コード：${i.reason}）`) : i.outcome === 'UNKNOWN' ? '電話が終わったか確かめられていません。「依頼」で確かめてください。' : ITEM_OUTCOME[i.outcome] ?? '',
+    i.attempts > 1 ? `${i.attempts}回かけました。` : ''].filter(Boolean).join(' ');
+  const node = el('article', { class: 'card sched', 'data-status': bt.status },
+    el('div', { class: 'sched-h' }, el('h2', { text: `${bt.kind === 'sales' ? '営業の電話' : 'ふつうの依頼'}・${total}人の名簿` }), el('span', { class: `tag sched-state ${bt.status === 'ACTIVE' ? 'on' : ''}`, text: BATCH_STATE[bt.status] ?? bt.status })),
+    el('p', { class: 'sched-when' }, `${total}件中 ${finished}件が済みました`),
+    el('div', { class: 'bar-meter', role: 'img', 'aria-label': `${total}件中 ${finished}件が済みました` }, bar),
+    el('p', { class: 'note', text: `かけ終えた ${bt.counts.done}件・かけていない ${bt.counts.skipped}件・かけられなかった ${bt.counts.failed}件・電話中 ${bt.counts.calling}件・これから ${bt.counts.pending}件` }),
+    bt.status === 'PAUSED' && bt.pausedReason ? el('p', { class: 'warnbox', text: `一時停止の理由：${ERRORS[bt.pausedReason] ?? `（問い合わせ用コード：${bt.pausedReason}）`} 解消したら「再開する」を押してください。` }) : null,
+    el('dl', { class: 'defs left' }, el('dt', { text: '登録' }), el('dd', { text: japanTime(new Date(bt.createdAt).toISOString()) }), el('dt', { text: '期限' }), el('dd', { text: `${japanTime(bt.expiresAt)} まで` }),
+      el('dt', { text: '出ないとき' }), el('dd', { text: bt.retry?.count ? `${bt.retry.minutes >= 60 ? `${bt.retry.minutes / 60}時間` : `${bt.retry.minutes}分`}後にかけ直す（${bt.retry.count}回まで）` : 'かけ直さない' }),
+      ...(bt.kind === 'sales' ? [el('dt', { text: '商品' }), el('dd', { text: app.boot?.products.find(x => x.id === bt.spec.productId)?.name ?? '—' })] : bt.spec.pace === 'gentle' ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : [])),
+    el('div', { class: 'team-wrap list-items' }, el('table', { class: 'team-table' },
+      el('thead', {}, el('tr', {}, ...['相手', '状態', 'くわしく', '報告'].map(h => el('th', { scope: 'col', text: h })))),
+      el('tbody', {}, ...bt.items.map(i => { const why = more(i); return el('tr', {},
+        el('th', { scope: 'row', text: i.name || '（名前なし）' }), el('td', { 'data-label': '状態' }, state(i)),
+        el('td', { 'data-label': 'くわしく', class: why ? '' : 'none' }, why || el('span', { class: 'muted', text: '—' })),
+        el('td', { 'data-label': '報告', class: i.missionId && i.outcome !== 'RECORD_DELETED' ? '' : 'none' }, i.missionId && i.outcome !== 'RECORD_DELETED' ? el('a', { class: 'link', href: `#/call/${i.missionId}`, text: '報告を開く' }) : el('span', { class: 'muted', text: '—' }))); })))),
+    el('details', { class: 'request-details' }, el('summary', { text: '頼んだ内容を見る' }), el('p', { class: 'request-text', text: bt.spec.instruction ?? bt.spec.request ?? '' })),
+    ['ENDED', 'FINISHED'].includes(bt.status) ? null : el('div', { class: 'actions' },
+      bt.status === 'ACTIVE' ? el('button', { class: 'btn', type: 'button', text: '一時停止', onclick: act('pause', '一時停止しました。') }) : el('button', { class: 'btn primary', type: 'button', text: '再開する', onclick: act('resume', '再開しました。') }),
+      el('button', { class: 'btn danger', type: 'button', text: '終了する', onclick: act('end', '終了しました。', `この名簿を終了しますか？\nまだかけていない相手には、かけません。終了すると、再開できません。`) })));
+  return node;
+}
+async function lists() {
+  await loadAll();
+  const box = el('div', { class: 'sched-list' });
+  loadInto(box, () => api('/batches'), list => list.length ? list.map(batchCard)
+    : el('div', { class: 'card' }, el('h2', { text: 'まだ名簿の電話はありません' }),
+      el('p', { class: 'about', text: '連絡先の画面で「名簿にまとめて電話」を押し、相手を選ぶと、同じ内容の電話を順にかけられます。' }), el('a', { class: 'btn primary', href: '#/contacts', text: '連絡先で相手を選ぶ' })));
+  return el('div', { class: 'page' },
+    el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'),
+    el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '名簿の電話' }), el('p', { class: 'page-intro', text: '一度承認した内容で、名簿の相手に順にかける電話です。1件ごとに、ふつうの電話と同じ確認をします。' })),
+      el('a', { class: 'btn', href: '#/contacts', text: '新しい名簿を作る' })),
+    box);
+}
+
 // ---------------------------------------------------------------- チームの電話
 // A manager or administrator sees the calls of their own team (lib/team.mjs): no phone numbers, no speech in the list.
 const TEAM_STATUS = { COMPLETED: '確認済み', INCOMPLETE: '未確定', DECLINED: '辞退・連絡停止', FAILED: '発信できず', UNKNOWN: '要照合', CANCELLED: '取消' };
@@ -1074,33 +1251,50 @@ async function team() {
   const box = el('div', { class: 'team-box' }), me = app.boot.user.id;
   const filter = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(only), text: '要確認だけ', onclick: () => { only = !only; app.teamAttention = only; filter.setAttribute('aria-pressed', String(only)); read(); } });
   const total = el('span', { class: 'sub', role: 'status' });
-  const glance = c => { const parts = Object.entries(c).filter(([, a]) => a !== 'not_asked').map(([t, a]) => el('span', { class: checkWorry(t, a) ? 'worry' : '' }, `${CHECK_TOPIC[t]?.slice(0, 2) ?? t} `, el('b', { text: checkShort(t, a) })));
-    return parts.length ? el('span', { class: 'glance' }, ...parts) : el('span', { class: 'muted', text: '—' }); };
+  const glance = c => { const parts = Object.entries(c).filter(([, a]) => a !== 'not_asked').map(([t, a]) => el('span', { class: checkWorry(t, a) ? 'worry' : '' }, `${CHECK_TOPIC[t]?.slice(0, 2) ?? t}：`, el('b', { text: checkShort(t, a) })));
+    return parts.length ? el('span', { class: 'glance' }, ...parts) : null; };
+  // How the call itself went, in call terms. 確認済み next to 緊急 would read as "someone has dealt with it".
+  const went = c => c.status === 'FAILED' ? missTag('かけられませんでした') : c.answered === false ? missTag('応答なし') : c.answered === true ? '話せました'
+    : c.checkIn || c.scheduled ? ({ UNKNOWN: '要照合', CANCELLED: '取消', DECLINED: '断られました' }[c.status] ?? (TEAM_STATUS[c.status] ? '終わりました' : '進行中')) : TEAM_STATUS[c.status] ?? '進行中';
+  const cell = (label, content) => el('td', { 'data-label': label, class: content ? '' : 'none' }, content ?? el('span', { class: 'muted', text: '—' }));
   const draw = data => {
     filter.textContent = `要確認だけ（${data.needsAttention}件）`;
     total.textContent = data.total > data.calls.length ? `${data.total}件のうち、新しい${data.calls.length}件` : `${data.total}件`;
     if (!data.calls.length) return el('div', { class: 'rows' }, el('p', { class: 'empty', text: only ? '要確認の電話はありません。' : 'まだチームの電話はありません。' }));
     return el('div', { class: 'rows team-wrap' }, el('table', { class: 'team-table' },
-      el('thead', {}, el('tr', {}, ...['日時', '頼んだ人', '相手', '結果', '応答', '要確認', '聞き取り（話したこと）'].map(h => el('th', { scope: 'col', text: h })))),
+      el('thead', {}, el('tr', {}, ...['日時', '頼んだ人', '相手', '電話の結果', '要確認', '話したこと（見守りの返事）'].map(h => el('th', { scope: 'col', text: h })))),
       el('tbody', {}, ...data.calls.map(c => el('tr', { class: c.attention ? `need-${c.attention}` : '' },
         el('td', { 'data-label': '日時' }, el('time', { datetime: c.createdAt, text: new Date(c.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) })),
         el('td', { 'data-label': '頼んだ人', title: c.owner === me ? null : c.owner, text: c.owner === me ? '自分' : shortId(c.owner) }),
         el('th', { scope: 'row', 'data-label': '相手' }, c.kind === 'request' ? el('a', { href: `#/team/${c.id}`, text: c.recipient || '（名前なし）' }) : el('span', { text: c.recipient || '（名前なし）' }),
           c.kind === 'sales' ? el('span', { class: 'tag', text: '営業' }) : null, c.direction === 'inbound' ? el('span', { class: 'tag', text: '着信' }) : null, c.scheduled ? el('span', { class: 'tag', text: '定期' }) : null),
-        el('td', { 'data-label': '結果', text: TEAM_STATUS[c.status] ?? '進行中' }),
-        el('td', { 'data-label': '応答' }, c.answered === null ? el('span', { class: 'muted', text: '—' }) : c.answered ? 'あり' : el('b', { text: 'なし' })),
-        el('td', { 'data-label': '要確認' }, c.attention ? levelTag(c.attention) : el('span', { class: 'muted', text: '—' })),
-        el('td', { 'data-label': '聞き取り' }, c.checkIn ? glance(c.checkIn) : el('span', { class: 'muted', text: '—' })))))));
+        cell('電話の結果', went(c)),
+        cell('要確認', c.attention ? levelTag(c.attention) : null),
+        cell('話したこと（見守りの返事）', c.checkIn ? glance(c.checkIn) : null))))));
   };
   const read = () => loadInto(box, () => api(`/team/calls${only ? '?attention=1' : ''}`), draw);
   read();
+  // この7日間: plain numbers. The answer rate is of the calls where it is known whether anyone picked up.
+  const sum = el('section', { class: 'team-sum', 'aria-label': 'この7日間' });
+  loadInto(sum, () => api('/team/summary?days=7'), d => {
+    const t = d.total, known = t.answered + t.unanswered, by = new Map(d.byDay.map(x => [x.date, x]));
+    const tile = (k, v, note) => el('div', { class: 'sum-tile' }, el('dt', { text: k }), el('dd', {}, el('b', { text: v }), note ? el('span', { text: note }) : null));
+    const days = Array.from({ length: 7 }, (_, i) => new Date(Date.now() + 9 * 3600e3 - (6 - i) * 86400e3).toISOString().slice(0, 10));
+    return [el('h2', { class: 'section-h', text: 'この7日間' }),
+      el('dl', { class: 'sum-tiles' }, tile('電話', `${t.calls}件`), tile('応答率', t.answerRatePercent === null ? '—' : `${t.answerRatePercent}%`, known ? `応答が分かる${known}件のうち${t.answered}件` : '応答が分かる電話はありません'),
+        tile('要確認', `${t.attention}件`), tile('緊急', `${t.emergency}件`)),
+      el('ol', { class: 'sum-days', 'aria-label': '日ごとの件数' }, ...days.map(date => { const x = by.get(date);
+        return el('li', { class: x?.attention ? 'has' : '' }, el('time', { datetime: date, text: `${Number(date.slice(5, 7))}/${Number(date.slice(8))}` }), el('span', { class: 'wd', text: WEEK[new Date(`${date}T00:00:00Z`).getUTCDay()] }),
+          el('b', { text: `${x?.calls ?? 0}件` }), el('span', { class: 'at', text: x?.attention ? `要確認${x.attention}` : '' })); }))];
+  });
   return el('div', { class: 'page team-page' },
     el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'),
     el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: 'チームの電話' }), el('p', { class: 'page-intro', text: '同じチームの人が頼んだ電話です。一覧に電話番号と会話は出ません。相手の名前から報告を開けます（開いたことは記録されます）。' })),
       el('a', { class: 'btn', href: '/v1/team/calls.csv', download: 'oathra-team-calls.csv', text: 'CSVで保存' })),
+    sum,
     el('div', { class: 'team-tools' }, filter, total),
     box,
-    el('p', { class: 'note', text: '「聞き取り」は、見守りの電話で本人が話したことです。実際の様子を確かめたものではありません。営業の電話の報告は、頼んだ本人の画面で開きます。CSVに電話番号と会話は入りません。保存したことは記録されます。' }));
+    el('p', { class: 'note', text: '「話したこと」は、見守りの電話で本人が話した返事です。実際の様子を確かめたものではありません。営業の電話の報告は、頼んだ本人の画面で開きます。CSVに電話番号と会話は入りません。保存したことは記録されます。' }));
 }
 
 // ---------------------------------------------------------------- 練習
@@ -1300,8 +1494,22 @@ async function contacts(id) {
   app.contactSel = sel?.id;
   const q = el('input', { type: 'search', placeholder: '名前・会社・番号で探す', 'aria-label': '連絡先を探す' });
   const items = el('div', { class: 'list' });
+  // 名簿にまとめて電話: the list turns into checkboxes; the choice is carried to the next screen (never to the server yet).
+  const picking = () => app.listPick instanceof Set;
+  const pickInfo = el('p', { class: 'pick-count', role: 'status' }), pickNext = el('a', { class: 'btn primary', href: '#/lists/new', text: '内容を決める' });
+  const pickSync = () => { const n = app.listPick?.size ?? 0; pickInfo.textContent = n > 100 ? `${n}人を選んでいます。名簿は100人までです。` : `${n}人を選んでいます（100人まで）。`; pickNext.toggleAttribute('aria-disabled', n < 1 || n > 100); };
+  pickNext.addEventListener('click', e => { if (pickNext.hasAttribute('aria-disabled')) e.preventDefault(); });
+  const pickBar = el('div', { class: 'card pick-bar', hidden: !picking() }, el('h2', { text: '名簿にまとめて電話：相手を選ぶ' }), pickInfo,
+    el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'button', text: '表示中の全員を選ぶ', onclick: () => { for (const c of shownNow) app.listPick.add(c.id); draw(); } }),
+      el('button', { class: 'btn', type: 'button', text: 'やめる', onclick: () => { app.listPick = null; route(); } }), pickNext));
+  let shownNow = [];
   const draw = () => {
     const w = q.value.trim(), shown = list.filter(c => !w || [c.name, c.company, c.phone].some(x => x && x.includes(w)));
+    shownNow = shown; pickSync();
+    if (picking()) return items.replaceChildren(...(shown.length ? shown.map(c => el('label', { class: 'item pick' },
+      el('input', { type: 'checkbox', checked: app.listPick.has(c.id), onchange: e => { if (e.currentTarget.checked) app.listPick.add(c.id); else app.listPick.delete(c.id); pickSync(); } }),
+      el('span', { class: 'grow' }, el('b', { text: c.name || c.company }), el('span', { class: 'num', text: [c.company && c.name ? c.company : '', displayPhone(c.phone) || '電話番号なし'].filter(Boolean).join(' · ') })), c.suppressed ? el('span', { class: 'tag stopped', text: '連絡停止中' }) : null))
+      : [el('p', { class: 'empty', text: '見つかりません。' })]));
     items.replaceChildren(...(shown.length ? shown.map(c => el('button', { class: 'item', type: 'button', 'aria-current': String(c.id === sel?.id), onclick: () => { if (keepEdits()) location.hash = `#/contacts/${c.id}`; } },
       el('span', { class: 'avatar', text: (c.name || c.company || '?').slice(0, 1) }), el('span', { class: 'grow' }, el('b', { text: c.name || c.company }), el('span', { class: 'num', text: [c.company && c.name ? c.company : '', displayPhone(c.phone) || '電話番号なし'].filter(Boolean).join(' · ') })), c.suppressed ? el('span', { class: 'tag stopped', text: '連絡停止中' }) : null))
       : [el('p', { class: 'empty', text: list.length ? '見つかりません。' : 'まだ連絡先がありません。' })]));
@@ -1377,7 +1585,8 @@ async function contacts(id) {
     el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'button', text: '閉じる', onclick: () => { importDone.remove(); importOpen.focus(); } }))) : null;
   // 連絡停止の解除: a supervisor's decision with a written reason. A stop the person made by pressing a key stays.
   const releaseErr = el('p', { class: 'errbox', role: 'alert', hidden: true });
-  const releaseForm = sel?.suppressed && isSupervisor() ? el('form', { class: 'stack tight release-form', hidden: true, onsubmit: async e => {
+  const byRecipient = sel?.suppressedBy === 'recipient';
+  const releaseForm = sel?.suppressed && !byRecipient && isSupervisor() ? el('form', { class: 'stack tight release-form', hidden: true, onsubmit: async e => {
     e.preventDefault(); const f = e.currentTarget, reason = f.elements.reason.value.trim(), send = f.querySelector('[type=submit]');
     releaseErr.hidden = true;
     if (reason.length < 5 || reason.length > 300) { releaseErr.textContent = ERRORS.release_reason_required; releaseErr.hidden = false; f.elements.reason.focus(); return; }
@@ -1390,11 +1599,12 @@ async function contacts(id) {
   } },
     el('label', { class: 'lbl', for: 'release-reason', text: '解除する理由（5〜300文字）' }), el('textarea', { id: 'release-reason', name: 'reason', maxlength: '300', placeholder: '例：本人から電話で、連絡を再開してよいと言われた（10/2）' }),
     el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'ack' }), 'この相手に電話してよいことを確かめました。'),
-    el('p', { class: 'note', text: '解除した人と理由は記録されます。相手が電話中のボタン操作で止めた場合は、ここからは解除できません。' }), releaseErr,
+    el('p', { class: 'note', text: '解除した人と理由は記録されます。' }), releaseErr,
     el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'button', text: 'やめる', onclick: () => { releaseForm.hidden = true; releaseOpen.hidden = false; releaseOpen.focus(); } }), el('button', { class: 'btn primary', type: 'submit', text: '連絡停止を解除する' }))) : null;
   const releaseOpen = releaseForm ? el('button', { class: 'btn', type: 'button', text: '連絡停止を解除', onclick: () => { releaseForm.hidden = false; releaseOpen.hidden = true; releaseForm.elements.reason.focus(); } }) : null;
   const stopped = sel?.suppressed ? el('div', { class: 'warnbox stopped-box' }, el('p', {}, el('b', { text: '連絡停止中' }), '　この相手には電話をかけません。'),
-    releaseForm ? [releaseOpen, releaseForm] : el('p', { text: '解除は、管理者かマネージャーに頼んでください。' })) : null;
+    byRecipient ? el('p', { text: 'ご本人が通話中にボタンを押して、電話を止めました。ご本人の意思なので、この停止は解除できません。' })
+      : releaseForm ? [releaseOpen, releaseForm] : el('p', { text: '解除は、管理者かマネージャーに頼んでください。' })) : null;
   const calls = sel ? app.history.filter(r => r.request.phone === sel.phone) : [];
   const detail = sel ? el('div', { class: 'card contact-detail' },
     el('div', { class: 'metric-k' }, el('div', { class: 'split' }, el('span', { class: 'avatar big', text: (sel.name || sel.company || '?').slice(0, 1) }), el('div', {}, el('h2', { class: 'headline', text: sel.name || sel.company }), el('span', { text: sel.name ? sel.company : '' }))),
@@ -1406,9 +1616,9 @@ async function contacts(id) {
     el('h2', { class: 'section-h', text: 'この番号への電話' }), el('p', { class: 'note', text: '電話番号で照合しています。メモや履歴は、AIに自動では渡しません。' }), callRows(calls, 'まだありません。'))
     : el('div', { class: 'card' }, el('p', { class: 'muted', text: '連絡先を追加すると、ここに出ます。' }));
   return el('div', { class: 'page contacts-page' },
-    el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '連絡先' }), el('p', { class: 'page-intro', text: '相手との関係と、これまでの依頼を確認できます。' })), el('div', { class: 'actions page-actions' }, importOpen, el('button', { class: 'btn', type: 'button', text: '＋ 連絡先を追加', onclick: () => { if (addForm.hidden || editing) openForm(null); else if (keepEdits()) closeForm(); } }))),
+    el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '連絡先' }), el('p', { class: 'page-intro', text: '相手との関係と、これまでの依頼を確認できます。' })), el('div', { class: 'actions page-actions' }, list.length ? el('button', { class: 'btn', type: 'button', text: '名簿にまとめて電話', 'aria-pressed': String(picking()), onclick: () => { if (!keepEdits()) return; app.listPick = picking() ? null : new Set(); route(); } }) : null, importOpen, el('button', { class: 'btn', type: 'button', text: '＋ 連絡先を追加', onclick: () => { if (addForm.hidden || editing) openForm(null); else if (keepEdits()) closeForm(); } }))),
     el('div', { class: 'import-zone stack' }, importDone, importCard),
-    el('div', { class: 'split-page contacts-layout' }, el('div', { class: 'stack' }, q, items), el('div', { class: 'stack' }, addForm, detail)));
+    el('div', { class: 'split-page contacts-layout' }, el('div', { class: 'stack' }, pickBar, q, items), el('div', { class: 'stack' }, addForm, detail)));
 }
 
 // ---------------------------------------------------------------- 設定
