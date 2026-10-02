@@ -236,6 +236,8 @@ export class Service {
   // Internal composition point: caller must hold Store.tx (agent dispatch creates draft + queue atomically).
   startTx(u, token, idempotencyKey, acknowledged, expectedMissionId = null) {
     this.write(u); assert(acknowledged === true, 'explicit_call_approval_required', 403);
+    // An approval is good for five minutes; one accepted during a restart would expire in the queue.
+    assert(!this.config.draining, 'service_restarting_try_again_shortly', 503);
     const key = text(idempotencyKey, 150), tokenHash = hash(text(token, 200));
       const previous = this.store.key(`start:${u.id}`, key);
       if (previous) { const old = JSON.parse(previous); assert(old.tokenHash === tokenHash && (!expectedMissionId || old.id === expectedMissionId), 'idempotency_conflict', 409); return this.own('mission', old.id, u); }

@@ -14,7 +14,8 @@ services:
       - gateway-data:/data
     restart: unless-stopped
     init: true
-    stop_grace_period: 45s
+    # Longer than the longest call (OATHRA_SHUTDOWN_GRACE_SECONDS, default 330): a deploy waits for the call in progress.
+    stop_grace_period: 360s
     expose: ["4244"]
     read_only: true
     tmpfs: [/tmp]

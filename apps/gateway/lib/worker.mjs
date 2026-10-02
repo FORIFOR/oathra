@@ -50,6 +50,7 @@ export class Worker {
       await this.processQueue('outbox',j=>this.channels.send(j));
       if(this.alerts?.config) await this.processQueue('alert',j=>this.alerts.send(j));
       if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
+      if(this.draining)return;
       // Standing requests place their next due call into the queue; the claim below treats it like any other.
       if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
       const m=this.claimNext();
@@ -178,6 +179,12 @@ export class Worker {
         this.store.put('mission',current);this.service.credits.settleTx(current);
       }});
     }
+  }
+  /** Before a restart: take no new call, let the one in progress finish (up to `graceMs`), then stop. A deploy should not hang up on anyone. */
+  async drain(graceMs) {
+    this.draining=true; this.service.config.draining=true;
+    if(this.active?.promise) await Promise.race([this.active.promise,new Promise(r=>{const t=setTimeout(r,graceMs);t.unref?.();})]);
+    const cut=!!this.active; await this.stop(); return {cut};
   }
   async stop() {
     clearInterval(this.timer); clearInterval(this.leaseTimer); clearInterval(this.controlTimer); this.active?.abort.abort();

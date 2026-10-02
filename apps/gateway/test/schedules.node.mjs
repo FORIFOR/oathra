@@ -128,3 +128,22 @@ test('when the contact’s number changed or consent was withdrawn, the schedule
   const s=f.create();f.store.put('contact',{...f.contact,phone:'+819000000077'});f.at(start+10*min);await f.pass();
   assert.equal(f.dialed.length,0);assert.equal(f.store.get('schedule',s.id).status,'ENDED');assert.equal(f.store.list('mission').length,0,'no draft is left behind');assert.equal(f.alertsRaised(),1);
 }));
+
+test('before a restart no new call is taken, the call in progress is allowed to finish, and approvals are refused',using(async f=>{
+  f.create();f.at(start+10*min);
+  let release;const held=new Promise(r=>{release=r;});const inner=f.worker.execute;
+  f.worker.execute=async(m,hooks)=>{await held;return inner(m,hooks);};
+  await f.worker.tick();assert.ok(f.worker.active,'a call is in progress');
+  const draining=f.worker.drain(5_000);
+  assert.equal(f.config.draining,true);
+  assert.equal(code(()=>f.service.startTx(f.alice,'x'.repeat(40),'drain-key-1',true)),'service_restarting_try_again_shortly');
+  release();const result=await draining;
+  assert.deepEqual(result,{cut:false});assert.equal(f.dialed.length,1);assert.equal(f.store.get('mission',f.dialed[0]).answered,true,'it ended on its own, not by the restart');
+  f.advance(86400_000);await f.worker.tick();assert.equal(f.dialed.length,1,'a draining worker starts nothing');
+}));
+test('a call that outlasts the grace period is cut and reported as cut',using(async f=>{
+  f.create();f.at(start+10*min);
+  f.worker.execute=(m,hooks)=>new Promise(resolve=>hooks.signal.addEventListener('abort',()=>resolve({})));
+  await f.worker.tick();
+  assert.deepEqual(await f.worker.drain(20),{cut:true});
+}));

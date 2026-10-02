@@ -164,3 +164,42 @@ test('command line: needs a target directory and a file database, and prints the
     assert.equal(again.status,1);assert.deepEqual(JSON.parse(again.stderr.trim().split('\n').pop()),{error:'EEXIST'});
   }finally{store.close();}
 }));
+
+// ---------------------------------------------------------------------------------------------- restore
+{
+  const { restoreDatabase } = await import('../restore.mjs');
+  const { backupDatabase } = await import('../backup.mjs');
+  const { Store } = await import('../lib/store.mjs');
+  const { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { randomBytes } = await import('node:crypto');
+  const made = async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'restore-')), key = randomBytes(32).toString('hex'), db = join(dir, 'live', 'gateway.sqlite');
+    (await import('node:fs')).mkdirSync(join(dir, 'live'));
+    const store = new Store(db, key); store.put('mission', { id: 'm1', owner: 'alice', status: 'COMPLETED', note: '復元の確認' }); store.close();
+    await backupDatabase(db, join(dir, 'backup'));
+    return { dir, key, db, backup: join(dir, 'backup'), done() { rmSync(dir, { recursive: true, force: true }); } };
+  };
+  const code = fn => { try { fn(); return null; } catch (e) { return e.code; } };
+  test('restore: a backup comes back readable with the same key, and the records are checked before it is left in place', async () => {
+    const f = await made();
+    try {
+      const target = join(f.dir, 'restored', 'gateway.sqlite'), result = restoreDatabase(f.backup, target, f.key);
+      assert.equal(result.recordsChecked, 1);
+      const store = new Store(target, f.key); try { assert.equal(store.get('mission', 'm1').note, '復元の確認'); } finally { store.close(); }
+    } finally { f.done(); }
+  });
+  test('restore: never overwrites a database, refuses a tampered backup, and leaves nothing behind with the wrong key', async () => {
+    const f = await made();
+    try {
+      assert.equal(code(() => restoreDatabase(f.backup, f.db, f.key)), 'restore_target_exists');
+      const target = join(f.dir, 'restored.sqlite');
+      assert.equal(code(() => restoreDatabase(f.backup, target, randomBytes(32).toString('hex'))), 'data_key_does_not_open_backup');
+      assert.equal(existsSync(target), false); assert.equal(existsSync(target + '-wal'), false);
+      const file = join(f.backup, 'gateway.sqlite'), bytes = readFileSync(file); bytes[bytes.length - 1] ^= 0xff; (await import('node:fs')).chmodSync(file, 0o600); writeFileSync(file, bytes);
+      assert.equal(code(() => restoreDatabase(f.backup, target, f.key)), 'backup_hash_mismatch'); assert.equal(existsSync(target), false);
+      assert.equal(code(() => restoreDatabase(join(f.dir, 'nothing'), target, f.key)), 'backup_manifest_unreadable');
+    } finally { f.done(); }
+  });
+}

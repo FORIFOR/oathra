@@ -207,7 +207,7 @@ export async function createGateway(config,options={}){
       }
       if(method==='GET'&&path==='/readyz'){
         const lease=store.db.prepare('SELECT holder,expires FROM lease WHERE id=1').get();
-        const ready=lease?.holder===worker.holder&&lease.expires>store.now()&&(config.mode!=='live'||config.liveReady);
+        const ready=lease?.holder===worker.holder&&lease.expires>store.now()&&(config.mode!=='live'||config.liveReady)&&!config.draining;
         return send(res,ready?200:503,{ready:Boolean(ready)});
       }
       if(method==='GET'&&path==='/v1/public/service'){
@@ -444,12 +444,16 @@ export async function createGateway(config,options={}){
   });
   server.requestTimeout=15000;server.headersTimeout=10000;server.maxHeadersCount=64;
   if(config.liveReady&&!options.execute){await phone.attach(server);if(config.billing?.policy===METERED)phone.startBilling();}
-  return {server,service,store,worker,phone,channels,registry,async close(){await worker.stop();await phone.stopBilling?.();server.closeAllConnections();await new Promise(r=>server.close(r));phone.wss?.close();await registry.close();if(!options.store)store.close();}};
+  return {server,service,store,worker,phone,channels,registry,async drain(graceMs){const result=await worker.drain(graceMs);await this.close();return result;},
+    async close(){await worker.stop();await phone.stopBilling?.();server.closeAllConnections();await new Promise(r=>server.close(r));phone.wss?.close();await registry.close();if(!options.store)store.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const config=configuration(),app=await createGateway(config);
   app.worker.start();app.server.listen(config.port,config.host,()=>console.log(`Oathra Gateway (${config.mode}) listening; use ${config.publicUrl}`));
   const retentionDays=number(process.env,'OATHRA_RETENTION_DAYS',30,1,3650);
   const retention=setInterval(()=>{try{app.store.prune(retentionDays);}catch(e){console.error(JSON.stringify({level:'error',event:'retention.failed',code:e.code??e.name,at:new Date().toISOString()}));}},3600_000);retention.unref();
-  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{clearInterval(retention);void app.close().then(()=>process.exit(0));});
+  // SIGTERM (a deploy) waits for the call in progress; SIGINT (Ctrl-C) stops at once. Keep the container's stop grace above this.
+  const grace=number(process.env,'OATHRA_SHUTDOWN_GRACE_SECONDS',330,0,900)*1000;
+  process.once('SIGINT',()=>{clearInterval(retention);void app.close().then(()=>process.exit(0));});
+  process.once('SIGTERM',()=>{clearInterval(retention);void app.drain(grace).then(r=>{if(r.cut)console.error(JSON.stringify({level:'error',event:'shutdown.call_cut',at:new Date().toISOString()}));process.exit(0);});});
 }

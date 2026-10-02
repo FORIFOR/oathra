@@ -174,6 +174,7 @@ export class Phone {
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。こちらは、AIによる代理電話サービス、${xml(this.env.OATHRA_BUSINESS_NAME??'Oathra')}の発信用の番号です。${xml(who)}ただいま、この番号ではお電話をお受けできません。</Say>${stop}<Hangup/></Response>`;
     };
     if(!known)return announce('unknown_caller');
+    if(this.config.draining)return announce('busy');
     if(ambiguous)return announce('ambiguous_callback_owner');
     if(!cfg||!owner||this.config.mode!=='live'||!this.config.liveReady)return announce('inbound_not_enabled');
     if(this.service.account(owner).purchaseBlocked)return announce('purchase_account_blocked');
