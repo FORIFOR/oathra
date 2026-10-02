@@ -116,7 +116,7 @@ test('a wellbeing report carries a note a person may pass on to a relative, in s
   const {phoneRecord}=await import('../lib/phone-service.mjs');
   const {saved}=await f.run(f.mission({pace:'gentle',callerName:'ひかり苑'}),['A: お薬は飲まれましたか。','B: はい、飲みました。']);
   const note=phoneRecord(f.service,saved).familyNote;
-  assert.match(note,/^山田さんへのひかり苑からのお電話（9月19日 3時ごろ）のご報告です。/);assert.ok(note.includes('・お薬: 「はい、飲みました。」と話されました。'));
+  assert.match(note,/^山田さんへ、ひかり苑の代わりにAIがおかけした電話（9月19日 3時ごろ）のご報告です。/);assert.ok(note.includes('・お薬: 「はい、飲みました。」と話されました。'));
   assert.ok(note.endsWith('ご本人の様子を確かめたものではありません。'));
   const plain=await f.run(f.mission(),['B: 営業時間は10時からです']);assert.equal(phoneRecord(f.service,plain.saved).familyNote,undefined);
 }));

@@ -47,10 +47,32 @@ function teamMissions(service, u) {
 }
 /** The name a teammate goes by: the one they call under, else their sign-in id. Never an email address. */
 function names(service) { const cache = new Map(); return id => { if (!cache.has(id)) cache.set(id, service.store.get('account', id)?.callerName || id); return cache.get(id); }; }
+/** Scheduled calls of this team that were never placed in the last `days` days: a day nobody checked on someone. */
+export function teamNotPlaced(service, u, days = 7) {
+  const name = names(service), sinceDate = new Date(service.store.now() - days * 86400_000 + 9 * 3600_000).toISOString().slice(0, 10), rows = [];
+  for (const row of service.store.db.prepare("SELECT body FROM records WHERE kind='schedule'").iterate()) {
+    const schedule = service.store.open(row.body); if (schedule.team !== u.team) continue;
+    for (const run of service.store.all('schedule-run', schedule.owner)) {
+      if (run.scheduleId !== schedule.id || run.date < sinceDate || !(['SKIPPED', 'FAILED'].includes(run.state) || (run.state === 'UNANSWERED' && run.reason))) continue;
+      rows.push({ scheduleId: schedule.id, owner: schedule.owner, ownerName: name(schedule.owner), recipient: schedule.request.name, date: run.date, time: run.time, reason: run.reason ?? run.state });
+    }
+  }
+  return rows.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+}
+/** Alerts raised for this team's calls that have not reached the webhook yet, each with the call it is about. */
+export function teamUndeliveredAlerts(service, u) {
+  const name = names(service), rows = [];
+  for (const job of service.store.list('alert', undefined, 'pending').concat(service.store.list('alert', undefined, 'processing'))) {
+    const p = job.payload; if (p.team !== u.team) continue;
+    rows.push({ id: p.id, mission: p.mission, reason: p.reason, level: p.level, recipient: p.recipient, owner: job.owner, ownerName: name(job.owner), at: new Date(p.at).toISOString(), attempts: job.attempts });
+  }
+  return rows.sort((a, b) => b.at.localeCompare(a.at));
+}
 export function teamCalls(service, u, { attention = false, limit = 200 } = {}) {
   supervisor(u); assert(Number.isSafeInteger(limit) && limit >= 1 && limit <= 1000, 'invalid_limit');
   const name = names(service), all = teamMissions(service, u).map(m => ({ ...callRow(m), ownerName: name(m.owner) })), shown = attention ? all.filter(r => r.attention) : all;
-  return { team: u.team, total: shown.length, needsAttention: all.filter(r => r.attention).length, calls: shown.slice(0, limit) };
+  const notPlaced = teamNotPlaced(service, u), undelivered = teamUndeliveredAlerts(service, u);
+  return { team: u.team, total: shown.length, needsAttention: all.filter(r => r.attention).length + notPlaced.length, calls: shown.slice(0, limit), notPlaced, undelivered };
 }
 /** The full record of a teammate's call, with the number, what was said and what it cost. Opening it is itself recorded. */
 export function teamRecord(service, u, id) {
@@ -64,8 +86,9 @@ export function teamRecord(service, u, id) {
 export function teamSummary(service, u, days = 7) {
   supervisor(u); assert(Number.isInteger(days) && days >= 1 && days <= 90, 'invalid_days');
   const day = ms => new Date(ms + 9 * 3600_000).toISOString().slice(0, 10), since = service.store.now() - days * 86400_000;
-  const empty = () => ({ calls: 0, outbound: 0, inbound: 0, answered: 0, unanswered: 0, notPlaced: 0, completed: 0, declined: 0, failed: 0, unknown: 0, attention: 0, emergency: 0, transferred: 0, seconds: 0 });
+  const empty = () => ({ calls: 0, outbound: 0, inbound: 0, answered: 0, unanswered: 0, notPlaced: 0, notPlacedScheduled: 0, completed: 0, declined: 0, failed: 0, unknown: 0, attention: 0, emergency: 0, transferred: 0, seconds: 0 });
   const total = empty(), byDay = {};
+  for (const r of teamNotPlaced(service, u, days)) { const b = byDay[r.date] ??= empty(); b.notPlacedScheduled = (b.notPlacedScheduled ?? 0) + 1; total.notPlacedScheduled = (total.notPlacedScheduled ?? 0) + 1; }
   for (const m of teamMissions(service, u)) {
     if (m.createdAt < since) continue;
     const row = callRow(m), bucket = byDay[day(m.createdAt)] ??= empty();

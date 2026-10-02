@@ -82,7 +82,7 @@ describe("the note for a relative", () => {
   it("says what was said, in the person's words, and that it is not an observation", async () => {
     const { checkInNote } = await import("./index.js");
     const note = checkInNote(checkInReport(call("A: 朝ご飯は召し上がりましたか。", "B: はい、食べました。", "A: お薬は飲まれましたか。", "B: 飲んだっけなあ。", "A: 夜は眠れましたか。")), who);
-    expect(note).toContain("山本 ハルさんへのひかり苑からのお電話（10月2日 9時ごろ）のご報告です。");
+    expect(note).toContain("山本 ハルさんへ、ひかり苑の代わりにAIがおかけした電話（10月2日 9時ごろ）のご報告です。");
     expect(note).toContain("・食事: 「はい、食べました。」と話されました。");
     expect(note).toContain("・お薬: はっきりしたお返事ではありませんでした。（「飲んだっけなあ。」と話されました。）");
     expect(note).not.toContain("睡眠");
@@ -96,7 +96,7 @@ describe("the note for a relative", () => {
   });
   it("an unanswered call says only that", async () => {
     const { checkInNote } = await import("./index.js");
-    expect(checkInNote(checkInReport([]), who)).toBe("山本 ハルさんへのひかり苑からのお電話（10月2日 9時ごろ）のご報告です。\nお電話に出られなかったか、お話ができませんでした。\nこの内容は電話での応答の記録で、ご本人の様子を確かめたものではありません。");
+    expect(checkInNote(checkInReport([]), who)).toBe("山本 ハルさんへ、ひかり苑の代わりにAIがおかけした電話（10月2日 9時ごろ）のご報告です。\nお電話に出られなかったか、お話ができませんでした。職員が改めて様子を確かめます。\nこの内容は電話での応答の記録で、ご本人の様子を確かめたものではありません。");
   });
 });
 

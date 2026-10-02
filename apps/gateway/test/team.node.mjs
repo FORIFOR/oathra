@@ -96,7 +96,7 @@ test('the summary counts the team’s own calls by day; the answer rate is reach
   f.call('boss',{direction:'inbound',answered:null,handoff:{status:'COMPLETED'}});f.call('boss',{answered:true,createdAt:now-3*86400_000,status:'DECLINED'});
   f.call('boss',{createdAt:now-30*86400_000});f.call('rival',{answered:true});
   const s=teamSummary(f.service,f.by('boss'));
-  assert.deepEqual(s.total,{calls:4,outbound:3,inbound:1,answered:3,unanswered:1,notPlaced:0,completed:1,declined:1,failed:0,unknown:0,attention:1,emergency:1,transferred:1,seconds:60,answerRatePercent:75});
+  assert.deepEqual(s.total,{calls:4,outbound:3,inbound:1,answered:3,unanswered:1,notPlaced:0,notPlacedScheduled:0,completed:1,declined:1,failed:0,unknown:0,attention:1,emergency:1,transferred:1,seconds:60,answerRatePercent:75});
   assert.deepEqual(s.byDay.map(d=>[d.date,d.calls]),[['2026-09-29',1],['2026-10-02',3]]);
   assert.equal(teamSummary(f.service,f.by('boss'),90).total.calls,5);
   assert.equal(code(()=>teamSummary(f.service,f.by('staff'))),'supervisor_required');assert.equal(code(()=>teamSummary(f.service,f.by('boss'),0)),'invalid_days');
@@ -172,4 +172,17 @@ test('two people on one number are two lines; a scheduled call that was never pl
   const board=teamPeople(f.service,f.by('boss'));
   assert.deepEqual(board.people.map(p=>[p.recipient,p.calls,p.notPlaced,p.notCheckedSince,p.lastNotPlaced?.reason??null]),[['山田 花子',1,1,true,'service_was_not_running'],['一度もかかっていない人',0,1,true,'insufficient_credits'],['山田 太郎',1,0,false,null]]);
   assert.equal(board.needsAttention,2);
+}));
+
+test('the team list carries the scheduled calls never placed and the alerts not yet delivered, each tied to a person or a call',using(f=>{
+  f.store.put('schedule',{id:'s1',owner:'staff',team:'care',status:'ACTIVE',request:{phone:'+819000000011',name:'山田 花子'}});
+  f.store.put('schedule-run',{id:'s1:2026-10-02:09:00',owner:'staff',scheduleId:'s1',date:'2026-10-02',time:'09:00',attempts:[],state:'SKIPPED',status:'SKIPPED',reason:'service_was_not_running'});
+  f.store.put('schedule-run',{id:'s1:2026-09-20:09:00',owner:'staff',scheduleId:'s1',date:'2026-09-20',time:'09:00',attempts:[],state:'SKIPPED',status:'SKIPPED',reason:'window_passed'});
+  const m=f.call('staff');f.store.enqueue('alert',m.id+':distress:emergency',m.owner,{id:m.id+':distress:emergency',reason:'distress',level:'emergency',mission:m.id,team:'care',recipient:'山田 花子',at:now});
+  f.store.enqueue('alert','other:x',m.owner,{id:'other:x',reason:'distress',level:'concern',mission:'other',team:'sales',recipient:'x',at:now});
+  const view=teamCalls(f.service,f.by('boss'));
+  assert.deepEqual(view.notPlaced.map(r=>[r.recipient,r.date,r.reason,r.ownerName]),[['山田 花子','2026-10-02','service_was_not_running','staff']]);
+  assert.deepEqual(view.undelivered.map(a=>[a.mission,a.level,a.recipient]),[[m.id,'emergency','山田 花子']]);
+  assert.equal(view.needsAttention,1);
+  assert.equal(teamSummary(f.service,f.by('boss')).total.notPlacedScheduled,1);
 }));
