@@ -6,6 +6,8 @@ import { normalizePhoneNumber, extractPhoneNumber, preparePhoneRequest } from '.
 import { assert, Fault, hash, phone, random, text } from './security.mjs';
 
 export const terminal = s => ['COMPLETED','INCOMPLETE','DECLINED','FAILED','CANCELLED','UNKNOWN'].includes(s);
+/** The settings for the number that was rung: one of the extra business lines (OATHRA_INBOUND_LINES_JSON), else the main line. */
+export const inboundLine = (config, to) => (to && config.inboundLines?.[to]) || config.inbound;
 /** Japan time. `{from:'09:00',to:'20:00'}`; a window that crosses midnight (22:00-06:00) is the hours outside the day. */
 export function withinHours(ms, h) { const t = new Date(ms + 9 * 3600_000), m = t.getUTCHours() * 60 + t.getUTCMinutes(), mm = v => Number(v.slice(0, 2)) * 60 + Number(v.slice(3)); const a = mm(h.from), b = mm(h.to); return a < b ? m >= a && m < b : m >= a || m < b; }
 export class Service {

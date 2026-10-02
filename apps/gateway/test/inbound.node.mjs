@@ -213,3 +213,21 @@ test('a personal line that cannot answer offers no call back',using(f=>{
  f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
  assert.doesNotMatch(f.ring('+819011112222').twiml,/数字の1/);
 }));
+
+test('two businesses on one gateway: the number that was rung decides who answers, as whom, for whom, with whose answers',async()=>{
+ const lines=JSON.stringify([{number:'+815011110000',owner:'colleague',name:'ひかり苑',guidance:[{q:'面会時間',a:'10時から16時です。'}],transferTo:'+81312345678'}]);
+ await using(f=>{
+  f.service.credits.grant(f.users[0],'colleague',100,randomUUID(),'bounded inbound verification');
+  assert.ok(answered(f.ring('+819011112222',{To:'+815011110000'}).twiml));
+  const care=f.store.list('mission').find(x=>x.direction==='inbound');
+  assert.deepEqual([care.owner,care.team,care.inbound.ownerName,care.inbound.business,care.inbound.to],['colleague','work','ひかり苑',true,'+815011110000']);
+  f.store.put('mission',{...care,status:'INCOMPLETE'});
+  assert.ok(answered(f.ring('+819022223333').twiml));
+  const main=f.store.list('mission').find(x=>x.direction==='inbound'&&x.id!==care.id);
+  assert.deepEqual([main.owner,main.inbound.ownerName,main.inbound.to],['owner','丸山商事',undefined]);
+  assert.equal(f.config.inboundLines['+815011110000'].transferTo,'+81312345678');assert.equal(f.config.inbound.transferTo,null);
+ },{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_LINES_JSON:lines}})();
+ for(const bad of ['{','[]','[{"number":"+815011110000","owner":"nobody","name":"x"}]','[{"number":"0501111","owner":"owner","name":"x"}]','[{"number":"+815000000000","owner":"owner","name":"x"}]',
+  '[{"number":"+815011110000","owner":"owner","name":"x"},{"number":"+815011110000","owner":"owner","name":"y"}]','[{"number":"+815011110000","owner":"owner","name":"x","admin":true}]'])
+  assert.throws(()=>setup({extra:{OATHRA_INBOUND_LINES_JSON:bad}}),/configure_inbound_lines_json/,bad);
+});

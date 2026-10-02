@@ -4,7 +4,7 @@ import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
 import { evaluateSales, wantsNoContact, stopContact, asksForPerson } from './sales.mjs';
-import { terminal } from './service.mjs';
+import { terminal, inboundLine } from './service.mjs';
 import { spendingProgress } from './credit-guard.mjs';
 import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
@@ -151,7 +151,7 @@ export class Worker {
           if(before!==current.attention.level)this.alerts?.raise(current,'distress',current.attention.level,{categories:signals.map(s=>s.category),quotes:[e.text]});
         }
         // A caller who asks for a person gets one where the operator named a number to transfer to; otherwise the AI takes the message.
-        if(e.source==='callee'&&current.direction==='inbound'&&!current.transferAsked&&this.service.config.inbound?.transferTo&&typeof active.control.handoff==='function'&&asksForPerson(e.text)){
+        if(e.source==='callee'&&current.direction==='inbound'&&!current.transferAsked&&inboundLine(this.service.config,current.inbound?.to)?.transferTo&&typeof active.control.handoff==='function'&&asksForPerson(e.text)){
           current.transferAsked=true;this.store.put('mission',current);this.store.event(current,{type:'transfer.requested',turnId:e.turnId});
           Promise.resolve().then(()=>active.control.handoff()).catch(error=>{this.log('call.transfer_failed',error,{mission:m.id});this.store.event(this.store.get('mission',m.id)??current,{type:'transfer.failed',code:error.code??'transfer_failed'});});
         }

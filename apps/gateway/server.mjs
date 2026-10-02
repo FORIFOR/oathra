@@ -63,6 +63,17 @@ export function configuration(env=process.env){
     const transferTo=env.OATHRA_INBOUND_TRANSFER_TO||null;assert(!transferTo||(/^\+[1-9]\d{7,14}$/.test(transferTo)&&transferTo!==env.TWILIO_PHONE_NUMBER),'invalid_OATHRA_INBOUND_TRANSFER_TO',500);
     inbound={transferTo,business:env.OATHRA_INBOUND_BUSINESS==='true',guidance,hours:hours(env,'OATHRA_INBOUND_HOURS',null),owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
   }
+  // More business lines on the same gateway, one per number: each answers as its own business, for its own owner.
+  let inboundLines=null;
+  if(env.OATHRA_INBOUND_LINES_JSON){
+    let lines;try{lines=JSON.parse(env.OATHRA_INBOUND_LINES_JSON)}catch{throw new Fault(500,'configure_inbound_lines_json')}
+    const ok=l=>l&&typeof l==='object'&&Object.keys(l).every(k=>['number','owner','name','guidance','hours','transferTo'].includes(k))&&/^\+[1-9]\d{7,14}$/.test(l.number??'')&&users.some(u=>u.id===l.owner)
+      &&typeof l.name==='string'&&l.name.trim().length>0&&l.name.length<=40&&!/[@<>{}]/.test(l.name)&&(l.transferTo===undefined||(/^\+[1-9]\d{7,14}$/.test(l.transferTo)&&l.transferTo!==l.number))
+      &&(l.guidance===undefined||(Array.isArray(l.guidance)&&l.guidance.length<=30&&l.guidance.every(g=>g&&typeof g.q==='string'&&typeof g.a==='string'&&g.q.trim()&&g.a.trim()&&g.q.length<=80&&g.a.length<=300)));
+    assert(Array.isArray(lines)&&lines.length>=1&&lines.length<=50&&lines.every(ok)&&new Set(lines.map(l=>l.number)).size===lines.length&&lines.every(l=>l.number!==env.TWILIO_PHONE_NUMBER),'configure_inbound_lines_json',500);
+    inboundLines=Object.fromEntries(lines.map(l=>[l.number,{business:true,owner:l.owner,name:l.name.trim(),restaurant:null,guidance:l.guidance??[],hours:l.hours?hours({H:l.hours},'H',null):null,transferTo:l.transferTo??null,
+      maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)}]));
+  }
   // Metered billing prices one voice model per minute (billing.mjs), so a second engine is only offered under the fixed per-call policy.
   const geminiReady=!!env.GEMINI_API_KEY&&billing.policy!==METERED;
   const voiceEngines=[{id:'gpt-live',label:`GPT-Live (${env.OATHRA_VOICE_MODEL??'gpt-live-1'})`,ready:!!env.OPENAI_API_KEY&&!!env.OATHRA_VOICE_MODEL},{id:'gemini-live',label:`Gemini Live (${env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live'})`,ready:geminiReady},
@@ -73,7 +84,7 @@ export function configuration(env=process.env){
   const limits={maxSeconds:number(env,'OATHRA_MAX_SECONDS',300,30,600),maxCallUsd:number(env,'OATHRA_MAX_CALL_USD',10,0.01,100),dailyCalls:number(env,'OATHRA_DAILY_CALLS',20,0,500),dailyUsd:number(env,'OATHRA_DAILY_USD',30,0,1000)};
   const prerelease=prereleaseConfiguration(env,limits);
   if(prerelease.enabled)limits.maxSeconds=prerelease.maxCallSeconds;
-  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,prerelease,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,businessName:env.OATHRA_BUSINESS_NAME??null,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
+  return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,inboundLines,prerelease,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,businessName:env.OATHRA_BUSINESS_NAME??null,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
     localOpen:env.OATHRA_LOCAL_OPEN==='true',dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     ...limits,
     // Sales calls keep to daytime hours unless the operator says otherwise; ordinary requests are unrestricted unless set.

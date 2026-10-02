@@ -199,3 +199,20 @@ test('a schedule keeps working when the person has more than a thousand contacts
   f.at(start+10*min);await f.pass();
   assert.equal(f.dialed.length,1);assert.equal(f.store.list('schedule')[0].status,'ACTIVE');
 }));
+
+test('days the service was not running are written down as skipped and reported, never silently missing',using(async f=>{
+  f.create({times:['09:00','18:00']});f.at(start+10*min);await f.pass();await f.pass();assert.equal(f.dialed.length,1);
+  // Friday 09:00 was called. The service is then down until Monday 08:00: Friday 18:00, Saturday and Sunday come and go.
+  f.at(Date.parse('2026-10-05T08:00:00+09:00'));await f.pass();
+  assert.deepEqual(f.runs().map(r=>[r.date,r.time,r.state,r.reason??null]),[
+    ['2026-10-02','09:00','ANSWERED',null],['2026-10-02','18:00','SKIPPED','service_was_not_running'],
+    ['2026-10-03','09:00','SKIPPED','service_was_not_running'],['2026-10-03','18:00','SKIPPED','service_was_not_running'],
+    ['2026-10-04','09:00','SKIPPED','service_was_not_running'],['2026-10-04','18:00','SKIPPED','service_was_not_running']]);
+  assert.equal(f.alertsRaised(),5);assert.equal(f.dialed.length,1,'nothing is made up late');
+  await f.pass();assert.equal(f.runs().length,6);assert.equal(f.alertsRaised(),5,'written once');
+  f.at(Date.parse('2026-10-05T09:01:00+09:00'));await f.pass();assert.equal(f.dialed.length,2,'and today goes ahead');
+}));
+test('a paused schedule owes nothing for the days it was paused',using(async f=>{
+  const s=f.create();f.schedules.set(f.alice,s.id,'PAUSED');f.at(start+3*86400_000);f.schedules.set(f.alice,s.id,'ACTIVE');await f.pass();
+  assert.deepEqual(f.runs().filter(r=>r.reason==='service_was_not_running').length,0);
+}));

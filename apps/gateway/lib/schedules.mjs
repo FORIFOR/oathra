@@ -85,6 +85,8 @@ export class Schedules {
       assert(schedule.status !== 'ENDED', 'schedule_ended', 409);
       // Resuming is a fresh decision by the person, so it is checked like one.
       if (status === 'ACTIVE') { assert(schedule.until > this.store.now(), 'schedule_ended', 409); assert(!this.store.suppressed(owner.team, schedule.request.phone), 'recipient_suppressed', 403); }
+      // A schedule that is switched back on owes nothing for the time it was off.
+      if (status === 'ACTIVE') { schedule.resumedAt = this.store.now(); schedule.plannedDay = jst(this.store.now()).date; }
       schedule.status = status; if (status === 'ENDED') schedule.endedReason = 'ended_by_owner';
       this.store.put('schedule', schedule); this.store.audit(owner.id, 'schedule.' + status.toLowerCase(), id, { schedule: id });
       return this.view(schedule);
@@ -127,13 +129,28 @@ export class Schedules {
     // 2. Start what is due. A time that passed while the line was busy or the service was down is skipped, not made up late.
     for (const schedule of this.store.everyStatus('schedule', 'ACTIVE')) {
       if (now >= schedule.until) { this.end(schedule, 'reached_end_date'); continue; }
+      // Days the service was not running leave no trace on their own. Each occurrence that came and went since this
+      // schedule was last planned is written down as skipped and reported, so a missed day is never silent.
+      if (schedule.plannedDay !== today.date) {
+        const since = Math.max(schedule.createdAt, schedule.resumedAt ?? 0), from = Math.max(since, Date.parse(`${schedule.plannedDay ?? jst(schedule.createdAt).date}T00:00:00+09:00`), now - 7 * 86400_000);
+        for (let t = from; jst(t).date < today.date; t += 86400_000) {
+          const d = jst(t); if (!schedule.weekdays.includes(d.weekday)) continue;
+          for (const time of schedule.times) {
+            const at = Date.parse(`${d.date}T${time}:00+09:00`), id = `${schedule.id}:${d.date}:${time}`;
+            if (at <= since || at >= schedule.until || this.store.get('schedule-run', id)) continue;
+            const missed = { id, owner: schedule.owner, scheduleId: schedule.id, date: d.date, time, attempts: [], state: 'SKIPPED', reason: 'service_was_not_running' };
+            this.saveRun(missed); this.note(schedule, missed);
+          }
+        }
+        schedule.plannedDay = today.date; this.store.put('schedule', schedule);
+      }
       if (!schedule.weekdays.includes(today.weekday)) continue;
       for (const time of schedule.times) {
         const id = `${schedule.id}:${today.date}:${time}`, at = minutesOf(time);
         if (today.minutes < at || this.store.get('schedule-run', id)) continue;
         const run = { id, owner: schedule.owner, scheduleId: schedule.id, date: today.date, time, attempts: [], state: 'RUNNING' };
         // A schedule made at 10:00 does not owe the 09:00 call of that day.
-        const created = jst(schedule.createdAt);
+        const created = jst(Math.max(schedule.createdAt, schedule.resumedAt ?? 0));
         if (created.date === today.date && created.minutes > at) continue;
         if (today.minutes >= at + schedule.windowMinutes) { run.state = 'SKIPPED'; run.reason = 'window_passed'; this.saveRun(run); this.note(schedule, run); continue; }
         if (inUse >= lines) continue;

@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault, jsonFetch, random, twilioSignature } from './security.mjs';
 import { METERED, USAGE_RATE, carrierCost } from './billing.mjs';
-import { withinHours } from './service.mjs';
+import { withinHours, inboundLine } from './service.mjs';
 
 const xml = s => String(s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
 export const RECORDING_NOTICE='この通話は記録されています。';
@@ -153,14 +153,15 @@ export class Phone {
     if(this.config.prerelease?.enabled)return '<Response><Reject reason="rejected"/></Response>';
     const from=String(params.From??''),callSid=String(params.CallSid??''),known=/^\+[1-9]\d{7,14}$/.test(from)&&/^CA[a-f0-9]{32}$/i.test(callSid);
     // A shared caller ID cannot identify which customer a shop is calling back. Never guess between owners.
-    const cfg=this.config.inbound,reception=!!cfg?.restaurant,candidates=[];
-    if(known&&!reception)for(const row of this.store.db.prepare("SELECT body FROM records WHERE kind='mission'").iterate()) {
+    // Several businesses can share one gateway, each on its own number: the number that was rung picks the line.
+    const to=String(params.To??''),lined=!!this.config.inboundLines?.[to],cfg=inboundLine(this.config,to),reception=!!cfg?.restaurant,candidates=[];
+    if(known&&!reception&&!cfg?.business)for(const row of this.store.db.prepare("SELECT body FROM records WHERE kind='mission'").iterate()) {
       const x=this.store.open(row.body);
       if(x.kind==='phone-request'&&x.direction!=='inbound'&&x.target?.phone===from&&x.carrierSid&&(x.approvedAt??0)>this.store.now()-30*86400_000)candidates.push(x);
     }
     const ambiguous=new Set(candidates.map(x=>x.owner)).size>1;
     const earlier=ambiguous?undefined:candidates.sort((a,b)=>(b.approvedAt??0)-(a.approvedAt??0))[0];
-    const ownerId=ambiguous?null:reception?cfg.owner:earlier?.owner??cfg?.owner,owner=ownerId&&this.config.users.find(u=>u.id===ownerId);
+    const ownerId=ambiguous?null:reception||cfg?.business?cfg.owner:earlier?.owner??cfg?.owner,owner=ownerId&&this.config.users.find(u=>u.id===ownerId);
     // The owner's own settings (設定 › かけられた時の設定): the name to answer for, the way to answer, the hours.
     const pref=owner&&!reception?this.service.account(owner).inbound??null:null;
     const onBehalf=reception?cfg.restaurant.name:cfg?.business?cfg.name:earlier?.phoneRequest?.callerName??(earlier?null:pref?.name??this.service.account(owner||{id:''}).callerName??cfg?.name);
@@ -194,7 +195,7 @@ export class Phone {
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。おつなぎします。</Say><Dial callerId="${xml(this.config.callerId)}" timeout="20" timeLimit="${cfg.maxSeconds}"><Number>${xml(account.verifiedPhone)}</Number></Dial><Hangup/></Response>`;
     }
     if(!onBehalf)return announce('owner_name_unknown');
-    const hour=Math.floor(this.store.now()/3600_000),caller=`${hour}:${this.store.phoneRef(from)}`,perCaller=Number(this.store.key('inbound-rate',caller)??0),all=Number(this.store.key('inbound-rate',`${hour}:*`)??0);
+    const hour=Math.floor(this.store.now()/3600_000),lineKey=lined?':'+this.store.phoneRef(to):'',caller=`${hour}:${this.store.phoneRef(from)}${lineKey}`,total=`${hour}:*${lineKey}`,perCaller=Number(this.store.key('inbound-rate',caller)??0),all=Number(this.store.key('inbound-rate',total)??0);
     if(perCaller>=cfg.perCallerPerHour||all>=cfg.perHour)return announce('rate_limited');
     // Every line the operator allowed is in use (one, unless OATHRA_MAX_CONCURRENT_CALLS says more).
     if(this.store.countStatus('mission',['QUEUED','DIALING','ACTIVE','VERIFYING','CANCEL_REQUESTED'])>=Math.max(1,this.config.maxConcurrentCalls??1))return announce('busy');
@@ -209,12 +210,12 @@ export class Phone {
         const now=this.store.now(),token=random();
         const mission={id:randomUUID(),owner:owner.id,team:owner.team,revision:1,status:'QUEUED',kind:'phone-request',direction:'inbound',
           phoneRequest:{schemaVersion:1,kind:'oathra.phone-request',phone:from,name,instruction:reception?'着信。店の予約受付として応対し、席の予約を台帳に記録します。':earlier?'着信（こちらからの電話への折り返し）。用件を聞き取って伝えます。':'着信。用件を聞き取って伝えます。'},
-          inbound:{callSid,token,ownerName:onBehalf,...(reception?{reception:true}:{}),...(cfg.business&&!reception?{business:true}:{}),...(context&&!reception?{context}:{}),...(earlier&&!reception?{earlier:earlier.id}:{})},
+          inbound:{callSid,token,ownerName:onBehalf,...(lined?{to}:{}),...(reception?{reception:true}:{}),...(cfg.business&&!reception?{business:true}:{}),...(context&&!reception?{context}:{}),...(earlier&&!reception?{earlier:earlier.id}:{})},
           target:{name,phone:from},request:reception?'着信（予約受付）の応対':earlier?'着信（折り返し）の応対':'着信の応対',goal:reception?'phone.reception':'phone.inbound',product:null,candidateSlots:[],testOnMe:false,mode:'live',
           maxSeconds:cfg.maxSeconds,maxUsd:this.config.maxCallUsd,estimatedMaximumUsd:Math.min(this.config.maxCallUsd,quote.amount*(quote.creditUsd??0)),creditQuote:quote,
           callerId:this.config.callerId,callPluginIdentity:this.config.callPluginIdentity??null,createdAt:now,approvedAt:now,approvalExpiresAt:now+60_000,origin:null,result:null};
         this.service.credits.reserveTx(mission);this.store.put('mission',mission);
-        this.store.setKey('inbound-rate',caller,String(perCaller+1),3600_000);this.store.setKey('inbound-rate',`${hour}:*`,String(all+1),3600_000);
+        this.store.setKey('inbound-rate',caller,String(perCaller+1),3600_000);this.store.setKey('inbound-rate',total,String(all+1),3600_000);
         this.store.audit(owner.id,'call.inbound_accepted',mission.id,{mission:mission.id,from:this.store.phoneRef(from),earlier:earlier?.id??null});
         this.store.event(mission,{type:'status',status:'QUEUED'});return mission;
       });
@@ -299,7 +300,7 @@ export class Phone {
     const restaurant=m.inbound?.reception?this.config.inbound?.restaurant:null;assert(!m.inbound?.reception||restaurant,'restaurant_not_configured',409);
     const contract=restaurant?defineRestaurantReception({restaurantName:restaurant.name,callerPhone:m.target.phone,callerName:m.target.name,today:tokyoDate(this.store.now()),seatings:Object.keys(restaurant.slots).sort(),maxParty:restaurant.maxParty,
         ...(restaurant.closedWeekdays?.length||restaurant.closedDates?.length?{closedNote:[restaurant.closedWeekdays?.length?'毎週'+restaurant.closedWeekdays.map(d=>'日月火水木金土'[d]+'曜').join('・'):'',...(restaurant.closedDates??[]).filter(d=>d>=tokyoDate(this.store.now())).slice(0,6)].filter(Boolean).join('、')}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
-      :m.direction==='inbound'?definePhoneInbound({ownerName:m.inbound.ownerName,callerPhone:m.target.phone,callerName:m.target.name,...(m.inbound.context?{context:m.inbound.context}:{}),...(m.inbound.business?{business:true,guidance:this.config.inbound?.guidance??[]}:{}),...(this.config.inbound?.transferTo&&m.creditQuote?.policy!==METERED?{transfer:true}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
+      :m.direction==='inbound'?definePhoneInbound({ownerName:m.inbound.ownerName,callerPhone:m.target.phone,callerName:m.target.name,...(m.inbound.context?{context:m.inbound.context}:{}),...(m.inbound.business?{business:true,guidance:inboundLine(this.config,m.inbound.to)?.guidance??[]}:{}),...(inboundLine(this.config,m.inbound.to)?.transferTo&&m.creditQuote?.policy!==METERED?{transfer:true}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
       :m.kind==='phone-request'?definePhoneRequest(m.phoneRequest,{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd}):defineCall({goal:`sales.${m.goal}`,target:{phone:m.target.phone,name:m.target.name},language:'ja',
       input:{ request:m.request,product_name:m.product.name,reviewed_facts:m.product.facts,candidate_slots:m.candidateSlots,
         policy:SALES_CALL_POLICY,
@@ -315,7 +316,7 @@ export class Phone {
       assert(m.creditQuote?.policy!==METERED,'metered_handoff_not_supported',409);
       const u=this.service.user(m.owner), account=this.service.account(u);
       // An answered call goes to the number the operator named for it; a call we placed goes to the owner's own verified phone.
-      const transferTo=m.direction==='inbound'?this.config.inbound?.transferTo:null;
+      const transferTo=m.direction==='inbound'?inboundLine(this.config,m.inbound?.to)?.transferTo:null;
       if(m.direction==='inbound')assert(transferTo&&transferTo!==m.target.phone,'transfer_number_not_configured',409);else verifiedOperatorNumber(account, m.target.phone);
       assert(carrier.sid && carrier.streamSid && !carrier.ended && !carrier.transferred,'call_not_ready_for_handoff',409);
       const current=this.store.get('mission',m.id), token=random();
