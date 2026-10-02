@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Store } from '../lib/store.mjs';
 import { Service } from '../lib/service.mjs';
 import { hash } from '../lib/security.mjs';
-import { teamCalls, teamRecord, teamCallsCsv, teamSummary, contactHistory, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
+import { teamCalls, teamRecord, teamCallsCsv, teamSummary, teamPeople, contactHistory, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
 import { createGateway } from '../server.mjs';
 const now=Date.parse('2026-10-02T10:00:00+09:00');
 function fixture(){
@@ -24,7 +24,7 @@ test('a manager sees the team’s calls without numbers or speech; other teams a
   f.call('staff',{status:'DRAFT'});f.call('rival');const quiet=f.call('boss',{answered:false,createdAt:now-7200_000});
   const view=teamCalls(f.service,f.by('boss'));
   assert.deepEqual(view.calls.map(c=>c.id),[mine.id,quiet.id]);assert.equal(view.needsAttention,1);
-  assert.deepEqual(Object.keys(view.calls[0]).sort(),['answered','attention','checkIn','createdAt','direction','durationSeconds','finishedAt','id','kind','owner','ownerName','recipient','scheduled','status']);
+  assert.deepEqual(Object.keys(view.calls[0]).sort(),['answered','attention','checkIn','checkInLevels','createdAt','direction','durationSeconds','finishedAt','id','kind','owner','ownerName','recipient','scheduled','settled','settles','status']);
   assert.ok(!JSON.stringify(view).includes('+8190')&&!JSON.stringify(view).includes('腰が痛い'));
   assert.deepEqual(teamCalls(f.service,f.by('boss'),{attention:true}).calls.map(c=>c.id),[mine.id]);
   assert.equal(teamCalls(f.service,f.by('root')).calls.length,2);
@@ -121,4 +121,26 @@ test('the team list names teammates by the name they call under, not only by the
   f.service.saveCallerName(f.by('staff'),'鈴木');f.call('staff');f.call('boss');
   assert.deepEqual(teamCalls(f.service,f.by('boss')).calls.map(c=>[c.owner,c.ownerName]).sort(),[['boss','boss'],['staff','鈴木']]);
   assert.ok(teamCallsCsv(f.service,f.by('boss')).includes(',鈴木,'));
+}));
+
+test('the people board: one line per person the team calls, the ones needing a look first, no numbers',using(f=>{
+  const saved=f.service.contact(f.by('staff'),{name:'山田 花子',phone:'+819000000011',relationship:'customer',basis:'入居者'});
+  const day=n=>now-n*86400_000,who=(name,phone)=>({target:{name,phone}});
+  f.call('staff',{createdAt:day(3),answered:true});f.call('staff',{createdAt:day(2),answered:false});f.call('staff',{createdAt:day(1),answered:false});
+  f.call('staff',{...who('佐藤 一郎','+819000000012'),createdAt:day(1),answered:true});
+  f.call('boss',{...who('鈴木 ミツ','+819000000013'),createdAt:day(2),answered:true,attention:{level:'emergency',signals:[]}});
+  f.call('boss',{...who('古い人','+819000000014'),createdAt:day(60),answered:true});f.call('rival',{...who('他社の人','+819000000015'),createdAt:day(1)});
+  f.call('staff',{...who('着信の人','+819000000016'),createdAt:day(1),direction:'inbound'});
+  const board=teamPeople(f.service,f.by('boss'));
+  assert.deepEqual(board.people.map(p=>[p.recipient,p.owner,p.calls,p.answered,p.unanswered,p.missedInARow,p.emergency]),[['鈴木 ミツ','boss',1,1,0,0,1],['山田 花子','staff',3,1,2,2,0],['佐藤 一郎','staff',1,1,0,0,0]]);
+  assert.equal(board.needsAttention,2);assert.equal(board.people[1].contactId,saved.id);assert.equal(board.people[0].contactId,null);
+  assert.ok(!JSON.stringify(board).includes('+8190'));
+  assert.equal(code(()=>teamPeople(f.service,f.by('staff'))),'supervisor_required');assert.equal(teamPeople(f.service,f.by('rival')).people.length,1);
+}));
+test('a row says whether the call had something to settle, and the level of each check-in answer',using(f=>{
+  const care=f.call('staff',{attention:{level:'emergency',signals:[{level:'emergency',category:'breathing',phrase:'息が苦し',turn:'t1'}]},result:{status:'INCOMPLETE',checkIn:{answered:true,attention:'emergency',signals:[],items:[{topic:'condition',answer:'no',turn:'t1'},{topic:'meal',answer:'yes',turn:'t2'},{topic:'medication',answer:'no',turn:'t3'},{topic:'sleep',answer:'not_asked'},{topic:'help',answer:'no',turn:'t4'}]}}});
+  f.call('staff',{kind:'sales',phoneRequest:undefined,status:'COMPLETED',createdAt:now-7200_000});
+  const rows=teamCalls(f.service,f.by('boss')).calls,row=rows.find(r=>r.id===care.id),sales=rows.find(r=>r.kind==='sales');
+  assert.deepEqual(row.checkInLevels,{condition:'emergency',meal:null,medication:'concern',sleep:null,help:null});
+  assert.deepEqual([row.settles,row.settled,sales.settles,sales.settled],[false,false,true,true]);
 }));

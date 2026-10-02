@@ -12,7 +12,7 @@ import { BrowserSessions } from './lib/browser-session.mjs';
 import { Alerts, alertConfiguration } from './lib/alerts.mjs';
 import { Schedules } from './lib/schedules.mjs';
 import { Batches } from './lib/batches.mjs';
-import { teamCalls, teamRecord, teamCallsCsv, teamSummary, contactHistory, ownCallsCsv, importContacts } from './lib/team.mjs';
+import { teamCalls, teamRecord, teamCallsCsv, teamSummary, teamPeople, contactHistory, ownCallsCsv, importContacts } from './lib/team.mjs';
 import { PublicAccounts } from './lib/public-accounts.mjs';
 import { Purchases } from './lib/purchases.mjs';
 import { prereleaseConfiguration, prereleaseCallsAvailable } from './lib/prerelease.mjs';
@@ -310,6 +310,7 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/team/calls')return send(res,200,teamCalls(service,u,{attention:url.searchParams.get('attention')==='1',limit:Number(url.searchParams.get('limit')??200)}));
       const history=/^\/v1\/contacts\/([a-f0-9-]{36})\/history$/.exec(path);
       if(method==='GET'&&history)return send(res,200,contactHistory(service,u,history[1],Number(url.searchParams.get('days')??30)));
+      if(method==='GET'&&path==='/v1/team/people')return send(res,200,teamPeople(service,u,Number(url.searchParams.get('days')??30)));
       if(method==='GET'&&path==='/v1/team/summary')return send(res,200,teamSummary(service,u,Number(url.searchParams.get('days')??7)));
       if(method==='GET'&&path==='/v1/team/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-team-calls.csv"');return send(res,200,teamCallsCsv(service,u),'text/csv; charset=utf-8');}
       const teamCall=/^\/v1\/team\/calls\/([a-f0-9-]{36})$/.exec(path);

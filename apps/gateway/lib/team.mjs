@@ -20,7 +20,12 @@ export function callRow(m, { phone = false } = {}) {
   return { id: m.id, owner: m.owner, direction: m.direction === 'inbound' ? 'inbound' : 'outbound', kind: m.kind === 'phone-request' ? 'request' : 'sales', recipient: m.target?.name ?? '',
     ...(phone ? { phone: m.target?.phone ?? '' } : {}), status: m.status, createdAt: new Date(m.createdAt).toISOString(), finishedAt: m.finishedAt ? new Date(m.finishedAt).toISOString() : null,
     answered: typeof m.answered === 'boolean' ? m.answered : null, attention, scheduled: !!m.schedule,
-    checkIn: checkIn ? Object.fromEntries(checkIn.items.map(i => [i.topic, i.answer])) : null, durationSeconds: m.billing?.carrier?.durationSeconds ?? null };
+    checkIn: checkIn ? Object.fromEntries(checkIn.items.map(i => [i.topic, i.answer])) : null,
+    // The level of each topic's answer, so a list can mark an emergency answer differently from one to check.
+    checkInLevels: checkIn ? Object.fromEntries(checkIn.items.map(i => { const flagged = (m.attention?.signals ?? []).filter(x => x.turn && x.turn === i.turn); return [i.topic, flagged.some(x => x.level === 'emergency') ? 'emergency' : flagged.length || (i.topic === 'help' ? i.answer === 'yes' : ['no', 'unclear'].includes(i.answer)) ? 'concern' : null]; })) : null,
+    // Whether the call had something to settle (a sales goal, or required conditions), and whether it was.
+    settles: m.kind !== 'phone-request' || !!m.phoneRequest?.success || m.phoneRequest?.task === 'reservation', settled: m.status === 'COMPLETED',
+    durationSeconds: m.billing?.carrier?.durationSeconds ?? null };
 }
 function teamMissions(service, u) {
   const rows = [];
@@ -80,6 +85,29 @@ export function contactHistory(service, u, contactId, days = 30) {
   let missedInARow = 0; for (const c of [...calls].reverse()) { if (c.answered === false) missedInARow++; else if (c.answered === true) break; }
   if (contact.owner !== u.id) service.store.audit(u.id, 'team.history_viewed', contact.id, { contact: contact.id, owner: contact.owner });
   return { contact: { id: contact.id, name: contact.name || contact.company }, days, calls, summary: { calls: calls.length, answered, unanswered, attention: calls.filter(c => c.attention).length, emergency: calls.filter(c => c.attention === 'emergency').length, missedInARow, topics } };
+}
+
+/** Everyone the team calls, one line each: when they were last called, whether they answered, how many calls in a row
+ *  went unanswered, what needs a look. The board a care manager opens in the morning. No numbers, no speech. */
+export function teamPeople(service, u, days = 30) {
+  supervisor(u); assert(Number.isInteger(days) && days >= 1 && days <= 90, 'invalid_days');
+  const since = service.store.now() - days * 86400_000, name = names(service), people = new Map();
+  for (const m of teamMissions(service, u).reverse()) { // oldest first
+    if (m.createdAt < since || m.direction === 'inbound' || !m.target?.phone) continue;
+    const key = `${m.owner}:${m.target.phone}`, row = callRow(m);
+    const p = people.get(key) ?? { owner: m.owner, ownerName: name(m.owner), recipient: row.recipient, calls: 0, answered: 0, unanswered: 0, attention: 0, emergency: 0, missedInARow: 0, scheduled: false, last: null, contactId: null, phone: m.target.phone };
+    p.calls++; p.recipient = row.recipient; if (row.scheduled) p.scheduled = true;
+    if (row.answered === true) { p.answered++; p.missedInARow = 0; } else if (row.answered === false) { p.unanswered++; p.missedInARow++; }
+    if (row.attention) p.attention++; if (row.attention === 'emergency') p.emergency++;
+    p.last = { id: row.id, createdAt: row.createdAt, answered: row.answered, attention: row.attention, kind: row.kind, checkIn: row.checkIn, checkInLevels: row.checkInLevels };
+    people.set(key, p);
+  }
+  // The contact, when the person who calls them saved one, so their history can be opened.
+  const contacts = new Map();
+  for (const p of people.values()) { if (!contacts.has(p.owner)) contacts.set(p.owner, new Map(service.store.all('contact', p.owner).filter(c => c.phone).map(c => [c.phone, c.id]))); p.contactId = contacts.get(p.owner).get(p.phone) ?? null; delete p.phone; }
+  const rank = p => p.last?.attention === 'emergency' ? 0 : p.missedInARow >= 2 ? 1 : p.last?.attention ? 2 : 3;
+  const list = [...people.values()].sort((a, b) => rank(a) - rank(b) || Date.parse(b.last.createdAt) - Date.parse(a.last.createdAt));
+  return { team: u.team, days, people: list, needsAttention: list.filter(p => rank(p) < 3).length };
 }
 
 // A cell that starts with = + - @ (or a tab/CR) would run as a formula when the file is opened in a spreadsheet.
