@@ -1,0 +1,50 @@
+# 現場投入に向けた実装と検証の記録（2026-10-02）
+
+対象: 営業・商社、コールセンター・受付、介護施設で Gateway を使うための不足を、4 本の読み取り調査（営業 / 着信 / 介護 / 運用とセキュリティ）で洗い出し、通話料のかからない範囲で実装・検証した記録。使い方は [FRONTLINE.ja.md](../FRONTLINE.ja.md)。
+
+**判定: 実装と自動テストは完了。実電話での受け入れは未実施のため、現場投入の可否はまだ言えない。**
+
+## 実装したもの
+
+| 領域 | 内容 | 主なファイル | テスト |
+|--|--|--|--|
+| 連絡停止 | 通常の依頼・着信では「結構です」を停止扱いにしない。誤った停止の解除（理由必須・監査・本人のキー操作は解除不可） | `lib/sales.mjs` `lib/worker.mjs` `lib/store.mjs` | `suppression.node.mjs` 7 |
+| 安全 | 全通話に医療助言の禁止と 119 / 110 の案内。相手の発言から不調・危険の言葉を検出 | `providers/voice-kit/src/phone-message.ts` `packages/core/src/distress.ts` | `distress.test.ts` 37 |
+| ゆっくり話す | `pace: "gentle"`。Gemini の発話終了判定 650→1400 ms、無通話切断 25→60 秒（両エンジン） | `packages/contract` `providers/gemini-live` `providers/openai-realtime` | `phone-message.test.ts` `resume.test.ts` |
+| 聞き取り結果 | 体調・食事・服薬・睡眠・困りごとを本人の言葉つきで記録。あいまい・矛盾・二重質問は「要確認」 | `packages/core/src/checkin.ts` | `checkin.test.ts` 17、fuzz 10,000 件で誤った「はい」0 |
+| 通知 | 発言・不応答・聞き取り結果・着信を、署名つき webhook と依頼元チャネルへ。既定で会話の文面は載せない | `lib/alerts.mjs` | `alerts.node.mjs` 11 |
+| 定期の電話 | 時刻・曜日・終了日・再架電。1 件ごとに通常の確認を通る | `lib/schedules.mjs` | `schedules.node.mjs` 14 |
+| リスト発信 | 最大 100 件を一度の承認で。時間帯の外は待つ、残高不足は一時停止 | `lib/batches.mjs` | `batches.node.mjs` 10 |
+| 発信時間帯 | 営業は既定 09:00-20:00。承認時と発信直前に確認 | `lib/service.mjs` `server.mjs` | `inbound.node.mjs` |
+| 着信 | 事業者として応答、案内事項だけ回答、受付時間、人への転送、店・会社としての不応答案内 | `lib/phone.mjs` `voice-kit` | `inbound.node.mjs` `concurrency.node.mjs` `phone-message.test.ts` |
+| 同時通話 | `OATHRA_MAX_CONCURRENT_CALLS`（既定 1） | `lib/worker.mjs` | `concurrency.node.mjs` 5 |
+| チーム | 役割 manager、チームの通話一覧（番号・会話なし）、CSV 出力（数式の無害化）、連絡先の取り込み | `lib/team.mjs` | `team.node.mjs` 7 |
+| 営業の冒頭 | 会社名・AI・商品・営業である旨を先に告げ、断られたら引き留めない | `lib/phone.mjs` | `suppression.node.mjs` |
+| 運用 | 通話中の電話を待つ停止、復元コマンド | `lib/worker.mjs` `restore.mjs` | `schedules.node.mjs` `backup.node.mjs` |
+| 録音・記録の告知 | Plivo / LiveKit / SIP 経路で告知が流れていなかったのを、共有層で 1 回だけ流すよう修正 | `packages/phone/src/bridge.ts` | `bridge.test.ts` ほか |
+| 音声認識の切断 | Deepgram が切れたら通話を終了（以前は聞こえないまま続行） | `providers/voice-pipeline` | `pipeline.test.ts` |
+
+新規モジュール（公開アカウント・購入・プレリリース・電話委任・MCP・バックアップ）には、これまでテストがなかった。今回 176 件を追加し、その過程で見つかった不具合 6 件を修正した（接続ファイルのサイズ上限、MCP の数値キー、バックアップの残骸ファイル、署名済みイベントが注文と矛盾したときの保留、末尾ドットのホスト名、予算比較の丸め）。
+
+## 実行した確認（最終値はコミット時点）
+
+- `pnpm build`: 成功
+- `pnpm test`: 1,190 件前後が合格（スキップ 1）
+- `pnpm test:gateway`: 545 件が合格
+- `pnpm lint:deps`: 成功
+- `oathra eval --adversarial 10000`: False Completion 0 / 10000、完了 3298（変更前と同じ）
+
+## 確かめていないこと（UNVERIFIED）
+
+- **実電話のすべて。** ゆっくり話す設定が高齢の方に実際に聞き取りやすいか、沈黙の待ち時間が適切か、案内事項にない質問に AI が答えてしまわないか、転送、同時通話、Plivo / LiveKit / SIP での告知の聞こえ方。
+- 検出する言葉の網羅性。方言、言いよどみ、音声認識の誤りで見逃しうる。通知は補助で、見守りの代わりにはならない。
+- 留守番電話の応答を「応答あり」と数える点。自動音声の判別は未実装。
+- 2 本以上の同時通話での音質・遅延・電話会社と音声モデルの上限。
+- 従量課金の契約での転送（従来どおり不可）。
+- 利用者・職員による評価、実機のスマートフォン、読み上げソフト。
+
+## 判断が要るもの
+
+- 日本語の「7時半」のように午前・午後のない時刻は、いまも午前として読む。英語と同じく厳格にすると、正しく成立している「10時」の商談まで未完了になる。文脈で解決する規則を決定論の判定に足すかどうかは未決。
+- 定期の電話・リスト発信は、1 件ごとの承認を「範囲を見たうえでの一度の承認」に置き換える。この扱いでよいか。
+- PR #60（モデルに発信ツールを渡さない方針）と、今回入っている電話委任（委任の範囲内でモデルが発信する）の関係。
