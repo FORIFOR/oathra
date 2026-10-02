@@ -854,3 +854,5 @@ mark.proof mark.proof { text-underline-offset: 2px; }
 @media (max-width: 480px) { .sum-days .at.wide { display: none; } .sum-days .at.narrow { display: inline; } }
 .past-rows li.not-placed .run-why { color: var(--muted); }
 .people-table .apart { display: block; font-weight: 400; }
+/* Dark only: the small outlined chips (名簿・定期・営業, 決まりました) sat grey on grey; a lighter border and ink lift them without changing the light theme. */
+:root[data-theme="dark"] .tag, :root[data-theme="dark"] .verdict-tag { border-color: #5a5750; color: var(--ink); }

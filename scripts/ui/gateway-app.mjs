@@ -815,6 +815,43 @@ try {
   await page.screenshot(join(out, "gateway-app-callbacks-empty-mobile.png"));
   await page.js("location.hash='#/team'"); await page.until("/管理者とマネージャーだけ/.test(document.querySelector('#view').textContent)", { label: "operator team" });
   c.ok(!(await page.js("!!document.querySelector('.team-table')")) && page.pageErrors.length === 0, "#/team typed by an operator shows no calls");
+  await page.close();
+  // 暗い表示: the OS asks for dark and the app's own dark theme is on (?theme=dark, what 設定 › 表示 remembers). Same screens, -dark.
+  const darkShots = async (w, h, names) => {
+    page = await launchQuiet({ width: w, height: h }); await page.emulateColorScheme("dark");
+    await page.goto(base + "/app?theme=dark"); await page.until("document.documentElement.dataset.theme==='dark'", { label: "dark theme" });
+    await signIn(page, token);
+    const shot = async (name, hashv, ready, full = true) => { await page.js(`location.hash=${JSON.stringify(hashv)}`); await page.until(ready, { timeout: 10_000, label: `dark ${name}` }); await sleep(400);
+      c.ok(await page.js("getComputedStyle(document.body).backgroundColor") === "rgb(19, 18, 17)" && await page.noSidewaysScroll(), `dark ${name} at ${w}: the dark background, no sideways scroll`);
+      await page.screenshot(join(out, `gateway-app-${name}-dark${w < 600 ? "-mobile" : ""}.png`), { fullPage: full }); };
+    const all = {
+      team: () => shot("team", "#/team", "!!document.querySelector('.team-table') && !!document.querySelector('.sum-days li')"),
+      people: () => shot("people", "#/team/people", "!!document.querySelector('.people-table')"),
+      "report-care": () => shot("report-care", `#/call/${careCall}`, "!!document.querySelector('.checkin-table')"),
+      "report-unanswered": () => shot("report-unanswered", `#/call/${noAnswer}`, "!!document.querySelector('.band')"),
+      standing: () => shot("standing", "#/standing", "document.querySelectorAll('.sched').length>=1"),
+      "list-new": async () => { await page.js("location.hash='#/contacts'"); await page.until("!!document.querySelector('.contacts-page')", { label: "dark contacts" });
+        await page.js("[...document.querySelectorAll('.page-actions button')].find(b=>b.textContent==='名簿にまとめて電話').click()"); await page.until("document.querySelectorAll('label.item.pick').length>0", { label: "dark pick mode" });
+        await page.js("for (const n of ['山本 ハル','中村 恵','高橋 花','焼肉 たけ']) [...document.querySelectorAll('label.item.pick')].find(l=>l.querySelector('b').textContent===n).querySelector('input').click()");
+        await page.js("document.querySelector('.pick-bar a.btn').click()"); await shot("list-new", "#/lists/new", "!!document.querySelector('#list-ack') && /かけない相手/.test(document.querySelector('.ask-side').textContent)"); },
+      callbacks: () => shot("callbacks", "#/callbacks", "document.querySelectorAll('.row.callback').length===3", false),
+      "contact-stopped": () => shot("contact-stopped", `#/contacts/${optedOut.id}`, "!!document.querySelector('.stopped-box')", false),
+      "ask-repeat-end": async () => { const was = { mode: config.mode, liveReady: config.liveReady }; config.mode = "live"; config.liveReady = true;
+        await page.js("location.hash='#/new';location.reload()"); await sleep(1200); await page.until("!!document.querySelector('[data-group=\"care\"]')", { label: "dark ask" });
+        await page.js("document.querySelector('[data-group=care]').click();document.querySelector('[data-kind=wellbeing-check]').click()");
+        await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='佐々木 ミツ').click()");
+        await page.js("{const i=document.querySelector('[data-blank]');i.value='ひかり苑';i.dispatchEvent(new Event('input',{bubbles:true}))}");
+        await clickText("内容を確かめる", ".ask-side"); await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "dark review" });
+        await page.js("document.querySelector('#rep-on').click()"); await page.until("!!document.querySelector('.rep-panel')", { label: "dark repeat panel" });
+        await page.js("document.querySelector('.rep-panel > .btn.primary').scrollIntoView({block:'end'})"); await sleep(200);
+        await page.screenshot(join(out, "gateway-app-ask-repeat-end-dark.png")); Object.assign(config, was); },
+    };
+    for (const n of names) await all[n]();
+    c.ok(page.pageErrors.length === 0, `no page errors (dark, ${w})`, page.pageErrors.join(" "));
+    await page.close();
+  };
+  await darkShots(1440, 900, ["team", "people", "report-care", "report-unanswered", "standing", "list-new", "callbacks", "contact-stopped", "ask-repeat-end"]);
+  await darkShots(390, 844, ["team", "people", "report-care", "report-unanswered"]);
 } finally {
   await page?.close(); app.server.closeAllConnections?.(); await new Promise((r) => app.server.close(r)); rmSync(dir, { recursive: true, force: true });
 }
