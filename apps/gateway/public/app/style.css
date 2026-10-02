@@ -829,3 +829,23 @@ label.item.pick b { color: var(--ink); }
 }
 .people-table th:nth-child(4), .people-table td:nth-child(4) { min-width: 250px; }
 .people-table td:last-child { white-space: normal; min-width: 130px; }
+
+/* 2026-10-03 pass 7 */
+.nowrap { white-space: nowrap; }
+.rrow .rv .rv-k { display: block; }
+.band li.by-model blockquote { border-left-style: dashed; }
+.sum-days .at.np { color: var(--amber); }
+.team-block { margin: 0 0 20px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.team-block.need-concern { border-color: var(--amber-line); border-left: 6px solid var(--badge); }
+.team-block.undelivered-block { border-color: var(--amber-line); }
+.team-block > .section-h { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+.team-block .note { margin: 0 0 8px; }
+.team-runs li { grid-template-columns: 150px 180px minmax(0, 1fr) auto; }
+.team-runs .run-why { color: var(--ink-2); }
+.list-who.no span { color: var(--ink); }
+.list-who.no span::before { content: "× "; color: var(--amber); }
+.item .tag.stopped, .tag.stopped { color: var(--ink); background: var(--panel); border-color: var(--amber); }
+.people-table td:last-child { white-space: normal; }
+@media (max-width: 860px) { .team-runs li { grid-template-columns: minmax(0, 1fr) auto; } .team-runs .run-why, .team-runs .link { grid-column: 1 / -1; } }
+.people-table td:last-child { white-space: normal; min-width: 150px; }
+.people-table td:last-child .nowrap { display: inline-block; }
