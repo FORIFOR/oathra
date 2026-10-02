@@ -370,7 +370,11 @@ export async function createGateway(config,options={}){
       if(playPath&&method==='GET'&&!playPath[2])return send(res,200,practicePlayState(u.id,playPath[1]));
       if(playPath&&method==='POST'&&playPath[2]==='reply')return send(res,200,practicePlayReply(u.id,playPath[1],data.text));
       if(playPath&&method==='POST'&&playPath[2]==='hangup')return send(res,200,practicePlayHangup(u.id,playPath[1]));
-      if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone);store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
+      if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone,'manual');store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
+      // Undoing a suppression is an administrator's decision with a written reason; the person's own key press stays.
+      if(method==='POST'&&path==='/v1/suppressions/release'){assert(u.role==='admin','admin_required',403);const c=service.own('contact',data.contactId,u),reason=typeof data.reason==='string'?data.reason.trim():'';assert(data.acknowledged===true,'suppression_confirmation_required');assert(reason.length>=5&&reason.length<=300,'release_reason_required');
+        const outcome=store.unsuppress(u.team,c.phone);assert(outcome!=='opted_out_by_recipient','recipient_opted_out',403);assert(outcome!=='not_suppressed','not_suppressed',409);
+        store.audit(u.id,'contact.suppression_released',c.id,{contact:c.id,target:store.phoneRef(c.phone),reason,outcome});return send(res,200,{suppressed:outcome!=='released',outcome});}
       if(method==='POST'&&path==='/v1/followups/preview')return send(res,201,followups.preview(u,data.missionId,data));
       const follow=path.match(/^\/v1\/followups\/([a-f0-9-]{36})\/(execute|refresh|not-delivered)$/);
       if(method==='POST'&&follow&&follow[2]==='not-delivered')return send(res,200,followups.markNotDelivered(u,follow[1],data.acknowledged));

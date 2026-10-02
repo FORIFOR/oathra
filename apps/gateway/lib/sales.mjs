@@ -25,7 +25,7 @@ const normal = t => String(t ?? '').normalize('NFKC');
 export const stopContact = t => STOP_CONTACT.test(normal(t));
 // 「それで結構です」 accepts; only a free-standing 「結構です」 declines.
 export const refusal = { test: t => REFUSAL.test(normal(t)) };
-/** The callee asked not to be called again, or declined. Either way: stop this call and suppress the number. */
+/** Sales calls only: the callee asked not to be called again, or declined. Either way: stop this call and suppress the number. */
 export const wantsNoContact = t => stopContact(t) || refusal.test(t);
 const uncertain = /仮(?:予約|押さえ)?|未確定|承認待ち|多分|たぶん|かもしれ|確認してから|検討|maybe|perhaps|tentative|not sure|pending/i;
 const negative = /キャンセル|取り消|無理|できません|難しい|だめ|ダメ|変更|cancel|cannot|can't|not available/i;
@@ -81,7 +81,7 @@ function agreedMeeting(turns, mission, now) {
 
 export function evaluateSales(turns, mission, connected, now = Date.now()) {
   if (mission.kind === 'phone-request') {
-    const doNotContact = turns.some(t=>t.source==='callee' && wantsNoContact(t.text));
+    const doNotContact = turns.some(t=>t.source==='callee' && stopContact(t.text));
     if (mission.phoneRequest?.success && !doNotContact) {
       const contract = definePhoneRequest(mission.phoneRequest);
       const engine = new EvidenceEngine({ language: 'ja', now: phoneReferenceDate(mission.approvedAt ?? mission.createdAt ?? now), confirmation: contract.confirmation });

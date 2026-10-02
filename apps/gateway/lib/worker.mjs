@@ -2,7 +2,7 @@ import { phoneMemory } from '../../../packages/core/dist/index.js';
 import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
-import { evaluateSales, wantsNoContact } from './sales.mjs';
+import { evaluateSales, wantsNoContact, stopContact } from './sales.mjs';
 import { terminal } from './service.mjs';
 import { spendingProgress } from './credit-guard.mjs';
 import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
@@ -72,7 +72,7 @@ export class Worker {
       });
   }
   /** Suppress and leave a trace of why: a number that silently stops being callable is as hard to explain as one that does not. */
-  suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
+  suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone,source); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
   finished(current,connected) { this.store.audit(current.owner,'call.result',current.id,{mission:current.id,status:current.status,connected,carrierSid:current.carrierSid??null,doNotContact:current.result?.doNotContact===true,verified:Object.keys(current.result?.verified??{}),error:current.error??null}); }
   async run(m,active) {
     const turns=[]; let connected=false;
@@ -110,7 +110,9 @@ export class Worker {
       if(e.type==='transcript.final') {
         turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})});
         if(current.kind==='phone-request')current.memory=phoneMemory(current.inbound?.reception?{...current.phoneRequest,conversationMode:'chat'}:current.phoneRequest,turns,current.approvedAt??current.createdAt);
-        if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
+        // A sales call ends at any refusal. In an ordinary request or an answered call, 「結構です」 answers a
+        // question; only an explicit request not to be called again ends the call and suppresses the number.
+        if(e.source==='callee' && (current.kind==='phone-request'?stopContact(e.text):wantsNoContact(e.text))) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
       }
       if(['call.connected','carrier.sid','callee.consent','recording.notice','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff','news.lookup','decision.made'].includes(e.type)) {
         this.store.event(current,e); this.store.put('mission',current);

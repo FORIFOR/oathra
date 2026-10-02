@@ -58,7 +58,21 @@ export class Store {
   }
   delKey(scope, key) { this.db.prepare('DELETE FROM keys WHERE scope=? AND key=?').run(scope, key); }
   // The caller id and business name are the gateway's, not a team's: a person who said no to one team has said no to the number.
-  suppress(team, phone) { const k = mac(this.cipherKey, phone); this.setKey(`suppress:${team}`, k, 'true'); this.setKey('suppress:*', k, 'true'); }
+  // The value records how the number was suppressed. A key press by the person themselves is never released.
+  suppress(team, phone, source = 'true') { const k = mac(this.cipherKey, phone); this.setKey(`suppress:${team}`, k, source); this.setKey('suppress:*', k, source); }
+  /** Lifts this team's suppression, and the shared one only when no other team still holds the number. */
+  unsuppress(team, phone) {
+    const k = mac(this.cipherKey, phone), held = this.key(`suppress:${team}`, k);
+    if (!held) return this.key('suppress:*', k) ? 'held_by_another_team' : 'not_suppressed';
+    if (/dtmf/.test(held) || /dtmf/.test(this.key('suppress:*', k) ?? '')) return 'opted_out_by_recipient';
+    return this.tx(() => {
+      this.db.prepare('DELETE FROM keys WHERE scope=? AND key=?').run(`suppress:${team}`, k);
+      const other = this.db.prepare("SELECT 1 FROM keys WHERE scope LIKE 'suppress:%' AND scope<>'suppress:*' AND key=? AND expires>?").get(k, this.now());
+      if (other) return 'held_by_another_team';
+      this.db.prepare("DELETE FROM keys WHERE scope='suppress:*' AND key=?").run(k);
+      return 'released';
+    });
+  }
   suppressed(team, phone) { const k = mac(this.cipherKey, phone); return !!this.key(`suppress:${team}`, k) || !!this.key('suppress:*', k); }
   event(mission, event) {
     const r = this.db.prepare('INSERT INTO events(mission,owner,body,created) VALUES(?,?,?,?)').run(mission.id, mission.owner, this.seal(event), this.now());

@@ -232,12 +232,12 @@ export class Phone {
   }
   inboundOptOut(token,params) {
     const saved=this.store.key('inbound-optout',token);
-    if(saved&&params.Digits==='2'){const info=this.store.open(saved);this.store.suppress(info.team,info.phone);this.store.audit(info.owner,'contact.suppressed',params.CallSid??token,{target:this.store.phoneRef(info.phone),source:'inbound_dtmf'});
+    if(saved&&params.Digits==='2'){const info=this.store.open(saved);this.store.suppress(info.team,info.phone,'inbound_dtmf');this.store.audit(info.owner,'contact.suppressed',params.CallSid??token,{target:this.store.phoneRef(info.phone),source:'inbound_dtmf'});
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">承りました。今後、この番号からお電話することはありません。</Say><Hangup/></Response>`;}
     return '<Response><Hangup/></Response>';
   }
   optOut(saved,callSid) {
-    this.store.suppress(saved.team,saved.phone);
+    this.store.suppress(saved.team,saved.phone,'dtmf');
     const m=this.store.get('mission',saved.mission);
     if(m) { m.optOut=true; if(/^CA[a-f0-9]{32}$/i.test(callSid??'') && !m.carrierSid) m.carrierSid=callSid; this.store.put('mission',m); this.store.event(m,{type:'contact.opt_out',method:'dtmf',digit:'2',recovered:true}); }
     this.store.audit(saved.owner,'contact.suppressed',saved.mission,{mission:saved.mission,target:this.store.phoneRef(saved.phone),source:'dtmf_without_session'});
