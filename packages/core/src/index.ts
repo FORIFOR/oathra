@@ -8,3 +8,4 @@ export * from "./speech.js";
 export * from "./phone-memory.js";
 export * from "./reservation-desk.js";
 export * from "./distress.js";
+export * from "./checkin.js";
