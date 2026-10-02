@@ -19,7 +19,8 @@ function fixture(){
   const config=liveConfig(),store=new Store(':memory:',randomBytes(32).toString('hex'),()=>clock),service=new Service(store,config),alice=config.users[0];
   for(const u of [alice,config.users[2]])service.saveConsent(u,'v1');
   const contact=service.contact(alice,{name:'山田 花子',phone:RESIDENT,relationship:'customer',basis:'入居者（見守りの同意あり）'});
-  const alerts=new Alerts(service,null),schedules=new Schedules(service,alerts),dialed=[];
+  // A wellbeing schedule needs somewhere to send its alerts; deliveries go to a stand-in.
+  const alerts=new Alerts(service,{url:'https://alerts.example.org/hook',secret:'s'.repeat(40),includeQuotes:false},{fetchImpl:async()=>({ok:true}),resolve:async()=>[{address:'93.184.216.34'}]}),schedules=new Schedules(service,alerts),dialed=[];
   const execute=async(m,{onEvent})=>{dialed.push(m.id);if(!answer)return {};onEvent({type:'call.connected'});
     for(const [i,[source,text]] of [['caller','お体の調子はいかがですか。'],['callee',typeof answer==='string'?answer:'変わりないですよ。']].entries())onEvent({type:'transcript.final',turnId:`t${i}`,source,text});return {};};
   const worker=new Worker(service,{process:async()=>{},send:async()=>{}},execute,alerts,schedules);worker.log=()=>{};
@@ -155,4 +156,44 @@ test('a voicemail greeting is not an answer: the call is retried and then report
   const first=f.store.get('mission',f.dialed[0]);assert.deepEqual([first.answered,first.machineAnswered],[false,true]);assert.equal(f.alertsRaised(),0);
   f.advance(11*min);await f.pass();await f.pass();
   assert.equal(f.dialed.length,2);assert.deepEqual(f.runs().map(r=>[r.state,r.attempts.length]),[['UNANSWERED',2]]);assert.equal(f.alertsRaised(),1);
+}));
+
+test('a wellbeing schedule needs somewhere to send its alerts, and nobody is scheduled at night',using(f=>{
+  const quiet=new Schedules(f.service,new Alerts(f.service,null));
+  const input={request:f.request,times:['09:00'],until:new Date(start+30*86400_000).toISOString(),acknowledged:true};
+  assert.equal(code(()=>quiet.create(f.alice,input,'no-webhook-1')),'care_schedule_requires_alert_webhook');
+  assert.ok(quiet.create(f.alice,{...input,request:{...f.request,pace:undefined}},'no-webhook-2').id,'an ordinary standing request does not need one');
+  for(const time of ['06:59','21:00','02:00'])assert.equal(code(()=>f.create({times:[time]},'night-'+time.replace(':','-')+'-key')),'schedule_time_outside_calling_hours',time);
+  f.config.callHours={sales:null,request:{from:'10:00',to:'12:00'}};
+  assert.equal(code(()=>f.create({times:['09:00']},'hours-key-01')),'schedule_time_outside_calling_hours');assert.ok(f.create({times:['11:30']},'hours-key-02').id);
+}));
+test('a call refused before it was dialled is still reported: the last word on the occurrence alerts',using(async f=>{
+  f.create();f.at(start+10*min);f.schedules.tick();
+  // The approval expires in the queue (a restart, a long call ahead of it): the worker refuses it without dialling.
+  f.advance(6*min);await f.pass();await f.pass();
+  assert.equal(f.dialed.length,0);assert.deepEqual(f.runs().map(r=>[r.state,r.reason]),[['UNANSWERED','queued_approval_expired']]);assert.equal(f.alertsRaised(),1);
+  await f.pass();assert.equal(f.alertsRaised(),1);
+}));
+test('retries that run out of day end the occurrence with an alert, not silently',using(async f=>{
+  f.create({times:['20:30'],retries:{count:2,minutes:180},windowMinutes:60});f.answers(false);
+  f.at(Date.parse('2026-10-02T20:31:00+09:00'));await f.pass();await f.pass();assert.equal(f.dialed.length,1);assert.equal(f.alertsRaised(),0);
+  f.at(Date.parse('2026-10-03T00:05:00+09:00'));await f.pass();
+  assert.equal(f.dialed.length,1);assert.deepEqual(f.runs().map(r=>r.state),['UNANSWERED']);assert.equal(f.alertsRaised(),1);
+}));
+test('a call already placed is settled even after its schedule was paused; the person who stops the calls is reported',using(async f=>{
+  const s=f.create({retries:{count:1,minutes:10}});f.answers(false);f.at(start+10*min);await f.pass();
+  f.schedules.set(f.alice,s.id,'PAUSED');f.advance(11*min);await f.pass();
+  assert.deepEqual(f.runs().map(r=>r.state),['UNANSWERED']);assert.equal(f.dialed.length,1);assert.equal(f.alertsRaised(),1);
+}));
+test('when the person asks not to be called, whoever set the schedule up is told that it has stopped',using(async f=>{
+  f.create();f.answers('もう電話しないでください。');f.at(start+10*min);await f.pass();await f.pass();
+  assert.equal(f.store.db.prepare("SELECT COUNT(*) n FROM audit WHERE action='call.alert'").get().n,1);
+  assert.deepEqual(f.runs().map(r=>[r.state,r.reason]),[['DECLINED','recipient_asked_not_to_be_called']]);
+}));
+test('a schedule keeps working when the person has more than a thousand contacts',using(async f=>{
+  f.create();
+  const insert=f.store.db.prepare('INSERT INTO records VALUES(?,?,?,?,?,?)');
+  f.store.tx(()=>{for(let i=0;i<1100;i++)insert.run('contact','bulk-'+i,f.alice.id,'',f.store.seal({id:'bulk-'+i,owner:f.alice.id,name:'x',phone:''}),start+1+i);});
+  f.at(start+10*min);await f.pass();
+  assert.equal(f.dialed.length,1);assert.equal(f.store.list('schedule')[0].status,'ACTIVE');
 }));

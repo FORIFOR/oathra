@@ -40,7 +40,7 @@ export function configuration(env=process.env){
   const mode=env.OATHRA_MODE??'simulator';assert(['simulator','live'].includes(mode),'invalid_mode',500);
   let users;try{users=JSON.parse(env.OATHRA_USERS_JSON??'[]');}catch{throw new Fault(500,'invalid_users_json');}
   assert(Array.isArray(users)&&users.length>0,'configure_operator_accounts',500);
-  for(const u of users)assert(/^[a-zA-Z0-9_-]{1,80}$/.test(u.id)&&/^[a-f0-9]{64}$/.test(u.tokenHash)&&typeof u.team==='string'&&['admin','manager','operator','viewer','agent'].includes(u.role),'invalid_user_configuration',500);
+  for(const u of users)assert(/^[a-zA-Z0-9_-]{1,80}$/.test(u.id)&&/^[a-f0-9]{64}$/.test(u.tokenHash)&&typeof u.team==='string'&&u.team!=='*'&&u.team.length>0&&['admin','manager','operator','viewer','agent'].includes(u.role),'invalid_user_configuration',500);
   assert(new Set(users.map(u=>u.id)).size===users.length&&new Set(users.map(u=>u.tokenHash)).size===users.length,'duplicate_user_configuration',500);
   const publicUrl=(env.OATHRA_PUBLIC_URL??'http://localhost:4244').replace(/\/$/,'');
   const parsed=new URL(publicUrl);assert(!parsed.username&&!parsed.password&&!parsed.search&&!parsed.hash&&parsed.pathname==='/'&&(parsed.protocol==='https:'||(mode==='simulator'&&['localhost','127.0.0.1'].includes(parsed.hostname))),'public_url_must_be_https_origin',500);
@@ -158,12 +158,12 @@ export async function createGateway(config,options={}){
   const followups=new Followups(service,env,options.fetchImpl??fetch,registry);
   const channels=options.channels??new Channels(service,env,registry,options.fetchImpl??fetch);
   const execute=(m,hooks)=>{registry.demand(callPlugin,'call:execute');return registry.capability(callPlugin).execute(freezeData(jsonData(m)),{signal:hooks.signal,onEvent:hooks.onEvent,control:hooks.control});};
-  const alerts=new Alerts(service,alertConfiguration(env),{fetchImpl:options.fetchImpl??fetch,...(options.resolve?{resolve:options.resolve}:{})});
+  const alerts=new Alerts(service,alertConfiguration(env),{...(options.fetchImpl?{fetchImpl:options.fetchImpl}:{}),...(options.resolve?{resolve:options.resolve}:{})});
   const schedules=new Schedules(service,alerts);
   // Each contact says whether this team has stopped calling it, so the list can show that and offer the release.
   const contactsView=u=>store.list('contact',u.id).map(x=>({...x,suppressed:!!x.phone&&store.suppressed(u.team,x.phone)}));
   const batches=new Batches(service,alerts);
-  const worker=new Worker(service,channels,execute,alerts,schedules,batches),limits=new Map();
+  const worker=new Worker(service,channels,execute,alerts,schedules,batches),limits=new Map();worker.planEveryMs=options.planEveryMs??5000;
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
     try{
@@ -337,7 +337,7 @@ export async function createGateway(config,options={}){
       }
       if(path==='/v1/session'&&method==='POST'){assert(auth?.startsWith('Bearer '),'bearer_required',401);sessions.create(req,res,u);return send(res,200,{signedIn:true,expiresInSeconds:8*3600});}
       if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:contactsView(u),missions:store.list('mission',u.id).filter(m=>m.direction!=='inbound').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
-        ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
+        ...(u.role==='admin'?{failedJobs:store.failedJobs(),undeliveredAlerts:store.countStatus('alert',['pending','processing'])}:{}),
         // Lets the page hide what cannot work here instead of offering it and failing.
         available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl,prerelease:config.prerelease??{enabled:false},voiceEngines:(config.voiceEngines??[]).map(({id,label,ready})=>({id,label,ready})),inbound:config.inbound?{owner:config.inbound.owner===u.id,restaurant:Boolean(config.inbound.restaurant)}:null}});
@@ -407,7 +407,7 @@ export async function createGateway(config,options={}){
       if(playPath&&method==='POST'&&playPath[2]==='reply')return send(res,200,practicePlayReply(u.id,playPath[1],data.text));
       if(playPath&&method==='POST'&&playPath[2]==='hangup')return send(res,200,practicePlayHangup(u.id,playPath[1]));
       if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone,'manual');store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
-      // Undoing a suppression is an administrator's decision with a written reason; the person's own key press stays.
+      // Undoing a suppression is a supervisor's decision (manager or administrator) with a written reason; the person's own key press stays.
       if(method==='POST'&&path==='/v1/suppressions/release'){assert(['admin','manager'].includes(u.role),'supervisor_required',403);const c=service.own('contact',data.contactId,u),reason=typeof data.reason==='string'?data.reason.trim():'';assert(data.acknowledged===true,'suppression_confirmation_required');assert(reason.length>=5&&reason.length<=300,'release_reason_required');
         const outcome=store.unsuppress(u.team,c.phone);assert(outcome!=='opted_out_by_recipient','recipient_opted_out',403);assert(outcome!=='not_suppressed','not_suppressed',409);
         store.audit(u.id,'contact.suppression_released',c.id,{contact:c.id,target:store.phoneRef(c.phone),reason,outcome});return send(res,200,{suppressed:outcome!=='released',outcome});}

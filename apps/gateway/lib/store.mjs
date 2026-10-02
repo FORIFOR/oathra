@@ -59,7 +59,11 @@ export class Store {
   delKey(scope, key) { this.db.prepare('DELETE FROM keys WHERE scope=? AND key=?').run(scope, key); }
   // The caller id and business name are the gateway's, not a team's: a person who said no to one team has said no to the number.
   // The value records how the number was suppressed. A key press by the person themselves is never released.
-  suppress(team, phone, source = 'true') { const k = mac(this.cipherKey, phone); this.setKey(`suppress:${team}`, k, source); this.setKey('suppress:*', k, source); }
+  suppress(team, phone, source = 'true') {
+    const k = mac(this.cipherKey, phone);
+    // The person's own key press is never written over: a later manual or transcript entry must not make it releasable.
+    for (const scope of [`suppress:${team}`, 'suppress:*']) if (!/dtmf/.test(this.key(scope, k) ?? '')) this.setKey(scope, k, source);
+  }
   /** Lifts this team's suppression, and the shared one only when no other team still holds the number. */
   unsuppress(team, phone) {
     const k = mac(this.cipherKey, phone), held = this.key(`suppress:${team}`, k);
@@ -106,6 +110,10 @@ export class Store {
     return this.db.prepare("SELECT body FROM records WHERE kind=? AND status='pending' ORDER BY updated ASC LIMIT 500").all(kind).map(r => this.open(r.body)).find(r => r.available <= this.now());
   }
   /** Jobs that gave up. They used to disappear without a trace. */
+  /** How many records of a kind are in any of these statuses, without opening them. */
+  countStatus(kind, statuses) { return this.db.prepare(`SELECT COUNT(*) AS n FROM records WHERE kind=? AND status IN (${statuses.map(() => '?').join(',')})`).get(kind, ...statuses).n; }
+  /** Every record of a kind in a status, oldest first, with no page limit. */
+  everyStatus(kind, status) { return this.db.prepare('SELECT body FROM records WHERE kind=? AND status=? ORDER BY updated ASC').all(kind, status).map(r => this.open(r.body)); }
   failedJobs() { return Object.fromEntries(['inbox','outbox'].map(kind => [kind, this.db.prepare("SELECT COUNT(*) AS n FROM records WHERE kind=? AND status='failed'").get(kind).n])); }
   removeMission(m, record = true) {
     this.tx(() => {
@@ -123,7 +131,10 @@ export class Store {
   prune(retentionDays = 30) {
     const cutoff = this.now() - retentionDays * 86400_000;
     this.db.prepare('DELETE FROM keys WHERE expires<?').run(this.now());
-    this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox') AND status IN ('done','failed') AND updated<?").run(cutoff);
+    this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox','alert') AND status IN ('done','failed') AND updated<?").run(cutoff);
+    // Settled occurrences, finished lists and ended schedules hold names and numbers: they go on the same schedule as calls.
+    this.db.prepare("DELETE FROM records WHERE kind='schedule-run' AND status<>'RUNNING' AND updated<?").run(cutoff);
+    this.db.prepare("DELETE FROM records WHERE kind IN ('batch','schedule') AND status IN ('FINISHED','ENDED') AND updated<?").run(cutoff);
     // Keep every approval for the entire current Japanese calendar month, even after its mission is deleted.
     this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-35*86400_000);
     this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);

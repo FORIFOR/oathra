@@ -45,7 +45,8 @@ export class Worker {
     const job=this.store.next(kind); if(!job) return;
     job.status='processing'; this.store.put(kind,job);
     try { await handler(job); job.status='done'; }
-    catch(e) { job.attempts++; job.status=job.attempts>=5?'failed':'pending'; job.available=this.store.now()+Math.min(60_000,1000*2**job.attempts); if(job.status==='failed') this.log(`${kind}.gave_up`,e,{job:job.id.slice(0,80),attempts:job.attempts}); }
+    // A staff alert is never given up on: it keeps trying, at most five minutes apart, and says so every fifth failure.
+    catch(e) { job.attempts++; job.status=job.attempts>=5&&kind!=='alert'?'failed':'pending'; job.available=this.store.now()+Math.min(kind==='alert'?300_000:60_000,1000*2**Math.min(job.attempts,20)); if(kind==='alert'&&job.attempts%5===0)this.log('alert.still_undelivered',e,{job:job.id.slice(0,80),attempts:job.attempts}); if(job.status==='failed') this.log(`${kind}.gave_up`,e,{job:job.id.slice(0,80),attempts:job.attempts}); }
     this.store.put(kind,job);
   }
   async tick() {
@@ -57,8 +58,11 @@ export class Worker {
       for(const a of this.running.values()) if(this.store.get('mission',a.id)?.status==='CANCEL_REQUESTED') a.abort.abort();
       if(this.draining||this.running.size>=this.limit)return;
       // Standing requests place their next due call into the queue; the claim below treats it like any other.
-      if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
-      if(this.batches){try{this.batches.tick();}catch(e){this.log('batch.tick_failed',e);}}
+      // Schedules and lists are planned every few seconds, not on every 300 ms pass: the same thread carries call audio.
+      if(!this.planEveryMs||Date.now()-(this.plannedAt??0)>=this.planEveryMs){this.plannedAt=Date.now();
+        if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
+        if(this.batches){try{this.batches.tick();}catch(e){this.log('batch.tick_failed',e);}}
+      }
       while(this.running.size<this.limit){
         const m=this.claimNext();
         if(!m)return;
@@ -139,7 +143,7 @@ export class Worker {
         turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})});
         if(current.kind==='phone-request')current.memory=phoneMemory(current.inbound?.reception?{...current.phoneRequest,conversationMode:'chat'}:current.phoneRequest,turns,current.approvedAt??current.createdAt);
         // Words that mean a person should read this line now. The call goes on; the agent's policy handles what to say.
-        const signals=e.source==='callee'&&!e.interrupted?detectDistress(e.text):[];
+        const signals=e.source==='callee'?detectDistress(e.text):[];
         if(signals.length){
           const level=distressLevel(signals),before=current.attention?.level;
           current.attention={level:before?worse(before,level):level,signals:[...(current.attention?.signals??[]),...signals.map(s=>({...s,turn:e.turnId}))].slice(-20)};
@@ -163,7 +167,11 @@ export class Worker {
     };
     try {
       const outcome=await this.execute(m,{signal:active.abort.signal,onEvent,control:active.control,service:this.service});
-      if(!turns.length && outcome.transcript) turns.push(...outcome.transcript);
+      if(!turns.length && outcome.transcript) { turns.push(...outcome.transcript);
+        // A transcript that arrives only with the outcome is read for the same words as one that arrives line by line.
+        const late=turns.filter(t=>t.source==='callee').flatMap(t=>detectDistress(t.text).map(s=>({...s,turn:t.id,text:t.text})));
+        if(late.length){const current=this.store.get('mission',m.id);current.attention={level:distressLevel(late),signals:late.map(({text,...s})=>s).slice(-20)};this.store.put('mission',current);this.alerts?.raise(current,'distress',current.attention.level,{categories:late.map(s=>s.category),quotes:late.map(s=>s.text)});}
+      }
       const result=evaluateSales(turns,m,connected,this.store.now());
       if(this.store.get('mission',m.id)?.optOut) { result.status='DECLINED'; result.doNotContact=true; result.verified={}; result.evidence.push({field:'do_not_contact',source:'dtmf',value:true,quote:'電話の連絡停止操作（2）'}); }
       if(result.doNotContact && !this.store.suppressed(m.team,m.target.phone)) this.suppress(m,'verdict');
@@ -187,6 +195,7 @@ export class Worker {
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       current.error=e.code??'execution_failed'; current.result=result; current.transcript=turns; current.finishedAt=this.store.now();
       if(!e.uncertain)this.checkIn(current,turns,connected);
+      if(current.direction==='inbound'&&connected)this.alerts?.raise(current,'inbound','notice');
       this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.finished(current,connected); this.service.notify(current,'result');
     } finally {
       clearTimeout(watchdog);clearInterval(creditTimer);

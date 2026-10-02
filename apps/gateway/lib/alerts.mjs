@@ -6,6 +6,7 @@
  * was sent. Delivery is a signed HTTPS POST to one operator-configured endpoint, retried by the worker. */
 import { createHmac } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
+import { request } from 'node:https';
 import { assert, publicIPv4 } from './security.mjs';
 
 const LEVELS = ['notice', 'concern', 'emergency'];
@@ -31,7 +32,7 @@ const TEXT = {
 };
 
 export class Alerts {
-  constructor(service, config, { fetchImpl = fetch, resolve = lookup } = {}) { this.service = service; this.store = service.store; this.config = config; this.fetchImpl = fetchImpl; this.resolve = resolve; }
+  constructor(service, config, { fetchImpl = null, resolve = lookup } = {}) { this.service = service; this.store = service.store; this.config = config; this.fetchImpl = fetchImpl; this.resolve = resolve; }
   /** Records that a human should look, once per call, reason and level; queues delivery where configured. */
   raise(m, reason, level, detail = {}) {
     assert(TEXT[reason] && LEVELS.includes(level), 'invalid_alert');
@@ -54,8 +55,16 @@ export class Alerts {
     const p = job.payload, body = JSON.stringify({ type: 'oathra.alert', version: 1, ...p, at: new Date(p.at).toISOString(),
       message: TEXT[p.reason]({ target: { name: p.recipient } }), reportUrl: `${this.service.config.publicUrl}/app/#/call/${p.mission}` });
     const timestamp = Math.floor(this.store.now() / 1000);
-    const response = await this.fetchImpl(config.url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10_000),
-      headers: { 'content-type': 'application/json', 'user-agent': 'Oathra-Alert/1', 'x-oathra-alert-id': p.id, 'x-oathra-signature': alertSignature(config.secret, timestamp, body) }, body });
-    assert(response.ok, 'alert_delivery_not_accepted', 502);
+    const headers = { 'content-type': 'application/json', 'user-agent': 'Oathra-Alert/1', 'x-oathra-alert-id': p.id, 'x-oathra-signature': alertSignature(config.secret, timestamp, body) };
+    // The connection goes to the address that was just checked, so a name that re-resolves to a private one is never followed.
+    const ok = this.fetchImpl ? (await this.fetchImpl(config.url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10_000), headers, body })).ok : await pinnedPost(url, addresses[0].address, headers, body);
+    assert(ok, 'alert_delivery_not_accepted', 502);
   }
+}
+function pinnedPost(url, address, headers, body) {
+  return new Promise((resolve, reject) => {
+    const req = request(url, { method: 'POST', headers: { ...headers, 'content-length': Buffer.byteLength(body) }, timeout: 10_000, lookup: (_host, options, cb) => options?.all ? cb(null, [{ address, family: 4 }]) : cb(null, address, 4) },
+      res => { res.resume(); res.on('end', () => resolve(res.statusCode >= 200 && res.statusCode < 300)); res.on('error', reject); });
+    req.on('timeout', () => req.destroy(new Error('alert_timeout'))); req.on('error', reject); req.end(body);
+  });
 }

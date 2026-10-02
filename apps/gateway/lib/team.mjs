@@ -30,7 +30,7 @@ export function teamCalls(service, u, { attention = false, limit = 200 } = {}) {
   const all = teamMissions(service, u).map(m => callRow(m)), shown = attention ? all.filter(r => r.attention) : all;
   return { team: u.team, total: shown.length, needsAttention: all.filter(r => r.attention).length, calls: shown.slice(0, limit) };
 }
-/** The full record of a teammate's call. Opening it is itself recorded. */
+/** The full record of a teammate's call, with the number, what was said and what it cost. Opening it is itself recorded. */
 export function teamRecord(service, u, id) {
   supervisor(u);
   const m = service.store.get('mission', id); assert(m && m.team === u.team && m.kind === 'phone-request' && m.status !== 'DRAFT', 'not_found', 404);
@@ -81,8 +81,9 @@ export function ownCallsCsv(service, u) {
 /** Up to 500 rows; each row succeeds or says why not, and a repeat of the same file adds nothing twice. */
 export function importContacts(service, u, rows) {
   service.write(u); assert(Array.isArray(rows) && rows.length >= 1 && rows.length <= 500, 'import_1_to_500_rows');
-  const existing = new Map(service.store.list('contact', u.id).filter(c => c.phone).map(c => [c.phone, c]));
-  const results = rows.map((row, index) => {
+  const existing = new Map(service.store.all('contact', u.id).filter(c => c.phone).map(c => [c.phone, c]));
+  // One transaction for the file: 500 separate commits would stall the thread that carries call audio.
+  const results = service.store.tx(() => rows.map((row, index) => {
     try {
       assert(row && typeof row === 'object' && !Array.isArray(row) && Object.keys(row).every(k => ['name', 'company', 'phone', 'relationship', 'basis', 'email', 'notes'].includes(k)), 'invalid_contact_row');
       assert(typeof row.phone === 'string' && row.phone.trim(), 'contact_phone_required');
@@ -92,7 +93,7 @@ export function importContacts(service, u, rows) {
       const record = service.contact(u, row); existing.set(record.phone, record);
       return { index, status: 'created', id: record.id };
     } catch (error) { return { index, status: 'invalid', error: error.code ?? 'invalid_contact_row' }; }
-  });
+  }));
   const count = status => results.filter(r => r.status === status).length;
   service.store.audit(u.id, 'contacts.imported', u.id, { created: count('created'), duplicate: count('duplicate'), invalid: count('invalid') });
   return { created: count('created'), duplicate: count('duplicate'), invalid: count('invalid'), results };

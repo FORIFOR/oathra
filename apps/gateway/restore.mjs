@@ -17,16 +17,21 @@ export function restoreDatabase(directory, target, dataKey) {
   mkdirSync(dirname(output), { recursive: true, mode: 0o700 });
   copyFileSync(source, output); chmodSync(output, 0o600);
   const discard = code => { for (const suffix of ['', '-wal', '-shm']) rmSync(output + suffix, { force: true }); fail(code); };
-  let records = 0;
+  let records = 0, paused = 0;
   try {
     const db = new DatabaseSync(output);
     try { const rows = db.prepare('PRAGMA integrity_check').all(); if (rows.length !== 1 || rows[0].integrity_check !== 'ok') throw new Error('integrity'); } finally { db.close(); }
   } catch { discard('backup_integrity_failed'); }
   try {
     const store = new Store(output, dataKey);
-    try { for (const row of store.db.prepare('SELECT body FROM records LIMIT 200').iterate()) { store.open(row.body); records++; } } finally { store.close(); }
+    try {
+      for (const row of store.db.prepare('SELECT body FROM records LIMIT 200').iterate()) { store.open(row.body); records++; }
+      // The backup does not know what happened after it: calls placed, people who asked not to be called. Nothing dials on
+      // its own after a restore; a person looks and resumes each schedule and list.
+      for (const kind of ['schedule', 'batch']) for (const x of store.everyStatus(kind, 'ACTIVE')) { store.put(kind, { ...x, status: 'PAUSED', pausedReason: 'restored_from_backup' }); paused++; }
+    } finally { store.close(); }
   } catch { discard('data_key_does_not_open_backup'); }
-  return { restored: output, from: source, createdAt: manifest.createdAt, recordsChecked: records };
+  return { restored: output, from: source, createdAt: manifest.createdAt, recordsChecked: records, pausedSchedulesAndLists: paused };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

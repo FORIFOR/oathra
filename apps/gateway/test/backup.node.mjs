@@ -177,7 +177,8 @@ test('command line: needs a target directory and a file database, and prints the
   const made = async () => {
     const dir = mkdtempSync(join(tmpdir(), 'restore-')), key = randomBytes(32).toString('hex'), db = join(dir, 'live', 'gateway.sqlite');
     (await import('node:fs')).mkdirSync(join(dir, 'live'));
-    const store = new Store(db, key); store.put('mission', { id: 'm1', owner: 'alice', status: 'COMPLETED', note: '復元の確認' }); store.close();
+    const store = new Store(db, key); store.put('mission', { id: 'm1', owner: 'alice', status: 'COMPLETED', note: '復元の確認' });
+    store.put('schedule', { id: 's1', owner: 'alice', status: 'ACTIVE' }); store.put('batch', { id: 'b1', owner: 'alice', status: 'ACTIVE', items: [] }); store.put('schedule', { id: 's2', owner: 'alice', status: 'ENDED' }); store.close();
     await backupDatabase(db, join(dir, 'backup'));
     return { dir, key, db, backup: join(dir, 'backup'), done() { rmSync(dir, { recursive: true, force: true }); } };
   };
@@ -186,8 +187,10 @@ test('command line: needs a target directory and a file database, and prints the
     const f = await made();
     try {
       const target = join(f.dir, 'restored', 'gateway.sqlite'), result = restoreDatabase(f.backup, target, f.key);
-      assert.equal(result.recordsChecked, 1);
-      const store = new Store(target, f.key); try { assert.equal(store.get('mission', 'm1').note, '復元の確認'); } finally { store.close(); }
+      assert.equal(result.recordsChecked, 4); assert.equal(result.pausedSchedulesAndLists, 2);
+      const store = new Store(target, f.key); try { assert.equal(store.get('mission', 'm1').note, '復元の確認');
+        // Nothing dials on its own after a restore.
+        assert.deepEqual([store.get('schedule', 's1').status, store.get('schedule', 's1').pausedReason, store.get('batch', 'b1').status, store.get('schedule', 's2').status], ['PAUSED', 'restored_from_backup', 'PAUSED', 'ENDED']); } finally { store.close(); }
     } finally { f.done(); }
   });
   test('restore: never overwrites a database, refuses a tampered backup, and leaves nothing behind with the wrong key', async () => {

@@ -118,3 +118,21 @@ test('a contact who never picks up ends as unanswered once the tries are used up
   assert.equal(f.dialed.length,2);assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>[i.state,i.outcome,i.attempts]),[['DONE','UNANSWERED',2]]);
   for(const retry of [{count:3,minutes:30},{count:1,minutes:10},{count:1,minutes:30,extra:1}])assert.equal(code(()=>f.sales([f.contact(2).id],'retry-key-03',{retry})),'invalid_batch_retry');
 }));
+
+test('one contact who is on another call does not hold up the rest of the list',using(async f=>{
+  const [a,b]=[1,2].map(n=>f.contact(n));
+  f.store.put('mission',{id:'other-call',owner:'bob',team:'one',status:'UNKNOWN',kind:'phone-request',target:{phone:a.phone,name:'x'}});
+  f.sales([a.id,b.id]);await f.pass();await f.pass();
+  assert.deepEqual(f.dialed,['取引先2']);assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>i.state),['PENDING','DONE']);
+}));
+test('an ordinary request in a list needs each contact’s written basis, and waits for daytime',using(async f=>{
+  const a=f.contact(1),b=f.contact(2,{basis:''});
+  const made=f.batches.create(f.alice,{kind:'request',contactIds:[a.id,b.id],request:{instruction:'納期を確認してください。'},acknowledged:true},'basis-key-01');
+  assert.deepEqual(made.items.map(i=>[i.state,i.reason??null]),[['PENDING',null],['SKIPPED','contact_basis_required']]);
+  f.advance(13*3600_000);await f.pass();assert.equal(f.dialed.length,0,'23:00 is not a time to ring a supplier');
+  f.advance(10*3600_000);await f.pass();assert.equal(f.dialed.length,1);
+},{live:true}));
+test('a paused list expires like any other',using(async f=>{
+  const b=f.sales([f.contact(1).id]);f.batches.set(f.alice,b.id,'PAUSED');f.advance(8*86400_000);await f.pass();
+  assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>[i.state,i.reason]),[['SKIPPED','batch_expired']]);assert.equal(f.batches.list(f.alice)[0].status,'FINISHED');
+}));

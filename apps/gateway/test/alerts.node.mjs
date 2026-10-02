@@ -91,3 +91,23 @@ test('an endpoint that resolves to a private address is never called, and the al
   const {worker}=await f.run(f.mission(),['B: 助けて']);const log=worker.log;worker.log=()=>{};await worker.tick();worker.log=log;
   assert.equal(f.sent.length,0);assert.equal(f.queued()[0].status,'pending');assert.equal(f.queued()[0].attempts,1);
 }));
+
+test('an alert is never given up on: after many failed deliveries it is still queued, and goes out when the endpoint is back',using(async f=>{
+  let up=false;f.alerts.fetchImpl=async(to,init)=>{if(!up)throw new Error('down');f.sent.push({to,init});return {ok:true};};
+  const {worker}=await f.run(f.mission(),['B: 助けて']);worker.log=()=>{};
+  for(let i=0;i<12;i++){const job=f.queued()[0];f.store.put('alert',{...job,available:0});await worker.tick();}
+  assert.equal(f.queued()[0].status,'pending');assert.ok(f.queued()[0].attempts>=12);assert.equal(f.sent.length,0);
+  up=true;f.store.put('alert',{...f.queued()[0],available:0});await worker.tick();
+  assert.equal(f.sent.length,1);assert.equal(f.queued()[0].status,'done');
+}));
+test('words that arrive only with the outcome are read like words that arrive line by line',using(async f=>{
+  const m=f.mission(),w=new Worker(f.service,{process:async()=>{},send:async()=>{}},async(_,hooks)=>{hooks.onEvent({type:'call.connected'});return {transcript:[{id:'t0',source:'callee',text:'胸が痛いんです'}]};},f.alerts);
+  await w.run(m,{id:m.id,abort:new AbortController(),control:{}});
+  assert.equal(f.store.get('mission',m.id).attention.level,'emergency');assert.equal(f.queued().length,1);
+}));
+test('an answered call that then fails still tells the staff a call came in',using(async f=>{
+  const m=f.mission({});f.store.put('mission',{...f.store.get('mission',m.id),direction:'inbound',inbound:{ownerName:'丸山商事'}});
+  const w=new Worker(f.service,{process:async()=>{},send:async()=>{}},async(_,hooks)=>{hooks.onEvent({type:'call.connected'});throw new Error('boom');},f.alerts);w.log=()=>{};
+  await w.run(f.store.get('mission',m.id),{id:m.id,abort:new AbortController(),control:{}});
+  assert.deepEqual(f.queued().map(j=>j.payload.reason),['inbound']);
+}));

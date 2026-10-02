@@ -33,13 +33,18 @@ export class Schedules {
       assert(s.account(owner).consentVersion === s.config.consentVersion, 'privacy_consent_required', 403);
       let request; try { request = preparePhoneRequest(input.request); } catch { throw new Fault(400, 'invalid_phone_request'); }
       assert(!request.task, 'schedule_cannot_reserve');
-      const contact = this.store.list('contact', owner.id).find(c => c.phone === request.phone);
+      const contact = this.store.all('contact', owner.id).find(c => c.phone === request.phone);
       assert(contact, 'schedule_recipient_must_be_contact');
       // A call that repeats needs it written down why this person may be called, and who agreed (the contact's 根拠).
       assert(contact.basis?.trim(), 'schedule_contact_basis_required');
       assert(!this.store.suppressed(owner.team, request.phone), 'recipient_suppressed', 403);
       const times = input.times;
       assert(Array.isArray(times) && times.length >= 1 && times.length <= 4 && new Set(times).size === times.length && times.every(t => typeof t === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t)), 'invalid_schedule_times');
+      // Nobody is rung at night by a timetable: within the operator's hours for ordinary requests, or 07:00-21:00 when none are set.
+      const hours = s.config.callHours?.request ?? { from: '07:00', to: '21:00' };
+      assert(times.every(t => minutesOf(t) >= minutesOf(hours.from) && minutesOf(t) < minutesOf(hours.to)), 'schedule_time_outside_calling_hours');
+      // A wellbeing call exists so that someone is told. Without an alert destination the finding would sit unread in a list.
+      assert(request.pace !== 'gentle' || this.alerts?.config, 'care_schedule_requires_alert_webhook', 409);
       const weekdays = input.weekdays ?? [0, 1, 2, 3, 4, 5, 6];
       assert(Array.isArray(weekdays) && weekdays.length >= 1 && new Set(weekdays).size === weekdays.length && weekdays.every(d => Number.isInteger(d) && d >= 0 && d <= 6), 'invalid_schedule_weekdays');
       const until = Date.parse(input.until);
@@ -48,7 +53,7 @@ export class Schedules {
       assert(retries && Number.isInteger(retries.count) && retries.count >= 0 && retries.count <= 3 && Number.isInteger(retries.minutes) && retries.minutes >= 10 && retries.minutes <= 180 && Object.keys(retries).every(k => ['count', 'minutes'].includes(k)), 'invalid_schedule_retries');
       const windowMinutes = input.windowMinutes ?? 120;
       assert(Number.isInteger(windowMinutes) && windowMinutes >= 30 && windowMinutes <= 240, 'invalid_schedule_window');
-      assert(this.store.list('schedule', owner.id, 'ACTIVE').length < 200, 'schedule_limit', 429);
+      assert(this.store.all('schedule', owner.id).filter(x => x.status === 'ACTIVE').length < 200, 'schedule_limit', 429);
       const schedule = { id, owner: owner.id, team: owner.team, status: 'ACTIVE', fingerprint, request, contactId: contact.id, times: [...times].sort(), weekdays: [...weekdays].sort(), until,
         retries: { count: retries.count, minutes: retries.minutes }, windowMinutes, consentVersion: s.config.consentVersion, createdAt: this.store.now() };
       this.store.put('schedule', schedule);
@@ -82,43 +87,51 @@ export class Schedules {
   end(schedule, reason) { schedule.status = 'ENDED'; schedule.endedReason = reason; this.store.put('schedule', schedule); this.store.audit(schedule.owner, 'schedule.ended', schedule.id, { schedule: schedule.id, reason }); }
   note(schedule, run, level = 'concern') { this.alerts?.raise({ id: run.id, owner: schedule.owner, team: schedule.team, origin: null, target: { name: schedule.request.name } }, 'schedule', level, { categories: [run.reason ?? run.state] }); }
 
-  /** Starts what is due, only onto a free line. Safe to call as often as the worker likes. */
+  saveRun(run) { run.status = run.state; this.store.put('schedule-run', run); }
+  /** Settles what was started, then starts what is due onto free lines. Safe to call as often as the worker likes. */
   tick() {
-    const now = this.store.now(), today = jst(now);
-    // A free line, of however many the operator allowed. Each dispatch below takes one.
-    let inUse = 0; const lines = Math.max(1, this.service.config.maxConcurrentCalls ?? 1);
-    this.store.some('mission', x => { if (BUSY.includes(x.status)) inUse++; return false; });
-    let idle = inUse < lines;
-    for (const schedule of this.store.list('schedule', undefined, 'ACTIVE').sort((a, b) => a.createdAt - b.createdAt)) {
-      if (now >= schedule.until) { this.end(schedule, 'reached_end_date'); continue; }
-      const runs = this.store.all('schedule-run', schedule.owner).filter(r => r.scheduleId === schedule.id);
-      // 1. Settle or retry what was started.
-      for (const run of runs.filter(r => r.state === 'RUNNING')) {
-        const m = this.store.get('mission', run.attempts.at(-1).missionId);
-        if (m && !terminal(m.status)) continue;
-        const done = (state, reason) => { run.state = state; if (reason) run.reason = reason; this.store.put('schedule-run', run); };
-        if (!m) { done('FAILED', 'record_deleted'); continue; }
-        // An unknown state may be a call that connected. It is never redialled; a person reconciles it.
-        if (m.status === 'UNKNOWN' || m.stopNeedsReconciliation) { done('FAILED', 'unknown_state_needs_reconciliation'); this.note(schedule, run); continue; }
-        if (m.status === 'DECLINED' || this.store.suppressed(schedule.team, schedule.request.phone)) { done('DECLINED'); this.end(schedule, 'recipient_asked_not_to_be_called'); break; }
-        if (m.status === 'CANCELLED') { done('CANCELLED'); continue; }
-        if (m.answered) { done('ANSWERED'); continue; }
-        if (run.attempts.length > schedule.retries.count || jst(now).date !== run.date) { done('UNANSWERED'); continue; }
-        if (now < (m.finishedAt ?? now) + schedule.retries.minutes * 60_000 || !idle) continue;
-        if (this.dispatch(schedule, run)) idle = ++inUse < lines;
+    const now = this.store.now(), today = jst(now), lines = Math.max(1, this.service.config.maxConcurrentCalls ?? 1);
+    let inUse = this.store.countStatus('mission', BUSY);
+    // 1. Settle or retry every started occurrence, whatever has since happened to its schedule: a paused or ended
+    //    schedule still owes the person who set it up the outcome of the call that was already placed.
+    for (const run of this.store.everyStatus('schedule-run', 'RUNNING')) {
+      const schedule = this.store.get('schedule', run.scheduleId), m = this.store.get('mission', run.attempts.at(-1)?.missionId);
+      if (m && !terminal(m.status)) continue;
+      const done = (state, reason) => { run.state = state; if (reason) run.reason = reason; this.saveRun(run); };
+      if (!schedule) { done('FAILED', 'schedule_deleted'); continue; }
+      if (!m) { done('FAILED', 'record_deleted'); this.note(schedule, run); continue; }
+      // An unknown state may be a call that connected. It is never redialled; a person reconciles it.
+      if (m.status === 'UNKNOWN' || m.stopNeedsReconciliation) { done('FAILED', 'unknown_state_needs_reconciliation'); this.note(schedule, run); continue; }
+      // The person asked not to be called: the schedule ends, and whoever set it up is told, because the calls they rely on have stopped.
+      if (m.status === 'DECLINED' || this.store.suppressed(schedule.team, schedule.request.phone)) { done('DECLINED', 'recipient_asked_not_to_be_called'); if (schedule.status !== 'ENDED') this.end(schedule, 'recipient_asked_not_to_be_called'); this.note(schedule, run); continue; }
+      if (m.status === 'CANCELLED') { done('CANCELLED'); continue; }
+      if (m.answered) { done('ANSWERED'); continue; }
+      const retryable = schedule.status === 'ACTIVE' && now < schedule.until && run.attempts.length <= schedule.retries.count && jst(now).date === run.date;
+      if (!retryable) {
+        // The last word on this occurrence. Raised here as well as by the worker (same alert id, so once): a call that was
+        // refused before dialling, or whose retries ran out of day, never reaches the worker's own check.
+        done('UNANSWERED', m.error && !m.carrierSid ? m.error : undefined);
+        this.alerts?.raise(m, 'unanswered', 'concern');
+        continue;
       }
-      if (schedule.status !== 'ACTIVE' || !schedule.weekdays.includes(today.weekday)) continue;
-      // 2. Start what is due. A time that passed while the line was busy or the service was down is skipped, not made up late.
+      if (now < (m.finishedAt ?? now) + schedule.retries.minutes * 60_000 || inUse >= lines) continue;
+      if (this.dispatch(schedule, run)) inUse++;
+    }
+    // 2. Start what is due. A time that passed while the line was busy or the service was down is skipped, not made up late.
+    for (const schedule of this.store.everyStatus('schedule', 'ACTIVE')) {
+      if (now >= schedule.until) { this.end(schedule, 'reached_end_date'); continue; }
+      if (!schedule.weekdays.includes(today.weekday)) continue;
       for (const time of schedule.times) {
         const id = `${schedule.id}:${today.date}:${time}`, at = minutesOf(time);
-        if (today.minutes < at || runs.some(r => r.id === id) || this.store.get('schedule-run', id)) continue;
+        if (today.minutes < at || this.store.get('schedule-run', id)) continue;
         const run = { id, owner: schedule.owner, scheduleId: schedule.id, date: today.date, time, attempts: [], state: 'RUNNING' };
         // A schedule made at 10:00 does not owe the 09:00 call of that day.
-        const createdToday = jst(schedule.createdAt), predates = createdToday.date === today.date && createdToday.minutes > at;
-        if (predates) continue;
-        if (today.minutes >= at + schedule.windowMinutes) { run.state = 'SKIPPED'; run.reason = 'window_passed'; this.store.put('schedule-run', run); this.note(schedule, run); continue; }
-        if (!idle) continue;
-        if (this.dispatch(schedule, run)) idle = ++inUse < lines;
+        const created = jst(schedule.createdAt);
+        if (created.date === today.date && created.minutes > at) continue;
+        if (today.minutes >= at + schedule.windowMinutes) { run.state = 'SKIPPED'; run.reason = 'window_passed'; this.saveRun(run); this.note(schedule, run); continue; }
+        if (inUse >= lines) continue;
+        if (this.dispatch(schedule, run)) inUse++;
+        if (schedule.status !== 'ACTIVE') break;
       }
     }
   }
@@ -129,14 +142,15 @@ export class Schedules {
       const m = this.store.tx(() => {
         const owner = s.user(schedule.owner); s.write(owner);
         assert(schedule.consentVersion === s.config.consentVersion && s.account(owner).consentVersion === s.config.consentVersion, 'privacy_consent_required', 403);
-        assert(this.store.list('contact', owner.id).some(c => c.id === schedule.contactId && c.phone === schedule.request.phone), 'contact_changed_review_again', 409);
+        const contact = this.store.get('contact', schedule.contactId);
+        assert(contact && contact.owner === owner.id && contact.phone === schedule.request.phone, 'contact_changed_review_again', 409);
         const { schemaVersion, kind, ...fields } = schedule.request;
         const draft = prepareManagedPhone(s, owner, fields);
         draft.schedule = { id: schedule.id, run: run.id, attempt, final: attempt >= schedule.retries.count };
         this.store.put('mission', draft);
         const { approvalToken } = s.review(owner, draft.id);
         s.startTx(owner, approvalToken, `schedule:${run.id}:${attempt}`, true, draft.id);
-        run.attempts.push({ missionId: draft.id, at: this.store.now() }); run.state = 'RUNNING'; this.store.put('schedule-run', run);
+        run.attempts.push({ missionId: draft.id, at: this.store.now() }); run.state = 'RUNNING'; this.saveRun(run);
         this.store.audit(owner.id, 'schedule.dispatched', draft.id, { schedule: schedule.id, run: run.id, attempt, mission: draft.id });
         return draft;
       });
@@ -145,8 +159,9 @@ export class Schedules {
       const reason = error.code ?? 'dispatch_failed';
       // Someone else's call to the same number, or a busy moment, is not a failure of the day: try again next tick.
       if (reason === 'recipient_has_active_call') return false;
-      run.state = attempt ? 'UNANSWERED' : 'FAILED'; run.reason = reason; this.store.put('schedule-run', run);
-      if (['recipient_suppressed', 'contact_changed_review_again', 'privacy_consent_required', 'unauthorized', 'read_only_account'].includes(reason)) this.end(schedule, reason);
+      run.state = attempt ? 'UNANSWERED' : 'FAILED'; run.reason = reason; this.saveRun(run);
+      // The person who set it up can no longer act, or the recipient can no longer be called: stop instead of failing every day.
+      if (['recipient_suppressed', 'contact_changed_review_again', 'privacy_consent_required', 'unauthorized', 'read_only_account', 'unlinked_account', 'not_found'].includes(reason)) this.end(schedule, reason);
       this.note(schedule, run);
       return false;
     }

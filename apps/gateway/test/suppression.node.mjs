@@ -83,3 +83,11 @@ test('a sales call is told to say who, by what, about what and that it is a sale
   for(const part of ['caller_identity の会社名・名前','AIアシスタントが代わりにかけている電話','商品・サービスの種類（product_name）','営業（ご案内）のお電話であること','これらを告げる前に商品の説明や質問を始めない','引き留めたり言い換えて再度すすめたりせず'])assert.ok(SALES_CALL_POLICY.includes(part),part);
   assert.ok(SALES_CALL_POLICY.indexOf('(1)')<SALES_CALL_POLICY.indexOf('(4)'));
 });
+
+test('a stop the person made by key press is never written over, so nothing can make it releasable',using(f=>{
+  const p='+819000000001';
+  f.store.suppress('one',p,'dtmf');f.store.suppress('one',p,'manual');f.store.suppress('one',p,'transcript');
+  assert.equal(f.store.unsuppress('one',p),'opted_out_by_recipient');assert.equal(f.store.suppressed('one',p),true);
+  // The other order still records the key press.
+  const q='+819000000002';f.store.suppress('one',q,'manual');f.store.suppress('one',q,'dtmf');assert.equal(f.store.unsuppress('one',q),'opted_out_by_recipient');
+}));

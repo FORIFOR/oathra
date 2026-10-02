@@ -7,12 +7,12 @@
  * skipped with the reason, a refusal suppresses that number as always, and nothing is redialled. */
 import { preparePhoneRequest } from '../../../packages/contract/dist/index.js';
 import { prepareManagedPhone } from './phone-service.mjs';
-import { terminal } from './service.mjs';
+import { terminal, withinHours } from './service.mjs';
 import { assert, hash, text, Fault } from './security.mjs';
 
 const BUSY = ['QUEUED', 'DIALING', 'ACTIVE', 'VERIFYING', 'CANCEL_REQUESTED'];
 // Not this contact's fault and not permanent: try the same contact again on a later tick.
-const LATER = ['outside_calling_hours', 'recipient_has_active_call', 'service_restarting_try_again_shortly', 'daily_limit_reached', 'prerelease_call_limit', 'prerelease_global_call_limit', 'prerelease_budget_limit', 'prerelease_global_budget_limit', 'prerelease_paused'];
+const LATER = ['outside_calling_hours', 'service_restarting_try_again_shortly', 'daily_limit_reached', 'prerelease_call_limit', 'prerelease_global_call_limit', 'prerelease_budget_limit', 'prerelease_global_budget_limit', 'prerelease_paused'];
 // The account cannot pay for more: stop the list and tell the person, rather than failing every remaining contact.
 const PAUSE = ['insufficient_credits', 'insufficient_connection_credits', 'monthly_cap_reached', 'purchase_account_blocked', 'privacy_consent_required'];
 const canonical = value => JSON.stringify(value, (_k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]])) : v);
@@ -53,7 +53,9 @@ export class Batches {
       const items = contacts.map(c => {
         // Said now, so the person approving sees who will not be called and why.
         const reason = !c.phone ? 'contact_phone_required' : this.store.suppressed(owner.team, c.phone) ? 'recipient_suppressed' : c.simulationOnly && s.config.mode === 'live' ? 'simulator_contact_not_valid_for_live'
-          : input.kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required' : input.kind === 'sales' && !c.basis?.trim() ? 'contact_basis_required' : null;
+          : input.kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required'
+          // One approval reaches many people, so each needs it written down why they may be called, sales or not.
+          : !c.basis?.trim() ? 'contact_basis_required' : null;
         return { contactId: c.id, name: c.name || c.company, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
       });
       assert(items.some(i => i.state === 'PENDING'), 'batch_has_no_callable_contact');
@@ -84,9 +86,9 @@ export class Batches {
 
   /** Settles finished calls and starts the next ones onto free lines. Safe to call as often as the worker likes. */
   tick() {
-    const now = this.store.now(); let inUse = 0; const lines = Math.max(1, this.service.config.maxConcurrentCalls ?? 1);
-    this.store.some('mission', x => { if (BUSY.includes(x.status)) inUse++; return false; });
-    for (const kind of ['ACTIVE', 'PAUSED']) for (const batch of this.store.list('batch', undefined, kind).sort((a, b) => a.createdAt - b.createdAt)) {
+    const now = this.store.now(), lines = Math.max(1, this.service.config.maxConcurrentCalls ?? 1);
+    let inUse = this.store.countStatus('mission', BUSY);
+    for (const status of ['ACTIVE', 'PAUSED', 'ENDED']) for (const batch of this.store.everyStatus('batch', status)) {
       let changed = false;
       for (const item of batch.items.filter(i => i.state === 'CALLING')) {
         const m = this.store.get('mission', item.missionId);
@@ -96,20 +98,26 @@ export class Batches {
         if (unanswered && item.attempts <= (batch.retry?.count ?? 0) && batch.status !== 'ENDED') { item.state = 'PENDING'; item.notBefore = now + batch.retry.minutes * 60_000; continue; }
         item.state = 'DONE'; item.outcome = m ? (unanswered ? 'UNANSWERED' : m.status) : 'RECORD_DELETED';
       }
-      if (batch.status === 'ACTIVE' && now >= batch.expiresAt) { for (const item of batch.items) if (item.state === 'PENDING') { item.state = 'SKIPPED'; item.reason = 'batch_expired'; } changed = true; }
+      // A paused list expires like an active one.
+      if (batch.status !== 'ENDED' && now >= batch.expiresAt) { for (const item of batch.items) if (item.state === 'PENDING') { item.state = 'SKIPPED'; item.reason = 'batch_expired'; changed = true; } }
       if (batch.status === 'ACTIVE') for (const item of batch.items) {
         if (item.state !== 'PENDING' || inUse >= lines || (item.notBefore ?? 0) > now) continue;
-        const outcome = this.dispatch(batch, item); changed = true;
+        const outcome = this.dispatch(batch, item);
         if (outcome === 'queued') inUse++;
+        // One contact who is on another call does not hold up the rest of the list.
+        else if (outcome === 'busy') continue;
         else if (outcome === 'later') break;
-        else if (outcome === 'pause') break;
+        else if (outcome === 'pause') { changed = true; break; }
+        else changed = true;
       }
-      if (!batch.items.some(i => ['PENDING', 'CALLING'].includes(i.state)) && batch.status !== 'FINISHED') { batch.status = 'FINISHED'; batch.finishedAt = now; changed = true; }
+      if (!batch.items.some(i => ['PENDING', 'CALLING'].includes(i.state))) { batch.status = 'FINISHED'; batch.finishedAt = now; changed = true; }
       if (changed) this.store.put('batch', batch);
     }
   }
   dispatch(batch, item) {
     const s = this.service;
+    // A list of ordinary requests keeps to the operator's hours for them, or 08:00-21:00 when none are set.
+    if (batch.kind === 'request' && s.config.mode === 'live' && !withinHours(this.store.now(), s.config.callHours?.request ?? { from: '08:00', to: '21:00' })) return 'later';
     try {
       this.store.tx(() => {
         const owner = s.user(batch.owner); s.write(owner);
@@ -122,15 +130,19 @@ export class Batches {
         const { approvalToken } = s.review(owner, draft.id);
         s.startTx(owner, approvalToken, `batch:${batch.id}:${item.contactId}:${item.attempts ?? 0}`, true, draft.id);
         item.state = 'CALLING'; item.missionId = draft.id;
+        // In the same transaction as the call's approval: a crash cannot leave a queued call with an item that still says pending.
+        this.store.put('batch', batch);
         this.store.audit(owner.id, 'batch.dispatched', draft.id, { batch: batch.id, mission: draft.id });
       });
       return 'queued';
     } catch (error) {
       const reason = error.code ?? 'dispatch_failed';
+      item.state = 'PENDING'; delete item.missionId; // the transaction rolled back
+      if (reason === 'recipient_has_active_call') return 'busy';
       if (LATER.includes(reason)) return 'later';
       if (PAUSE.includes(reason)) {
         batch.status = 'PAUSED'; batch.pausedReason = reason;
-        this.alerts?.raise({ id: batch.id, owner: batch.owner, team: batch.team, origin: null, target: { name: `${batch.items.length}件のリスト` } }, 'batch', 'notice', { categories: [reason] });
+        this.alerts?.raise({ id: `${batch.id}:${this.store.now()}`, owner: batch.owner, team: batch.team, origin: null, target: { name: `${batch.items.length}件のリスト` } }, 'batch', 'notice', { categories: [reason] });
         return 'pause';
       }
       item.state = reason === 'recipient_suppressed' ? 'SKIPPED' : 'FAILED'; item.reason = reason;
