@@ -302,6 +302,7 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&teamCall)return send(res,200,teamRecord(service,u,teamCall[1]));
       if(method==='GET'&&path==='/v1/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-calls.csv"');return send(res,200,ownCallsCsv(service,u),'text/csv; charset=utf-8');}
       if(method==='POST'&&path==='/v1/contacts/import')return send(res,200,importContacts(service,u,data.contacts));
+      if(path==='/v1/batches/preview'&&method==='POST')return send(res,200,batches.preview(u,data));
       if(path==='/v1/batches'&&method==='POST')return send(res,201,batches.create(u,data,req.headers['idempotency-key']));
       if(path==='/v1/batches'&&method==='GET'){service.write(u);return send(res,200,batches.list(u));}
       const batchAction=/^\/v1\/batches\/([a-f0-9]{32})\/(pause|resume|end)$/.exec(path);

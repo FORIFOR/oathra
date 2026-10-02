@@ -50,20 +50,31 @@ export class Batches {
       // Nobody picked up (or a machine did): try that contact again later, a bounded number of times. Never after a refusal or an unknown state.
       const retry = input.retry ?? { count: 0, minutes: 60 };
       assert(retry && Number.isInteger(retry.count) && retry.count >= 0 && retry.count <= 2 && Number.isInteger(retry.minutes) && retry.minutes >= 30 && retry.minutes <= 1440 && Object.keys(retry).every(k => ['count', 'minutes'].includes(k)), 'invalid_batch_retry');
-      const items = contacts.map(c => {
-        // Said now, so the person approving sees who will not be called and why.
-        const reason = !c.phone ? 'contact_phone_required' : this.store.suppressed(owner.team, c.phone) ? 'recipient_suppressed' : c.simulationOnly && s.config.mode === 'live' ? 'simulator_contact_not_valid_for_live'
-          : input.kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required'
-          // One approval reaches many people, so each needs it written down why they may be called, sales or not.
-          : !c.basis?.trim() ? 'contact_basis_required' : null;
-        return { contactId: c.id, name: c.name || c.company, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
-      });
+      const items = this.items(owner, input.kind, contacts);
       assert(items.some(i => i.state === 'PENDING'), 'batch_has_no_callable_contact');
       const batch = { id, owner: owner.id, team: owner.team, status: 'ACTIVE', fingerprint, kind: input.kind, spec, retry: { count: retry.count, minutes: retry.minutes }, items, consentVersion: s.config.consentVersion, createdAt: this.store.now(), expiresAt: this.store.now() + 7 * 86400_000 };
       this.store.put('batch', batch);
       this.store.audit(owner.id, 'batch.created', id, { batch: id, kind: input.kind, contacts: items.length, callable: items.filter(i => i.state === 'PENDING').length });
       return this.view(batch);
     });
+  }
+  /** Who would be called and who would not, and why. Said before the person commits, and again when they do. */
+  items(owner, kind, contacts) {
+    const s = this.service;
+    return contacts.map(c => {
+      const reason = !c.phone ? 'contact_phone_required' : this.store.suppressed(owner.team, c.phone) ? 'recipient_suppressed' : c.simulationOnly && s.config.mode === 'live' ? 'simulator_contact_not_valid_for_live'
+        : kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required'
+        // One approval reaches many people, so each needs it written down why they may be called, sales or not.
+        : !c.basis?.trim() ? 'contact_basis_required' : null;
+      return { contactId: c.id, name: c.name || c.company, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
+    });
+  }
+  /** The same answer `create` would give about each contact, without creating anything. */
+  preview(owner, input) {
+    this.service.write(owner);
+    assert(input && ['sales', 'request'].includes(input.kind) && Array.isArray(input.contactIds) && input.contactIds.length >= 1 && input.contactIds.length <= 100 && new Set(input.contactIds).size === input.contactIds.length, 'batch_1_to_100_contacts');
+    const items = this.items(owner, input.kind, input.contactIds.map(id => this.service.own('contact', id, owner)));
+    return { items, callable: items.filter(i => i.state === 'PENDING').length, hours: input.kind === 'sales' ? this.service.config.callHours?.sales ?? null : this.service.config.callHours?.request ?? { from: '08:00', to: '21:00' } };
   }
   view(batch) {
     const { fingerprint, ...rest } = batch, count = state => batch.items.filter(i => i.state === state).length;

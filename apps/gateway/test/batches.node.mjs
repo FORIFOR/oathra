@@ -40,7 +40,9 @@ test('a list needs an explicit approval, the person’s own saved contacts, and 
 }));
 test('the approval screen is told who will not be called and why; the same key returns the same list',using(f=>{
   const ok=f.contact(1),noBasis=f.contact(2,{basis:''}),stopped=f.contact(3),noPhone=f.service.contact(f.alice,{name:'番号なし'});f.store.suppress('one',stopped.phone,'dtmf');
-  const b=f.sales([ok.id,noBasis.id,stopped.id,noPhone.id]);
+  const ids=[ok.id,noBasis.id,stopped.id,noPhone.id],preview=f.batches.preview(f.alice,{kind:'sales',contactIds:ids});
+  assert.equal(f.store.list('batch').length,0,'a preview creates nothing');
+  const b=f.sales(ids);assert.deepEqual(preview.items,b.items);assert.equal(preview.callable,1);
   assert.deepEqual(b.items.map(i=>[i.state,i.reason??null]),[['PENDING',null],['SKIPPED','contact_basis_required'],['SKIPPED','recipient_suppressed'],['SKIPPED','contact_phone_required']]);
   assert.deepEqual(b.counts,{pending:1,calling:0,done:0,skipped:3,failed:0});assert.equal(b.fingerprint,undefined);
   assert.equal(f.sales([ok.id,noBasis.id,stopped.id,noPhone.id]).id,b.id);assert.equal(code(()=>f.sales([ok.id])),'idempotency_conflict');
