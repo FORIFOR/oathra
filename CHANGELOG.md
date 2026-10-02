@@ -2,6 +2,15 @@
 
 Release notes live in `docs/launch/release-notes-<version>.md`; this file lists them. Assets are attached to the matching [GitHub Release](https://github.com/FORIFOR/oathra/releases).
 
+## Unreleased — front-line use: care, sales lists, a business line
+
+- **Safety on every call.** No diagnosis or medicine advice, 119/110 and nearby people named, and never a claim that help was summoned. Words that mean someone may need help are detected from what the other person said; staff are alerted during the call (signed webhook, no speech in it unless opted in) and the call is not cut.
+- **Care calls.** `pace: "gentle"` (slow, plain, patient; longer waits before a turn or the line is treated as silent), wellbeing and medication templates, a check-in report of what the person said about condition, meals, medicine, sleep and worries with their own words beside it (hedged or contradicted answers are "unclear"; 10,000 seeded dialogues, 0 false yes), standing requests that repeat on a schedule with retries, and an alert when nobody answers. A voicemail greeting is not an answer.
+- **Sales and trade.** Calling hours for real sales calls (default 09:00–20:00 JST), list calling with one approval for up to 100 saved contacts, contact CSV import, CSV export, the required opening of a sales call, delivery-date and quote templates. A refusal in an ordinary request no longer suppresses the number; a mistaken suppression can be released with a recorded reason.
+- **A business line.** Answers as the business, only from the operator's own short answers, within set hours, puts a caller through to a person on request, tells the staff a call was taken, and can carry several calls at once (`OATHRA_MAX_CONCURRENT_CALLS`, default 1).
+- **Teams and operations.** A `manager` role that sees its own team's calls (no numbers or speech in the list), a team summary with the answer rate, a deploy that waits for the call in progress, a restore command, one opening notice on every carrier path, and a call that ends when speech recognition dies.
+- 176 tests for modules that had none (accounts, purchases, prerelease limits, delegation, MCP, backup) and six fixes they found. **None of this has been verified on real calls**: how the gentle pace sounds, whether the model keeps to the business's answers, transfer, and concurrent lines are all unverified. [Guide](docs/FRONTLINE.ja.md) · [Record](docs/quality/frontline.md).
+
 ## Unreleased — application flow and account clarity
 
 - Reorganized the signed-in home around reports, improved narrow-screen navigation and forms, and made paused calling and incomplete outcomes explicit. Late asynchronous navigation can no longer replace the screen the user just selected.
