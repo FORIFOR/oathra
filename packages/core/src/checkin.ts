@@ -92,3 +92,25 @@ export function checkInReport(turns: readonly CheckInTurn[]): CheckInReport {
   return { version: 1, answered: spoken.some((t) => t.source === "callee"), items: list, signals,
     attention: level === "emergency" ? "emergency" : level === "concern" || worrying ? "concern" : "none" };
 }
+
+const TOPIC_JA: Record<CheckInTopic, string> = { condition: "体調", meal: "食事", medication: "お薬", sleep: "睡眠", help: "困りごと・伝えたいこと" };
+/**
+ * A short note in plain Japanese that a staff member can read out or send to a relative after a wellbeing call.
+ * It reports what was said, in the person's own words, and says so; it never states a fact about their health,
+ * never includes a line flagged as an emergency without telling the reader to ask the staff, and is only ever
+ * sent by a person. `when` is already formatted for the reader (「10月2日 9時ごろ」).
+ */
+export function checkInNote(report: CheckInReport, who: { name: string; when: string; from: string }): string {
+  const lines = [`${who.name}さんへの${who.from}からのお電話（${who.when}）のご報告です。`];
+  if (!report.answered) return [...lines, "お電話に出られなかったか、お話ができませんでした。", "この内容は電話での応答の記録で、ご本人の様子を確かめたものではありません。"].join("\n");
+  lines.push("お電話でお話しできました。ご本人が話されたことは次のとおりです。");
+  for (const item of report.items) {
+    if (item.answer === "not_asked" || item.answer === "no_answer") continue;
+    const said = item.quote ? `「${item.quote.split(" / ").at(-1)}」と話されました。` : "お返事がありました。";
+    lines.push(`・${TOPIC_JA[item.topic]}: ${item.answer === "unclear" ? `はっきりしたお返事ではありませんでした。${item.quote ? `（${said}）` : ""}` : said}`);
+  }
+  if (report.attention === "emergency") lines.push("お電話の中に、すぐに確かめたほうがよい言葉がありました。くわしくは職員にお尋ねください。");
+  else if (report.attention === "concern") lines.push("気になるお返事がありましたので、職員が確かめます。");
+  lines.push("この内容は電話でご本人が話されたことの記録で、ご本人の様子を確かめたものではありません。");
+  return lines.join("\n");
+}

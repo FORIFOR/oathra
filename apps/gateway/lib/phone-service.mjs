@@ -1,4 +1,4 @@
-import { phoneMemory } from '../../../packages/core/dist/index.js';
+import { phoneMemory, checkInNote } from '../../../packages/core/dist/index.js';
 import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
@@ -76,7 +76,10 @@ export function phoneRecord(service,m) {
   // Lines a person should read (core detectDistress) and what a wellbeing call heard, with the person's own words.
   attention:m.attention??null,checkIn:m.result?.checkIn??null,answered:typeof m.answered==='boolean'?m.answered:null,scheduled:!!m.schedule,
   // Which try of a standing request this was (1-based) and whether more would follow.
-  ...(m.schedule?{attempt:{number:(m.schedule.attempt??0)+1,last:m.schedule.final!==false}}:{})};
+  ...(m.schedule?{attempt:{number:(m.schedule.attempt??0)+1,last:m.schedule.final!==false}}:{}),
+  // A note a staff member may read out or send to a relative. It is never sent by the service itself.
+  ...(m.result?.checkIn&&m.direction!=='inbound'?{familyNote:checkInNote(m.result.checkIn,{name:m.target.name,from:m.phoneRequest?.callerName||service.config.businessName||'担当',
+    when:new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'long',day:'numeric',hour:'numeric'}).format(m.approvedAt??m.createdAt)+'ごろ'})}:{})};
 }
 /**
  * A calendar entry from the call memo, for the caller's own calendar. It records what was said on the
