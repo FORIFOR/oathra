@@ -147,3 +147,11 @@ test('a call that outlasts the grace period is cut and reported as cut',using(as
   await f.worker.tick();
   assert.deepEqual(await f.worker.drain(20),{cut:true});
 }));
+
+test('a voicemail greeting is not an answer: the call is retried and then reported as unanswered',using(async f=>{
+  f.create({retries:{count:1,minutes:10}});f.answers('ただいま電話に出ることができません。発信音のあとにメッセージをどうぞ。');
+  f.at(start+10*min);await f.pass();await f.pass();
+  const first=f.store.get('mission',f.dialed[0]);assert.deepEqual([first.answered,first.machineAnswered],[false,true]);assert.equal(f.alertsRaised(),0);
+  f.advance(11*min);await f.pass();await f.pass();
+  assert.equal(f.dialed.length,2);assert.deepEqual(f.runs().map(r=>[r.state,r.attempts.length]),[['UNANSWERED',2]]);assert.equal(f.alertsRaised(),1);
+}));

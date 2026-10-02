@@ -1,4 +1,4 @@
-import { phoneMemory, detectDistress, distressLevel, checkInReport } from '../../../packages/core/dist/index.js';
+import { phoneMemory, detectDistress, distressLevel, checkInReport, isMachineGreeting } from '../../../packages/core/dist/index.js';
 import { worse } from './alerts.mjs';
 import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
@@ -91,8 +91,9 @@ export class Worker {
   checkIn(current,turns,connected) {
     if(current.kind!=='phone-request'||current.direction==='inbound')return;
     const report=checkInReport(turns),care=current.phoneRequest?.pace==='gentle';
-    // Someone spoke on the other end. A voicemail greeting also counts as speech: this is "the line was picked up", not "the person is well".
-    current.answered=connected&&report.answered;
+    // Someone spoke on the other end, and it was not a recording. A voicemail greeting or a network announcement is not an answer.
+    const machine=turns.some(t=>t.source==='callee'&&isMachineGreeting(t.text));if(machine)current.machineAnswered=true;
+    current.answered=connected&&report.answered&&!machine;
     if(care||report.items.some(i=>i.answer!=='not_asked'))current.result.checkIn=report;
     if(!this.alerts)return;
     // Nobody answered a call that was meant to find out how someone is: that is itself the finding.
