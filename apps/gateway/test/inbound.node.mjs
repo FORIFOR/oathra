@@ -69,7 +69,7 @@ test('an inbound session accepts the waiting stream and dials nothing',using(asy
 
 test('someone returning a call reaches the person who asked for it, and the agent knows why they were called',using(f=>{
  f.service.credits.grant(f.users[0],'colleague',100,randomUUID(),'bounded inbound verification');
- f.store.put('mission',{id:randomUUID(),owner:'colleague',team:'work',kind:'phone-request',status:'INCOMPLETE',approvedAt:Date.now()-3600_000,createdAt:Date.now()-3600_000,target:{phone:'+819033334444',name:'山田商店'},request:'営業時間を確認してください。',phoneRequest:{phone:'+819033334444',name:'山田商店',instruction:'営業時間を確認してください。',callerName:'佐藤'}});
+ f.store.put('mission',{id:randomUUID(),owner:'colleague',team:'work',kind:'phone-request',status:'INCOMPLETE',carrierSid:'CA'+'c'.repeat(32),approvedAt:Date.now()-3600_000,createdAt:Date.now()-3600_000,target:{phone:'+819033334444',name:'山田商店'},request:'営業時間を確認してください。',phoneRequest:{phone:'+819033334444',name:'山田商店',instruction:'営業時間を確認してください。',callerName:'佐藤'}});
  const {twiml}=f.ring('+819033334444');assert.ok(answered(twiml));
  const m=f.store.list('mission').find(x=>x.direction==='inbound');
  assert.equal(m.owner,'colleague');assert.equal(m.inbound.ownerName,'佐藤');assert.equal(m.target.name,'山田商店');assert.match(m.inbound.context,/営業時間を確認してください/);
