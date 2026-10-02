@@ -1,0 +1,20 @@
+{
+  "capturedAt": "2026-10-01T17:34:19.465Z",
+  "source": "Existing published evidence-lab choices. No new transcript or fixture.",
+  "checks": [
+    {
+      "path": "/lab.html#sim",
+      "existingLabTransition": "incomplete -> complete",
+      "metricRequests": 0,
+      "status": "PASS"
+    },
+    {
+      "path": "/en/lab.html#sim",
+      "existingLabTransition": "incomplete -> complete",
+      "metricRequests": 0,
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "portfolioSha256": "01de6f7ff239d2289819f9ccc4848e05ec6e508bdd7c27beabed38c8f8f086a0"
+}

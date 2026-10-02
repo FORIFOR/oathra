@@ -1,0 +1,1145 @@
+{
+  "capturedAt": "2026-10-01T17:13:46.046Z",
+  "node": "v25.2.1",
+  "origin": "http://127.0.0.1:59140",
+  "revision": "db56271fd4b6a01ae51f577ed2692c7f89b3b7a2",
+  "trackedDiffHash": "c7a106b4c202f222616ca6837a393fa676b9e305d4bbcbcac2137b537d887e7d",
+  "method": "Unauthenticated real Chrome, no business-data mutation",
+  "views": [
+    {
+      "name": "managed-root",
+      "path": "/",
+      "width": 1440,
+      "height": 900,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "Oathra",
+        "headings": [
+          "相手の言葉で、完了を確かめる。",
+          "Oathra にログイン"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#main",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 25
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "通話ログの完了判定を試すログイン・インストール不要↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 655,
+              "height": 76
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Code・ChatGPTとつなぐ読取・下書きの権限を選んで接続→",
+            "href": "/connect",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 731,
+              "height": 76
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "managed-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 449,
+              "height": 47
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "managed-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 540,
+              "height": 47
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "managed-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 599,
+              "height": 48
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-1440.png"
+    },
+    {
+      "name": "app",
+      "path": "/app/",
+      "width": 1440,
+      "height": 900,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "Oathra — 電話を、任せる。",
+        "headings": [
+          "相手の言葉で、完了を確かめる。",
+          "Oathra にログイン"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#view",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 24
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Oathra",
+            "href": "#/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 17,
+              "height": 29
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "通話ログの完了判定を試すログイン・インストール不要↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 669,
+              "height": 76
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Code・ChatGPTとつなぐ読取・下書きの権限を選んで接続→",
+            "href": "/connect",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 745,
+              "height": 76
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "public-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 462,
+              "height": 46
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "public-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 557,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "public-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 621,
+              "height": 48
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "text": "管理者のトークンでログイン",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 687,
+              "height": 44
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-app-1440.png"
+    },
+    {
+      "name": "connect",
+      "path": "/connect",
+      "width": 1440,
+      "height": 900,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "AIツールとつなぐ — Oathra",
+        "headings": [
+          "いつものAIから、電話の下書きを。",
+          "使うAIツールを選ぶ",
+          "コマンドをコピーして追加",
+          "Oathra にログイン",
+          "下書きの前に、登録を。"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#connect-main",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 24
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Oathra",
+            "href": "/app/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 22,
+              "height": 29
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "アプリへ戻る",
+            "href": "/app/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 14,
+              "height": 44
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "client-claude",
+            "text": "Claude Code",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 594,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "client-chatgpt",
+            "text": "ChatGPT",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 594,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "copy-command",
+            "text": "コマンドをコピー",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 887,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Codeの公式手順",
+            "href": "https://code.claude.com/docs/en/mcp",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 941,
+              "height": 44
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "connect-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 769,
+              "height": 46
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "connect-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 864,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "connect-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 928,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "商品を登録",
+            "href": "/app/#/settings/products",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1205,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "連絡先を登録",
+            "href": "/app/#/contacts",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1205,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "公開のログ検証を試す ↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1318,
+              "height": 44
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-connect-1440.png"
+    },
+    {
+      "name": "managed-root",
+      "path": "/",
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "Oathra",
+        "headings": [
+          "相手の言葉で、完了を確かめる。",
+          "Oathra にログイン"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#main",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 25
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "通話ログの完了判定を試すログイン・インストール不要↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 959,
+              "height": 76
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Code・ChatGPTとつなぐ読取・下書きの権限を選んで接続→",
+            "href": "/connect",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1035,
+              "height": 76
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "managed-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 706,
+              "height": 47
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "managed-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 798,
+              "height": 47
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "managed-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 857,
+              "height": 48
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-390.png"
+    },
+    {
+      "name": "app",
+      "path": "/app/",
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "Oathra — 電話を、任せる。",
+        "headings": [
+          "相手の言葉で、完了を確かめる。",
+          "Oathra にログイン"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#view",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 24
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Oathra",
+            "href": "#/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 13,
+              "height": 29
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "通話ログの完了判定を試すログイン・インストール不要↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 917,
+              "height": 76
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Code・ChatGPTとつなぐ読取・下書きの権限を選んで接続→",
+            "href": "/connect",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 993,
+              "height": 76
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "public-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 594,
+              "height": 46
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "public-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 689,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "public-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 753,
+              "height": 48
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "text": "管理者のトークンでログイン",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 819,
+              "height": 44
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-app-390.png"
+    },
+    {
+      "name": "connect",
+      "path": "/connect",
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "AIツールとつなぐ — Oathra",
+        "headings": [
+          "いつものAIから、電話の下書きを。",
+          "使うAIツールを選ぶ",
+          "コマンドをコピーして追加",
+          "Oathra にログイン",
+          "下書きの前に、登録を。"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#connect-main",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 24
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Oathra",
+            "href": "/app/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 18,
+              "height": 29
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "アプリへ戻る",
+            "href": "/app/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 10,
+              "height": 44
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "client-claude",
+            "text": "Claude Code",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 555,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "client-chatgpt",
+            "text": "ChatGPT",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 555,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "copy-command",
+            "text": "コマンドをコピー",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 870,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Codeの公式手順",
+            "href": "https://code.claude.com/docs/en/mcp",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 924,
+              "height": 44
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "connect-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 1357,
+              "height": 46
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "connect-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 1452,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "connect-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 1516,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "商品を登録",
+            "href": "/app/#/settings/products",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1808,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "連絡先を登録",
+            "href": "/app/#/contacts",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1808,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "公開のログ検証を試す ↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1921,
+              "height": 44
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-connect-390.png"
+    },
+    {
+      "name": "managed-root",
+      "path": "/",
+      "width": 320,
+      "height": 844,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "Oathra",
+        "headings": [
+          "相手の言葉で、完了を確かめる。",
+          "Oathra にログイン"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#main",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 25
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "通話ログの完了判定を試すログイン・インストール不要↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1031,
+              "height": 76
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Code・ChatGPTとつなぐ読取・下書きの権限を選んで接続→",
+            "href": "/connect",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1107,
+              "height": 76
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "managed-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 778,
+              "height": 47
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "managed-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 870,
+              "height": 47
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "managed-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 929,
+              "height": 48
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-320.png"
+    },
+    {
+      "name": "app",
+      "path": "/app/",
+      "width": 320,
+      "height": 844,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "Oathra — 電話を、任せる。",
+        "headings": [
+          "相手の言葉で、完了を確かめる。",
+          "Oathra にログイン"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#view",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 24
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Oathra",
+            "href": "#/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 13,
+              "height": 29
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "通話ログの完了判定を試すログイン・インストール不要↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 993,
+              "height": 76
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Code・ChatGPTとつなぐ読取・下書きの権限を選んで接続→",
+            "href": "/connect",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1069,
+              "height": 76
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "public-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 670,
+              "height": 46
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "public-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 765,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "public-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 829,
+              "height": 48
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "text": "管理者のトークンでログイン",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 895,
+              "height": 44
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-app-320.png"
+    },
+    {
+      "name": "connect",
+      "path": "/connect",
+      "width": 320,
+      "height": 844,
+      "horizontalOverflow": false,
+      "snapshot": {
+        "title": "AIツールとつなぐ — Oathra",
+        "headings": [
+          "いつものAIから、電話の下書きを。",
+          "使うAIツールを選ぶ",
+          "コマンドをコピーして追加",
+          "Oathra にログイン",
+          "下書きの前に、登録を。"
+        ],
+        "controls": [
+          {
+            "tag": "A",
+            "id": "",
+            "text": "本文へ移動",
+            "href": "#connect-main",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 0,
+              "height": 24
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Oathra",
+            "href": "/app/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 18,
+              "height": 29
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "アプリへ戻る",
+            "href": "/app/",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 10,
+              "height": 44
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "client-claude",
+            "text": "Claude Code",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 630,
+              "height": 64
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "client-chatgpt",
+            "text": "ChatGPT",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 630,
+              "height": 64
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "copy-command",
+            "text": "コマンドをコピー",
+            "href": null,
+            "type": "button",
+            "disabled": false,
+            "rect": {
+              "top": 963,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "Claude Codeの公式手順",
+            "href": "https://code.claude.com/docs/en/mcp",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1017,
+              "height": 44
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "connect-email",
+            "text": "",
+            "href": null,
+            "type": "email",
+            "disabled": false,
+            "rect": {
+              "top": 1496,
+              "height": 46
+            }
+          },
+          {
+            "tag": "INPUT",
+            "id": "connect-password",
+            "text": "",
+            "href": null,
+            "type": "password",
+            "disabled": false,
+            "rect": {
+              "top": 1591,
+              "height": 46
+            }
+          },
+          {
+            "tag": "BUTTON",
+            "id": "connect-login-submit",
+            "text": "ログイン",
+            "href": null,
+            "type": "submit",
+            "disabled": false,
+            "rect": {
+              "top": 1655,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "商品を登録",
+            "href": "/app/#/settings/products",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 1972,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "連絡先を登録",
+            "href": "/app/#/contacts",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 2026,
+              "height": 44
+            }
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "text": "公開のログ検証を試す ↗",
+            "href": "https://forifor.github.io/oathra/check.html",
+            "type": null,
+            "disabled": false,
+            "rect": {
+              "top": 2168,
+              "height": 44
+            }
+          }
+        ]
+      },
+      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-connect-320.png"
+    }
+  ],
+  "runtimeExceptions": 0
+}

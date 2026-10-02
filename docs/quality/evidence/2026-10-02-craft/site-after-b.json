@@ -1,0 +1,219 @@
+{
+  "capturedAt": "2026-10-01T17:21:48.929Z",
+  "stage": "after-b",
+  "source": "Public saved Arena negotiation only; no invented data or real phone call.",
+  "checks": [
+    {
+      "name": "ja_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_720_reflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_360_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_recorded_offer_is_incomplete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_recorded_confirmation_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_story_keyboard_operable",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_reduced_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_no_autoplay",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_current_values_show_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_real_raw_record_schema_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_validation_recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_legacy_replay_link",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_existing_lab_and_saved_replay_loaded",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_lab_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_legacy_lab_link",
+      "status": "PASS"
+    },
+    {
+      "name": "en_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_720_reflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_360_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_recorded_offer_is_incomplete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_recorded_confirmation_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_story_keyboard_operable",
+      "status": "PASS"
+    },
+    {
+      "name": "en_reduced_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "en_no_autoplay",
+      "status": "PASS"
+    },
+    {
+      "name": "en_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_current_values_show_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "en_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "en_real_raw_record_schema_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "en_validation_recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "en_legacy_replay_link",
+      "status": "PASS"
+    },
+    {
+      "name": "en_existing_lab_and_saved_replay_loaded",
+      "status": "PASS"
+    },
+    {
+      "name": "en_lab_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_legacy_lab_link",
+      "status": "PASS"
+    },
+    {
+      "name": "no_failed_local_assets",
+      "status": "PASS"
+    },
+    {
+      "name": "no_console_errors",
+      "status": "PASS"
+    },
+    {
+      "name": "no_browser_runtime_exceptions",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-story-complete-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-story-complete-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-availability.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-check-empty.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-check-result.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-check-result-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-check-schema-error.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-ja-lab-replay-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-story-complete-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-story-complete-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-availability.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-check-empty.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-check-result.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-check-result-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-check-schema-error.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-b-en-lab-replay-mobile.png"
+  ],
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+  "platform": "darwin",
+  "ja": {
+    "heading": "完了には、相手の言葉を。"
+  },
+  "en": {
+    "heading": "Evidencebefore complete."
+  },
+  "localNetworkFailures": [],
+  "consoleErrors": 0,
+  "runtimeExceptions": 0,
+  "sourceHashes": {
+    "site/index.html": "000db11310f36a9498847508fe19a19fce81829ab8c1fce64e172e07739cb504",
+    "site/en/index.html": "9ea48e04621312cadff480b02f836741342ff824301b8f7b601e99779bf673a9",
+    "site/check.html": "9405b592a6552dcb25888dcd452733632a7e4b60887b1cf78efb635ba25d0cfb",
+    "site/en/check.html": "d1be298bd9c22b65b36a8462be45503183d6658a012012baa142de538c08b676",
+    "site/check.css": "d10f6554400203c06cce27d478eef46f453d0e0a2cedd9b51d75703126f82a28",
+    "site/craft.css": "483169e340436de2ccbf7b4a339c6e7dbc484118da612769b9bf3065e9bc61a9",
+    "site/src/story.ts": "53f2c0fcbc0700c097a52c132edd3061f781354809a5afc8f49183cbf78b31be",
+    "site/src/check.ts": "6c184ff233f45e913e965564d87987c2236d4f20808851d522f0246728e1b180",
+    "site/lab.html": "8cf4d1b0e98c1c69c1e658bb4c33abf69410c57495b6544d274a547c9dfc876e",
+    "site/en/lab.html": "6dd9e43be7d0d43e06751b0e24229d9a92de37c1fa604f84fba2ea04cdbdd925",
+    "site/legacy.js": "4ec67d45361dff8cbb482c2f1aa74f15f59064ed59617437b40aefa0b13fefcb",
+    "site/mark.png": "350e7ecb2aee2735a14116b3046bc59fdcc4dfc43ad3e983cea4ec45a33ed16a"
+  },
+  "status": "PASS"
+}

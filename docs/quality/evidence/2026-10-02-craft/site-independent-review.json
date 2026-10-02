@@ -1,0 +1,159 @@
+{
+  "reviewer": "public_service_ui (site実装には不参加)",
+  "reviewedAt": "2026-10-01T17:32:12.714Z",
+  "commit": "db56271fd4b6a01ae51f577ed2692c7f89b3b7a2",
+  "sourceHashes": {
+    "site/src/story.ts": "eca5f1cd13a5ac06539abfdf56d4bc14da2b35fb27372c2f37e21e150c3df185",
+    "site/src/check.ts": "6c184ff233f45e913e965564d87987c2236d4f20808851d522f0246728e1b180",
+    "site/craft.css": "653f4f0f5caec476666236b0d1f0cbba4d4e56dde4e6b17115c7b9552e9f2cd4",
+    "site/index.html": "f3b1d7cb5ee2a7c64329580ac86be7775a1b8469e3b5a78ebedf82b6686d84aa",
+    "site/en/index.html": "fbf4b159164dc6ac6e574bda304497dd6d1761b20bdcae0c6a7fd52bc5343e93",
+    "site/check.html": "1d3032e71a19de8f51712ea007f2c88ed60b82dbb276da01c718cf3e1eef1bc2",
+    "site/en/check.html": "42b34b7096bff20493e6333407d4d83cea7a4450caac2ba0d8b5afa74ad926c1",
+    "site/legacy.js": "adc26803a44649aaeaaf2b78f5c3a97eca6993a39ff18298ea7210ad0f74f211",
+    "site/lab.html": "8cf4d1b0e98c1c69c1e658bb4c33abf69410c57495b6544d274a547c9dfc876e",
+    "site/en/lab.html": "6dd9e43be7d0d43e06751b0e24229d9a92de37c1fa604f84fba2ea04cdbdd925",
+    "site/data/recorded-check.json": "92631bb38bd49b95f8960a56a644f17fc13de19b58580cab6e6d8337cc91ce0a"
+  },
+  "scope": "新公開トップ・ブラウザ検証。未公開の電話/購入/登録のE2Eではない",
+  "environment": {
+    "browser": "Safari 27.0.1",
+    "os": "macOS 27.0.1",
+    "ui": "CUA native accessibility and screenshots; desktop and Responsive Design Mode 390x844",
+    "url": "http://127.0.0.1:8768/",
+    "isIndependent": true,
+    "isBlindFirstUse": false
+  },
+  "data": {
+    "source": "既存公開 site/data/recorded-check.json",
+    "kind": "GPT-4o-mini × hotel simulator の保存済み実行記録。実電話ではない",
+    "newSyntheticData": false
+  },
+  "checks": [
+    {
+      "id": "story-and-engine",
+      "status": "PASS",
+      "method": "静的ソース + 実recordのCore再実行 + Safari UI",
+      "observed": "価格提案はcomplete:false、最終確認はcomplete:true。引用・時刻・19900円の表示が公開記録と一致。"
+    },
+    {
+      "id": "check-loaded-record",
+      "status": "PASS",
+      "method": "Safari実操作",
+      "observed": "記録読込→検証→complete:true。日付/人数/喫煙/価格/朝食/確定の6項目と82.2sの最終発言根拠を確認。"
+    },
+    {
+      "id": "repeat-calculation",
+      "status": "PASS",
+      "method": "Safari実操作",
+      "observed": "消去後、画面から保持した同じ公開記録を再入力して同じ判定を確認。"
+    },
+    {
+      "id": "clear",
+      "status": "PASS",
+      "method": "Safari実操作",
+      "observed": "消去で入力・判定・6項目が消え、結果JSON保存がdisabledに戻る。"
+    },
+    {
+      "id": "history-json",
+      "status": "PASS",
+      "method": "Safari実操作",
+      "observed": "証拠履歴とJSONを展開。未確認・更新前も含む旨が表示され、現在値と分けられている。"
+    },
+    {
+      "id": "edit-invalidates",
+      "status": "PASS",
+      "method": "静的レビューのみ",
+      "observed": "input handlerがinvalidateを呼び、output/field/evidence/raw/errorを消去。実際の非空入力の再編集はnative setValue/clipboard制御の不調で未確認。"
+    },
+    {
+      "id": "parse-failure",
+      "status": "PASS",
+      "method": "静的レビューのみ",
+      "observed": "submit開始でinvalidateし、schema/parse失敗は入力値をechoせずalert表示。実操作は本レビュアー未実施。"
+    },
+    {
+      "id": "old-entrypoints",
+      "status": "PASS",
+      "method": "静的レビューのみ",
+      "observed": "従来JA/ENラボ保存と旧主要hash→同言語labのroute維持。ラボの外部イベント送信を避け、操作は未実施。"
+    },
+    {
+      "id": "availability-honesty",
+      "status": "PASS",
+      "method": "Safari UI + ソース",
+      "observed": "ログ検証/SDK利用可能、MCP一般接続先未公開、一般電話/課金未公開が分離され、実電話成功扱いなし。"
+    },
+    {
+      "id": "safari-cta",
+      "status": "PASS",
+      "method": "修正前後のSafari画像目視",
+      "observed": "初回は主CTAが透明/灰背景の白字で見えた。実装担当のappearance:none/background transition除去後にreloadし、トップ/check両方で墨背景・白字を確認。"
+    },
+    {
+      "id": "mobile-result-discovery",
+      "status": "BLOCKED",
+      "method": "390x844 Safari実操作の制約",
+      "observed": "AX submit自動スクロール後は結果が視野内。通常タップでボタンが画面下にある状態の再現はnative scroll不調により未確認。欠陥確定せず。"
+    },
+    {
+      "id": "privacy-external-actions",
+      "status": "PASS",
+      "method": "操作範囲",
+      "observed": "相談送信・動画再生・ラボ操作・電話・購入・登録は未実行。開いたレビュータブを閉じResponsive Design Mode解除。"
+    }
+  ],
+  "engineReplay": [
+    {
+      "step": 0,
+      "status": "incomplete",
+      "complete": false,
+      "missing": [
+        "price",
+        "breakfast",
+        "smoking",
+        "confirmed"
+      ],
+      "fields": {
+        "date": "2026-10-03",
+        "partySize": 2
+      }
+    },
+    {
+      "step": 1,
+      "status": "incomplete",
+      "complete": false,
+      "missing": [
+        "price",
+        "breakfast",
+        "smoking",
+        "confirmed"
+      ],
+      "fields": {
+        "date": "2026-10-03",
+        "partySize": 2
+      }
+    },
+    {
+      "step": 2,
+      "status": "completed",
+      "complete": true,
+      "missing": [],
+      "fields": {
+        "date": "2026-10-03",
+        "partySize": 2,
+        "smoking": false,
+        "price": 19900,
+        "breakfast": true,
+        "confirmed": true
+      }
+    }
+  ],
+  "unresolvedConfirmedP1P2": [],
+  "limitations": [
+    "盲検ではなくソースを読んだ上での独立評価。",
+    "ネイティブCUAスクリーンショットはツール内で目視したが、本JSONには画像ファイルを添付していない。",
+    "360/768/1440等のChrome画像や41項目PASSは実装担当の証拠であり、本独立レビューの実行と混同しない。",
+    "受賞、実ユーザー評価、実機モバイル、支払い/実電話成功の証明ではない。"
+  ]
+}

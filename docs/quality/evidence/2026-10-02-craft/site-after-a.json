@@ -1,0 +1,133 @@
+{
+  "capturedAt": "2026-10-01T17:17:05.366Z",
+  "stage": "after-a",
+  "source": "Public saved Arena negotiation only; no invented data or real phone call.",
+  "checks": [
+    {
+      "name": "ja_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_360_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_recorded_offer_is_incomplete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_recorded_confirmation_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_story_keyboard_operable",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_reduced_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_current_values_show_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "en_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_360_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_recorded_offer_is_incomplete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_recorded_confirmation_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_story_keyboard_operable",
+      "status": "PASS"
+    },
+    {
+      "name": "en_reduced_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "en_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_current_values_show_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "en_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "no_browser_runtime_exceptions",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-story-complete-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-story-complete-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-empty.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-result.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-result-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-story-complete-mobile.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-story-complete-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-empty.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-result.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-result-mobile.png"
+  ],
+  "ja": {
+    "heading": "完了には、相手の言葉を。"
+  },
+  "en": {
+    "heading": "Evidencebefore complete."
+  },
+  "runtimeExceptions": 0,
+  "sourceHashes": {
+    "site/index.html": "4c27bc755f0a77bf78b46d32f25cb948d389dd41b481ace903c49be31d46ce34",
+    "site/en/index.html": "6975519bfee08af59ec0827c7ea8c35ab918563333f1d60f1046bae2f81f5fc4",
+    "site/check.html": "1457a2456560a60ee2bd7fe1e0af71d607484241af45cca5284d86d90f9a2e92",
+    "site/en/check.html": "0dc0d5e9f3cd48d844a3c6422da1997688b1d5b7f9b10fb75d626c3aa44fce78",
+    "site/check.css": "02c53e034cf9b344c9ef53e8fa94cd5e44a7b089201e544a68a70b0392fdd4e7",
+    "site/craft.css": "26bda029a42d984554378489b3b44e77bd279f815914aea5a9569f43f0b93bb4",
+    "site/src/story.ts": "53f2c0fcbc0700c097a52c132edd3061f781354809a5afc8f49183cbf78b31be",
+    "site/src/check.ts": "b38f516d341d26a762ab0fed09cc0fcee529c7143a466dede40f80570594375c"
+  },
+  "status": "PASS"
+}

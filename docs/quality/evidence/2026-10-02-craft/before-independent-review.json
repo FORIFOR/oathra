@@ -1,0 +1,103 @@
+{
+  "reviewedAt": "2026-10-01T17:08:48.234917+00:00",
+  "reviewer": "Independent implementation reviewer; same AI model family, not a human user study",
+  "method": "Six unauthenticated real Chrome screens inspected visually after capture; visible controls and their viewport positions recorded. Prior project/security-review familiarity exists; this is not a blinded first-ever user trial.",
+  "environment": {
+    "origin": "http://127.0.0.1:59140",
+    "node": "v25.2.1",
+    "widths": [
+      1440,
+      390
+    ],
+    "workerStarted": false,
+    "realProviderCredentials": false,
+    "prereleasePaused": true
+  },
+  "evidence": "before-first-use.json",
+  "checks": [
+    {
+      "id": "CRAFT-B01",
+      "method": "Open managed / and /app/ without signing in and inspect visible controls",
+      "expected": "A new developer can understand completion checking and discover a safe next step even while calls are paused",
+      "observed": "Only sign-in and pause explanations are exposed. No visible path to completion checking or AI connection setup. Registration is stopped, so a new visitor has no usable next step.",
+      "status": "FAIL",
+      "priority": "P2",
+      "evidence": [
+        "before-managed-root-1440.png",
+        "before-app-390.png"
+      ],
+      "request": "Add a clear product purpose and safe links to existing completion-check and connection guidance without changing service availability."
+    },
+    {
+      "id": "CRAFT-B02",
+      "method": "Locate MCP URL and Claude command before signing in, compare their vertical positions",
+      "expected": "Setup actions are easy to discover from the connection entry screen",
+      "observed": "MCP URL begins at y1273 desktop / y1394 mobile; Claude copy action begins at y1800 mobile. Long pause and login content dominates the first viewport.",
+      "status": "FAIL",
+      "priority": "P2",
+      "evidence": [
+        "before-connect-1440.png",
+        "before-connect-390.png"
+      ],
+      "request": "Expose setup choice or in-page entry near the introduction and condense repeated service-state wording."
+    },
+    {
+      "id": "CRAFT-B03",
+      "method": "Compare the same logged-out task between managed / and /app/",
+      "expected": "Consistent identity and explanation for the same product",
+      "observed": "Managed / uses a plain round mark and warm flat layout, while /app/ uses the green illustrated mark, cool background and white card. Pause information is repeated above and below the form.",
+      "status": "FAIL",
+      "priority": "P3",
+      "evidence": [
+        "before-managed-root-1440.png",
+        "before-app-1440.png"
+      ],
+      "request": "Unify the mark, shared controls and status hierarchy; retain truthful paused state."
+    },
+    {
+      "id": "CRAFT-B04",
+      "method": "Open /app/ without interaction",
+      "expected": "The visitor can orient before choosing to sign in",
+      "observed": "The email field is focused immediately. The actual mobile on-screen keyboard was not exercised.",
+      "status": "NOT_APPLICABLE",
+      "evidence": [
+        "before-app-390.png"
+      ],
+      "suggestion": "Consider autofocus only after an explicit sign-in choice; do not claim measured keyboard obstruction."
+    },
+    {
+      "id": "CRAFT-B05",
+      "method": "Inspect all six 1440/390 captures and runtime exception count",
+      "expected": "No horizontal clipping or script crash",
+      "observed": "All six views fit horizontally; runtime exception count is zero. Every stored screenshot was opened for visual inspection.",
+      "status": "PASS",
+      "evidence": [
+        "before-first-use.json"
+      ]
+    },
+    {
+      "id": "CRAFT-B06",
+      "method": "Inspect safe metadata after an existing operator session",
+      "expected": "Observe the real authenticated home without creating business data",
+      "observed": "Both widths render without overflow or runtime exceptions. No direct /connect or check.html anchor was found on the home. Private content was not captured; deeper navigation has not been evaluated.",
+      "status": "PASS",
+      "evidence": [
+        "authenticated-entry-observation.json"
+      ]
+    },
+    {
+      "id": "CRAFT-B07",
+      "method": "Attempt eligibility for real sales task verification",
+      "expected": "Use an existing appropriate real sales request through review and results",
+      "observed": "Suitable real sales data and external-action authorization are absent. No fabricated customer, product, conversation or result was created.",
+      "status": "BLOCKED",
+      "evidence": []
+    }
+  ],
+  "limitations": [
+    "Award eligibility and jury assessment are not established by this review.",
+    "No public deployment, phone call, payment or email was executed.",
+    "Before capture stores timestamp and real screenshots; the full dirty-source fingerprint was not captured at that time. Later capture mode now records revision and tracked diff hash.",
+    "Authenticated observations intentionally omit identifying business text and screenshots."
+  ]
+}

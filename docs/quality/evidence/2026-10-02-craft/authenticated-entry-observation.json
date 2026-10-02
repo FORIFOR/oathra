@@ -1,0 +1,32 @@
+{
+  "capturedAt": "2026-10-01T17:07:16.314Z",
+  "method": "Existing operator session only; no business changes",
+  "checks": [
+    {
+      "width": 1440,
+      "horizontalOverflow": false,
+      "visibleConnections": 0,
+      "visibleCheckEntrances": 0,
+      "activeTab": "",
+      "hasPhoneReadyNotice": false,
+      "hasPausedNotice": true,
+      "hasProductSetup": false,
+      "hasContactSetup": true,
+      "visibleInputCount": 0
+    },
+    {
+      "width": 390,
+      "horizontalOverflow": false,
+      "visibleConnections": 0,
+      "visibleCheckEntrances": 0,
+      "activeTab": "",
+      "hasPhoneReadyNotice": false,
+      "hasPausedNotice": true,
+      "hasProductSetup": false,
+      "hasContactSetup": true,
+      "visibleInputCount": 0
+    }
+  ],
+  "screenshots": "Not captured: authenticated home may contain private existing business records; unauthenticated six-view evidence is available separately.",
+  "runtimeExceptions": 0
+}

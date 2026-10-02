@@ -1,0 +1,69 @@
+{
+  "finalizedAt": "2026-10-01T17:37:44.964Z",
+  "scope": "Public JA/EN site and checker; no deployment, real phone, payment or inquiry submission.",
+  "sourceHashes": {
+    "site/index.html": "f3b1d7cb5ee2a7c64329580ac86be7775a1b8469e3b5a78ebedf82b6686d84aa",
+    "site/en/index.html": "fbf4b159164dc6ac6e574bda304497dd6d1761b20bdcae0c6a7fd52bc5343e93",
+    "site/check.html": "1d3032e71a19de8f51712ea007f2c88ed60b82dbb276da01c718cf3e1eef1bc2",
+    "site/en/check.html": "42b34b7096bff20493e6333407d4d83cea7a4450caac2ba0d8b5afa74ad926c1",
+    "site/src/check.ts": "b12b2c71f0be0fe6dc6cef025ad944668d51f4f557efca4a5ae4e304b4a92717",
+    "site/check.js": "f36e7255c521f88d2f7b1eb25a9bbc67a86e0229f1d6efaa916fdce324394c1c",
+    "site/src/story.ts": "eca5f1cd13a5ac06539abfdf56d4bc14da2b35fb27372c2f37e21e150c3df185",
+    "site/story.js": "b632231695286efbf9cd56db24c1ef6d9262cea4745ae579d7e9f4d484e9b7c3",
+    "site/craft.css": "653f4f0f5caec476666236b0d1f0cbba4d4e56dde4e6b17115c7b9552e9f2cd4",
+    "site/check.css": "a573f151d3bfab5e4c7420ac649c0a1dfe93344461c47f05268ae17629d703d3",
+    "site/legacy.js": "adc26803a44649aaeaaf2b78f5c3a97eca6993a39ff18298ea7210ad0f74f211",
+    "site/lab.html": "8cf4d1b0e98c1c69c1e658bb4c33abf69410c57495b6544d274a547c9dfc876e",
+    "site/en/lab.html": "6dd9e43be7d0d43e06751b0e24229d9a92de37c1fa604f84fba2ea04cdbdd925",
+    "site/lab.css": "b7527267293d97371b1cd9d7f6090d75d7d419af7698dc453d4a6594bd5af83c",
+    "site/mark.png": "350e7ecb2aee2735a14116b3046bc59fdcc4dfc43ad3e983cea4ec45a33ed16a",
+    "site/portfolio.js": "01de6f7ff239d2289819f9ccc4848e05ec6e508bdd7c27beabed38c8f8f086a0",
+    "site/data/recorded-check.json": "92631bb38bd49b95f8960a56a644f17fc13de19b58580cab6e6d8337cc91ce0a",
+    "site/data/call-gpt4o-mini.json": "574ebe46b07800e2b1f4f5de19b522d6f6c2adc2a2af6eb6fad509142bdb0ec2",
+    "scripts/build-site.mjs": "a77b36f09df6a3dba9ef4d4de6efbe7b12cf202fd64f38a459663cb9629e7921",
+    "scripts/ui/site-craft.mjs": "062ae46ae235038564b3fa8ec9c011e37fcd678a4f797b1fe4f7c92c5d2a1518",
+    "scripts/ui/site-links.mjs": "8ec75b2254ed038f1ab2be60fe354a533b7ec0d599f01627154a2762d7382e11",
+    "scripts/ui/site-local-analytics.mjs": "7284adc8c37e59854d3eebaad56b834b1e16d5622f117788e40f8499ea9c5f8f"
+  },
+  "evidence": [
+    {
+      "file": "docs/quality/evidence/2026-10-02-craft/site-after-c.json",
+      "sha256": "0ed43139699e16b456e6afd892640a396918f0d6583e62da3e4160c2beb54796"
+    },
+    {
+      "file": "docs/quality/evidence/2026-10-02-craft/site-legacy-links.json",
+      "sha256": "0409c6ce474abe0dc26a8de7a0f1a16b71e7623298402cee23b34d89afcc1b7e"
+    },
+    {
+      "file": "docs/quality/evidence/2026-10-02-craft/site-local-analytics.json",
+      "sha256": "5899a4e1c2fdf8019ba15c7613b0e8bd61ca3a8689f6286c84cc61a6d5f3c724"
+    },
+    {
+      "file": "docs/quality/evidence/2026-10-02-craft/site-independent-review.json",
+      "sha256": "1f84e3589fd11867e03c42f454111406cd817aa3fea125d9dc31dfa5c811735a"
+    },
+    {
+      "file": "docs/quality/evidence/2026-10-02-craft/site-mobile-result-after.json",
+      "sha256": "e4e086d3a27c62687b86d568a3591a96f5044c4c1cd20679e83046852c373eda"
+    }
+  ],
+  "review": {
+    "file": "docs/quality/evidence/2026-10-02-craft/site-review.md",
+    "sha256": "6cff2c019419de68dda0920c26b5035728ca49ff70cbf2b5735fdc2fef0512cd"
+  },
+  "validation": {
+    "build": "pnpm build:site PASS",
+    "types": "strict + exactOptionalPropertyTypes + noUncheckedIndexedAccess PASS",
+    "visualAndFunctional": "49 checks PASS at after-c; post-c mobile change independently checked in both languages",
+    "legacyLinks": "41 checks PASS",
+    "localAnalytics": "2 language flows PASS; 0 events requests",
+    "sourceCoverage": "Current mobile checker files match root after hashes; legacy route matches focused link checks; portfolio matches no-local-events observation; final home/story/styles/lab/logo match after-c hashes."
+  },
+  "limits": [
+    "No award or jury evaluation",
+    "No production deployment or provider E2E",
+    "No human novice study",
+    "No physical mobile or assistive technology coverage",
+    "Spoken-lines mobile reveal follows common show() statically; JSON path tested with a real pointer"
+  ]
+}
