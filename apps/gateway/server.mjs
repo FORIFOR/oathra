@@ -54,7 +54,11 @@ export function configuration(env=process.env){
     let restaurant=null;
     if(env.OATHRA_RESTAURANT_JSON){try{restaurant=parseDeskConfig(JSON.parse(env.OATHRA_RESTAURANT_JSON))}catch{throw new Fault(500,'configure_restaurant_json')}}
     const name=String(env.OATHRA_INBOUND_NAME??'').trim();assert(restaurant||(name.length>0&&name.length<=40&&!/[\d@<>{}]/.test(name)),'configure_inbound_name',500);
-    inbound={hours:hours(env,'OATHRA_INBOUND_HOURS',null),owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
+    // A business line answers as the business, and only from its own short answers (OATHRA_INBOUND_GUIDANCE_JSON).
+    let guidance=[];
+    if(env.OATHRA_INBOUND_GUIDANCE_JSON){try{guidance=JSON.parse(env.OATHRA_INBOUND_GUIDANCE_JSON)}catch{throw new Fault(500,'configure_inbound_guidance_json')}
+      assert(Array.isArray(guidance)&&guidance.length<=30&&guidance.every(g=>g&&typeof g.q==='string'&&typeof g.a==='string'&&g.q.trim()&&g.a.trim()&&g.q.length<=80&&g.a.length<=300&&Object.keys(g).every(k=>['q','a'].includes(k))),'configure_inbound_guidance_json',500);}
+    inbound={business:env.OATHRA_INBOUND_BUSINESS==='true',guidance,hours:hours(env,'OATHRA_INBOUND_HOURS',null),owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
   }
   // Metered billing prices one voice model per minute (billing.mjs), so a second engine is only offered under the fixed per-call policy.
   const geminiReady=!!env.GEMINI_API_KEY&&billing.policy!==METERED;

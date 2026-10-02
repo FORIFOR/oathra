@@ -163,14 +163,14 @@ export class Phone {
     const ownerId=ambiguous?null:reception?cfg.owner:earlier?.owner??cfg?.owner,owner=ownerId&&this.config.users.find(u=>u.id===ownerId);
     // The owner's own settings (設定 › かけられた時の設定): the name to answer for, the way to answer, the hours.
     const pref=owner&&!reception?this.service.account(owner).inbound??null:null;
-    const onBehalf=reception?cfg.restaurant.name:earlier?.phoneRequest?.callerName??(earlier?null:pref?.name??this.service.account(owner||{id:''}).callerName??cfg?.name);
+    const onBehalf=reception?cfg.restaurant.name:cfg?.business?cfg.name:earlier?.phoneRequest?.callerName??(earlier?null:pref?.name??this.service.account(owner||{id:''}).callerName??cfg?.name);
     const announce=reason=>{
       if(known)this.store.audit(ownerId??'system','call.inbound_not_answered',callSid,{reason,from:this.store.phoneRef(from),earlier:earlier?.id??null});
       const token=random();if(known&&owner)this.store.setKey('inbound-optout',token,this.store.seal({team:owner.team,owner:owner.id,phone:from}),3600_000);
       const who=earlier?(earlier.phoneRequest?.callerName?`先ほどのお電話は、${earlier.phoneRequest.callerName}さんのご依頼で、AIが代わりにおかけしたものです。`:'先ほどのお電話は、お知り合いの方のご依頼で、AIが代わりにおかけしたものです。'):'';
       const stop=known&&owner?`<Gather numDigits="1" timeout="6" action="${xml(this.config.publicUrl+'/hooks/twilio/inbound-optout/'+token)}" method="POST"><Say language="ja-JP" voice="${NOTICE_VOICE}">今後、この番号からのお電話を希望されない場合は、数字の2を押してください。</Say></Gather>`:'';
-      // A shop's own line is not "a number for outgoing calls": say whose line it is and when to try again.
-      if(reception)return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。${xml(cfg.restaurant.name)}です。${reason==='outside_business_hours'?'ただいまの時間は、お電話の受付時間外です。':'ただいま、お電話をお受けできません。'}おそれいりますが、時間をおいて、おかけ直しください。</Say>${stop}<Hangup/></Response>`;
+      // A shop's or a company's own line is not "a number for outgoing calls": say whose line it is and when to try again.
+      if(reception||cfg?.business)return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。${xml(reception?cfg.restaurant.name:cfg.name)}です。${reason==='outside_business_hours'?'ただいまの時間は、お電話の受付時間外です。':'ただいま、お電話をお受けできません。'}おそれいりますが、時間をおいて、おかけ直しください。</Say>${stop}<Hangup/></Response>`;
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。こちらは、AIによる代理電話サービス、${xml(this.env.OATHRA_BUSINESS_NAME??'Oathra')}の発信用の番号です。${xml(who)}ただいま、この番号ではお電話をお受けできません。</Say>${stop}<Hangup/></Response>`;
     };
     if(!known)return announce('unknown_caller');
@@ -205,7 +205,7 @@ export class Phone {
         const now=this.store.now(),token=random();
         const mission={id:randomUUID(),owner:owner.id,team:owner.team,revision:1,status:'QUEUED',kind:'phone-request',direction:'inbound',
           phoneRequest:{schemaVersion:1,kind:'oathra.phone-request',phone:from,name,instruction:reception?'着信。店の予約受付として応対し、席の予約を台帳に記録します。':earlier?'着信（こちらからの電話への折り返し）。用件を聞き取って伝えます。':'着信。用件を聞き取って伝えます。'},
-          inbound:{callSid,token,ownerName:onBehalf,...(reception?{reception:true}:{}),...(context&&!reception?{context}:{}),...(earlier&&!reception?{earlier:earlier.id}:{})},
+          inbound:{callSid,token,ownerName:onBehalf,...(reception?{reception:true}:{}),...(cfg.business&&!reception?{business:true}:{}),...(context&&!reception?{context}:{}),...(earlier&&!reception?{earlier:earlier.id}:{})},
           target:{name,phone:from},request:reception?'着信（予約受付）の応対':earlier?'着信（折り返し）の応対':'着信の応対',goal:reception?'phone.reception':'phone.inbound',product:null,candidateSlots:[],testOnMe:false,mode:'live',
           maxSeconds:cfg.maxSeconds,maxUsd:this.config.maxCallUsd,estimatedMaximumUsd:Math.min(this.config.maxCallUsd,quote.amount*(quote.creditUsd??0)),creditQuote:quote,
           callerId:this.config.callerId,callPluginIdentity:this.config.callPluginIdentity??null,createdAt:now,approvedAt:now,approvalExpiresAt:now+60_000,origin:null,result:null};
@@ -284,7 +284,7 @@ export class Phone {
     const restaurant=m.inbound?.reception?this.config.inbound?.restaurant:null;assert(!m.inbound?.reception||restaurant,'restaurant_not_configured',409);
     const contract=restaurant?defineRestaurantReception({restaurantName:restaurant.name,callerPhone:m.target.phone,callerName:m.target.name,today:tokyoDate(this.store.now()),seatings:Object.keys(restaurant.slots).sort(),maxParty:restaurant.maxParty,
         ...(restaurant.closedWeekdays?.length||restaurant.closedDates?.length?{closedNote:[restaurant.closedWeekdays?.length?'毎週'+restaurant.closedWeekdays.map(d=>'日月火水木金土'[d]+'曜').join('・'):'',...(restaurant.closedDates??[]).filter(d=>d>=tokyoDate(this.store.now())).slice(0,6)].filter(Boolean).join('、')}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
-      :m.direction==='inbound'?definePhoneInbound({ownerName:m.inbound.ownerName,callerPhone:m.target.phone,callerName:m.target.name,...(m.inbound.context?{context:m.inbound.context}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
+      :m.direction==='inbound'?definePhoneInbound({ownerName:m.inbound.ownerName,callerPhone:m.target.phone,callerName:m.target.name,...(m.inbound.context?{context:m.inbound.context}:{}),...(m.inbound.business?{business:true,guidance:this.config.inbound?.guidance??[]}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
       :m.kind==='phone-request'?definePhoneRequest(m.phoneRequest,{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd}):defineCall({goal:`sales.${m.goal}`,target:{phone:m.target.phone,name:m.target.name},language:'ja',
       input:{ request:m.request,product_name:m.product.name,reviewed_facts:m.product.facts,candidate_slots:m.candidateSlots,
         policy:SALES_CALL_POLICY,

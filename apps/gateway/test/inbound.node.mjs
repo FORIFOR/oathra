@@ -186,3 +186,15 @@ test('a real sales call outside the calling hours is refused; a call to your own
  assert.throws(()=>f.service.checkPolicy(u,mission),e=>e.code!=='outside_calling_hours');
  assert.throws(()=>f.service.checkPolicy(u,{...mission,kind:'phone-request'}),/outside_calling_hours/);
 }));
+
+test('a business line answers as the business, carries only its own answers, and never calls itself a number for outgoing calls',async()=>{
+ const guidance=JSON.stringify([{q:'営業時間',a:'平日の9時から18時です。'}]),extra={OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_GUIDANCE_JSON:guidance};
+ await using(f=>{
+  assert.deepEqual([f.config.inbound.business,f.config.inbound.guidance],[true,[{q:'営業時間',a:'平日の9時から18時です。'}]]);
+  const {twiml}=f.ring('+819011112222');assert.ok(answered(twiml));
+  const m=f.store.list('mission').find(x=>x.direction==='inbound');assert.deepEqual([m.inbound.ownerName,m.inbound.business],['丸山商事',true]);
+ },{extra})();
+ await using(f=>{const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/丸山商事です。ただいまの時間は、お電話の受付時間外です。/);assert.doesNotMatch(twiml,/発信用の番号/);},{extra:{...extra,OATHRA_INBOUND_HOURS:closed}})();
+ for(const bad of ['{','[{"q":"a"}]','[{"q":"","a":"x"}]',JSON.stringify(Array(31).fill({q:'q',a:'a'})),'[{"q":"q","a":"a","run":"x"}]'])
+  assert.throws(()=>setup({extra:{...extra,OATHRA_INBOUND_GUIDANCE_JSON:bad}}),/configure_inbound_guidance_json/,bad);
+});
