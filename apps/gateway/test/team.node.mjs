@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Store } from '../lib/store.mjs';
 import { Service } from '../lib/service.mjs';
 import { hash } from '../lib/security.mjs';
-import { teamCalls, teamRecord, teamCallsCsv, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
+import { teamCalls, teamRecord, teamCallsCsv, teamSummary, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
 import { createGateway } from '../server.mjs';
 const now=Date.parse('2026-10-02T10:00:00+09:00');
 function fixture(){
@@ -89,4 +89,15 @@ test('the routes answer over HTTP with the right types and refusals',using(async
     const imported=await fetch(base+'/v1/contacts/import',{method:'POST',headers:{authorization:'Bearer staff-token','content-type':'application/json'},body:JSON.stringify({contacts:[{name:'山田',phone:'090-1234-5678'}]})});
     assert.equal(imported.status,200);assert.equal((await imported.json()).created,1);
   }finally{await app.close();}
+}));
+
+test('the summary counts the team’s own calls by day, and the answer rate only over calls where it is known',using(f=>{
+  f.call('staff',{answered:true,status:'COMPLETED',billing:{carrier:{durationSeconds:60}}});f.call('staff',{answered:false,attention:{level:'emergency',signals:[]}});
+  f.call('boss',{direction:'inbound',answered:null,handoff:{status:'COMPLETED'}});f.call('boss',{answered:true,createdAt:now-3*86400_000,status:'DECLINED'});
+  f.call('boss',{createdAt:now-30*86400_000});f.call('rival',{answered:true});
+  const s=teamSummary(f.service,f.by('boss'));
+  assert.deepEqual(s.total,{calls:4,outbound:3,inbound:1,answered:2,unanswered:1,completed:1,declined:1,failed:0,unknown:0,attention:1,emergency:1,transferred:1,seconds:60,answerRatePercent:66.7});
+  assert.deepEqual(s.byDay.map(d=>[d.date,d.calls]),[['2026-09-29',1],['2026-10-02',3]]);
+  assert.equal(teamSummary(f.service,f.by('boss'),90).total.calls,5);
+  assert.equal(code(()=>teamSummary(f.service,f.by('staff'))),'supervisor_required');assert.equal(code(()=>teamSummary(f.service,f.by('boss'),0)),'invalid_days');
 }));

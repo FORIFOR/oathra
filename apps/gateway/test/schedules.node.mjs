@@ -46,6 +46,7 @@ test('a schedule needs an explicit approval, a saved contact, an end date, and c
   assert.equal(code(()=>f.create({retries:{count:4,minutes:30}})),'invalid_schedule_retries');
   assert.equal(code(()=>f.create({extra:true})),'invalid_schedule');
   assert.equal(code(()=>f.schedules.create(f.config.users[1],{request:f.request,times:['09:00'],until:new Date(start+86400_000).toISOString(),acknowledged:true},'viewer-key-1')),'read_only_account');
+  f.store.put('contact',{...f.contact,basis:''});assert.equal(code(()=>f.create()),'schedule_contact_basis_required');f.store.put('contact',f.contact);
   f.store.suppress('home',RESIDENT,'transcript');assert.equal(code(()=>f.create()),'recipient_suppressed');
   assert.equal(f.store.list('schedule').length,0);
 }));

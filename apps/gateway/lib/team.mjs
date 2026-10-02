@@ -38,6 +38,29 @@ export function teamRecord(service, u, id) {
   return { ...phoneRecord(service, m), owner: m.owner, attention: m.attention ?? null, checkIn: m.result?.checkIn ?? null, answered: typeof m.answered === 'boolean' ? m.answered : null };
 }
 
+/** Counts for the last `days` days in Japan time: how many calls, how many were answered, how they ended, how many need a look. */
+export function teamSummary(service, u, days = 7) {
+  supervisor(u); assert(Number.isInteger(days) && days >= 1 && days <= 90, 'invalid_days');
+  const day = ms => new Date(ms + 9 * 3600_000).toISOString().slice(0, 10), since = service.store.now() - days * 86400_000;
+  const empty = () => ({ calls: 0, outbound: 0, inbound: 0, answered: 0, unanswered: 0, completed: 0, declined: 0, failed: 0, unknown: 0, attention: 0, emergency: 0, transferred: 0, seconds: 0 });
+  const total = empty(), byDay = {};
+  for (const m of teamMissions(service, u)) {
+    if (m.createdAt < since) continue;
+    const row = callRow(m), bucket = byDay[day(m.createdAt)] ??= empty();
+    for (const t of [total, bucket]) {
+      t.calls++; t[row.direction]++;
+      if (row.answered === true) t.answered++; else if (row.answered === false) t.unanswered++;
+      if (m.status === 'COMPLETED') t.completed++; else if (m.status === 'DECLINED') t.declined++; else if (m.status === 'FAILED') t.failed++; else if (m.status === 'UNKNOWN') t.unknown++;
+      if (row.attention) t.attention++; if (row.attention === 'emergency') t.emergency++;
+      if (m.handoff?.status) t.transferred++;
+      t.seconds += row.durationSeconds ?? 0;
+    }
+  }
+  // Of the calls where it is known whether anyone picked up.
+  const rate = t => t.answered + t.unanswered ? Math.round(t.answered / (t.answered + t.unanswered) * 1000) / 10 : null;
+  return { team: u.team, days, total: { ...total, answerRatePercent: rate(total) }, byDay: Object.keys(byDay).sort().map(date => ({ date, ...byDay[date], answerRatePercent: rate(byDay[date]) })) };
+}
+
 // A cell that starts with = + - @ (or a tab/CR) would run as a formula when the file is opened in a spreadsheet.
 const cell = value => { const s = String(value ?? ''), safe = /^[=+\-@\t\r]/.test(s) ? "'" + s : s; return /[",\r\n]/.test(safe) ? '"' + safe.replaceAll('"', '""') + '"' : safe; };
 const when = iso => iso ? new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso)) : '';

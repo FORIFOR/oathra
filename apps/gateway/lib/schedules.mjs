@@ -35,6 +35,8 @@ export class Schedules {
       assert(!request.task, 'schedule_cannot_reserve');
       const contact = this.store.list('contact', owner.id).find(c => c.phone === request.phone);
       assert(contact, 'schedule_recipient_must_be_contact');
+      // A call that repeats needs it written down why this person may be called, and who agreed (the contact's 根拠).
+      assert(contact.basis?.trim(), 'schedule_contact_basis_required');
       assert(!this.store.suppressed(owner.team, request.phone), 'recipient_suppressed', 403);
       const times = input.times;
       assert(Array.isArray(times) && times.length >= 1 && times.length <= 4 && new Set(times).size === times.length && times.every(t => typeof t === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t)), 'invalid_schedule_times');
