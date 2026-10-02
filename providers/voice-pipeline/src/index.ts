@@ -51,6 +51,7 @@ class PipelineVoiceSession implements VoiceSession {
   private stt: LiveSTTSession | undefined;
   private readonly language: Language;
   private closed = false;
+  private sttLost = false;
   // STT segmenting
   private firstAudioMs: number | undefined;
   private segmentStartMs: number | undefined;
@@ -136,6 +137,14 @@ class PipelineVoiceSession implements VoiceSession {
         break;
       case "error":
         this.emit({ type: "error", message: e.message, fatal: false });
+        break;
+      case "close":
+        // We closed it ourselves at the end of the call. Otherwise recognition is gone and the agent would go on
+        // talking without hearing a word: that is the end of the call, not a hiccup.
+        if (this.closed || this.sttLost) break;
+        this.sttLost = true;
+        this.stopSending = true;
+        this.emit({ type: "error", message: `speech recognition closed during the call (${e.code}${e.reason ? ` ${e.reason}` : ""})`, fatal: true, code: "stt_closed" });
         break;
       default:
         break;

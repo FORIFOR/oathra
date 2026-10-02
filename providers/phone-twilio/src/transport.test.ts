@@ -7,6 +7,8 @@ import { join } from "node:path";
 import { mulawSilence } from "@oathra/audio-kit";
 import type { CarrierEvent } from "@oathra/phone";
 import { MULAW_8K } from "@oathra/voice";
+import { OutputQueue, type VoiceEngine, type VoiceOutput } from "@oathra/voice";
+import { PhoneTransport } from "@oathra/phone";
 import { TwilioDirectTransport } from "./transport.js";
 import { defineCall } from "@oathra/contract";
 
@@ -138,5 +140,28 @@ describe("a call Twilio ends before the media stream connects", () => {
     expect((first as { message: string }).message).toContain("before the media stream connected");
     expect(Date.now() - started).toBeLessThan(3000);
     await session.hangup().catch(() => undefined);
+  });
+});
+
+describe("Twilio direct: the notice is the carrier's alone", () => {
+  it("the bridge adds nothing to what Twilio says before the stream", async () => {
+    const twiml: string[] = [];
+    const fetchImpl = (async (_url: string, init: RequestInit) => { const t = (init.body as URLSearchParams).get("Twiml"); if (t) twiml.push(t); return new Response(JSON.stringify({ sid: "CA1" }), { status: 201 }); }) as unknown as typeof fetch;
+    const carrier = new TwilioDirectTransport({ accountSid: "AC", authToken: "t", from: "+10000000000", publicWsUrl: "wss://example.test", fetchImpl, port: PORT + 6 });
+    expect(carrier.playsNotice).toBe(true);
+    const said: string[] = [];
+    const out = new OutputQueue<VoiceOutput>();
+    const engine: VoiceEngine = {
+      id: "fake-pipeline", label: "Fake pipeline", speaksItself: false, nativeAudio: MULAW_8K, requires: [],
+      start: async () => ({ output: out, input() {}, async speak(text: string) { said.push(text); return { startMs: 0, endMs: 1, interrupted: false }; }, interrupt() {}, async close() { out.close(); }, now: () => 0 }),
+    };
+    const recordDir = mkdtempSync(join(tmpdir(), "oathra-notice-bridge-"));
+    const session = await new PhoneTransport(carrier, engine, { recordDir }).connect({ phone: "+818000000000" }, { language: "ja", contract: defineCall({ goal: "chat.casual" }) });
+    await session.speak({ text: "もしもし。", language: "ja" });
+    expect(said).toEqual(["もしもし。"]);
+    expect(twiml[0]!.split("この通話は録音されています。")).toHaveLength(2);
+    expect(twiml[0]).not.toContain("記録");
+    await session.hangup();
+    rmSync(recordDir, { recursive: true, force: true });
   });
 });
