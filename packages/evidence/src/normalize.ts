@@ -181,7 +181,7 @@ export function parseDates(text: string, now: Date, lang: Language = "ja"): Date
 
   // Day-only ("14日"): the next occurrence of that day-of-month. Durations
   // ("3日間", "2日後") and counters are excluded.
-  for (const m of s.matchAll(/(?<![\d月])(\d{1,2})日(?![間後前以\d]|ほど|程|くらい|ぐらい|位)/g)) {
+  for (const m of s.matchAll(/(?<![\d月])(\d{1,2})日(?![間後前以]|\d(?!\d?(?:時|[:：]\d))|ほど|程|くらい|ぐらい|位)/g)) {
     const day = Number(m[1]);
     if (day < 1 || day > 31) continue;
     if (out.some((o) => (m.index ?? 0) >= o.index && (m.index ?? 0) < o.index + o.span.length)) continue;
@@ -195,6 +195,15 @@ export function parseDates(text: string, now: Date, lang: Language = "ja"): Date
       }
     }
     out.push({ value: `${year}-${pad2(month)}-${pad2(day)}`, span: m[0], index: m.index ?? 0 });
+  }
+
+  // 「来週火曜日」「再来週の金曜」「今週木曜日」: a weekday in a named week (weeks run Monday to Sunday), anchored on `now`.
+  // A bare weekday (「火曜」) is not a date on its own; the engine only checks it against the date on the table.
+  for (const m of s.matchAll(/(今週|来週|再来週)の?([月火水木金土日])曜日?/g)) {
+    const weeks = m[1] === "今週" ? 0 : m[1] === "来週" ? 1 : 2;
+    const target = "月火水木金土日".indexOf(m[2]!); // 0 = Monday
+    const today = (now.getDay() + 6) % 7;
+    out.push({ value: isoDate(addDays(now, weeks * 7 + target - today)), span: m[0], index: m.index ?? 0 });
   }
 
   const relative: Array<[RegExp, number]> = [
