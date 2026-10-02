@@ -28,7 +28,19 @@ const SHAPES: RegExp[] = [
 const ABSENT = /(?:^|[。、!?\s]|はい、?)(?:ただいま|現在|あいにく)(?:、)?(?:留守にして(?:おります|います)|近くにおりません|不在にしております[^。]{0,3}。?[^。]{0,4}(?:ピー|発信音|合図)|電話に出(?:ることができません|られません))|^(?:ただいま)?電話に出ることができません|(?:ため|ので|により|につき)、?(?:お)?電話に出(?:ることができません|られません)/;
 // A person quoting an announcement: 「…って言えばいいの？」「…って今かけ直そうとしてた」
 const QUOTED = /^[^。、]{0,10}(?:って(?:言|いう|いえ|今|流れ|聞こえ|出|なに|何)|と(?:言|いう(?!音|発信音|はっしんおん|合図)|いえば|流れ|聞こえ))|^[^。]{0,12}(?:って|と)[^。]*(?:言われ|言って|言う|流れ|聞こえ|アナウンス)/;
-const ENGLISH = /away from (?:my|the) phone|leave your name|enter your|pound key|wait time|thank you for your patience|after the beep|voice ?mail|leave (?:a|your)(?: brief)? message|after the (?:tone|beep)|at the tone|record your message|mailbox|(?:person|party|number|customer|subscriber)[a-z ]{0,30} is (?:not available|unavailable)|not in service|no longer in service|disconnected|(?:cannot|can't|unable to) take your call|forwarded to|automated|press (?:\d|the|pound|star|hash)|(?:currently|now) closed|office (?:is|hours)|business hours|please (?:hold|stay on the line|hang up|try)|your call is important|all (?:of )?our (?:agents|operators|representatives)|try (?:your call |again )later/i;
+const ENGLISH = /you(?:'ve| have) reached|press (?:one|two|three|four|five|six|seven|eight|nine|zero)|cannot be completed|check the number|to hear these options|(?:we|i) can(?:'|no)t come to the phone|away from (?:my|the) phone|leave your name|enter your|pound key|wait time|thank you for your patience|after the beep|voice ?mail|leave (?:a|your)(?: brief)? message|after the (?:tone|beep)|at the tone|record your message|mailbox|(?:person|party|number|customer|subscriber)[a-z ]{0,30} is (?:not available|unavailable)|not in service|no longer in service|disconnected|(?:cannot|can't|unable to) take your call|forwarded to|automated|press (?:\d|the|pound|star|hash)|(?:currently|now) closed|office (?:is|hours)|business hours|please (?:hold|stay on the line|hang up|try)|your call is important|all (?:of )?our (?:agents|operators|representatives)|try (?:your call |again )later/i;
+
+// --- The shape of an announcement, for the ones no list knows. ----------------------------------------------------
+// A person in conversation: reporting what a recording said, explaining, asking, speaking for themselves.
+const CONVERSATION = /言われ|って(?:言|聞こえ|流れ|ばっかり|ばかり)|と(?:流れ|聞こえ|言って|言われ)|「[^」]*」|でしょ[、。?？]|でしょ$|分かって|わかって|(?:なん|ん)ですけど|ですけど、|私が|わたしが|たまたま|つながら(?:ん|ない)(?:の|ん)|(?:ん|の)です[よね]?。?$|のよ。?$|かしら|[?？]\s*$|どちら様|どなた/;
+// Speaking as or about a particular person, or to the caller as one person to another.
+const PERSONAL = /承り|受付の[一-龠]|担当の[一-龠]|私|わたくし|わたし|うち|主人|母|父|息子|娘|[一-龠]{1,4}は(?:ただいま|本日|今|あいにく)|もしもし|あ、|[ねよ][。、]|[ねよ]$|です(?:が|けど)|ですか|ますか|でしょうか|少々お待ち/;
+const OPENER = /^(?:おかけになった|お客様|こちらは|この(?:お)?電話は|ただいま|本日|現在|お電話ありがとう|おでんわありがとう)/;
+const REGISTER = /おります|いたします|いただ(?:き|い)|ください|ございます|できません|かねます|されます|願います|申し上げ/;
+// An instruction or a status about the call itself.
+const CALLING = /伝言|メッセージ|お預かり|応答|お知らせ|放送|おかけ直し|かけ直し|お待ち|押して|発信音|営業時間|受付時間|診療時間|つなが|混み合|留守|不在|出られ|出ることが|通話|接続|番号|着信|圏外|電源|録音|休み|休業|休診|時間外|自動音声|案内|転送|じどうおんせい|じかんがい|おかけなおし|おまち|はっしんおん|えいぎょうじかん|るす/;
+// 「たけしです。いま電話に出られないので、メッセージお願いします。」: a name, an absence and what to leave. The name alone is a person.
+const GREETING = /^(?:はい、?|もしもし、?)?[^。、]{1,10}(?:です|やけど|ですたい|じゃけど)[。、][^。]*(?:出られ|留守|不在|おりません|おらん|出かけ)[^。]*。?[^。]*(?:メッセージ|伝言|ご用件|用件|用事|ピー|発信音)/;
 
 /** True when a line the other end said is a voicemail greeting, a menu, a queue or a network announcement. */
 export function isMachineGreeting(text: string): boolean {
@@ -36,6 +48,10 @@ export function isMachineGreeting(text: string): boolean {
   if (!line) return false;
   // English announcements are judged only when the line is English; 「社長 is not available today」 is a person.
   if (/^[\x20-\x7e]+$/.test(line)) return ENGLISH.test(line);
+  if (GREETING.test(line)) return true;
+  // Someone telling what a recording said is a person, whatever words of the recording they repeat.
+  if (CONVERSATION.test(line)) return false;
+  if ((OPENER.test(line) || REGISTER.test(line)) && CALLING.test(line) && !PERSONAL.test(line)) return true;
   for (const re of [...SHAPES, ABSENT]) {
     // Every place the shape occurs is tried: one quoted phrase does not hide an instruction later in the line.
     for (const match of line.matchAll(new RegExp(re.source, re.flags.includes("g") ? re.flags : `${re.flags}g`))) {
