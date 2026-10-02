@@ -21,8 +21,10 @@ export type Claim = {
   ambiguous?: boolean;
 };
 
+// 「問題ありません」「間違いございません」「相違ありません」「差し支えありません」 are agreements in negative form (the allow-list
+// in shape.ts); every other 「…ありません/ございません」 is a refusal.
 const NEGATIVE_JA =
-  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!問題(?:は)?)ございません|(?<!問題(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|定休日|休業|お休みを?(?:いただ|頂)|できまへん|でけへん|あきまへん|あかん/;
+  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!(?:問題|間違い|相違|差し支え)(?:は)?)ございません|(?<!(?:問題|間違い|相違|差し支え)(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|定休日|休業|お休みを?(?:いただ|頂)|できまへん|でけへん|あきまへん|あかん/;
 const NEGATIVE_EN =
   /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work|(?:we're|we are|is|are) closed|not (?:yet )?confirmed|not confirmed yet|(?:is|are|remains?) (?:still )?(?:pending|tentative))\b/i;
 
@@ -46,7 +48,7 @@ export const COMMIT_RE = /(?:ご)?予約(?:を)?(?:いたします|させてい�
 
 /** Callee agrees to a value the caller proposed. */
 export const AGREEMENT_RE =
-  /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly|\ball set\b|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)/i;
+  /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|問題ありません|差し支え(?:ありません|ございません)|構いません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly|\ball set\b|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)/i;
 
 /** "承知しました、ですが…": an agreement followed by a contrast is not a clean yes. */
 export const CONTRAST_RE = /ですが|ますが|けど|けれど|しかし|ただし|ただ(?!いま|今|ちに)|とはいえ|と言いたいところ|\bbut\b|however|although/i;

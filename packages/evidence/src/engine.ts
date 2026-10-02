@@ -13,8 +13,15 @@
  *    confirmation phrase. The caller saying "予約できました" is never evidence.
  *  - A later claim on the same field by the same side supersedes the earlier
  *    one (pending claims only; verified evidence is kept in history).
+ *  - Whatever the callee says settles something only when the WHOLE utterance is one of the settling
+ *    shapes in shape.ts (acknowledgement, the terms restated, a commit; nothing else beside them). The
+ *    phrase rules above are necessary, never sufficient. A reply that restates nothing answers the last
+ *    question of the caller's previous turn, and settles the terms only when that question was the proposal.
+ *  - After a settlement, a later callee utterance that doubts it, points at the terms, or (appointment
+ *    mode) says anything that is not a settling shape, a question or a goodbye takes `confirmed` back.
  */
 import { extractClaims, isAcceptance, isAffirmativeAnswer, isAgreement, isCalleeCommitment, isConfirmRequest, type Claim, COMMIT_RE, CONTRAST_RE, HEDGE_RE, REFUSAL_RE, RETRACTION_RE, UNABLE_RE, UNAVAILABLE_RE } from "./extract.js";
+import { calleeShape, callerAsk, confirmationFits, restatedInFittingSentences, shapeSettles, trailsOff, unsettles, type AskKind } from "./shape.js";
 import type { Evidence, EvidenceEdge, EvidenceGraph, Language, Speaker, Utterance } from "./types.js";
 
 /**
@@ -40,6 +47,8 @@ export type IngestResult = {
   verified: Evidence[];
 };
 
+const squash = (s: string) => s.normalize("NFKC").replace(/[\s、。，．,.!?！？「」…]/g, "");
+
 function valuesEqual(a: unknown, b: unknown): boolean {
   return a === b || (typeof a === "number" && typeof b === "number" && Math.abs(a - b) < 1e-9);
 }
@@ -59,6 +68,16 @@ export class EvidenceEngine {
   private readonly confirmation: ConfirmationMode;
   /** The caller utterance immediately before the current one (appointment mode: a bare 「はい」 answers only that). */
   private lastCallerUtteranceId: string | undefined;
+  /** What the caller's last turn asked (shape.ts `callerAsk`): a reply that restates nothing answers only this. */
+  private lastAsk: AskKind = "none";
+  /** The caller's last words, to recognise the line echoing them back as the callee. */
+  private lastCallerText = "";
+  /** The callee has said something that is not a settling shape since the caller last spoke. */
+  private interrupted = false;
+  /** Everything the caller has said, squashed: a product or a name the callee puts among the terms must be in here. */
+  private callerSaid = "";
+  /** The callee's previous utterance when it stopped mid-sentence and the caller has not spoken since. */
+  private unfinished: string | undefined;
   private seq = 0;
 
   constructor(opts: EngineOptions = {}) {
@@ -82,19 +101,41 @@ export class EvidenceEngine {
     if (this.confirmation === "callee_acceptance" && u.source === "callee" && (REFUSAL_RE.test(u.text) || HEDGE_RE.test(u.text))) this.retractedAt = u.t;
     const created: Evidence[] = [];
     const verifiedNow: Evidence[] = [];
-    const claims = extractClaims(u, { now: this.now, language: this.language });
+    const opts = { now: this.now, language: u.language ?? this.language };
+    // The whole-utterance shape (shape.ts). A callee utterance settles only when every clause of it is an
+    // acknowledgement, the terms, or a commit; the older phrase rules (isAgreement, isCalleeCommitment,
+    // isAffirmativeAnswer) still have to agree, so nothing they refused can settle now.
+    // An utterance that continues one left hanging (「10月5日の15時で」+「はちょっと…」) is read together with it.
+    const hanging = u.source === "callee" ? this.unfinished : undefined;
+    const shape = u.source === "callee" ? calleeShape((hanging ?? "") + u.text, opts) : undefined;
+    // The line playing the caller's own words back (speech recognition on a leaky channel) is not the callee.
+    const echoed = u.source === "callee" && squash(u.text).length > 0 && squash(this.lastCallerText).includes(squash(u.text)) && squash(u.text).length >= 10;
+    // 「A-200を50ケース…で承りました」 when the caller asked for A-100: another product is another deal.
+    const foreign = shape !== undefined && shape.names.some((n) => !this.callerSaid.includes(squash(n)));
+    // A bare yes after the callee's own objection, question or hold no longer answers the caller's question.
+    const weakOnly = shape !== undefined && shape.weak && !shape.strong && !shape.commit && !shape.restate;
+    const sound = !echoed && !foreign;
+    const settles = shape !== undefined && sound && shapeSettles(shape, this.lastAsk) && !(weakOnly && !shape.echo && this.interrupted);
+    // Said after a settlement, anything that is not a clean repeat and touches the terms or doubts them takes it back.
+    if (shape && (unsettles(u.text, shape, this.confirmation === "callee_acceptance") || (hanging !== undefined && !shape.fits))) this.retractedAt = u.t;
+    let claims = extractClaims(u, opts);
+    // A shop's confirmation counts only in a finished, positive sentence about the booking.
+    if (u.source === "callee" && claims.some((c) => c.field === "confirmed") && (!sound || !confirmationFits(u.text, opts))) claims = claims.filter((c) => c.field !== "confirmed");
     const positive = claims.filter((c) => c.polarity === "positive");
     const acceptance = isAcceptance(u.text, u.source);
-    const agreement = isAgreement(u.text, u.source);
+    const agreement = settles && isAgreement(u.text, u.source);
 
     // 1. Resolve pending claims from the other side.
     const counterpart: Map<string, Evidence> =
       u.source === "caller" ? this.pendingOffers : this.pendingProposals;
     const appointment = this.confirmation === "callee_acceptance";
-    const commitment = appointment && isCalleeCommitment(u.text, u.source);
+    const commitment = appointment && settles && isCalleeCommitment(u.text, u.source);
     // 「了解です、その日は不在です」: an agreement word beside a statement that the terms cannot be met settles nothing.
     const unable = appointment && u.source === "callee" && UNABLE_RE.test(u.text);
-    const resolves = u.source === "caller" ? acceptance : !unable && (agreement || commitment);
+    // The utterance goes on to something else, but one sentence of it cleanly commits to terms it restates:
+    // those fields, and only those, may settle (never `confirmed`, never a field it does not name).
+    const partial = u.source === "callee" && sound && !agreement && !commitment && isAgreement(u.text, u.source) ? restatedInFittingSentences(u.text, opts) : [];
+    const resolves = u.source === "caller" ? acceptance : !unable && (agreement || commitment || partial.length > 0);
     const restated = new Map(positive.map((c) => [c.field, c] as const));
 
     if (resolves) {
@@ -103,6 +144,9 @@ export class EvidenceEngine {
         // Acknowledging an unresolved clock time cannot turn it into a value.
         if (pending.value === null || r?.ambiguous) continue;
         if (r && !valuesEqual(r.value, pending.value)) continue; // counter-proposal, handled below
+        // 「50ケースは大丈夫です」 speaks for the quantity alone.
+        if (u.source === "callee" && shape?.restatedOnly && !r) continue;
+        if (u.source === "callee" && !agreement && !commitment && !partial.some((p) => p.field === field && valuesEqual(p.value, pending.value))) continue;
         // "ご予算について承知いたしました。…ですが" acknowledges the request; it settles the value
         // only when the callee restates it or answers without a contrast.
         if (!r && u.source === "callee" && CONTRAST_RE.test(u.text)) continue;
@@ -120,7 +164,7 @@ export class EvidenceEngine {
     //     So is a commitment that restates the terms ("10月3日に2名様で19,800円でご予約いたします")
     //     when it answers that question; unprompted, the same sentence is only an intention.
     const commitsWithTerms = COMMIT_RE.test(u.text) && positive.some((c) => ["date", "time", "price", "partySize", "quantity"].includes(c.field)) && !/[?？]|ますか|でしょうか|ましょうか/.test(u.text);
-    if (u.source === "callee" && this.pendingConfirmRequest && (isAffirmativeAnswer(u.text) || commitsWithTerms) && !positive.some((c) => c.field === "confirmed")) {
+    if (u.source === "callee" && this.pendingConfirmRequest && settles && (isAffirmativeAnswer(u.text) || commitsWithTerms) && !positive.some((c) => c.field === "confirmed")) {
       const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: u.text, semantic: 0.85, polarity: "positive" }, true);
       ev.explicit = false;
       ev.note = `agreed to confirmation request ${this.pendingConfirmRequest.id}`;
@@ -128,7 +172,9 @@ export class EvidenceEngine {
       created.push(ev);
       verifiedNow.push(ev);
     }
-    this.pendingConfirmRequest = isConfirmRequest(u.text, u.source) ? u : undefined;
+    // A yes answers the last question of the turn, so the confirm request must be that question.
+    const ask = u.source === "caller" ? callerAsk(u.text, opts) : undefined;
+    this.pendingConfirmRequest = isConfirmRequest(u.text, u.source) && ask === "confirm" ? u : undefined;
 
     // 1c. Appointment mode: the callee's clean commitment to a complete slot is the confirmation.
     if (commitment && !created.some((e) => e.field === "confirmed") && !positive.some((c) => c.field === "confirmed")) {
@@ -207,7 +253,17 @@ export class EvidenceEngine {
       created.push(ev);
     }
 
-    if (u.source === "caller") this.lastCallerUtteranceId = u.id;
+    if (u.source === "caller") {
+      this.lastCallerUtteranceId = u.id;
+      this.lastAsk = ask ?? "none";
+      this.lastCallerText = u.text;
+      this.callerSaid += squash(u.text);
+      this.interrupted = false;
+      this.unfinished = undefined;
+    } else if (shape && !shape.fits && shape.clauses.some((c) => c.kind !== "filler")) {
+      this.interrupted = true;
+    }
+    if (u.source === "callee") this.unfinished = trailsOff(u.text) ? (hanging ?? "") + u.text : undefined;
     return { created, verified: verifiedNow };
   }
 
