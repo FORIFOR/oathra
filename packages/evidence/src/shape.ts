@@ -59,6 +59,8 @@ export type ShapedClause = {
   bareFine: boolean;
   /** 「お待ちしております」: the shop expects the guest. */
   awaits: boolean;
+  /** 「…でお取りします」「取っときます」: the shop will book (a future booking predicate). */
+  willBook: boolean;
   /** 「50ケースは大丈夫です」: は sets the named term apart, so the commit covers that term and no other. */
   topicOnly: boolean;
   /** A product name or code, or a bare name, standing among the terms: it must be one the caller used. */
@@ -80,6 +82,8 @@ export type UtteranceShape = {
   bareOkOnly: boolean;
   /** Some clause says the shop expects the guest (「お待ちしております」). */
   awaits: boolean;
+  /** Some clause is a future booking predicate (「お取りします」). */
+  willBook: boolean;
   /** 「19時半でしたらご用意できます」: an offer on a condition; never a yes to "shall I confirm?". */
   conditional: boolean;
   /** Some clause is a finished confirmation (「お取りしました」). */
@@ -99,30 +103,36 @@ const SERIAL = "\uE002";
 
 // --- Japanese vocabulary ---------------------------------------------------------------------------------
 
-const FILLER_JA = "(?:あっ?|ああ|えー+|ええと|えっと|えーと|では|それでは|じゃあ?|ほな|ほんなら|んだら)";
+const FILLER_JA = "(?:あっ?|ああ|えー+|ええと|えっと|えーと|では|それでは|じゃあ?|ほな|ほんなら|ほいじゃあ?|んだら)";
 const FILLER_ONLY_JA = new RegExp(`^${FILLER_JA}$`);
 const LEADING_FILLER_JA = new RegExp(`^${FILLER_JA}(?=[、,\\s])[、,\\s]*`);
 
 const WEAK_JA = /^(?:(?:はい){1,3}ー?|はーい|ええ|うん|そうです|そうでございます|さようでございます|その通り(?:です|でございます)|おっしゃる通りです)$/;
 const STRONG_JA =
-  /^(?:承知(?:いた|致)?しました|かしこまりました|畏まりました|了解(?:です|しました|いたしました|致しました)?|(?:わ|分)かりました|承りました|もちろん(?:です)?|オッケー(?:です)?|おっけー(?:です)?|オーケー(?:です)?|OK(?:です)?|ええよ|ええで|ええですよ|いいですよ|いいよ|いいっすよ|よろしいですよ|よかよ|よかですよ|かまへん(?:よ|で)|わがりました|あいよ|はいよ|どうぞ|喜んで|よろこんで|(?:確かに|間違いなく)承りました)$/i;
+  /^(?:承知(?:いた|致)?しました|かしこまりました|畏まりました|了解(?:です|しました|いたしました|致しました)?|(?:わ|分)かりました|承りました|もちろん(?:です)?|オッケー(?:です)?|おっけー(?:です)?|オーケー(?:です)?|OK(?:です)?|ええよ|ええで|ええですよ|いいですよ|いいっすよ|よろしいですよ|よかよ|よかですよ|かまへん(?:よ|で)|わがりました|わがった|わかった|んだ|んだな|よかばい|よかです|いいがね|ええがね|かまわん|かまんよ|かまいまへん(?:で)?|いいべ|いいっしょ|よろしいで|よろしおま|あいよ|はいよ|どうぞ|喜んで|よろこんで|(?:確かに|間違いなく)承りました)$/i;
 const COURTESY_JA =
-  /^(?:(?:どうも|毎度|いつも)?ありがとうございます|(?:毎度)?おおきに|まいど|毎度(?:どうも)?|(?:いつも)?お世話になって(?:おり|い)ます|お電話代わりました|(?:ご注文|お電話|ご予約)ありがとうございます|ありがとうございました|こちらこそ|助かります|楽しみ(?:にして(?:おり|い)ます|すぎる|です|だ)?|恐れ入ります|お手数(?:を)?おかけ(?:いた)?します|お待たせ(?:いた)?しました|(?:どうぞ)?お気をつけて(?:お越し|いらして)ください(?:ませ)?|やった(?:ー|あ)*|わーい|テンション上がってきた|(?:もう)?今からお腹すいてきた|最高|(?:嬉|うれ)しい(?:です)?)$/;
+  /^(?:(?:どうも|毎度|いつも)?ありがとうございます|(?:毎度)?おおきに|まいど|毎度(?:どうも)?|(?:いつも)?お世話になって(?:おり|い)?ます|お電話代わりました|(?:ご注文|お電話|ご予約)ありがとうございます|ありがとうございました|こちらこそ|助かります|楽しみ(?:にして(?:おり|い)ます|すぎる|です|だ)?|恐れ入ります|お手数(?:を)?おかけ(?:いた)?します|お待たせ(?:いた)?しました|(?:どうぞ)?お気をつけて(?:お越し|いらして)ください(?:ませ)?|やった(?:ー|あ)*|わーい|テンション上がってきた|(?:もう)?今からお腹すいてきた|最高|(?:嬉|うれ)しい(?:です)?)$/;
 /** 「当日お待ちしております」「ご来店をお待ちしております」: the shop expects the guest at the agreed time. */
+/** 「弊社受付まで」: where to come. A closed list; any other place is new information. */
+const PLACE = "(?:(?:弊社|当社|当店|こちら|うち|本社|事務所|受付|会議室|[0-9]{1,2}階)の?)+(?:まで|に|へ|で)";
 /** Sentence endings of regional speech that change nothing: 「待っとるで」「届けるけえ」「取っといたけん」「待ってっから」. */
 const DE = "(?:で|よ|わ|から|がら|けん|けえ)*";
 const P_WAIT = `お待ち(?:いた)?して(?:おり|い)?ます|お待ちしとります|待っ(?:とる|とう|とります|てる|てます|ています)${DE}|待ってっから`;
-const AWAIT_JA = new RegExp(`^(?:当日(?:は)?)?(?:ご来店を?|お越しを?)?(?:${P_WAIT})$`);
+const AWAIT_JA = new RegExp(`^(?:当日(?:は)?)?(?:${PLACE})?(?:ご来店を?|お越しを?|お電話を?)?(?:${P_WAIT})$`);
 const AWAIT_ONLY_JA = AWAIT_JA;
 const AWAIT_END_JA = new RegExp(`(?:${P_WAIT})$`);
 /** 「取っといたで」「入れといたでね」「取っておいだがら」「押さえた」: a finished booking in regional speech. */
-const P_DONE_DIALECT = `(?:取|と)っ(?:といた|ておいた|ておいだ|た)${DE}|入れ(?:といた|ておいた|た)${DE}|押さえ(?:といた|た)${DE}|取れました(?:で)?`;
+const P_DONE_DIALECT = `(?:取|と)っ(?:といた|どいだ|ておいた|ておいだ|た)${DE}|入れ(?:といた|どいだ|ておいた|ておいだ|た)${DE}|押さえ(?:といた|どいだ|た)${DE}|取れました(?:で)?|お取りできました|取ら(?:せ|し)て(?:もらい|いただき)ました`;
+/** 「お取りします」「取っときます」「ご用意いたします」「入れとくね」: the shop WILL book. Alone it is an intention; see engine 1b''. */
+const P_BOOK_WILL = `お取り(?:いた|致)?します|お取りしておきます|(?:取|と)っ(?:とき|てお)き?ます|(?:取|と)っとく${DE}|(?:取|と)ってお(?:く|ぐ)${DE}|ご?用意(?:いた|致)?します|入れ(?:とき|てお)き?ます|入れとく${DE}|押さえ(?:てお|と)きます|ご?予約(?:を)?(?:(?:いた|致)?します|お取りします|お受けします|入れます)`;
 /** 「田中取っといたで」「5,500取っといたで」: a Kansai shop's finished booking, the name or the figure in front of it. */
 const DIALECT_DONE_JA = new RegExp(`^(?:([\\u4e00-\\u9fff]{1,4})|(?:[1一]泊)?[\\d,]{1,7})?(?:で)?(?:${P_DONE_DIALECT})$`);
 
 /** 「田中様、」: the name the booking is under, or the person addressed. */
 const NAME = "[\\u4e00-\\u9fffァ-ヶー]{1,6}(?:様|さま|さん)";
-const NAME_ONLY_JA = new RegExp(`^${NAME}$`);
+const NAME_ONLY_JA = new RegExp(`^(${NAME})(?:ですね?|ね)?$`);
+/** 「佐藤様で承りました」「佐藤様のお名前でお取りしました」: the booking under the caller's name. */
+const NAME_HEAD = `(?:${NAME}(?:のお名前)?(?:で|の)?)`;
 /**
  * A rider on the agreed time: 「資料もその時にお願いします」. It asks for something AT the meeting, so it takes the
  * meeting as settled; it is the only "other subject" a settling utterance may carry.
@@ -137,24 +147,29 @@ const P_OK = "(?:大丈夫|だいじょうぶ)(?:です|でした|でござい�
 /** The allow-list of agreements that are negative in form. */
 const P_NEG_OK = "(?:問題|差し支え|お?間違い|相違)(?:は)?(?:ありません|ございません|ないです)|(?:構|かま)いません";
 const P_REQ = "(?:ぜひ|是非)?(?:よろしく)?お願い(?:いた|致)?します";
-/** 「弊社受付まで」: where to come. A closed list; any other place is new information. */
-const PLACE = "(?:(?:弊社|当社|当店|こちら|うち|本社|事務所|受付|[0-9]{1,2}階)の?)+(?:まで|に|へ)";
 /** 「来てください」「お越しください」: the callee asks the caller to come at the agreed time. */
-const P_COME = `(?:どうぞ)?(?:${PLACE})?(?:お越し|来て|いらして|おいで)ください(?:ませ)?|来てちょう`;
+const P_COME = `(?:どうぞ)?(?:${PLACE})?(?:お越し|来て|いらして|おいで)ください(?:ませ)?|来てちょう|来てくれん|来んさい|来とくなはれ|来てもろて(?:大丈夫(?:やで|です)?)?|(?:オンラインで)?参加(?:いた|致)?します`;
 /** 「9日に持っていきます」「届けるよ」: the supplier's own delivery on the terms. 出荷/発送 are not delivery: they name another day. */
-const P_DELIVER = `(?:お届け|お持ち|納品|お納め|配達)(?:(?:いた|致)?します|できます)${DE}|(?:届け|納め)(?:ます|る|っ)${DE}|配達する${DE}|持って(?:い|行)?(?:きます|く|ぐ)${DE}`;
+const P_DELIVER = `お届けに(?:上|あ)がります|届けましょう|届けさ(?:し|せ)て(?:もらい|いただき)ます|(?:お届け|お持ち|納品|お納め|配達)(?:(?:いた|致)?します|できます)${DE}|(?:届け|納め)(?:ます|る|っ)${DE}|配達する${DE}|持って(?:い|行)?(?:きます|く|ぐ)${DE}`;
 /** 「在庫ございます」「間に合います」「出せます」: the supplier can meet the terms. */
-const P_CAN = "在庫(?:は|が|も)?(?:ございます|あります)(?:ので)?|間に合います|出せます|出せるよ?|いけます|可能です|可能でございます|お受けできます|空いて(?:おり|い)?ます(?:ので)?|空いてる";
-const P_GO = `任せて(?:ください)?|(?:お伺い${DID}|伺い|参り|行き)ます|絶対(?:に)?行く|行く行く|行く|空けとく|空けときます|空けてお(?:く|きます)`;
-const P_WILL = `承ります|確定(?:と(?:させていただき|いたし)|いたし|し)ます|(?:お受け|お届け|納品|お納め|手配|ご?用意|お取り|お約束|お?押さえ|ご?予約(?:を)?(?:お取り|お受け)?)(?:いた|致)?します|押さえておきます|ご?予約(?:を)?させていただきます`;
+const P_CAN = "在庫(?:は|が|も)?(?:ございます|あります)(?:ので)?|間に合います|出せます|出せるよ?|いけます|いける(?:で|よ)|可能です|可能でございます|お受けできます|空いて(?:おり|い)?ます(?:ので)?|空いてる";
+const P_GO = `お引き受け(?:いた|致)?します|予定に入れ(?:てお|と)?きます|任せて(?:ください)?|任(?:し|せ)とき(?:や)?|(?:お伺い${DID}|伺い|参り|行き)ます|絶対(?:に)?行く|行く行く|行く|空けとく|空けときます|空けてお(?:く|きます)`;
+const P_WILL = `承ります|確定とさせてください|確定(?:と(?:させていただき|いたし)|いたし|し)ます|(?:お受け|お届け|納品|お納め|手配|ご?用意|お取り|お約束|お?押さえ|ご?予約(?:を)?(?:お取り|お受け)?)(?:いた|致)?します|押さえておきます|ご?予約(?:を)?させていただきます`;
 const P_STATE = "ご?用意できます|お取りできます|空いて(?:おり|い)ます|合って(?:おり|い)ます|正しいです|合うて(?:る|ます)(?:で)?|合うとる(?:で)?|ええよ|ええで";
 /** Agreement only after 「で」 (「それで結構です」「15時でいいですよ」); alone these are as often a refusal. */
 const P_FINE = "(?:結構|けっこう)です|(?:いい|よい|良い|よろしい|よか|ええ|オッケー|おっけー|OK)(?:です)?";
-const COMMITS = `${P_DONE}|${P_ACK}|${P_OK}|${P_NEG_OK}|${P_REQ}|${P_WAIT}|${P_COME}|${P_DELIVER}|${P_CAN}|${P_GO}|${P_WILL}|${P_STATE}`;
+const COMMITS = `${P_BOOK_WILL}|${P_DONE}|${P_ACK}|${P_OK}|${P_NEG_OK}|${P_REQ}|${P_WAIT}|${P_COME}|${P_DELIVER}|${P_CAN}|${P_GO}|${P_WILL}|${P_STATE}`;
 /** 「大丈夫ですよ」. Not ね/よね: 「承りましたよね」 asks back. */
 const TAIL = "(?:よ|わ|けん|けえ)?";
 /** Endings dropped before a clause is read: 「…ますね」「…ますわ」「…けんね」「…でね」. Never よね or かね, which ask back. */
-const SOFT_END_JA = /(?:(?<![よか])ね|わ|けんね|けえね|でね|ばい)$/;
+const SOFT_END_JA = /(?:(?<![よか])ね|わ|けんね|けえね|でね|ばい|(?<=から|がら|とる|てる|ます)な)$/;
+/** 「ええわ」「いいわ」「もうええわ」 is "never mind"; the わ is not dropped from these. */
+const NEVER_MIND_JA = /^(?:もう)?(?:ええ|いい|よか)(?:わ|です|よか)$/;
+/** 「午前中にお届けします」: when in the agreed day; a detail of the delivery, not other terms. */
+const PART_OF_DAY_DELIVER_JA = new RegExp(`^(?:午前中|午後|朝|夕方)(?:に|には)(?:${P_DELIVER})${TAIL}$`);
+const WILL_BOOK_END_JA = new RegExp(`(?:${P_BOOK_WILL})${TAIL}$`);
+/** 「ご注文通り」「仰せの通り」「その通りに」: as asked. Points at the terms; commits only beside a commit. */
+const AS_ASKED_JA = /^(?:ご注文|ご依頼|ご希望|仰せ|おっしゃる)(?:の)?(?:通|とお|どお)り(?:に|で)?$|^その(?:通|とお)りに$/;
 /** Where the shop seats the party; said with a finished booking it is part of it. */
 const SEAT = "(?:個室|テーブル席|カウンター席|お座敷|お席)";
 
@@ -165,7 +180,7 @@ const TERM_NOUN = "日|時間|日程|日時|内容|条件|数量|納期|お時�
 const ANAPHOR_TERM = `その(?:${TERM_NOUN})(?:と(?:${TERM_NOUN}))?|ご(?:提案|希望)の(?:日程|内容|日時|お時間)`;
 const ANAPHOR_PREFIX = `(?:(?:${ANAPHOR_THING})で(?:確定で)?|確定で|オンラインで|(?:${ANAPHOR_TERM})(?:で|は|に|なら|でしたら))`;
 /** 「じゃあそれで。」「ではその時間に。」: the elliptical 「…でお願いします」. It needs the lead-in; a bare 「それで。」 is "and so?". */
-const LEAD_IN_JA = /^(?:じゃあ?|それでは|では(?!なく|ない|あり)|ほな|ほんなら|んだら)/;
+const LEAD_IN_JA = /^(?:じゃあ?|それでは|では(?!なく|ない|あり)|ほな|ほんなら|ほいじゃあ?|んだら)/;
 const ELLIPSIS_JA = new RegExp(`^(?:${ANAPHOR_THING}|${ANAPHOR_TERM})(?:で|に)$`);
 /** 「その日時で。」「その日に。」 without the lead-in: points at the terms; it commits only beside an acknowledgement. */
 const POINTER_JA = new RegExp(`^(?:${ANAPHOR_TERM})(?:で|に)$`);
@@ -174,8 +189,9 @@ const BOOKING = "(?:ご?予約|お?席|お部屋|ご?注文|お手配)";
 const COMMIT_CLAUSE_JA = new RegExp(`^${ANAPHOR_PREFIX}?(?:${COMMITS})${TAIL}$`, "i");
 const FINE_CLAUSE_JA = new RegExp(`^(?:${ANAPHOR_THING}|${ANAPHOR_TERM})で(?:${P_FINE})${TAIL}$`, "i");
 const ANAPHOR_START_JA = new RegExp(`^${ANAPHOR_PREFIX}`);
-const BOOKING_HEAD = `(?:${NAME}(?:で|の)?)?(?:${ANAPHOR_PREFIX})?(?:${SEAT}(?:で|を))?(?:${BOOKING}(?:を|は|の|として)?)`;
-const BOOKING_CLAUSE_JA = new RegExp(`^${BOOKING_HEAD}(?:${P_DONE}|${P_WILL})${TAIL}$`, "i");
+const BOOKING_HEAD = `${NAME_HEAD}?(?:${ANAPHOR_PREFIX})?(?:${SEAT}(?:で|を))?(?:${BOOKING}(?:を|は|の|として)?)`;
+const NAME_DONE_JA = new RegExp(`^${NAME_HEAD}(?:${P_DONE})${TAIL}$`, "i");
+const BOOKING_CLAUSE_JA = new RegExp(`^${BOOKING_HEAD}(?:ご用意して)?(?:${P_BOOK_WILL}|${P_DONE}|${P_WILL})${TAIL}$`, "i");
 const BOOKING_DONE_JA = new RegExp(`^${BOOKING_HEAD}(?:${P_DONE})${TAIL}$`, "i");
 const SEAT_DONE_JA = new RegExp(`^${SEAT}(?:で|を)(?:${P_DONE})${TAIL}$`, "i");
 const BARE_OK_JA = new RegExp(`^(?:${P_OK})${TAIL}$`);
@@ -189,9 +205,9 @@ const WORD = "[\\u4e00-\\u9fff々ァ-ヶーぁ-んA-Za-z0-9-]{1,24}?";
 const WORD_RE = new RegExp(`[\\u4e00-\\u9fff々ァ-ヶーぁ-んA-Za-z0-9-]+(?=${V})`, "g");
 /** What may stand between and around the restated values. */
 const CONN_WORDS =
-  `の|に|で|は|を|と|も|から|より|なら(?:ば)?|でしたら|[、,\\s・]|${NAME}|さん|[1一](?:個|本|枚|箱|ケース|台|名様?|人)(?:あたり|当たり|につき)?|[ァ-ヶー]{2,20}(?=${V})|[\\d,]{1,7}(?=(?:取|と)っといた)|シリアル番号|製造番号|型番|管理番号|お?電話番号|番号|朝|午前中|(?:テーブル|カウンター)席|納品|納期|お届け|着|ご?予約|お?打ち?合わ?せ|商談|面談|ご?訪問|ご?来店|お席|お部屋|ご?注文|お日にち|お時間|日時|日程|数量|コース|様|\\d{1,3}分(?:間)?(?:ほど)?|[A-Za-z]{1,6}-?[0-9]{1,6}(?![0-9])|[月火水木金土日]曜日?|[（(][月火水木金土日][)）]|[1一]泊`;
+  `の|に|で|は|を|と|も|から|より|なら(?:ば)?|でしたら|[、,\\s・]|${NAME}(?:のお名前)?|さん|オンライン|その内容|ご用意して|お電話(?:を)?|[1一](?:個|本|枚|箱|ケース|台|名様?|人)(?:あたり|当たり|につき)?|[ァ-ヶー]{2,20}(?=${V})|[\\d,]{1,7}(?=(?:取|と)っといた)|シリアル番号|製造番号|型番|管理番号|お?電話番号|番号|朝|午前中|(?:テーブル|カウンター)席|納品|納期|お届け|着|ご?予約|お?打ち?合わ?せ|商談|面談|ご?訪問|ご?来店|お席|お部屋|ご?注文|お日にち|お時間|日時|日程|数量|コース|様|\\d{1,3}分(?:間)?(?:ほど)?|[A-Za-z]{1,6}-?[0-9]{1,6}(?![0-9])|[月火水木金土日]曜日?|[（(][月火水木金土日][)）]|[1一]泊`;
 const CONN = `${WORD}(?=(?:を|の|は)?${V})|${CONN_WORDS}`;
-const ECHO_PRED = "ですね|ね|な|だ|だね|だべ|じゃ|じゃね|や|です|ですわ|でございますね?|ということですね|やね|やな";
+const ECHO_PRED = "ですね|ですな|でんな|かい|ね|な|だ|だな|だね|だべ|だべな|じゃ|じゃね|や|です|ですわ|でございますね?|ということですね|やね|やな";
 const RESTATE_RE = new RegExp(`^(?:${CONN})*(?:${V}(?:${CONN})*)+(?:(${ECHO_PRED})|((?:${COMMITS})${TAIL})|(で(?:${P_FINE})${TAIL}))?$`, "i");
 const TOPIC_COMMIT_RE = new RegExp(`は(?:${COMMITS})${TAIL}$`, "i");
 const RESTATE_DONE_RE = new RegExp(`(?:${P_DONE})${TAIL}$`, "i");
@@ -248,16 +264,21 @@ function maskValues(text: string, opts: Opts): { masked: string; count: number }
   return { masked: out + text.slice(pos), count };
 }
 
-const clause = (text: string, kind: ClauseKind, extra: Partial<ShapedClause> = {}): ShapedClause => ({ text, kind, hasValue: false, confirms: false, bareOk: false, bareFine: false, awaits: false, topicOnly: false, names: [], ...extra });
+const clause = (text: string, kind: ClauseKind, extra: Partial<ShapedClause> = {}): ShapedClause => ({ text, kind, hasValue: false, confirms: false, bareOk: false, bareFine: false, awaits: false, willBook: false, topicOnly: false, names: [], ...extra });
 const other = (text: string, hasValue: boolean): ShapedClause => clause(text, "other", { hasValue });
 const plain = (text: string, kind: ClauseKind): ShapedClause => clause(text, kind);
 
+const NAME_RE = new RegExp(NAME, "g");
+const bareName = (n: string) => n.replace(/(?:様|さま|さん)$/, "");
+/** Names in a clause (「佐藤様」): a booking under a name the caller never gave is someone else's. */
+const namesIn = (c: string): string[] => (c.match(NAME_RE) ?? []).map(bareName).filter((n) => !/^(?:お客|皆|みな|奥|旦那|お二人|お一人)$/.test(n));
 const KNOWN_WORD_RE = new RegExp(`^(?:${CONN_WORDS})+$`);
 /** The words in front of values that the caller must have used too. Particles and the connectives are not words. */
 function wordsBeforeValues(c: string): string[] {
   const out: string[] = c.match(/[A-Za-z]{1,6}-?[0-9]{1,6}(?![0-9])/g) ?? [];
   if (/オンライン/.test(c)) out.push("オンライン");
   for (const m of c.matchAll(WORD_RE)) {
+    if (KNOWN_WORD_RE.test(m[0])) continue;
     for (const piece of m[0].split(/[のにではをとも、]/)) {
       if (!piece || KNOWN_WORD_RE.test(piece)) continue;
       // a lone kana that is not a particle (「5日か6日」) is never the caller's product
@@ -280,6 +301,13 @@ function classifyJa(raw: string, opts: Opts): ShapedClause {
   if (lead && c.length > lead[0].length) c = c.slice(lead[0].length);
   if (!c) return plain(raw, "filler");
   if (/(?:ですか|ますか|でしょうか|ませんか|かな|っけ|かしら)$/.test(c)) return other(raw, hasValue);
+  // 「いいですよー」「待ってますねー」: a drawn-out ending.
+  if (NEVER_MIND_JA.test(c)) return other(raw, hasValue);
+  if (!hasValue && STRONG_JA.test(c)) return plain(raw, "strong");
+  if (!hasValue && WEAK_JA.test(c)) return plain(raw, "weak");
+  c = c.replace(/(?<=[ぁ-ん])[ー〜～]+$/, "");
+  if (NEVER_MIND_JA.test(c)) return other(raw, hasValue);
+  if (!hasValue && STRONG_JA.test(c)) return plain(raw, "strong");
   c = c.replace(SOFT_END_JA, "");
   if (!c) return other(raw, hasValue);
   // Speech recognition often drops the comma: 「はい大丈夫です」「はい10月5日の15時でお願いします」.
@@ -291,17 +319,24 @@ function classifyJa(raw: string, opts: Opts): ShapedClause {
     return { ...rest, text: raw, bareOk: false };
   }
   if (!hasValue) {
-    if (FILLER_ONLY_JA.test(c) || NAME_ONLY_JA.test(c)) return plain(raw, "filler");
+    if (FILLER_ONLY_JA.test(c)) return plain(raw, "filler");
+    const who = c.match(NAME_ONLY_JA);
+    if (who) return clause(raw, "filler", { names: [bareName(who[1]!)] });
+    if (AS_ASKED_JA.test(c)) return clause(raw, "echo");
+    // 「いいよ」 is "sure" and also "never mind": like a bare 「大丈夫です」 it needs a yes or the terms beside it.
+    if (/^いいよ$/.test(c)) return clause(raw, "commit", { bareFine: true });
+    if (NAME_DONE_JA.test(c)) return clause(raw, "commit", { confirms: true, names: namesIn(c) });
     if (RIDER_JA.test(c)) return plain(raw, "rider");
     if (AWAIT_JA.test(c)) return clause(raw, "commit", { awaits: true });
     if (WEAK_JA.test(c)) return plain(raw, "weak");
     if (STRONG_JA.test(c)) return plain(raw, "strong");
     if (COURTESY_JA.test(c)) return plain(raw, "courtesy");
-    if (BOOKING_CLAUSE_JA.test(c)) return clause(raw, "commit", { confirms: BOOKING_DONE_JA.test(c) });
+    if (BOOKING_CLAUSE_JA.test(c)) return clause(raw, "commit", { confirms: BOOKING_DONE_JA.test(c), willBook: !BOOKING_DONE_JA.test(c) && WILL_BOOK_END_JA.test(c), names: namesIn(c) });
     if (SEAT_DONE_JA.test(c)) return clause(raw, "commit", { confirms: true });
     const dialect = c.match(DIALECT_DONE_JA);
     if (dialect) return clause(raw, "commit", { confirms: true, names: dialect[1] ? [dialect[1]] : [] });
     if (c === "確定で") return clause(raw, "commit");
+    if (PART_OF_DAY_DELIVER_JA.test(c)) return clause(raw, "commit");
     if (/^(?:結構|けっこう)ですよ?$/.test(c)) return clause(raw, "commit", { bareFine: true });
     if (lead && ELLIPSIS_JA.test(c)) return clause(raw, "commit");
     if (/オンライン/.test(c) && COMMIT_CLAUSE_JA.test(c)) return clause(raw, "commit", { names: ["オンライン"] });
@@ -310,7 +345,7 @@ function classifyJa(raw: string, opts: Opts): ShapedClause {
     if (COMMIT_CLAUSE_JA.test(c) || FINE_CLAUSE_JA.test(c)) {
       // Without the booking beside it, 「承りました」 only acknowledges; the other finished forms say it is done.
       const confirms = RESTATE_DONE_RE.test(c) && !/^(?:確かに|間違いなく)?承りました|^(?:確定|完了)です/.test(c) && !ANAPHOR_START_JA.test(c);
-      return clause(raw, "commit", { confirms, bareOk: BARE_OK_JA.test(c) });
+      return clause(raw, "commit", { confirms, bareOk: BARE_OK_JA.test(c), willBook: WILL_BOOK_END_JA.test(c) });
     }
     return other(raw, hasValue);
   }
@@ -318,7 +353,7 @@ function classifyJa(raw: string, opts: Opts): ShapedClause {
   if (!m) return other(raw, hasValue);
   // 「10月5日の15時で。」: a trailing で is the elliptical 「…でお願いします」.
   const committed = Boolean(m[2] || m[3]) || (!m[1] && /で$/.test(c));
-  return clause(raw, committed ? "restate" : "echo", { hasValue, confirms: Boolean(m[2]) && RESTATE_DONE_RE.test(c), awaits: Boolean(m[2]) && AWAIT_END_JA.test(c), topicOnly: Boolean(m[2]) && TOPIC_COMMIT_RE.test(c), names: wordsBeforeValues(c) });
+  return clause(raw, committed ? "restate" : "echo", { hasValue, confirms: Boolean(m[2]) && RESTATE_DONE_RE.test(c), awaits: Boolean(m[2]) && AWAIT_END_JA.test(c), willBook: Boolean(m[2]) && WILL_BOOK_END_JA.test(c), topicOnly: Boolean(m[2]) && TOPIC_COMMIT_RE.test(c), names: [...wordsBeforeValues(c), ...namesIn(c)] });
 }
 
 function classifyEn(raw: string, opts: Opts): ShapedClause {
@@ -354,19 +389,47 @@ function classifyEn(raw: string, opts: Opts): ShapedClause {
 const KANA_VOCAB: Array<[RegExp, string]> = [
   [/うけたまわり/g, "承り"], [/しょうち(?=いたし|し)/g, "承知"], [/りょうかい/g, "了解"], [/だいじょうぶ/g, "大丈夫"],
   [/おねがい(?=いた|し)/g, "お願い"], [/ごよやく/g, "ご予約"], [/おまちして/g, "お待ちして"], [/おとり(?=し|いた|でき)/g, "お取り"],
-  [/もんだい(?=あり|ござ|ない)/g, "問題"], [/のうひん/g, "納品"], [/おとどけ/g, "お届け"], [/おせき/g, "お席"], [/(?<=[0-9名人])さま/g, "様"], [/ごご(?=[0-9])/g, "午後"], [/ごぜん(?=[0-9])/g, "午前"], [/けっこうです/g, "結構です"], [/かくてい(?=です|し|いた)/g, "確定"], [/おうけ(?=し|いた|でき)/g, "お受け"],
+  [/もんだい(?=あり|ござ|ない)/g, "問題"], [/さらいしゅう/g, "再来週"], [/らいしゅう/g, "来週"], [/こんしゅう/g, "今週"],
+  [/げつようび?/g, "月曜日"], [/かようび?/g, "火曜日"], [/すいようび?/g, "水曜日"], [/もくようび?/g, "木曜日"], [/きんようび?/g, "金曜日"], [/どようび?/g, "土曜日"], [/にちようび?/g, "日曜日"],
+  [/よやく/g, "予約"], [/(?<=[0-9])ご?めい(?:さま)?/g, "名様"], [/(?<=[0-9])けーす/g, "ケース"], [/(?<=[0-9])はこ/g, "箱"], [/おせわになって/g, "お世話になって"], [/そのじかん/g, "その時間"], [/そのにちじ/g, "その日時"], [/そのひ(?=で|に|は)/g, "その日"],
+  [/かくほ(?=いた|し)/g, "確保"], [/いれ(?=とき|とい|てお)/g, "入れ"], [/おまちして/g, "お待ちして"], [/のうひん/g, "納品"], [/おとどけ/g, "お届け"], [/おせき/g, "お席"], [/(?<=[0-9名人])さま/g, "様"], [/ごご(?=[0-9])/g, "午後"], [/ごぜん(?=[0-9])/g, "午前"], [/けっこうです/g, "結構です"], [/かくてい(?=です|し|いた)/g, "確定"], [/おうけ(?=し|いた|でき)/g, "お受け"],
 ];
+const KANA_DIGIT: Record<string, number> = { いち: 1, いっ: 1, に: 2, さん: 3, よん: 4, よ: 4, し: 4, ご: 5, ろく: 6, ろっ: 6, なな: 7, しち: 7, はち: 8, はっ: 8, きゅう: 9, く: 9 };
+const KD = "いち|いっ|に|さん|よん|よ|し|ご|ろく|ろっ|なな|しち|はち|はっ|きゅう|く";
+const KNUM = `(?:(?:(?:に|さん|よん|ご|ろく|なな|はち|きゅう)?(?:じゅう|じゅっ))(?:${KD})?|${KD})`;
+const KANA_DAY: Record<string, number> = { ついたち: 1, ふつか: 2, みっか: 3, よっか: 4, いつか: 5, むいか: 6, なのか: 7, ようか: 8, ここのか: 9, とおか: 10, じゅうよっか: 14, はつか: 20, にじゅうよっか: 24 };
+const KANA_UNIT: Record<string, string> = { けーす: "ケース", ケース: "ケース", はこ: "箱", ぱこ: "箱", ほん: "本", ぼん: "本", ぽん: "本", きろ: "キロ", キロ: "キロ", ふくろ: "袋" };
+function kanaNumber(k: string): number {
+  const m = k.match(new RegExp(`^(?:(に|さん|よん|ご|ろく|なな|はち|きゅう)?(?:じゅう|じゅっ))?(${KD})?$`))!;
+  const tens = /じゅ/.test(k) ? (m[1] ? KANA_DIGIT[m[1]]! : 1) * 10 : 0;
+  return tens + (m[2] ? KANA_DIGIT[m[2]]! : 0);
+}
+/**
+ * Numbers spoken in kana next to a counter (「じゅうがつむいかのじゅうよじ」「よんめいさま」「じゅっけーす」): the months, days,
+ * hours, party sizes and the common units only. A closed grammar, applied only to unpunctuated recogniser output.
+ */
+function kanaNumerals(text: string): string {
+  let t = text.replace(new RegExp(`(${KNUM})がつ`, "g"), (_m, n) => `${kanaNumber(n)}月`);
+  t = t.replace(new RegExp(`(?<=月)(${Object.keys(KANA_DAY).sort((a, b) => b.length - a.length).join("|")})`, "g"), (_m, d) => `${KANA_DAY[d]}日`);
+  t = t.replace(new RegExp(`(${KNUM})にち`, "g"), (_m, n) => `${kanaNumber(n)}日`);
+  t = t.replace(new RegExp(`(?<=^|[^ぁ-ん]|[のはにで])(${KNUM})じ(はん)?(?![ゅょゃ])`, "g"), (_m, n, half) => `${kanaNumber(n)}時${half ? "半" : ""}`);
+  t = t.replace(new RegExp(`(${KNUM})(?:めい|にん)(さま)?`, "g"), (_m, n, sama) => `${kanaNumber(n)}名${sama ? "様" : ""}`);
+  t = t.replace(new RegExp(`(${KNUM})(${Object.keys(KANA_UNIT).join("|")})`, "g"), (_m, n, u) => `${kanaNumber(n)}${KANA_UNIT[u]}`);
+  return t;
+}
+
 export function normalizeSpeech(input: string): string {
   let text = input.normalize("NFKC");
   if (!JA_RE.test(text)) return text;
-  for (const [re, to] of KANA_VOCAB) text = text.replace(re, to);
   // a pause written as a space
   // Pauses written as spaces: drop them, the breaks are restored below.
   if (!/[、。，,.!?！？…]/.test(text)) text = text.replace(/(?<=[\u3040-\u30ff\u4e00-\u9fff0-9])\s+(?=[\u3040-\u30ff\u4e00-\u9fff0-9])/g, "");
   else text = text.replace(/(?<=[\u3040-\u30ff\u4e00-\u9fff])\s+(?=[\u3040-\u30ff\u4e00-\u9fff0-9])/g, "、");
+  for (const [re, to] of KANA_VOCAB) text = text.replace(re, to);
   if (!/[、。，,.!?！？…]/.test(text)) {
+    text = kanaNumerals(text);
     text = text.replace(/^(はい|ええ|うん)(?=.)/, "$1、");
-    text = text.replace(/(です|ます|ました|ません)(ね)?(?=[^かがねよけのらっわなでしとて\s])/g, "$1$2、");
+    text = text.replace(/(です|ます|ました|ません)((?:ね|よ)(?!ろしく))?(?=よろしく|わかりました|[^かがねよけのらっわなでしとて\s])/g, "$1$2、");
   }
   return text;
 }
@@ -410,6 +473,7 @@ export function calleeShape(input: string, opts: Opts): UtteranceShape {
     bareOkOnly: commits.length > 0 && commits.every((c) => c.bareOk),
     restatedOnly: clauses.some((c) => c.topicOnly),
     awaits: clauses.some((c) => c.awaits),
+    willBook: clauses.some((c) => c.willBook),
     conditional: clauses.some((c) => c.hasValue && /なら|でしたら/.test(c.text)),
     confirms: clauses.some((c) => c.confirms),
     names: clauses.flatMap((c) => c.names),
@@ -431,7 +495,9 @@ export function calleeShape(input: string, opts: Opts): UtteranceShape {
 export function shapeSettles(shape: UtteranceShape, ask: AskKind): boolean {
   if (!shape.fits) return false;
   // 「はい、結構です」 is a yes to 「…でよろしいでしょうか」 and a "no thank you" to anything else.
-  if (shape.clauses.some((c) => c.bareFine) && !(ask === "confirm" && shape.weak)) return false;
+  // So is 「いいよ」. Beside another commit or the terms with one (「いいよ。13日の1時だな、待ってっから」) they are plain.
+  const plainCommit = shape.restate || shape.strong || (shape.weak && shape.echo) || shape.clauses.some((c) => c.kind === "commit" && !c.bareFine && !c.bareOk);
+  if (shape.clauses.some((c) => c.bareFine) && !(ask === "confirm" && shape.weak) && !plainCommit) return false;
   if (shape.restate) return true;
   if (shape.echo) return shape.strong || (shape.commit && !(shape.bareOkOnly && !shape.weak));
   if (shape.commit) {
@@ -453,7 +519,7 @@ const GENERIC_Q_JA =
   /^(?:ご都合(?:は|のほうは)?|それで|そちらで|こちらで|その(?:内容|日程|日時|条件)で)?(?:いかがでしょうか|いかがですか|いかがでしょう|よろしいでしょうか|よろしいですか|大丈夫でしょうか|大丈夫ですか|可能でしょうか|可能ですか|お願いできますか|お願いできますでしょうか|お願いできませんか|お間違い(?:ない|ございません)(?:でしょうか|ですか)|どうですか|どうでしょうか?|どう|空いて(?:い|おり)ますか)[。？?！!\s]*$/;
 /** 「その内容でよろしいでしょうか」「以上でお間違いないでしょうか」: a confirm request about terms said earlier. */
 const ANAPHORIC_CONFIRM_JA =
-  /^(?:では|それでは)?[、\s]*(?:それ|そちら|その内容|この内容|以上(?:の内容)?|こちら(?:の内容)?|上記(?:の内容)?|その(?:日程|日時|条件))で(?:ご?予約を?|ご?注文を?)?(?:確定(?:して(?:も)?|で)?|お願いして(?:も)?)?(?:よろしい|お間違い(?:ない|ございません)|大丈夫|問題(?:ない|ございません|ありません))(?:でしょうか|ですか)[。？?\s]*$/;
+  /^(?:はい[、。\s]*)?(?:では|それでは)?[、\s]*(?:それ|そちら|その内容|この内容|以上(?:の内容)?|こちら(?:の内容)?|上記(?:の内容)?|その(?:日程|日時|条件))で(?:ご?予約を?|ご?注文を?)?(?:確定(?:して(?:も)?|で)?|お願いして(?:も)?)?(?:よろしい|お間違い(?:ない|ございません)|大丈夫|問題(?:ない|ございません|ありません))(?:でしょうか|ですか)[。？?\s]*$/;
 /** Questions about something other than the terms, even when the terms are in the same sentence. */
 const OTHER_Q_JA = /変更|キャンセル|中止|延期|それとも|または|あるいは|どちら|いずれ|迷惑|難しい|厳しい|無理|悪い|だめ|ダメ|駄目|不都合|お忙しい|確認(?:して)?(?:いただ|もら|くださ)|伝え|聞いて|ご検討|相談|折り返|教えて|ご連絡|いらっしゃいますか|今(?:、|少し|少々)?(?:お時間|よろしい|大丈夫|お話)|お時間(?:は)?よろしい|聞こえ|お電話口|ご?担当|お名前|資料|メール|ファッ?クス|FAX|カタログ|録音|お送り|ご存じ|ご存知/i;
 const QUESTION_END_JA = /[?？]\s*$|(?:か|かね|かな)[。]?\s*$|どう[!！?？。\s]*$|いかが(?:でしょう)?[。？?\s]*$/;

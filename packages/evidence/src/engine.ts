@@ -55,10 +55,10 @@ const squash = (s: string) => s.normalize("NFKC").replace(/[\s、。，．,.!?�
  * settle, while a hedge, a refusal, a contrast, a hold or a question anywhere in the utterance still settles nothing.
  */
 const agreementClean = (t: string) => !REFUSAL_RE.test(t) && !HEDGE_RE.test(t) && !QUESTION_RE.test(t.trim());
-// (「…とさせていただきます」 is not the contrast 「ただ」.)
+// (「…とさせていただきます」 is not the contrast 「ただ」, and 「会議室でお待ちしております」 is not 「会議です」.)
 const commitClean = (t: string) =>
   !REFUSAL_RE.test(t) && !HEDGE_RE.test(t) && !CONTRAST_RE.test(t.replace(/いただ/g, "")) && !RETRACTION_RE.test(t) && !HOLD_RE.test(t) &&
-  !/[?？]|でしょうか|ですか|ますか|ませんか/.test(t) && !UNABLE_RE.test(t) && (CALLEE_COMMIT_RE.test(t) || !(OTHER_MATTER_RE.test(t) && !TERMS_RE.test(t)));
+  !/[?？]|でしょうか|ですか|ますか|ませんか/.test(t) && !UNABLE_RE.test(t.replace(/会議室/g, "")) && (CALLEE_COMMIT_RE.test(t) || !(OTHER_MATTER_RE.test(t) && !TERMS_RE.test(t)));
 const WEEKDAYS = "日月火水木金土";
 
 function valuesEqual(a: unknown, b: unknown): boolean {
@@ -94,6 +94,8 @@ export class EvidenceEngine {
   private heard = "";
   /** The caller's last turn asked for the booking itself (「…で予約をお願いしたいのですが」), not whether there is room. */
   private bookingAsked = false;
+  /** A confirmation rests on a future form (1b''): later callee words are held to the strict rule of `unsettles`. */
+  private promised = false;
   /** The latest value the caller has put forward for each field. */
   private callerProposed = new Map<string, unknown>();
   private seq = 0;
@@ -132,7 +134,8 @@ export class EvidenceEngine {
     // The line playing the caller's own words back (speech recognition on a leaky channel) is not the callee.
     const echoed = u.source === "callee" && squash(u.text).length > 0 && squash(this.lastCallerText).includes(squash(u.text)) && squash(u.text).length >= 10;
     // 「A-200を50ケース…で承りました」 when the caller asked for A-100: another product is another deal.
-    const foreign = shape !== undefined && shape.names.some((n) => !this.callerSaid.includes(squash(n)));
+    // (With no caller words at all there is nothing to compare against.)
+    const foreign = shape !== undefined && this.callerSaid !== "" && shape.names.some((n) => !this.callerSaid.includes(squash(n)));
     // A bare yes after the callee's own objection, question or hold no longer answers the caller's question.
     const weakOnly = shape !== undefined && shape.weak && !shape.strong && !shape.commit && !shape.restate;
     // 「水曜の2時な」 when the date on the table is a Tuesday: another day.
@@ -142,7 +145,7 @@ export class EvidenceEngine {
     const sound = !echoed && !foreign && !wrongDay;
     const settles = shape !== undefined && sound && shapeSettles(shape, this.lastAsk) && !(weakOnly && !shape.echo && this.interrupted);
     // Said after a settlement, anything that is not a clean repeat and touches the terms or doubts them takes it back.
-    if (shape && (unsettles(u.text, shape, this.confirmation === "callee_acceptance") || (hanging !== undefined && !shape.fits))) this.retractedAt = u.t;
+    if (shape && (unsettles(u.text, shape, this.confirmation === "callee_acceptance" || this.promised) || (hanging !== undefined && !shape.fits))) this.retractedAt = u.t;
     let claims = extractClaims(u, opts);
     if (u.source === "callee") {
       // 「2時」 said back for a proposed 14時: the same hour on a twelve-hour clock, unless 午前 says otherwise.
@@ -167,7 +170,7 @@ export class EvidenceEngine {
     const appointment = this.confirmation === "callee_acceptance";
     const commitment = appointment && settles && u.source === "callee" && commitClean(u.text.trim());
     // 「了解です、その日は不在です」: an agreement word beside a statement that the terms cannot be met settles nothing.
-    const unable = appointment && u.source === "callee" && UNABLE_RE.test(u.text);
+    const unable = appointment && u.source === "callee" && UNABLE_RE.test(u.text.replace(/会議室/g, ""));
     // The utterance goes on to something else, but one sentence of it cleanly commits to terms it restates:
     // those fields, and only those, may settle (never `confirmed`, never a field it does not name).
     const partial = u.source === "callee" && sound && !agreement && !commitment && isAgreement(u.text, u.source) ? restatedInFittingSentences(u.text, opts) : [];
@@ -234,6 +237,23 @@ export class EvidenceEngine {
       this.nodes.push(ev);
       created.push(ev);
       verifiedNow.push(ev);
+    }
+
+    // 1b''. Reservation mode: 「では10月5日19時、4名様でお取りします」. In shop speech the future form, said with
+    //       EVERY value the caller asked for and nothing else, is the booking. Without the values (「取っとくわ」), with
+    //       one missing or different, or with a condition, it stays an intention. Because it is a promise and not a
+    //       record, anything the shop says afterwards that is not a settling shape takes it back (see `promised`).
+    const TERM_FIELDS = ["date", "time", "partySize", "quantity", "price"];
+    const asked = [...this.callerProposed.entries()].filter(([f]) => TERM_FIELDS.includes(f));
+    const allRestated = asked.length > 0 && asked.every(([f, v]) => { const r = restated.get(f); return r !== undefined && !r.ambiguous && valuesEqual(r.value, v); });
+    if (!appointment && u.source === "callee" && answersYes && shape!.willBook && allRestated && !created.some((e) => e.field === "confirmed") && !positive.some((c) => c.field === "confirmed")) {
+      const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: this.heard, semantic: 0.85, polarity: "positive" }, true);
+      ev.explicit = false;
+      ev.note = "will book, with every requested value restated";
+      this.nodes.push(ev);
+      created.push(ev);
+      verifiedNow.push(ev);
+      this.promised = true;
     }
 
     // 1c. Appointment mode: the callee's clean commitment to a complete slot is the confirmation.

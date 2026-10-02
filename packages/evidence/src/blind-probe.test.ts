@@ -5,9 +5,9 @@
  *
  * Every line is verbatim. A = the caller (the agent), B = the callee.
  *
- * Seventeen of the 90 "agreed" dialogues are held as NOT settled, each with its reason (EXCLUDED): in a
+ * Sixteen of the 90 "agreed" dialogues are held as NOT settled, each with its reason (EXCLUDED): in a
  * reservation the engine distinguishes "there is room" and "I will book it" from "it is booked", and
- * evidence.test.ts asserts that distinction (「…で取っとくわ」 is only an intention). Two more are real agreements
+ * evidence.test.ts asserts that distinction (a future form without every value, 「取っとくわ」, is only an intention). One more is a real agreement
  * the engine still misses (KNOWN_MISSES, `it.todo`).
  */
 import { describe, expect, it } from "vitest";
@@ -219,6 +219,7 @@ const MEETING_AGREED: Line[][] = [
   [["A", "10月6日の14時にお伺いしてもよろしいでしょうか。"], ["B", "はい、それで確定でお願いします。"]],
 ];
 const ORDER_AGREED: Line[][] = [
+  [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "はいにじゅっぱこ9日ですねうけたまわりました"]], // kana numerals are read since 2026-10-03
   [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "はい、20箱、10月9日納品で承りました。"]],
   [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "かしこまりました。9日にお届けします。"]],
   [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "大丈夫ですよ。9日に持っていきます。"]],
@@ -248,6 +249,8 @@ const ORDER_AGREED: Line[][] = [
   [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "その数量と日にちでお受けできます。"]],
 ];
 const RESERVATION_AGREED: Line[][] = [
+  // moved here on 2026-10-03: a future form WITH every requested value restated is the booking (engine 1b'')
+  [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "よかですよ。5日の7時に4名さんですね。取っときます。"]],
   [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "はい、10月5日19時、4名様ですね。お取りできます。お待ちしております。"]],
   [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "かしこまりました。ご予約承りました。"]],
   [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "大丈夫ですよ。お名前お願いします。"], ["A", "山田です。"], ["B", "山田様、5日19時4名様でお取りしました。"]],
@@ -270,7 +273,6 @@ const EXCLUDED: Array<[Shape, string, Line[]]> = [
   ["r", "future form: an intention to book", [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "いけますよ。4名さん19時やね。取っときます。"]]],
   ["r", "future form: an intention to book", [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "はい、お席ご用意いたします。"]]],
   ["r", "the request is fine; nothing says it was booked", [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "はーい、大丈夫です。4名ね。"]]],
-  ["r", "future form: an intention to book", [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "よかですよ。5日の7時に4名さんですね。取っときます。"]]],
   ["r", "future form: an intention to book", [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "はいはい、いいですよ。4人だね、取っておぐから。"]]],
   ["r", "future form: an intention to book", [["A", "10月5日の19時に4名で予約をお願いしたいのですが。"], ["B", "ええよ、取っとくでね。"]]],
   ["r", "availability", [["A", "あさっての18時半に2名で予約したいのですが、空いていますか。"], ["B", "ご用意できます。"]]],
@@ -285,7 +287,6 @@ const EXCLUDED: Array<[Shape, string, Line[]]> = [
 ];
 /** Real agreements the engine does not read yet: [shape, why, dialogue]. */
 const KNOWN_MISSES: Array<[Shape, string, Line[]]> = [
-  ["o", "the quantity is spoken in kana numerals (にじゅっぱこ), which are not parsed", [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "はいにじゅっぱこ9日ですねうけたまわりました"]]],
   ["o", "「いつものやつね」 is small talk outside the shapes", [["A", "コピー用紙を20箱、10月9日納品でお願いできますでしょうか。"], ["B", "はいはい、いつものやつね。9日に20箱。任せて。"]]],
 ];
 
