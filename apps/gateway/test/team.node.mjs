@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Store } from '../lib/store.mjs';
 import { Service } from '../lib/service.mjs';
 import { hash } from '../lib/security.mjs';
-import { teamCalls, teamRecord, teamCallsCsv, teamSummary, teamPeople, contactHistory, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
+import { teamCalls, teamRecord, teamCallsCsv, teamSummary, teamPeople, contactHistory, outcomeOf, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
 import { createGateway } from '../server.mjs';
 const now=Date.parse('2026-10-02T10:00:00+09:00');
 function fixture(){
@@ -24,7 +24,7 @@ test('a manager sees the team’s calls without numbers or speech; other teams a
   f.call('staff',{status:'DRAFT'});f.call('rival');const quiet=f.call('boss',{answered:false,createdAt:now-7200_000});
   const view=teamCalls(f.service,f.by('boss'));
   assert.deepEqual(view.calls.map(c=>c.id),[mine.id,quiet.id]);assert.equal(view.needsAttention,1);
-  assert.deepEqual(Object.keys(view.calls[0]).sort(),['answered','attention','checkIn','checkInLevels','createdAt','direction','durationSeconds','finishedAt','id','kind','owner','ownerName','recipient','scheduled','settled','settles','status']);
+  assert.deepEqual(Object.keys(view.calls[0]).sort(),['answered','attention','checkIn','checkInLevels','createdAt','direction','durationSeconds','finishedAt','id','kind','listed','outcome','owner','ownerName','recipient','scheduled','settled','settles','status']);
   assert.ok(!JSON.stringify(view).includes('+8190')&&!JSON.stringify(view).includes('腰が痛い'));
   assert.deepEqual(teamCalls(f.service,f.by('boss'),{attention:true}).calls.map(c=>c.id),[mine.id]);
   assert.equal(teamCalls(f.service,f.by('root')).calls.length,2);
@@ -91,12 +91,12 @@ test('the routes answer over HTTP with the right types and refusals',using(async
   }finally{await app.close();}
 }));
 
-test('the summary counts the team’s own calls by day, and the answer rate only over calls where it is known',using(f=>{
+test('the summary counts the team’s own calls by day; the answer rate is reached over reached plus unanswered',using(f=>{
   f.call('staff',{answered:true,status:'COMPLETED',billing:{carrier:{durationSeconds:60}}});f.call('staff',{answered:false,attention:{level:'emergency',signals:[]}});
   f.call('boss',{direction:'inbound',answered:null,handoff:{status:'COMPLETED'}});f.call('boss',{answered:true,createdAt:now-3*86400_000,status:'DECLINED'});
   f.call('boss',{createdAt:now-30*86400_000});f.call('rival',{answered:true});
   const s=teamSummary(f.service,f.by('boss'));
-  assert.deepEqual(s.total,{calls:4,outbound:3,inbound:1,answered:2,unanswered:1,completed:1,declined:1,failed:0,unknown:0,attention:1,emergency:1,transferred:1,seconds:60,answerRatePercent:66.7});
+  assert.deepEqual(s.total,{calls:4,outbound:3,inbound:1,answered:3,unanswered:1,notPlaced:0,completed:1,declined:1,failed:0,unknown:0,attention:1,emergency:1,transferred:1,seconds:60,answerRatePercent:75});
   assert.deepEqual(s.byDay.map(d=>[d.date,d.calls]),[['2026-09-29',1],['2026-10-02',3]]);
   assert.equal(teamSummary(f.service,f.by('boss'),90).total.calls,5);
   assert.equal(code(()=>teamSummary(f.service,f.by('staff'))),'supervisor_required');assert.equal(code(()=>teamSummary(f.service,f.by('boss'),0)),'invalid_days');
@@ -143,4 +143,33 @@ test('a row says whether the call had something to settle, and the level of each
   const rows=teamCalls(f.service,f.by('boss')).calls,row=rows.find(r=>r.id===care.id),sales=rows.find(r=>r.kind==='sales');
   assert.deepEqual(row.checkInLevels,{condition:'emergency',meal:null,medication:'concern',sleep:null,help:null});
   assert.deepEqual([row.settles,row.settled,sales.settles,sales.settled],[false,false,true,true]);
+}));
+
+test('how a call went is one word from one place, for calls old and new',()=>{
+  const said=[{source:'callee',text:'はい'}];
+  for(const [m,expected] of [[{status:'INCOMPLETE',answered:true},'reached'],[{status:'INCOMPLETE',answered:false,carrierSid:'CA1'},'unanswered'],[{status:'FAILED',answered:false,error:'queued_approval_expired'},'not_placed'],
+    [{status:'INCOMPLETE',answered:false,machineAnswered:true,transcript:said},'unanswered'],[{status:'INCOMPLETE',transcript:said},'reached'],[{status:'COMPLETED'},'reached'],[{status:'DECLINED'},'reached'],
+    [{status:'INCOMPLETE'},'unanswered'],[{status:'FAILED'},'not_placed'],[{status:'FAILED',carrierSid:'CA1'},'unanswered'],[{status:'CANCELLED'},'not_placed'],[{status:'UNKNOWN',answered:true},'unknown'],[{status:'ACTIVE'},'in_progress'],[{status:'QUEUED'},'in_progress']])
+    assert.equal(outcomeOf(m),expected,JSON.stringify(m));
+});
+test('the summary, the list, the board and a person’s history count the same calls the same way; a list call is in the history',using(f=>{
+  const contact=f.service.contact(f.by('staff'),{name:'山田 花子',phone:'+819000000011',relationship:'customer',basis:'入居者'});
+  f.call('staff',{createdAt:now-3*3600_000});                                       // an old-style record with speech and no answered flag
+  f.call('staff',{createdAt:now-2*3600_000,answered:false,batch:{id:'b1'},transcript:[]}); // a list call nobody answered
+  f.call('staff',{createdAt:now-1*3600_000,answered:false,batch:{id:'b1'},transcript:[]});
+  const rows=teamCalls(f.service,f.by('boss')).calls,sum=teamSummary(f.service,f.by('boss')).total,board=teamPeople(f.service,f.by('boss')).people[0],h=contactHistory(f.service,f.by('staff'),contact.id);
+  assert.deepEqual(rows.map(r=>[r.outcome,r.listed]),[['unanswered',true],['unanswered',true],['reached',false]]);
+  assert.deepEqual([sum.answered,sum.unanswered,sum.notPlaced,sum.answerRatePercent],[1,2,0,33.3]);
+  assert.deepEqual([board.answered,board.unanswered,board.missedInARow,board.last.outcome],[1,2,2,'unanswered']);
+  assert.deepEqual([h.summary.answered,h.summary.unanswered,h.summary.missedInARow,h.calls.length],[1,2,2,3]);
+}));
+test('two people on one number are two lines; a scheduled call that was never placed shows on the person’s line',using(f=>{
+  f.call('staff',{createdAt:now-5*3600_000,answered:true});f.call('staff',{createdAt:now-4*3600_000,answered:true,target:{name:'山田 太郎',phone:'+819000000011'}});
+  f.store.put('schedule',{id:'s1',owner:'staff',team:'care',status:'ACTIVE',request:{phone:'+819000000011',name:'山田 花子'}});
+  f.store.put('schedule-run',{id:'s1:2026-10-02:09:00',owner:'staff',scheduleId:'s1',date:'2026-10-02',time:'09:00',attempts:[],state:'SKIPPED',status:'SKIPPED',reason:'service_was_not_running'});
+  f.store.put('schedule',{id:'s2',owner:'staff',team:'care',status:'ACTIVE',request:{phone:'+819000000077',name:'一度もかかっていない人'}});
+  f.store.put('schedule-run',{id:'s2:2026-10-02:09:00',owner:'staff',scheduleId:'s2',date:'2026-10-02',time:'09:00',attempts:[],state:'FAILED',status:'FAILED',reason:'insufficient_credits'});
+  const board=teamPeople(f.service,f.by('boss'));
+  assert.deepEqual(board.people.map(p=>[p.recipient,p.calls,p.notPlaced,p.notCheckedSince,p.lastNotPlaced?.reason??null]),[['山田 花子',1,1,true,'service_was_not_running'],['一度もかかっていない人',0,1,true,'insufficient_credits'],['山田 太郎',1,0,false,null]]);
+  assert.equal(board.needsAttention,2);
 }));

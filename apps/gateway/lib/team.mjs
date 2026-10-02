@@ -12,6 +12,19 @@ const STATUS = { COMPLETED: '確認済み', INCOMPLETE: '未確定', DECLINED: '
 const ANSWER = { yes: 'はい', no: 'いいえ', unclear: '要確認', no_answer: '返答なし', not_asked: '' };
 const LEVEL = { emergency: '緊急', concern: '要確認', none: '' };
 
+/** How a call went, in one word, for every screen that shows it: `reached` (someone spoke), `unanswered` (it rang and
+ *  nobody, or only a machine, answered), `not_placed` (it was refused or failed before ringing), `in_progress`, or
+ *  `unknown` (its state needs reconciling). Calls from before `answered` was recorded are read from what they left behind. */
+export function outcomeOf(m) {
+  if (m.status === 'UNKNOWN' || m.stopNeedsReconciliation) return 'unknown';
+  if (!['COMPLETED', 'INCOMPLETE', 'DECLINED', 'FAILED', 'CANCELLED'].includes(m.status)) return 'in_progress';
+  if (m.answered === true) return 'reached';
+  const spoke = (m.transcript ?? []).some(t => t.source === 'callee' && !t.interrupted && String(t.text ?? '').trim());
+  if (m.answered === false) return m.carrierSid || m.machineAnswered || spoke ? 'unanswered' : m.status === 'FAILED' ? 'not_placed' : 'unanswered';
+  if (m.status === 'COMPLETED' || m.status === 'DECLINED' || (spoke && !m.machineAnswered)) return 'reached';
+  if (m.status === 'CANCELLED') return m.carrierSid ? 'unanswered' : 'not_placed';
+  return m.status === 'FAILED' && !m.carrierSid ? 'not_placed' : 'unanswered';
+}
 /** One line per call. What a person scanning forty calls needs, and nothing that identifies beyond a name. */
 export function callRow(m, { phone = false } = {}) {
   // A wellbeing or scheduled call nobody answered needs a look as much as a worrying answer does.
@@ -19,7 +32,7 @@ export function callRow(m, { phone = false } = {}) {
   const attention = m.attention?.level ?? (checkIn && checkIn.attention !== 'none' ? checkIn.attention : missed ? 'concern' : null);
   return { id: m.id, owner: m.owner, direction: m.direction === 'inbound' ? 'inbound' : 'outbound', kind: m.kind === 'phone-request' ? 'request' : 'sales', recipient: m.target?.name ?? '',
     ...(phone ? { phone: m.target?.phone ?? '' } : {}), status: m.status, createdAt: new Date(m.createdAt).toISOString(), finishedAt: m.finishedAt ? new Date(m.finishedAt).toISOString() : null,
-    answered: typeof m.answered === 'boolean' ? m.answered : null, attention, scheduled: !!m.schedule,
+    answered: typeof m.answered === 'boolean' ? m.answered : null, outcome: outcomeOf(m), attention, scheduled: !!m.schedule, listed: !!m.batch,
     checkIn: checkIn ? Object.fromEntries(checkIn.items.map(i => [i.topic, i.answer])) : null,
     // The level of each topic's answer, so a list can mark an emergency answer differently from one to check.
     checkInLevels: checkIn ? Object.fromEntries(checkIn.items.map(i => { const flagged = (m.attention?.signals ?? []).filter(x => x.turn && x.turn === i.turn); return [i.topic, flagged.some(x => x.level === 'emergency') ? 'emergency' : flagged.length || (i.topic === 'help' ? i.answer === 'yes' : ['no', 'unclear'].includes(i.answer)) ? 'concern' : null]; })) : null,
@@ -51,14 +64,14 @@ export function teamRecord(service, u, id) {
 export function teamSummary(service, u, days = 7) {
   supervisor(u); assert(Number.isInteger(days) && days >= 1 && days <= 90, 'invalid_days');
   const day = ms => new Date(ms + 9 * 3600_000).toISOString().slice(0, 10), since = service.store.now() - days * 86400_000;
-  const empty = () => ({ calls: 0, outbound: 0, inbound: 0, answered: 0, unanswered: 0, completed: 0, declined: 0, failed: 0, unknown: 0, attention: 0, emergency: 0, transferred: 0, seconds: 0 });
+  const empty = () => ({ calls: 0, outbound: 0, inbound: 0, answered: 0, unanswered: 0, notPlaced: 0, completed: 0, declined: 0, failed: 0, unknown: 0, attention: 0, emergency: 0, transferred: 0, seconds: 0 });
   const total = empty(), byDay = {};
   for (const m of teamMissions(service, u)) {
     if (m.createdAt < since) continue;
     const row = callRow(m), bucket = byDay[day(m.createdAt)] ??= empty();
     for (const t of [total, bucket]) {
       t.calls++; t[row.direction]++;
-      if (row.answered === true) t.answered++; else if (row.answered === false) t.unanswered++;
+      if (row.outcome === 'reached') t.answered++; else if (row.outcome === 'unanswered') t.unanswered++; else if (row.outcome === 'not_placed') t.notPlaced++;
       if (m.status === 'COMPLETED') t.completed++; else if (m.status === 'DECLINED') t.declined++; else if (m.status === 'FAILED') t.failed++; else if (m.status === 'UNKNOWN') t.unknown++;
       if (row.attention) t.attention++; if (row.attention === 'emergency') t.emergency++;
       if (m.handoff?.status) t.transferred++;
@@ -78,11 +91,11 @@ export function contactHistory(service, u, contactId, days = 30) {
   assert(contact && (contact.owner === u.id || (['admin', 'manager'].includes(u.role) && owner.team === u.team)), 'not_found', 404);
   const since = service.store.now() - days * 86400_000;
   const calls = service.store.all('mission', contact.owner).filter(m => m.target?.phone === contact.phone && m.status !== 'DRAFT' && m.createdAt >= since).sort((a, b) => a.createdAt - b.createdAt).map(m => callRow(m));
-  const answered = calls.filter(c => c.answered === true).length, unanswered = calls.filter(c => c.answered === false).length;
+  const answered = calls.filter(c => c.outcome === 'reached').length, unanswered = calls.filter(c => c.outcome === 'unanswered').length;
   // How often each topic was answered each way, over the calls that asked about it.
   const topics = Object.fromEntries(['condition', 'meal', 'medication', 'sleep', 'help'].map(topic => [topic, calls.reduce((n, c) => { const a = c.checkIn?.[topic]; if (a && a !== 'not_asked') n[a] = (n[a] ?? 0) + 1; return n; }, {})]));
   // Days in a row, up to the latest call, on which nobody answered: the number a care worker asks first.
-  let missedInARow = 0; for (const c of [...calls].reverse()) { if (c.answered === false) missedInARow++; else if (c.answered === true) break; }
+  let missedInARow = 0; for (const c of [...calls].reverse()) { if (c.outcome === 'unanswered') missedInARow++; else if (c.outcome === 'reached') break; }
   if (contact.owner !== u.id) service.store.audit(u.id, 'team.history_viewed', contact.id, { contact: contact.id, owner: contact.owner });
   return { contact: { id: contact.id, name: contact.name || contact.company }, days, calls, summary: { calls: calls.length, answered, unanswered, attention: calls.filter(c => c.attention).length, emergency: calls.filter(c => c.attention === 'emergency').length, missedInARow, topics } };
 }
@@ -94,19 +107,36 @@ export function teamPeople(service, u, days = 30) {
   const since = service.store.now() - days * 86400_000, name = names(service), people = new Map();
   for (const m of teamMissions(service, u).reverse()) { // oldest first
     if (m.createdAt < since || m.direction === 'inbound' || !m.target?.phone) continue;
-    const key = `${m.owner}:${m.target.phone}`, row = callRow(m);
-    const p = people.get(key) ?? { owner: m.owner, ownerName: name(m.owner), recipient: row.recipient, calls: 0, answered: 0, unanswered: 0, attention: 0, emergency: 0, missedInARow: 0, scheduled: false, last: null, contactId: null, phone: m.target.phone };
+    // A number shared by several people (a ward's phone) is still several people: the name is part of who they are.
+    const key = `${m.owner}:${m.target.phone}:${m.target.name ?? ''}`, row = callRow(m);
+    const p = people.get(key) ?? { owner: m.owner, ownerName: name(m.owner), recipient: row.recipient, calls: 0, answered: 0, unanswered: 0, attention: 0, emergency: 0, missedInARow: 0, notPlaced: 0, lastNotPlaced: null, scheduled: false, last: null, contactId: null, phone: m.target.phone };
     p.calls++; p.recipient = row.recipient; if (row.scheduled) p.scheduled = true;
-    if (row.answered === true) { p.answered++; p.missedInARow = 0; } else if (row.answered === false) { p.unanswered++; p.missedInARow++; }
+    if (row.outcome === 'reached') { p.answered++; p.missedInARow = 0; } else if (row.outcome === 'unanswered') { p.unanswered++; p.missedInARow++; }
     if (row.attention) p.attention++; if (row.attention === 'emergency') p.emergency++;
-    p.last = { id: row.id, createdAt: row.createdAt, answered: row.answered, attention: row.attention, kind: row.kind, checkIn: row.checkIn, checkInLevels: row.checkInLevels };
+    p.last = { id: row.id, createdAt: row.createdAt, answered: row.answered, outcome: row.outcome, attention: row.attention, kind: row.kind, checkIn: row.checkIn, checkInLevels: row.checkInLevels };
     people.set(key, p);
+  }
+  // A scheduled call that was never placed (the service was down, no credits, a refusal before dialling) is a day
+  // nobody checked on this person. It belongs on their line, not only inside the schedule's own history.
+  const sinceDate = new Date(since + 9 * 3600_000).toISOString().slice(0, 10);
+  for (const row of service.store.db.prepare("SELECT body FROM records WHERE kind='schedule'").iterate()) {
+    const schedule = service.store.open(row.body); if (schedule.team !== u.team) continue;
+    const key = `${schedule.owner}:${schedule.request.phone}:${schedule.request.name ?? ''}`;
+    for (const run of service.store.all('schedule-run', schedule.owner)) {
+      if (run.scheduleId !== schedule.id || run.date < sinceDate || !['SKIPPED', 'FAILED'].includes(run.state) && !(run.state === 'UNANSWERED' && run.reason)) continue;
+      const p = people.get(key) ?? { owner: schedule.owner, ownerName: name(schedule.owner), recipient: schedule.request.name, calls: 0, answered: 0, unanswered: 0, attention: 0, emergency: 0, missedInARow: 0, notPlaced: 0, lastNotPlaced: null, scheduled: true, last: null, contactId: null, phone: schedule.request.phone };
+      p.notPlaced++; if (!p.lastNotPlaced || `${run.date}T${run.time}` > `${p.lastNotPlaced.date}T${p.lastNotPlaced.time}`) p.lastNotPlaced = { date: run.date, time: run.time, reason: run.reason ?? run.state };
+      people.set(key, p);
+    }
   }
   // The contact, when the person who calls them saved one, so their history can be opened.
   const contacts = new Map();
   for (const p of people.values()) { if (!contacts.has(p.owner)) contacts.set(p.owner, new Map(service.store.all('contact', p.owner).filter(c => c.phone).map(c => [c.phone, c.id]))); p.contactId = contacts.get(p.owner).get(p.phone) ?? null; delete p.phone; }
-  const rank = p => p.last?.attention === 'emergency' ? 0 : p.missedInARow >= 2 ? 1 : p.last?.attention ? 2 : 3;
-  const list = [...people.values()].sort((a, b) => rank(a) - rank(b) || Date.parse(b.last.createdAt) - Date.parse(a.last.createdAt));
+  // A scheduled call that was not placed after the last call that was: nobody has checked since.
+  const stale = p => !!p.lastNotPlaced && (!p.last || Date.parse(`${p.lastNotPlaced.date}T${p.lastNotPlaced.time}:00+09:00`) > Date.parse(p.last.createdAt));
+  const rank = p => p.last?.attention === 'emergency' ? 0 : p.missedInARow >= 2 || stale(p) ? 1 : p.last?.attention ? 2 : 3;
+  const when = p => p.last ? Date.parse(p.last.createdAt) : 0;
+  const list = [...people.values()].map(p => ({ ...p, notCheckedSince: stale(p) })).sort((a, b) => rank(a) - rank(b) || when(b) - when(a));
   return { team: u.team, days, people: list, needsAttention: list.filter(p => rank(p) < 3).length };
 }
 
