@@ -109,7 +109,7 @@ test('one person’s calls over time: answers per topic, days missed in a row, a
   f.call('staff',{createdAt:day(2),answered:false});f.call('staff',{createdAt:day(1),answered:false});f.call('staff',{createdAt:day(60),answered:true});f.call('staff',{createdAt:day(1),status:'DRAFT'});
   f.call('staff',{createdAt:day(1),answered:true,target:{name:'別の人',phone:'+819000000099'}});
   const h=contactHistory(f.service,f.by('staff'),contact.id);
-  assert.deepEqual(h.summary,{calls:5,answered:3,unanswered:2,attention:1,emergency:0,missedInARow:2,topics:{condition:{yes:3},meal:{yes:2,no:1},medication:{yes:1,no:1,unclear:1},sleep:{},help:{no:3}}});
+  assert.deepEqual(h.summary,{calls:5,answered:3,unanswered:2,notPlaced:0,attention:1,emergency:0,missedInARow:2,topics:{condition:{yes:3},meal:{yes:2,no:1},medication:{yes:1,no:1,unclear:1},sleep:{},help:{no:3}}});
   assert.deepEqual(h.calls.map(c=>c.createdAt<h.calls.at(-1).createdAt||c===h.calls.at(-1)),[true,true,true,true,true],'oldest first');
   assert.ok(!JSON.stringify(h).includes('+8190')&&!JSON.stringify(h).includes('腰が痛い'));
   assert.equal(contactHistory(f.service,f.by('staff'),contact.id,90).summary.calls,6);
@@ -185,4 +185,13 @@ test('the team list carries the scheduled calls never placed and the alerts not 
   assert.deepEqual(view.undelivered.map(a=>[a.mission,a.level,a.recipient]),[[m.id,'emergency','山田 花子']]);
   assert.equal(view.needsAttention,1);
   assert.equal(teamSummary(f.service,f.by('boss')).total.notPlacedScheduled,1);
+}));
+
+test('a person’s history carries the scheduled calls to them that were never placed',using(f=>{
+  const contact=f.service.contact(f.by('staff'),{name:'山田 花子',phone:'+819000000011',relationship:'customer',basis:'入居者'});
+  f.store.put('schedule',{id:'s1',owner:'staff',team:'care',status:'ACTIVE',request:{phone:'+819000000011',name:'山田 花子'}});
+  f.store.put('schedule-run',{id:'s1:2026-10-01:09:00',owner:'staff',scheduleId:'s1',date:'2026-10-01',time:'09:00',attempts:[],state:'FAILED',status:'FAILED',reason:'insufficient_credits'});
+  f.store.put('schedule-run',{id:'s1:2026-10-02:09:00',owner:'staff',scheduleId:'s1',date:'2026-10-02',time:'09:00',attempts:[{missionId:'x',at:now}],state:'ANSWERED',status:'ANSWERED'});
+  const h=contactHistory(f.service,f.by('boss'),contact.id);
+  assert.deepEqual(h.notPlaced,[{scheduleId:'s1',date:'2026-10-01',time:'09:00',reason:'insufficient_credits'}]);assert.equal(h.summary.notPlaced,1);
 }));

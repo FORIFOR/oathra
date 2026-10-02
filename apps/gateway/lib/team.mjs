@@ -119,8 +119,15 @@ export function contactHistory(service, u, contactId, days = 30) {
   const topics = Object.fromEntries(['condition', 'meal', 'medication', 'sleep', 'help'].map(topic => [topic, calls.reduce((n, c) => { const a = c.checkIn?.[topic]; if (a && a !== 'not_asked') n[a] = (n[a] ?? 0) + 1; return n; }, {})]));
   // Days in a row, up to the latest call, on which nobody answered: the number a care worker asks first.
   let missedInARow = 0; for (const c of [...calls].reverse()) { if (c.outcome === 'unanswered') missedInARow++; else if (c.outcome === 'reached') break; }
+  // Scheduled calls to this person that were never placed: on their page too, not only inside the schedule.
+  const sinceDate = new Date(since + 9 * 3600_000).toISOString().slice(0, 10), notPlaced = [];
+  for (const schedule of service.store.all('schedule', contact.owner)) {
+    if (schedule.request?.phone !== contact.phone) continue;
+    for (const run of service.store.all('schedule-run', contact.owner)) if (run.scheduleId === schedule.id && run.date >= sinceDate && (['SKIPPED', 'FAILED'].includes(run.state) || (run.state === 'UNANSWERED' && run.reason))) notPlaced.push({ scheduleId: schedule.id, date: run.date, time: run.time, reason: run.reason ?? run.state });
+  }
+  notPlaced.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
   if (contact.owner !== u.id) service.store.audit(u.id, 'team.history_viewed', contact.id, { contact: contact.id, owner: contact.owner });
-  return { contact: { id: contact.id, name: contact.name || contact.company }, days, calls, summary: { calls: calls.length, answered, unanswered, attention: calls.filter(c => c.attention).length, emergency: calls.filter(c => c.attention === 'emergency').length, missedInARow, topics } };
+  return { contact: { id: contact.id, name: contact.name || contact.company }, days, calls, notPlaced, summary: { calls: calls.length, answered, unanswered, notPlaced: notPlaced.length, attention: calls.filter(c => c.attention).length, emergency: calls.filter(c => c.attention === 'emergency').length, missedInARow, topics } };
 }
 
 /** Everyone the team calls, one line each: when they were last called, whether they answered, how many calls in a row
