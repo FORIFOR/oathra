@@ -30,6 +30,8 @@ const signIn = async (page, bearer) => {
   await page.js(`document.querySelector('#token').value=${JSON.stringify(bearer)};document.querySelector('form').requestSubmit()`);
   await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" });
 };
+// A capture never carries the toast of the step before it.
+const launchQuiet = async (size) => { const pg = await launch(size), shot = pg.screenshot; pg.screenshot = async (...a) => { await pg.until("document.querySelector('#toast')?.hidden !== false", { timeout: 5000 }).catch(() => null); return shot(...a); }; return pg; };
 const draft = async (name, instruction) => (await api("/phone/draft", { phone: "+819012345678", name, instruction })).mission.id;
 // Fixture calls carry a daytime of the day before (a finished call shown at the minute this check runs, late at night,
 // reads as behaviour). A call still in progress keeps "now".
@@ -56,7 +58,7 @@ try {
   const partial = await draft("焼肉 たけ", "10月5日の18時に3名で予約を取ってほしい。");
   put(partial, "INCOMPLETE", [["caller", "10月5日の18時に3名で予約をお願いできますか。"], ["callee", "10月5日ですね、その日は空いております。お時間は確認しますので少々お待ちください。"]]);
 
-  page = await launch({ width: 1440, height: 900 });
+  page = await launchQuiet({ width: 1440, height: 900 });
   await page.goto(base + "/");
   await page.until("document.querySelector('#public-email')", { label: "sign in" });
   c.ok(await page.js("!!document.querySelector('link[href=\"/app/style.css\"]')"), "/ is the new app (the previous screen lives at /workspace)");
@@ -314,6 +316,21 @@ try {
   const tamuraContact = await mateApi("/contacts", { name: "田村 節子", phone: "+819012340001", basis: "9/25 ご家族から見守りの電話の同意をいただいた" });
   const tradeCall = (await api("/phone/draft", { phone: "+81312340009", name: "青木商店", instruction: "田中商会の田中の代理として、りんごジュースの納期を確認してください。", success: { required: ["quantity", "confirmed"], expected: { quantity: "50ケース" } } })).mission.id;
   put(tradeCall, "INCOMPLETE", [["caller", "りんごジュースを50ケース、今月中に納品いただけますか。"], ["callee", "申し訳ありません、今月は30ケースまでなら納品できます。"]]);
+  // A list registered through the API two days ago, with its calls as the worker would have left them: the same calls
+  // then show in the list, in each person's history, on the board and in the team list (one state for every capture).
+  const seededList = await api("/batches", { kind: "request", contactIds: [haru.id, mitsu.id, optedOut.id, stoppedContact.id], request: { instruction: "今週の体調をうかがって、困りごとがないか聞いてください。", pace: "gentle" }, retry: { count: 1, minutes: 60 }, acknowledged: true });
+  { const listHaru = await care(api, "山本 ハル", haru.phone, [["caller", "お薬は飲まれましたか。"], ["callee", "はい、飲みました。"]], { batch: { id: seededList.id }, at: Date.parse(`${day(-2)}T15:00:00+09:00`) });
+    const listMitsu = await care(api, "佐々木 ミツ", mitsu.phone, [], { batch: { id: seededList.id }, at: Date.parse(`${day(-2)}T16:05:00+09:00`) });
+    const b = app.store.get("batch", seededList.id), item = (n) => b.items.find((i) => i.name === n);
+    Object.assign(item("山本 ハル"), { state: "DONE", outcome: "COMPLETED", attempts: 1, missionId: listHaru });
+    Object.assign(item("佐々木 ミツ"), { state: "DONE", outcome: "UNANSWERED", attempts: 2, missionId: listMitsu });
+    b.createdAt = Date.parse(`${day(-2)}T14:50:00+09:00`); b.expiresAt = b.createdAt + 7 * 86400e3; b.status = "FINISHED"; b.finishedAt = Date.parse(`${day(-2)}T16:07:00+09:00`); app.store.put("batch", b); }
+  // Trade calls that required both a quantity and a delivery date: one where only the quantity was confirmed, one where both were.
+  const due = day(18), dueSaid = `${Number(due.slice(5, 7))}月${Number(due.slice(8))}日`, later = `${Number(day(23).slice(5, 7))}月${Number(day(23).slice(8))}日`;
+  const trade = async (name, phone, reply) => { const id = (await api("/phone/draft", { phone, name, instruction: `田中商会の田中の代理として、りんごジュースの納期を確認してください。\n確かめる条件：数量 50ケース・納期 ${dueSaid}。`, success: { required: ["quantity", "date", "confirmed"], expected: { quantity: "50ケース", date: due } } })).mission.id;
+    put(id, reply.status, [["caller", `りんごジュースを50ケース、${dueSaid}に納品いただけますか。`], ["callee", reply.text]]); return id; };
+  const tradeHalf = await trade("西川青果", "+81312340010", { status: "INCOMPLETE", text: `50ケースはご用意できます。ただ、納品は${later}になります。` });
+  const tradeBoth = await trade("東山食品", "+81312340011", { status: "COMPLETED", text: `はい、50ケースを${dueSaid}に納品するご注文承りました。` });
   const mateLong = (await mateApi("/phone/draft", { phone: "+81312340002", name: "特別養護老人ホームひかり苑 第二事業所 地域連携室 山田太郎", instruction: "来週の面会の予定をお知らせしてください。" })).mission.id;
   put(mateLong, "COMPLETED", [["caller", "来週の面会の予定をお知らせします。"], ["callee", "分かりました。ありがとうございます。"]]);
   // ---- 2026-10-02: ゆっくり・やさしく話す, the wellbeing report, 定期の電話, チームの電話, 連絡停止 and the CSV import.
@@ -376,7 +393,7 @@ try {
   c.ok(/22:00 は登録できません。かけられる時刻は 07:00〜21:00 です/.test(await page.text("#rep-hours")), "a night-time is refused up front, with the hours that can be used", await page.text("#rep-hours"));
   await page.js("{const i=[...document.querySelectorAll('.rep-times input')].pop();i.value='18:30';i.dispatchEvent(new Event('change',{bubbles:true}))}");
   const repSum = await page.text(".rep-sum");
-  c.ok(["佐々木 ミツ", "09:00、18:30", "毎週 月・火・水・木・金", "まで", `最大 ${bound} 回`, "30分後にかけ直す（2回まで）。それでも出なかった回は、報告に「要確認」と出ます。AIは、だれにも電話や連絡をしません。", "一時停止・終了"].every((t) => repSum.includes(t)) && await page.js("(()=>{const s=getComputedStyle(document.querySelector('.ask-side'));const sum=document.querySelector('.rep-sum'),ack=document.querySelector('#rep-ack');return s.position==='static'&&s.overflowY==='visible'&&!!(sum.compareDocumentPosition(ack)&4)})()"), "who, when, weekdays, until when, the bound, retries and how to stop are together right before the approval, on the page itself (no inner scroll)", repSum);
+  c.ok(["佐々木 ミツ", "09:00、18:30", "毎週 月・火・水・木・金", "まで", `最大 ${bound} 回`, "30分後にかけ直す（2回まで）。それでも出なかった回は、報告と（設定があれば）職員への通知で知らせます。AIがご家族や救急に連絡することはありません。", "一時停止・終了"].every((t) => repSum.includes(t)) && await page.js("(()=>{const s=getComputedStyle(document.querySelector('.ask-side'));const sum=document.querySelector('.rep-sum'),ack=document.querySelector('#rep-ack');return s.position==='static'&&s.overflowY==='visible'&&!!(sum.compareDocumentPosition(ack)&4)})()"), "who, when, weekdays, until when, the bound, retries and how to stop are together right before the approval, on the page itself (no inner scroll)", repSum);
   c.ok(["連絡先に保存し", "電話してよい根拠", "予約を取る電話は定期にできません", "最長92日", "同じように費用", "出なかったときだけ", "見送ります", "もう電話しないで"].every((t) => rules.includes(t)), "the rules of a standing request are stated before approval", rules);
   c.ok(await page.js("document.querySelector('.rep-panel .btn.primary').disabled"), "登録 stays off until the rules are acknowledged");
   await page.js("document.querySelector('.rep').scrollIntoView({block:'start'})"); await sleep(200);
@@ -438,7 +455,7 @@ try {
   await page.until("location.hash==='#/standing' && document.querySelectorAll('.sched').length===2", { label: "standing list" });
   const standingText = await page.text("#view");
   c.ok(/山本 ハル/.test(standingText) && /毎日 09:00/.test(standingText) && /30分後にかけ直す（2回まで）/.test(standingText) && /終了日までに最大 \d+ 回（これからの\d+回 × かけ直しを含め3回・かける日 \d+日）/.test(standingText) && /次の回/.test(standingText), "定期の電話: when, until when, retries and the upper bound", standingText.slice(0, 200));
-  c.ok(/応答あり/.test(standingText) && /応答なし/.test(standingText) && /3回かけました/.test(standingText) && /見送り/.test(standingText) && /時刻を過ぎたため、遅れてかけずに見送りました/.test(standingText) && /かけられませんでした/.test(standingText) && /クレジットが足りません/.test(standingText) && await page.js("[...document.querySelectorAll('.runs .lvl.miss')].map(n=>n.textContent).join()") === [...(todayPassed ? ["見送り"] : []), "応答なし", "見送り", "かけられませんでした"].reverse().reverse().join() && await page.js("document.querySelectorAll('.runs li').length") === 4 + (todayPassed ? 1 : 0), "past runs: answered, unanswered, skipped and failed, each with its reason; the two that did not reach the person carry a mark");
+  c.ok(!/応答あり/.test(standingText) && /話せました/.test(standingText) && await page.js("document.querySelectorAll('.runs .lvl.emergency').length") === 1 && /応答なし/.test(standingText) && /3回かけました/.test(standingText) && /見送り/.test(standingText) && /時刻を過ぎたため、遅れてかけずに見送りました/.test(standingText) && /かけられませんでした/.test(standingText) && /クレジットが足りません/.test(standingText) && await page.js("[...document.querySelectorAll('.runs .lvl.miss')].map(n=>n.textContent).join()") === [...(todayPassed ? ["見送り"] : []), "応答なし", "見送り", "かけられませんでした"].reverse().reverse().join() && await page.js("document.querySelectorAll('.runs li').length") === 4 + (todayPassed ? 1 : 0), "past runs: answered, unanswered, skipped and failed, each with its reason; the two that did not reach the person carry a mark");
   c.ok(!/window_passed|insufficient_credits|UNANSWERED|ANSWERED|SKIPPED|FAILED|ACTIVE|PAUSED|undefined|NaN/.test(standingText), "no state names or codes on 定期の電話");
   await page.screenshot(join(out, "gateway-app-standing.png"), { fullPage: true });
   await small("定期の電話");
@@ -466,28 +483,36 @@ try {
   c.ok(await page.js("(()=>{const row=document.querySelector('.checkin-table tbody tr'),lines=[...document.querySelectorAll('.transcript .flag-line .lvl')].map(n=>n.className+':'+n.textContent).join();return !!row.querySelector('.lvl.emergency')&&lines==='lvl emergency:緊急の発言,lvl concern:要確認の発言,lvl concern:要確認の発言,lvl concern:要確認の発言'})()"), "the same line carries the same level in the banner, the check-in row and the conversation");
   c.ok(/\d+\/\d+\(.\) \d\d:\d\d/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.transcript .span')")), "the report says when the call was (Japan time); a wellbeing report carries no millisecond ranges", await page.text(".call-when"));
   c.ok(!/self_harm|no_answer|not_asked|undefined|NaN|emergency|concern/.test(reportText), "the flagged lines are marked in the conversation; no internal words on the report");
+  await page.js("document.querySelector('.family-note summary').click()");
+  const famText = await page.text(".family-note");
+  c.ok(/サービスからは送りません。職員が読んで確かめてから、自分で送ってください。/.test(famText) && /山本 ハル/.test(famText) && await page.js("[...document.querySelectorAll('.family-note button')].some(b=>b.textContent==='文をコピー')"), "ご家族への報告文: the server's text, a copy button, and that a person sends it after reading", famText.slice(0, 200));
   await page.screenshot(join(out, "gateway-app-report-care.png"), { fullPage: true });
   await go(`#/call/${noAnswer}`, "/応答がありませんでした/.test(document.querySelector('.headline')?.textContent)");
   const missedBand = await page.text(".band");
-  c.ok(await page.js("!!document.querySelector('.band.concern h2 .lvl.concern') && !document.querySelector('.no-answer')") && /ご本人の様子を確かめてください/.test(missedBand) && /電話に出なかったか、何も話しませんでした。3回目の電話で、この回のかけ直しはここまでです。/.test(missedBand) && /AIはどこにも連絡していません。/.test(missedBand) && /定期の電話・3回目/.test(await page.text(".call-when")) && /10:01/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.checkin-table')")) && await page.js("(()=>{const f=document.querySelector('.call-foot').getBoundingClientRect(),d=document.querySelector('.request-details').getBoundingClientRect();return f.top-d.bottom<80})()"), "a wellbeing call nobody answered: the same 要確認 banner form, which try it was, at a time a schedule could ring; the button sits under the content", missedBand);
+  c.ok(await page.js("!!document.querySelector('.band.concern h2 .lvl.concern') && !document.querySelector('.no-answer')") && /ご本人の様子を確かめてください/.test(missedBand) && /電話に出なかったか、何も話しませんでした。3回目の電話で、この回のかけ直しはここまでです。/.test(missedBand) && /AIはどこにも連絡していません。/.test(missedBand) && /定期の電話・3回目/.test(await page.text(".call-when")) && /10:01/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.checkin-table')")) && await page.js("(()=>{const f=document.querySelector('.call-foot').getBoundingClientRect(),d=[...document.querySelectorAll('.request-details')].pop().getBoundingClientRect();return f.top-d.bottom<80})()"), "a wellbeing call nobody answered: the same 要確認 banner form, which try it was, at a time a schedule could ring; the button sits under the content", missedBand);
   await page.screenshot(join(out, "gateway-app-report-unanswered.png"));
 
   // チームの電話 (manager / admin): rows at a glance, 要確認 only, a teammate's report read-only, CSV.
   const teamAll = await api("/team/calls");
+  // A notice that could not be delivered (fixture: nothing is sent from this check): a supervisor is told on チームの電話.
+  app.store.put("alert", { id: "al_" + randomBytes(6).toString("hex"), owner: user.id, team: "local", status: "pending", kind: "unanswered", createdAt: Date.now() });
+  await page.js("location.hash='#/';location.reload()"); await sleep(1200); await page.until("!document.querySelector('#tabs').hidden", { label: "reloaded" });
   await go("#/team", "!!document.querySelector('.team-table')");
   const teamRow = (name) => page.js(`[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('th').textContent.includes(${JSON.stringify(name)}))?.textContent ?? ''`);
-  c.ok(await page.js("document.querySelectorAll('.team-table tbody tr').length") === teamAll.total && new RegExp(`要確認だけ（${teamAll.needsAttention}件）`).test(await page.text(".team-tools .chip")) && teamAll.needsAttention === 6, "チームの電話: every call of the team; the count that needs a look includes the wellbeing call nobody answered", `${teamAll.total} / ${teamAll.needsAttention}`);
+  c.ok(await page.js("document.querySelectorAll('.team-table tbody tr').length") === teamAll.total && new RegExp(`要確認だけ（${teamAll.needsAttention}件）`).test(await page.text(".team-tools .chip")) && teamAll.needsAttention === 7, "チームの電話: every call of the team; the count that needs a look includes the wellbeing call nobody answered", `${teamAll.total} / ${teamAll.needsAttention}`);
   const tamura = await teamRow("田村 節子"), yamamoto = await page.js("[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('.lvl.emergency'))?.textContent ?? ''");
   c.ok(/鈴木/.test(tamura) && !/suzuki/.test(tamura) && /要確認/.test(tamura) && /食事：まだ食べていないと話しました/.test(tamura) && /服薬：飲んだと話しました/.test(tamura) && /話せました/.test(tamura), "a teammate's row: who asked, how the call went, 要確認, and the answers as things said", tamura);
   c.ok(/自分/.test(yamamoto) && /山本 ハル/.test(yamamoto) && /緊急/.test(yamamoto) && /体調：不調や困りごとを話しました/.test(yamamoto) && /話せました/.test(yamamoto) && !/確認済み/.test(yamamoto), "an emergency row is marked 緊急 in words, and its result is 話せました, never 確認済み", yamamoto);
   const missedRow = await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('.lvl.miss'));return r?r.className+'|'+r.querySelector('.lvl.miss').textContent+'|'+(r.querySelector('.lvl.concern:not(.miss)')?.textContent??''):''})()");
   c.ok(missedRow === "need-concern|応答なし|要確認", "a wellbeing call nobody answered: the 応答なし mark, 要確認 and the left band", missedRow);
   const ranks = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.team-table tbody tr')].map(r=>r.querySelector('td .lvl.emergency')?0:r.classList.contains('need-concern')?1:2))"));
-  c.ok(ranks[0] === 0 && ranks.every((v, i) => i === 0 || ranks[i - 1] <= v) && ranks.filter((v) => v < 2).length === 6, "the unfiltered list puts what needs a look first: 緊急, then 要確認, then the rest", ranks.join(""));
+  c.ok(ranks[0] === 0 && ranks.every((v, i) => i === 0 || ranks[i - 1] <= v) && ranks.filter((v) => v < 2).length === 7, "the unfiltered list puts what needs a look first: 緊急, then 要確認, then the rest", ranks.join(""));
   const tableText = await page.text(".team-table");
-  c.ok(!/確認済み|未確定/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()") === "決まりました,決まっていません" && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined");
+  c.ok(!/確認済み|未確定/.test(tableText) && (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")).split(",").sort().join() === "決まっていません,決まっていません,決まりました,決まりました" && !/応答の記録なし/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table tbody th .tag')].filter(t=>t.textContent==='名簿').length") === 2 && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined");
+  c.ok(/届いていない通知が 1 件あります。通知先の設定を確かめてください。/.test(await page.text(".undelivered") ?? ""), "チームの電話: an undelivered notice is said to the supervisor", await page.text(".undelivered"));
   const sumText = await page.text(".team-sum");
-  c.ok(new RegExp(`電話${teamAll.total}件`).test(sumText) && /応答57\.1%だれかが出たかを記録した7件のうち、4件で応答。それより前の電話\d+件には、この記録がありません。/.test(sumText) && /応答なし3件/.test(sumText) && /要確認6件うち緊急 1件/.test(sumText) && /要確認\d（うち緊急1）/.test(await page.text(".sum-days")) && await page.js("document.querySelectorAll('.sum-days li').length") === 7, "この7日間: calls, the answer rate with the count it is based on, needs-attention, emergencies, and seven days", sumText);
+  const sumApi = (await api("/team/summary?days=7")).total, wentCounts = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.team-table td[data-label=\"電話の結果\"]')].reduce((n,td)=>{const t=td.querySelector('.lvl.miss')?.textContent??td.firstChild.textContent;n[t]=(n[t]??0)+1;return n},{}))"));
+  c.ok(new RegExp(`電話${teamAll.total}件`).test(sumText) && new RegExp(`話せた割合${String(sumApi.answerRatePercent).replace(".", "\\.")}%かけた${sumApi.answered + sumApi.unanswered}件のうち${sumApi.answered}件で話せました`).test(sumText) && new RegExp(`応答なし${sumApi.unanswered}件`).test(sumText) && (wentCounts["話せました"] ?? 0) === sumApi.answered && (wentCounts["応答なし"] ?? 0) === sumApi.unanswered && /要確認7件うち緊急 1件/.test(sumText) && /要確認\d（うち緊急1）/.test(await page.text(".sum-days")) && await page.js("document.querySelectorAll('.sum-days li').length") === 7, "この7日間: the tile's numbers can be counted from the list below it (話せました / 応答なし), needs-attention, emergencies, seven days", sumText + " " + JSON.stringify(wentCounts));
   c.ok(await page.noSidewaysScroll() && !/\+81|090-/.test(await page.text(".team-table")), "a long recipient name does not widen the page; the list carries no phone numbers");
   await page.screenshot(join(out, "gateway-app-team.png"), { fullPage: true });
   await small("チームの電話");
@@ -508,14 +533,22 @@ try {
   // The trade call's report: the quantity the other side offered is not what was asked, so it reads as not settled.
   await go(`#/call/${tradeCall}`, "!!document.querySelector('.report-top')");
   const tradeReport = await page.text("#view");
-  c.ok(/数量/.test(tradeReport) && /相手の答えは 30ケース でした。頼んだ 50ケース とは違うので、決まっていません/.test(tradeReport) && await page.js("document.querySelectorAll('.rrow').length") === 2 && !/決まりました/.test(await page.text(".verdict")), "報告: a quantity the other side did not confirm reads as not settled, with what they offered", tradeReport.slice(0, 200));
+  c.ok(/数量/.test(tradeReport) && /相手の答え30ケース頼んだのは 50ケース頼んだ内容と違うので、決まっていません/.test(tradeReport) && /相手の承諾—相手がはっきり承諾した言葉は、確かめられませんでした/.test(tradeReport) && !(await page.js("!!document.querySelector('.transcript .span')")) && await page.js("document.querySelectorAll('.rrow').length") === 2 && !/決まりました/.test(await page.text(".verdict")), "報告: a quantity the other side did not confirm reads as not settled, with what they offered", tradeReport.slice(0, 200));
   await page.screenshot(join(out, "gateway-app-report-quantity.png"));
+  await go(`#/call/${tradeHalf}`, "!!document.querySelector('.report-top')");
+  const halfRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.rrow')].map(r=>r.className+'|'+r.textContent))"));
+  c.ok(halfRows.length === 3 && /ok\|数量50ケース/.test(halfRows.find((r) => /数量/.test(r)) ?? "") && /相手の答え/.test(halfRows.find((r) => /納期/.test(r)) ?? "") && /頼んだのは/.test(halfRows.find((r) => /納期/.test(r)) ?? "") && !/決まりました/.test(await page.text(".verdict")) && !/まだ確かめていません/.test(await page.text("#view")), "報告: quantity confirmed, delivery date not: the date row says 相手の答え and what was asked; the call is not settled", halfRows.join(" || "));
+  await page.screenshot(join(out, "gateway-app-report-terms-partial.png"));
+  await go(`#/call/${tradeBoth}`, "!!document.querySelector('.report-top')");
+  const bothRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.rrow')].map(r=>r.className+'|'+r.textContent))"));
+  c.ok(/決まりました/.test(await page.text(".verdict")) && bothRows.length === 3 && bothRows.every((r) => /ok\|/.test(r) && /「/.test(r)) && /相手の承諾はい/.test(bothRows.join()), "報告: quantity and delivery date both confirmed reads 決まりました, each with the other side's words", bothRows.join(" || "));
+  await page.screenshot(join(out, "gateway-app-report-terms-settled.png"));
   // 相手ごとの様子: one line per person the team calls; what needs a look first; opens the person's history.
   await go("#/team", "!!document.querySelector('.team-table')");
   await clickText("相手ごとの様子", ".page-actions");
   await page.until("location.hash==='#/team/people' && !!document.querySelector('.people-table')", { label: "people board" });
   const peopleRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.people-table tbody tr')].map(r=>r.className+'|'+r.textContent))"));
-  c.ok(/^need-emergency\|山本 ハル/.test(peopleRows[0]) && /緊急/.test(peopleRows[0]) && /話せました/.test(peopleRows[0]) && /^need-concern\|佐々木 ミツ/.test(peopleRows[1]) && /応答なし/.test(peopleRows[1]) && /2回続けて応答がありません/.test(peopleRows[1]) && /3回・うち応答なし 2回/.test(peopleRows[1]), "相手ごとの様子: the emergency first, then two unanswered in a row, with the counts for 30 days", peopleRows.slice(0, 2).join(" || "));
+  c.ok(/^need-emergency\|山本 ハル/.test(peopleRows[0]) && /緊急/.test(peopleRows[0]) && /話せました/.test(peopleRows[0]) && (!todayPassed || new RegExp(`${Number(day(0).slice(5, 7))}/${Number(day(0).slice(8))} 09:00 の定期の電話は、かけていません（サービスが止まっていたため）`).test(peopleRows[0])) && /^need-concern\|佐々木 ミツ/.test(peopleRows[1]) && /応答なし/.test(peopleRows[1]) && /3回続けて応答がありません/.test(peopleRows[1]) && /4回・うち応答なし 3回/.test(peopleRows[1]) && !/応答の記録なし/.test(peopleRows.join()), "相手ごとの様子: the emergency first (with the scheduled call that was not placed on that line), then three unanswered in a row including the list call, with the counts", peopleRows.slice(0, 2).join(" || "));
   const tamuraPerson = peopleRows.find((r) => /田村 節子/.test(r)) ?? "";
   c.ok(/鈴木/.test(tamuraPerson) && /食事：まだ食べていないと話しました要確認/.test(tamuraPerson) && await page.js("document.querySelectorAll('.people-table .glance .lvl.emergency').length") === 1 && !/\+81|090-|03-/.test(await page.text(".people-table")) && await page.noSidewaysScroll(), "who calls them, the last answers as things said with 緊急 and 要確認 marked apart, and no phone numbers", tamuraPerson);
   await page.screenshot(join(out, "gateway-app-people.png"), { fullPage: true });
@@ -597,7 +630,7 @@ try {
   // (2) An empty 頼むこと cannot be started, even with the checkbox ticked.
   await page.js("document.querySelector('#list-ack').click()"); await sleep(100);
   await clickText("この名簿で電話を始める", ".ask-side"); await sleep(500);
-  c.ok(/頼むことを書いてください/.test(await page.text(".ask-side .errbox")) && await page.js("location.hash") === "#/lists/new" && (await api("/batches")).length === 0, "a list with an empty 頼むこと is not started even with the checkbox ticked; nothing is registered");
+  c.ok(/頼むことを書いてください/.test(await page.text(".ask-side .errbox")) && await page.js("location.hash") === "#/lists/new" && (await api("/batches")).length === 1, "a list with an empty 頼むこと is not started even with the checkbox ticked; nothing is registered");
   await page.js("{const t=document.querySelector('#list-text');t.value='来週の訪問の予定をお知らせして、ご都合を聞いてください。';t.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#list-gentle').click();const n=document.querySelector('#list-retry');n.value='1';n.dispatchEvent(new Event('change',{bubbles:true}))}");
   const listRules = await page.text(".ask-side .rep-rules");
   c.ok(["同じように費用", "08:00〜21:00 の間だけかけます。時間の外では、かけずに待ちます", "一時停止します", "7日", "断った相手には、もうかけません"].every((t) => listRules.includes(t)) && /1時間後に、1回までかけ直す/.test(await listSide()) && /最大 6 回（かける3人 × かけ直しを含め2回）/.test(await listSide()) && /承認するとすぐ、08:00〜21:00 の間に順にかけ始めます/.test(await listSide()) && await page.js("document.querySelector('.ask-side .btn.primary').disabled"), "the rules of a list and the retry choice are stated; 始める stays off until acknowledged", listRules);
@@ -605,21 +638,15 @@ try {
   await small("名簿にまとめて電話");
   await page.js("document.querySelector('#list-ack').click()"); await sleep(100);
   await clickText("この名簿で電話を始める", ".ask-side");
-  await page.until("location.hash==='#/lists' && document.querySelectorAll('.sched').length===1", { timeout: 10_000, label: "lists after registering" });
+  await page.until("location.hash==='#/lists' && document.querySelectorAll('.sched').length===2", { timeout: 10_000, label: "lists after registering" });
   const batch = (await api("/batches"))[0], states = Object.fromEntries(batch.items.map((i) => [i.name, i.state + (i.reason ? ":" + i.reason : "")]));
   c.ok(batch.kind === "request" && batch.spec.pace === "gentle" && batch.retry.count === 1 && batch.retry.minutes === 60 && states["山本 ハル"] === "PENDING" && states["佐々木 ミツ"] === "PENDING" && states["中村 恵"] === "PENDING" && states["高橋 花"] === "SKIPPED:recipient_suppressed" && states["焼肉 たけ"] === "SKIPPED:contact_basis_required", "the list is saved as approved, and the server skips exactly the people the screen said it would", JSON.stringify(states));
-  // Progress as the worker would write it (fixture: the worker never runs here, nothing is dialled).
-  { const b = app.store.get("batch", batch.id); const item = (n) => b.items.find((i) => i.name === n);
-    Object.assign(item("山本 ハル"), { state: "DONE", outcome: "COMPLETED", attempts: 1, missionId: careCall });
-    Object.assign(item("佐々木 ミツ"), { state: "DONE", outcome: "UNANSWERED", attempts: 2, missionId: noAnswer });
-    // Registered at a time a list could have started ringing (yesterday morning), not at the minute this check runs.
-    b.createdAt = Date.parse(`${day(-1)}T10:15:00+09:00`); b.expiresAt = b.createdAt + 7 * 86400e3;
-    app.store.put("batch", b); }
   await go("#/requests", "!!document.querySelector('.page-actions a[href$=standing]')");
   await clickText("名簿の電話", ".page-actions");
-  await page.until("location.hash==='#/lists' && /かける3人のうち2人にかけ終えました（かけない相手 2人）/.test(document.querySelector('#view').textContent)", { label: "list progress" });
-  const listText = await page.text(".sched");
-  c.ok(/「来週の訪問の予定をお知らせして、ご都合を…」・5人の名簿/.test(listText) && /進行中/.test(listText) && await page.js("document.querySelector('.sched .bar-meter i').style.width") === "67%" && /これから 1人/.test(listText) && /山本 ハル話せました—?報告を開く/.test(listText) && /佐々木 ミツ応答なし2回かけました。報告を開く/.test(listText) && /高橋 花かけていません連絡停止中です/.test(listText) && /中村 恵これからかけます/.test(listText) && !/PENDING|SKIPPED|DONE|UNANSWERED|contact_|recipient_|undefined/.test(listText), "名簿の電話: progress (何件中何件), each person's state and outcome in plain Japanese, and the report link", listText.slice(0, 260));
+  await page.until("location.hash==='#/lists' && document.querySelectorAll('.sched').length===2", { label: "lists" });
+  // The list seeded with its calls (two days ago): progress over the people to be called, and each person's result.
+  const listText = await page.js("document.querySelectorAll('.sched')[1].textContent"), newText = await page.text(".sched");
+  c.ok(/・4人の名簿/.test(listText) && /完了/.test(listText) && /かける2人のうち2人にかけ終えました（かけない相手 2人）/.test(listText) && await page.js("document.querySelectorAll('.sched')[1].querySelector('.bar-meter i').style.width") === "100%" && /山本 ハル話せました—?報告を開く/.test(listText) && /佐々木 ミツ応答なし2回かけました。報告を開く/.test(listText) && /高橋 花かけていません連絡停止中です/.test(listText) && /「来週の訪問の予定をお知らせして、ご都合を…」・5人の名簿/.test(newText) && /かける3人のうち0人にかけ終えました（かけない相手 2人）/.test(newText) && /中村 恵これからかけます/.test(newText) && !/PENDING|SKIPPED|DONE|UNANSWERED|contact_|recipient_|undefined/.test(listText + newText), "名簿の電話: progress over the people to be called, each person's result in plain Japanese, and the report link", listText.slice(0, 260));
   await sleep(3300);
   await page.screenshot(join(out, "gateway-app-lists.png"), { fullPage: true });
   await small("名簿の電話");
@@ -630,10 +657,10 @@ try {
   await page.until("document.querySelector('.sched').dataset.status==='ACTIVE'", { label: "list resumed" });
   await sleep(3300);
   // これまでの電話（30日）: one person's calls over time, newest first, each opening its report.
-  await go(`#/contacts/${mitsu.id}`, "document.querySelectorAll('.past-rows li').length===3", "contact history");
+  await go(`#/contacts/${mitsu.id}`, "document.querySelectorAll('.past-rows li').length===4", "contact history");
   const past = await page.text(".past"), pastRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.past-rows li')].map(l=>l.textContent))"));
-  c.ok(/2回続けて応答がありません/.test(await page.text(".past-missed")) && await page.js("!!document.querySelector('.past-missed .lvl.concern')") && /3回の電話のうち、話せました 1回・応答なし 2回・要確認 2回/.test(past), "これまでの電話: two unanswered in a row comes first, marked 要確認; then the counts", past.slice(0, 120));
-  c.ok(/応答なし/.test(pastRows[0]) && /要確認/.test(pastRows[0]) && /応答なし/.test(pastRows[1]) && /話せました/.test(pastRows[2]) && /食事：食べたと話しました/.test(pastRows[2]) && /09:05/.test(pastRows[2]) && await page.js("[...document.querySelectorAll('.past-rows a')].every(a=>/^#\\/call\\/[a-f0-9-]{36}$/.test(a.getAttribute('href')))"), "newest at the top: how each call went, the answers as things said, and a link to each report", pastRows.join(" | "));
+  c.ok(/3回続けて応答がありません/.test(await page.text(".past-missed")) && await page.js("!!document.querySelector('.past-missed .lvl.concern')") && /4回の電話のうち、話せました 1回・応答なし 3回・要確認 3回/.test(past) && !(await page.visible(".contact-detail > .rows")), "これまでの電話: two unanswered in a row comes first, marked 要確認; then the counts", past.slice(0, 120));
+  c.ok(/応答なし/.test(pastRows[0]) && /要確認/.test(pastRows[0]) && /応答なし/.test(pastRows[1]) && /16:05/.test(pastRows[1]) && /話せました/.test(pastRows[3]) && /食事：食べたと話しました/.test(pastRows[3]) && /09:05/.test(pastRows[3]) && await page.js("[...document.querySelectorAll('.past-rows a')].every(a=>/^#\\/call\\/[a-f0-9-]{36}$/.test(a.getAttribute('href')))"), "newest at the top: how each call went, the answers as things said, and a link to each report", pastRows.join(" | "));
   await page.screenshot(join(out, "gateway-app-contact-history.png"), { fullPage: true });
   await small("連絡先 (これまでの電話)");
   await go(`#/contacts/${optedOut.id}`, "/高橋 花/.test(document.querySelector('.headline')?.textContent)"); await sleep(500);
@@ -647,6 +674,8 @@ try {
   await page.screenshot(join(out, "gateway-app-callbacks.png"));
   await small("折り返しの依頼");
   await page.js("document.querySelector('.row.callback button').click()");
+  c.ok(/この番号に折り返しましたか？（取り消せません）/.test(await page.text(".row.callback .cb-action")) && (await api("/callbacks")).open === 2, "折り返しました asks once more in the row itself before anything is saved");
+  await page.js("[...document.querySelectorAll('.row.callback .cb-action button')].find(b=>b.textContent==='はい、折り返しました').click()");
   await page.until("document.querySelectorAll('.row.callback.done').length===2", { label: "callback done" });
   const cbAfter = await api("/callbacks");
   c.ok(cbAfter.open === 1 && /折り返し済み（自分・/.test(await page.js("document.querySelector('.row.callback').textContent")) && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "call.callback_done"), "折り返しました: saved, recorded, and the row says who and when");
@@ -658,7 +687,7 @@ try {
   // 390, and the email login: a one-time setup link (what 設定 issues), then sign out and back in with email and password.
   const link = await api("/account/password-link", {});
   c.ok(/^[A-Za-z0-9_-]{43}$/.test(link.code ?? ""), "設定 › メールとパスワード: a one-time setup code", JSON.stringify(link).slice(0, 60));
-  page = await launch({ width: 390, height: 844 });
+  page = await launchQuiet({ width: 390, height: 844 });
   await page.goto(base + "/app#setup=" + link.code);
   await page.until("document.querySelector('#public-email') && /ログイン方法を設定/.test(document.querySelector('#view').textContent)", { label: "setup form" });
   await page.js(`document.querySelector('#public-password').value='short';document.querySelector('#public-email').value='owner@example.com';document.querySelector('form').requestSubmit()`);
@@ -703,7 +732,7 @@ try {
   c.ok(await page.js("[...document.querySelectorAll('.team-table td.none')].every(n=>getComputedStyle(n).display==='none') && [...document.querySelectorAll('.team-table td[data-label^=\"話したこと\"]:not(.none)')].length>=2 && document.querySelectorAll('.sum-days li').length===7"), "390 team: no empty fields on the cards; the answers sit under a 話したこと label; the seven-day strip fits");
   await page.screenshot(join(out, "gateway-app-team-mobile.png"), { fullPage: true });
   await page.js("document.querySelector('.team-tools .chip').click()");
-  await page.until("document.querySelector('.team-tools .chip').getAttribute('aria-pressed')==='true' && document.querySelectorAll('.team-table tbody tr').length===6", { label: "390 要確認 only" });
+  await page.until("document.querySelector('.team-tools .chip').getAttribute('aria-pressed')==='true' && document.querySelectorAll('.team-table tbody tr').length===7", { label: "390 要確認 only" });
   await page.screenshot(join(out, "gateway-app-team-attention-mobile.png"), { fullPage: true });
   await at390("people", "#/team/people", "!!document.querySelector('.people-table')");
   await page.screenshot(join(out, "gateway-app-people-mobile.png"), { fullPage: true });
@@ -714,10 +743,10 @@ try {
   await page.screenshot(join(out, "gateway-app-ask-terms-mobile.png"));
   await at390("callbacks", "#/callbacks", "document.querySelectorAll('.row.callback').length===3");
   await page.screenshot(join(out, "gateway-app-callbacks-mobile.png"), { fullPage: true });
-  await at390("contact history", `#/contacts/${mitsu.id}`, "document.querySelectorAll('.past-rows li').length===3");
+  await at390("contact history", `#/contacts/${mitsu.id}`, "document.querySelectorAll('.past-rows li').length===4");
   await page.js("document.querySelector('.past').scrollIntoView({block:'start'})"); await sleep(200);
   await page.screenshot(join(out, "gateway-app-contact-history-mobile.png"));
-  await at390("lists", "#/lists", "document.querySelectorAll('.sched').length===1");
+  await at390("lists", "#/lists", "document.querySelectorAll('.sched').length===2");
   await page.screenshot(join(out, "gateway-app-lists-mobile.png"), { fullPage: true });
   await at390("contacts (pick)", "#/contacts", "!!document.querySelector('.contacts-page')");
   await page.js("[...document.querySelectorAll('.page-actions button')].find(b=>b.textContent==='名簿にまとめて電話').click()");
@@ -748,7 +777,7 @@ try {
   await page.screenshot(join(out, "gateway-app-contacts-import-mobile.png"));
   // Another role: no way in to チームの電話, and the address typed by hand is refused in words.
   await page.close();
-  page = await launch({ width: 390, height: 844 });
+  page = await launchQuiet({ width: 390, height: 844 });
   await signIn(page, mateToken);
   await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.page-actions a[href$=standing]')", { label: "operator requests" });
   c.ok(await page.js("[...document.querySelectorAll('.page-actions a')].map(a=>a.textContent).join()") === "定期の電話,名簿の電話,折り返しの依頼", "an operator sees 定期の電話 and 名簿の電話 but no チームの電話");
