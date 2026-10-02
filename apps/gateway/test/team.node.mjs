@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Store } from '../lib/store.mjs';
 import { Service } from '../lib/service.mjs';
 import { hash } from '../lib/security.mjs';
-import { teamCalls, teamRecord, teamCallsCsv, teamSummary, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
+import { teamCalls, teamRecord, teamCallsCsv, teamSummary, contactHistory, ownCallsCsv, importContacts, callsCsv } from '../lib/team.mjs';
 import { createGateway } from '../server.mjs';
 const now=Date.parse('2026-10-02T10:00:00+09:00');
 function fixture(){
@@ -24,7 +24,7 @@ test('a manager sees the team’s calls without numbers or speech; other teams a
   f.call('staff',{status:'DRAFT'});f.call('rival');const quiet=f.call('boss',{answered:false,createdAt:now-7200_000});
   const view=teamCalls(f.service,f.by('boss'));
   assert.deepEqual(view.calls.map(c=>c.id),[mine.id,quiet.id]);assert.equal(view.needsAttention,1);
-  assert.deepEqual(Object.keys(view.calls[0]).sort(),['answered','attention','checkIn','createdAt','direction','durationSeconds','finishedAt','id','kind','owner','recipient','scheduled','status']);
+  assert.deepEqual(Object.keys(view.calls[0]).sort(),['answered','attention','checkIn','createdAt','direction','durationSeconds','finishedAt','id','kind','owner','ownerName','recipient','scheduled','status']);
   assert.ok(!JSON.stringify(view).includes('+8190')&&!JSON.stringify(view).includes('腰が痛い'));
   assert.deepEqual(teamCalls(f.service,f.by('boss'),{attention:true}).calls.map(c=>c.id),[mine.id]);
   assert.equal(teamCalls(f.service,f.by('root')).calls.length,2);
@@ -100,4 +100,25 @@ test('the summary counts the team’s own calls by day, and the answer rate only
   assert.deepEqual(s.byDay.map(d=>[d.date,d.calls]),[['2026-09-29',1],['2026-10-02',3]]);
   assert.equal(teamSummary(f.service,f.by('boss'),90).total.calls,5);
   assert.equal(code(()=>teamSummary(f.service,f.by('staff'))),'supervisor_required');assert.equal(code(()=>teamSummary(f.service,f.by('boss'),0)),'invalid_days');
+}));
+
+test('one person’s calls over time: answers per topic, days missed in a row, and only for those who may see them',using(f=>{
+  const contact=f.service.contact(f.by('staff'),{name:'山田 花子',phone:'+819000000011',relationship:'customer',basis:'入居者'});
+  const day=n=>now-n*86400_000,report=(medication,meal='yes')=>({status:'INCOMPLETE',checkIn:{answered:true,attention:medication==='no'?'concern':'none',items:[{topic:'condition',answer:'yes'},{topic:'meal',answer:meal},{topic:'medication',answer:medication},{topic:'sleep',answer:'not_asked'},{topic:'help',answer:'no'}],signals:[]}});
+  f.call('staff',{createdAt:day(5),answered:true,result:report('yes')});f.call('staff',{createdAt:day(4),answered:true,result:report('no')});f.call('staff',{createdAt:day(3),answered:true,result:report('unclear','no')});
+  f.call('staff',{createdAt:day(2),answered:false});f.call('staff',{createdAt:day(1),answered:false});f.call('staff',{createdAt:day(60),answered:true});f.call('staff',{createdAt:day(1),status:'DRAFT'});
+  f.call('staff',{createdAt:day(1),answered:true,target:{name:'別の人',phone:'+819000000099'}});
+  const h=contactHistory(f.service,f.by('staff'),contact.id);
+  assert.deepEqual(h.summary,{calls:5,answered:3,unanswered:2,attention:1,emergency:0,missedInARow:2,topics:{condition:{yes:3},meal:{yes:2,no:1},medication:{yes:1,no:1,unclear:1},sleep:{},help:{no:3}}});
+  assert.deepEqual(h.calls.map(c=>c.createdAt<h.calls.at(-1).createdAt||c===h.calls.at(-1)),[true,true,true,true,true],'oldest first');
+  assert.ok(!JSON.stringify(h).includes('+8190')&&!JSON.stringify(h).includes('腰が痛い'));
+  assert.equal(contactHistory(f.service,f.by('staff'),contact.id,90).summary.calls,6);
+  assert.equal(contactHistory(f.service,f.by('boss'),contact.id).summary.calls,5);
+  assert.equal(f.store.db.prepare("SELECT COUNT(*) n FROM audit WHERE action='team.history_viewed'").get().n,1);
+  for(const id of ['rival','reader'])assert.equal(code(()=>contactHistory(f.service,f.by(id),contact.id)),'not_found',id);
+}));
+test('the team list names teammates by the name they call under, not only by their sign-in id',using(f=>{
+  f.service.saveCallerName(f.by('staff'),'鈴木');f.call('staff');f.call('boss');
+  assert.deepEqual(teamCalls(f.service,f.by('boss')).calls.map(c=>[c.owner,c.ownerName]).sort(),[['boss','boss'],['staff','鈴木']]);
+  assert.ok(teamCallsCsv(f.service,f.by('boss')).includes(',鈴木,'));
 }));

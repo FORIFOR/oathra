@@ -27,9 +27,11 @@ function teamMissions(service, u) {
   for (const row of service.store.db.prepare("SELECT body FROM records WHERE kind='mission' ORDER BY updated DESC").iterate()) { const m = service.store.open(row.body); if (m.team === u.team && m.status !== 'DRAFT') rows.push(m); }
   return rows.sort((a, b) => b.createdAt - a.createdAt);
 }
+/** The name a teammate goes by: the one they call under, else their sign-in id. Never an email address. */
+function names(service) { const cache = new Map(); return id => { if (!cache.has(id)) cache.set(id, service.store.get('account', id)?.callerName || id); return cache.get(id); }; }
 export function teamCalls(service, u, { attention = false, limit = 200 } = {}) {
   supervisor(u); assert(Number.isSafeInteger(limit) && limit >= 1 && limit <= 1000, 'invalid_limit');
-  const all = teamMissions(service, u).map(m => callRow(m)), shown = attention ? all.filter(r => r.attention) : all;
+  const name = names(service), all = teamMissions(service, u).map(m => ({ ...callRow(m), ownerName: name(m.owner) })), shown = attention ? all.filter(r => r.attention) : all;
   return { team: u.team, total: shown.length, needsAttention: all.filter(r => r.attention).length, calls: shown.slice(0, limit) };
 }
 /** The full record of a teammate's call, with the number, what was said and what it cost. Opening it is itself recorded. */
@@ -63,6 +65,23 @@ export function teamSummary(service, u, days = 7) {
   return { team: u.team, days, total: { ...total, answerRatePercent: rate(total) }, byDay: Object.keys(byDay).sort().map(date => ({ date, ...byDay[date], answerRatePercent: rate(byDay[date]) })) };
 }
 
+/** One person's calls over time: what each wellbeing call heard, oldest to newest, so a change is visible.
+ *  The owner of the contact sees it; so does their manager. Rows carry what was said in summary, not the speech. */
+export function contactHistory(service, u, contactId, days = 30) {
+  assert(Number.isInteger(days) && days >= 1 && days <= 90, 'invalid_days');
+  const contact = service.store.get('contact', contactId), owner = contact && service.user(contact.owner);
+  assert(contact && (contact.owner === u.id || (['admin', 'manager'].includes(u.role) && owner.team === u.team)), 'not_found', 404);
+  const since = service.store.now() - days * 86400_000;
+  const calls = service.store.all('mission', contact.owner).filter(m => m.target?.phone === contact.phone && m.status !== 'DRAFT' && m.createdAt >= since).sort((a, b) => a.createdAt - b.createdAt).map(m => callRow(m));
+  const answered = calls.filter(c => c.answered === true).length, unanswered = calls.filter(c => c.answered === false).length;
+  // How often each topic was answered each way, over the calls that asked about it.
+  const topics = Object.fromEntries(['condition', 'meal', 'medication', 'sleep', 'help'].map(topic => [topic, calls.reduce((n, c) => { const a = c.checkIn?.[topic]; if (a && a !== 'not_asked') n[a] = (n[a] ?? 0) + 1; return n; }, {})]));
+  // Days in a row, up to the latest call, on which nobody answered: the number a care worker asks first.
+  let missedInARow = 0; for (const c of [...calls].reverse()) { if (c.answered === false) missedInARow++; else if (c.answered === true) break; }
+  if (contact.owner !== u.id) service.store.audit(u.id, 'team.history_viewed', contact.id, { contact: contact.id, owner: contact.owner });
+  return { contact: { id: contact.id, name: contact.name || contact.company }, days, calls, summary: { calls: calls.length, answered, unanswered, attention: calls.filter(c => c.attention).length, emergency: calls.filter(c => c.attention === 'emergency').length, missedInARow, topics } };
+}
+
 // A cell that starts with = + - @ (or a tab/CR) would run as a formula when the file is opened in a spreadsheet.
 const cell = value => { const s = String(value ?? ''), safe = /^[=+\-@\t\r]/.test(s) ? "'" + s : s; return /[",\r\n]/.test(safe) ? '"' + safe.replaceAll('"', '""') + '"' : safe; };
 const when = iso => iso ? new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso)) : '';
@@ -74,7 +93,7 @@ export function callsCsv(rows, { phone = false } = {}) {
     r.durationSeconds ?? '', r.scheduled ? '定期' : '', r.id]);
   return '﻿' + [head, ...lines].map(line => line.map(cell).join(',')).join('\r\n') + '\r\n';
 }
-export function teamCallsCsv(service, u) { supervisor(u); service.store.audit(u.id, 'team.calls_exported', u.team, { team: u.team }); return callsCsv(teamMissions(service, u).map(m => callRow(m))); }
+export function teamCallsCsv(service, u) { supervisor(u); service.store.audit(u.id, 'team.calls_exported', u.team, { team: u.team }); const name = names(service); return callsCsv(teamMissions(service, u).map(m => ({ ...callRow(m), owner: name(m.owner) }))); }
 export function ownCallsCsv(service, u) {
   const rows = service.store.all('mission', u.id).filter(m => m.status !== 'DRAFT').sort((a, b) => b.createdAt - a.createdAt).map(m => callRow(m, { phone: true }));
   service.store.audit(u.id, 'calls.exported', u.id); return callsCsv(rows, { phone: true });
