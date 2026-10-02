@@ -697,7 +697,7 @@ async function ask() {
   repAck.addEventListener('change', () => { repGo.disabled = !review || !repAck.checked || isPaused(b.configuration); });
   repChanged();
   const repRules = ['連絡先に保存し、「電話してよい根拠」が書かれている相手だけにかけます。予約を取る電話は定期にできません。', '終了日を過ぎると、自動で終わります（最長92日）。', '1回ごとに、ふつうの電話と同じ確認をして、同じように費用がかかります。',
-    'かけ直すのは、相手が出なかったときだけです。', '時刻を過ぎてかけられなかった回は、遅れてかけずに見送ります。', '相手が「もう電話しないで」と言えば、そこで終わります。', 'いつでも「定期の電話」の画面で、一時停止・終了できます。'];
+    'かけ直すのは、相手が出なかったときだけです。', 'かけ直しても出なかった回は、報告に「要確認」と出ます。通知先が設定されていれば、そこへ知らせます。AIは、だれにも電話や連絡をしません。', '時刻を過ぎてかけられなかった回は、遅れてかけずに見送ります。', '相手が「もう電話しないで」と言えば、そこで終わります。', 'いつでも「定期の電話」の画面で、一時停止・終了できます。'];
   const repPanel = el('div', { class: 'rep-panel stack tight' },
     el('span', { class: 'lbl', text: 'かける時刻（日本時間）' }), repTimes, repHours, addTime,
     el('span', { class: 'lbl', text: 'かける曜日' }), repDays,
@@ -1057,7 +1057,7 @@ const SCHED_STATE = { ACTIVE: '有効', PAUSED: '一時停止中', ENDED: '終�
 const SCHED_ENDED = { ended_by_owner: 'あなたが終了しました。', reached_end_date: '終了日になりました。', recipient_asked_not_to_be_called: '相手から、電話しないでほしいと言われました。', recipient_suppressed: '相手が連絡停止になりました。',
   contact_changed_review_again: '連絡先の内容が変わったため、止めました。もう一度登録してください。', privacy_consent_required: '会話データの取り扱いへの同意が必要になりました。', unauthorized: 'このアカウントでは発信できなくなりました。', read_only_account: 'このアカウントでは発信できなくなりました。', unlinked_account: 'このアカウントでは発信できなくなりました。', not_found: '連絡先かアカウントが見つからなくなりました。' };
 const RUN_STATE = { RUNNING: 'かけています', ANSWERED: '応答あり', UNANSWERED: '応答なし', SKIPPED: '見送り', FAILED: 'かけられませんでした', DECLINED: '相手に断られました', CANCELLED: '取り消しました' };
-const RUN_REASON = { window_passed: '時刻を過ぎたため、遅れてかけずに見送りました。', record_deleted: '電話の記録が削除されています。', unknown_state_needs_reconciliation: '電話が終わったか確かめられていません。「依頼」で確かめてください。',
+const RUN_REASON = { window_passed: '時刻を過ぎたため、遅れてかけずに見送りました。', service_was_not_running: 'サービスが止まっていたため、この回はかけていません。', schedule_deleted: '定期の電話が削除されています。', record_deleted: '電話の記録が削除されています。', unknown_state_needs_reconciliation: '電話が終わったか確かめられていません。「依頼」で確かめてください。',
   recipient_has_active_call: '同じ相手への電話が進行中でした。', schedule_deleted: 'この定期の電話は、もうありません。', recipient_asked_not_to_be_called: '相手から、電話しないでほしいと言われました。', dispatch_failed: '発信の準備ができませんでした。', contact_changed_review_again: '連絡先の内容が変わっていました。' };
 const runReason = run => !run.reason ? (run.state === 'DECLINED' ? '相手から、電話しないでほしいと言われました。' : '') : RUN_REASON[run.reason] ?? ERRORS[run.reason] ?? `（問い合わせ用コード：${run.reason}）`;
 const schedDays = s => s.weekdays.length === 7 ? '毎日' : `毎週 ${s.weekdays.map(d => WEEK[d]).join('・')}`;
