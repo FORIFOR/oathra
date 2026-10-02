@@ -149,6 +149,24 @@ export function resolvePhoneVoice(engine: string, request: { voice?: string | un
   return undefined;
 }
 
+/**
+ * Counting units a `quantity` may carry, in their one canonical spelling. `@oathra/evidence` parses speech
+ * (「五十ケース」「50ｹｰｽ」「50 kg」) into `<amount><unit>` with exactly these units, so an expected quantity written
+ * the same way compares by plain equality. No unit is converted into another: 1ダース is not 12個.
+ */
+export const QUANTITY_UNITS = ["個", "ケース", "箱", "台", "本", "枚", "袋", "缶", "束", "セット", "ダース", "パック", "点", "冊", "着", "足", "脚", "基", "式", "ロット",
+  "kg", "g", "t", "L", "m", "反", "俵", "梱包", "units", "pieces", "cases", "boxes", "cartons", "pallets"] as const;
+export type QuantityUnit = (typeof QUANTITY_UNITS)[number];
+/** The canonical text of a quantity: "50ケース", "1.5t". The amount is a positive plain decimal with no padding. */
+export function formatQuantity(amount: number, unit: QuantityUnit): string {
+  return `${amount}${unit}`;
+}
+const QUANTITY_RE = new RegExp(`^(\\d+(?:\\.\\d+)?)(?:${QUANTITY_UNITS.join("|")})$`);
+const QuantitySchema = z.string().refine((value) => {
+  const amount = QUANTITY_RE.exec(value)?.[1];
+  return amount !== undefined && Number(amount) > 0 && String(Number(amount)) === amount;
+}, "数量は「50ケース」のように、数と単位で入力してください。");
+
 /** Experimental v1 handoff file: preparing/parsing it does not approve a call. */
 /** The fields of a phone request. `PhoneRequestSchema` adds the engine/voice consistency check on top. */
 export const PhoneRequestFieldsSchema = z.object({
@@ -166,12 +184,14 @@ export const PhoneRequestFieldsSchema = z.object({
   task: z.enum(["reservation"]).optional(),
   // Optional, machine-checkable completion conditions. Arbitrary prose is never a success predicate.
   success: z.object({
-    required: z.array(z.enum(["date", "time", "partySize", "price", "confirmed"])).min(1).max(5),
+    required: z.array(z.enum(["date", "time", "partySize", "price", "quantity", "confirmed"])).min(1).max(6),
     expected: z.object({
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       time: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).optional(),
       partySize: z.number().int().min(1).max(1000).optional(),
       price: z.number().finite().min(0).optional(),
+      // Canonical text, amount and unit together ("50ケース"): a quantity equals another only when both match.
+      quantity: QuantitySchema.optional(),
     }).strict().default({}),
   }).strict().optional(),
   // Optional: which speech-to-speech engine speaks. Absent keeps the server's configured engine.

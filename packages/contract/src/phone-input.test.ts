@@ -127,3 +127,21 @@ it("character-tts takes Gemini voices, speaks Leda/Puck for the character preset
   expect(() => preparePhoneRequest({ ...base, engine: "character-tts", voice: "marin" })).toThrow();
   expect(() => preparePhoneRequest({ ...base, engine: "character-tts", voicePreset: "sales-female" })).toThrow(/キャラクター風/);
 });
+
+describe("success.quantity", () => {
+  const base = { phone: "+819012345678", name: "仕入先", instruction: "A-100を50ケース、10月20日納品でお願いできるか確認してください。" };
+  it("accepts quantity as a required field with a canonical expected value, and builds require/constraints like the others", async () => {
+    const { definePhoneRequest, QUANTITY_UNITS, formatQuantity } = await import("./index.js");
+    const request = preparePhoneRequest({ ...base, success: { required: ["quantity", "date"], expected: { quantity: "50ケース", date: "2026-10-20" } } });
+    const contract = definePhoneRequest(request);
+    expect(contract.require).toEqual({ quantity: true, date: true });
+    expect(contract.constraints).toEqual({ quantity: { eq: "50ケース" }, date: { eq: "2026-10-20" } });
+    expect(contract.confirmation).toBe("callee_acceptance");
+    expect(formatQuantity(50, "ケース")).toBe("50ケース");
+    for (const unit of QUANTITY_UNITS) expect(preparePhoneRequest({ ...base, success: { required: ["quantity"], expected: { quantity: `12${unit}` } } }).success?.expected.quantity).toBe(`12${unit}`);
+    expect(preparePhoneRequest({ ...base, success: { required: ["date", "time", "partySize", "price", "quantity", "confirmed"], expected: { quantity: "1.5t" } } }).success?.required).toHaveLength(6);
+  });
+  it.each(["50", "ケース", "50ｹｰｽ", "50 ケース", "五十ケース", "050ケース", "0個", "1.50kg", "50人", "50名", "50円", "50つ", "-5個", "50ケース 10個"])("refuses a non-canonical expected quantity: %s", (quantity) => {
+    expect(() => preparePhoneRequest({ ...base, success: { required: ["quantity"], expected: { quantity } } })).toThrow();
+  });
+});

@@ -5,7 +5,7 @@
  * does not produce an offer for 19:00 while the following clause
  * ("19時半なら空いております") does.
  */
-import { parseDates, parsePartySize, parsePhoneNumbers, parsePrices, parseSerials, parseTimes } from "./normalize.js";
+import { parseDates, parsePartySize, parsePhoneNumbers, parsePrices, parseQuantities, parseSerials, parseTimes } from "./normalize.js";
 import type { Language, Speaker, Utterance } from "./types.js";
 
 export type Polarity = "positive" | "negative";
@@ -143,6 +143,9 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
     for (const p of parsePrices(text)) {
       claims.push({ field: "price", value: p.value, span: p.span, semantic: 0.94, polarity: clause.polarity });
     }
+    for (const q of parseQuantities(text)) {
+      claims.push({ field: "quantity", value: q.value, span: q.span, semantic: 0.93, polarity: clause.polarity });
+    }
     for (const p of parsePhoneNumbers(text)) {
       claims.push({ field: "phone", value: p.value, span: p.span, semantic: 0.9, polarity: clause.polarity });
     }
@@ -231,6 +234,8 @@ export function isCalleeCommitment(text: string, source: Speaker): boolean {
   if (source !== "callee") return false;
   const t = text.trim();
   if (REFUSAL_RE.test(t) || HEDGE_RE.test(t) || CONTRAST_RE.test(t) || RETRACTION_RE.test(t)) return false;
+  // 「はい、少々お待ちください」 (checking the stock, fetching someone) is a hold, not a yes.
+  if (HOLD_RE.test(t)) return false;
   if (/[?？]|でしょうか|ですか|ますか|ませんか/.test(t)) return false;
   return CALLEE_COMMIT_RE.test(t) || AGREEMENT_RE.test(t) || AFFIRMATIVE_RE.test(t);
 }

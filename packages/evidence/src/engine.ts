@@ -117,7 +117,7 @@ export class EvidenceEngine {
     //     evidence of the commitment, even without the ritual phrase.
     //     So is a commitment that restates the terms ("10月3日に2名様で19,800円でご予約いたします")
     //     when it answers that question; unprompted, the same sentence is only an intention.
-    const commitsWithTerms = COMMIT_RE.test(u.text) && positive.some((c) => ["date", "time", "price", "partySize"].includes(c.field)) && !/[?？]|ますか|でしょうか|ましょうか/.test(u.text);
+    const commitsWithTerms = COMMIT_RE.test(u.text) && positive.some((c) => ["date", "time", "price", "partySize", "quantity"].includes(c.field)) && !/[?？]|ますか|でしょうか|ましょうか/.test(u.text);
     if (u.source === "callee" && this.pendingConfirmRequest && (isAffirmativeAnswer(u.text) || commitsWithTerms) && !positive.some((c) => c.field === "confirmed")) {
       const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: u.text, semantic: 0.85, polarity: "positive" }, true);
       ev.explicit = false;
@@ -130,15 +130,19 @@ export class EvidenceEngine {
 
     // 1c. Appointment mode: the callee's clean commitment to a complete slot is the confirmation.
     if (commitment && !created.some((e) => e.field === "confirmed") && !positive.some((c) => c.field === "confirmed")) {
-      const slotKnown = ["date", "time"].every((field) => {
+      const known = (field: string) => {
         const r = restated.get(field);
         if (r) return r.value !== null && !r.ambiguous;
         return verifiedNow.some((v) => v.field === field) || this.latestVerified(field) !== undefined;
-      });
-      if (slotKnown) {
+      };
+      const slotKnown = ["date", "time"].every(known);
+      // An order has no clock time: its terms are the quantity and the day (「50ケース、10月20日納品で大丈夫です」).
+      // Only when nobody has spoken of a time, so a call that has one still needs the whole slot.
+      const orderKnown = !slotKnown && !claims.some((c) => c.field === "time") && !this.nodes.some((n) => n.field === "time") && ["quantity", "date"].every(known);
+      if (slotKnown || orderKnown) {
         const ev = this.makeEvidence(u, { field: "confirmed", value: true, span: u.text, semantic: 0.9, polarity: "positive" }, true);
         ev.explicit = false;
-        ev.note = "callee committed to the slot (callee_acceptance)";
+        ev.note = orderKnown ? "callee committed to the quantity and the date (callee_acceptance)" : "callee committed to the slot (callee_acceptance)";
         this.nodes.push(ev);
         created.push(ev);
         verifiedNow.push(ev);

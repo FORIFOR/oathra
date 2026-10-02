@@ -34,3 +34,12 @@ it('a casual chat keeps no booking conditions: a date heard in a news item is no
  const m=phoneMemory(chat,[turn('caller','AP通信が9月20日付で報じてるんだけど、19時に製油所で被害が出たって。',1),turn('callee','へえ、そうなんだ。',2)],now);
  expect(m.notes).toEqual([]);expect(m.history).toEqual([]);expect(m.turnCount).toBe(2);expect(m.bookingStatus).toBe('not_authorized');
 });
+
+it('keeps a requested quantity apart from the one the other side settled',()=>{
+ const order=preparePhoneRequest({phone:'+819000000000',name:'仕入先',instruction:'A-100を50ケース、10月20日納品でお願いできるか確認してください。'});
+ expect(phoneMemory(order,[],now).notes.find(n=>n.field==='quantity')).toMatchObject({requested:'50ケース',status:'missing'});
+ const offered=phoneMemory(order,[turn('caller','A-100を50ケース、10月20日納品でお願いできますか。',1),turn('callee','30ケースなら大丈夫です。',2)],now);
+ expect(offered.notes.find(n=>n.field==='quantity')).toMatchObject({requested:'50ケース',value:'30ケース',status:'proposed',source:'callee'});
+ const agreed=phoneMemory(order,[turn('caller','A-100を50ケース、10月20日納品でお願いできますか。',1),turn('callee','はい、50ケース、10月20日納品で大丈夫です。',2)],now);
+ expect(agreed.notes.find(n=>n.field==='quantity')).toMatchObject({value:'50ケース',status:'verified'});
+});
