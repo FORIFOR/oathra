@@ -64,11 +64,12 @@ export class Schedules {
   /** What the person sees: never the fingerprint; with today's and the latest runs. */
   view(schedule) {
     const runs = this.store.all('schedule-run', schedule.owner).filter(r => r.scheduleId === schedule.id).sort((a, b) => a.id < b.id ? 1 : -1).slice(0, 14);
-    const days = Math.max(0, Math.ceil((schedule.until - this.store.now()) / 86400_000));
+    // Count the days the schedule actually rings on, from today to the end date, in Japan time.
+    let days = 0; for (let t = this.store.now(); t < schedule.until && days < 100; t += 86400_000) if (schedule.weekdays.includes(jst(t).weekday)) days++;
     const { fingerprint, ...rest } = schedule;
     return { ...rest, until: new Date(schedule.until).toISOString(), runs: runs.map(r => ({ date: r.date, time: r.time, state: r.state, reason: r.reason ?? null, attempts: r.attempts.length, missionId: r.attempts.at(-1)?.missionId ?? null })),
-      // An upper bound for the approval screen, not a forecast: every listed time on every remaining day, with every retry.
-      bounds: { callsUpperBound: days * schedule.times.length * (1 + schedule.retries.count) } };
+      // An upper bound for the approval screen, not a forecast: every listed time on every remaining chosen weekday, with every retry.
+      bounds: { days, callsUpperBound: days * schedule.times.length * (1 + schedule.retries.count) } };
   }
   list(owner) { return this.store.all('schedule', owner.id).sort((a, b) => b.createdAt - a.createdAt).map(x => this.view(x)); }
   set(owner, id, status) {

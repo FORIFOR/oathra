@@ -64,6 +64,8 @@ export class Store {
     // The person's own key press is never written over: a later manual or transcript entry must not make it releasable.
     for (const scope of [`suppress:${team}`, 'suppress:*']) if (!/dtmf/.test(this.key(scope, k) ?? '')) this.setKey(scope, k, source);
   }
+  /** How this team's stop on a number came about: 'recipient' (their own key press), 'other', or null when there is none. */
+  suppressionSource(team, phone) { const k = mac(this.cipherKey, phone), v = this.key(`suppress:${team}`, k) ?? this.key('suppress:*', k); return !v ? null : /dtmf/.test(v) ? 'recipient' : 'other'; }
   /** Lifts this team's suppression, and the shared one only when no other team still holds the number. */
   unsuppress(team, phone) {
     const k = mac(this.cipherKey, phone), held = this.key(`suppress:${team}`, k);

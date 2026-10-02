@@ -74,7 +74,9 @@ export function phoneRecord(service,m) {
   ...(m.inbound?.reception?{booking:(b=>b?(({phone,owner,team,...rest})=>rest)(b):null)(service.store.all('table-booking',m.owner).find(b=>b.callId===m.id))}:{}),
   spending:m.billing?.spending,error:m.stopReason==='credit_limit'?'credit_limit_reached':reachedTimeLimit?'call_time_limit_reached':m.error,summary:m.stopReason==='credit_limit'&&!m.stopNeedsReconciliation&&['CANCELLED','INCOMPLETE','FAILED'].includes(m.status)?'利用クレジットの上限に達したため通話を終了しました。':reachedTimeLimit?`通話時間の上限（${m.maxSeconds}秒）に達しました。`:m.result?.caveat,transcript,persistence:'saved',
   // Lines a person should read (core detectDistress) and what a wellbeing call heard, with the person's own words.
-  attention:m.attention??null,checkIn:m.result?.checkIn??null,answered:typeof m.answered==='boolean'?m.answered:null,scheduled:!!m.schedule};
+  attention:m.attention??null,checkIn:m.result?.checkIn??null,answered:typeof m.answered==='boolean'?m.answered:null,scheduled:!!m.schedule,
+  // Which try of a standing request this was (1-based) and whether more would follow.
+  ...(m.schedule?{attempt:{number:(m.schedule.attempt??0)+1,last:m.schedule.final!==false}}:{})};
 }
 /**
  * A calendar entry from the call memo, for the caller's own calendar. It records what was said on the
