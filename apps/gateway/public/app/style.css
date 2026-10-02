@@ -560,3 +560,122 @@ mark.proof-fill { background: linear-gradient(transparent 55%, var(--ok-line) 55
 @media (max-width: 560px) {
   .workspace-active .split-page .two { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* 2026-10-02: やさしい話し方・見守りの報告・定期の電話・チームの電話・連絡先の取り込みと連絡停止。
+   緊急 and 要確認 differ by their words, the "!" and the fill, not by colour alone. */
+input[type=time], input[type=date] { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); }
+input[type=file] { width: 100%; min-height: 44px; padding: 8px 0; font-size: 14px; }
+.page-actions { margin-top: 0; flex: none; }
+.lvl { display: inline-flex; align-items: center; flex: none; min-height: 24px; padding: 0 10px; border-radius: 4px; font-size: 12px; font-weight: 700; line-height: 1; white-space: nowrap; }
+.lvl.emergency { background: var(--coral); color: #fff; }
+.lvl.emergency::before { content: "!"; margin-right: 6px; }
+:root[data-theme="dark"] .lvl.emergency { color: var(--bg); }
+.lvl.concern { border: 1px solid var(--amber); background: var(--amber-bg); color: var(--amber); }
+.band { margin: 18px 0 0; padding: 18px 20px; border: 1px solid var(--amber-line); border-left-width: 6px; border-radius: 10px; background: var(--amber-bg); }
+.band.emergency { border-color: var(--coral); background: var(--panel); }
+.band h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0; font-size: 18px; line-height: 1.5; }
+.band > p { margin: 12px 0 0; font-size: 14px; line-height: 1.8; }
+.band-lines { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 14px; }
+.band-k { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--ink-2); }
+.band-k time { font-size: 12px; color: var(--muted); }
+.band blockquote { margin: 6px 0 0; padding-left: 12px; border-left: 2px solid var(--line-2); font-size: 16px; line-height: 1.8; overflow-wrap: anywhere; }
+.band.emergency blockquote { border-left-color: var(--coral); }
+.band .band-note { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); }
+.warnbox.no-answer { margin: 0 0 24px; font-size: 14px; }
+.warnbox.no-answer b { display: block; font-size: 17px; }
+.checkin { margin: 0 0 8px; }
+.workspace-active .checkin .page-h { flex-wrap: wrap; gap: 4px 16px; margin-bottom: 10px; }
+.checkin-table, .team-table { width: 100%; border-collapse: collapse; }
+.checkin-table th, .checkin-table td { padding: 14px 16px 14px 0; border-top: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 14px; line-height: 1.7; }
+.checkin-table thead th { padding-top: 0; border-top: 0; font-size: 12px; font-weight: 500; color: var(--muted); }
+.checkin-table tbody th { width: 128px; font-weight: 700; white-space: nowrap; }
+.checkin-table td:nth-child(2) { width: 40%; }
+.checkin-table td .lvl { margin-left: 8px; vertical-align: 1px; }
+.checkin-table .said { overflow-wrap: anywhere; }
+.claim.flag { border-style: solid; border-color: var(--amber-line); background: var(--amber-bg); color: var(--amber); }
+/* 定期の電話にする (the review column) */
+.rep { padding-top: 16px; border-top: 1px solid var(--line); }
+.rep .note { margin: 0; }
+.rep .check b { display: block; }
+.rep .rep-help { display: block; margin: 2px 0 0; }
+.rep-panel { margin-top: 12px; }
+.rep-panel > .lbl { margin-top: 16px; }
+.rep-times { display: grid; gap: 8px; }
+.link.rep-add { display: block; min-height: 44px; text-align: left; }
+.workspace-active .rep-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.day-chip { padding: 0; }
+.rep-retry { margin-top: 6px; }
+.rep-bound { margin: 16px 0 0; padding: 12px 14px; border-radius: 8px; background: var(--bg-2); font-size: 13px; font-weight: 600; line-height: 1.7; }
+.rep-rules { margin: 12px 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: var(--ink-2); }
+.rep-panel > .check { margin-top: 12px; }
+.rep-panel > .btn { margin-top: 14px; }
+/* 定期の電話 (the list) */
+.sched-list { display: grid; gap: 16px; min-height: 180px; align-content: start; }
+.sched-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sched-h h2 { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.tag.sched-state { flex: none; margin: 0; padding: 2px 8px; font-size: 12px; }
+.tag.sched-state.on { border-color: var(--ink); color: var(--ink); }
+.sched-when { margin: 8px 0 0; font-size: 20px; font-weight: 700; line-height: 1.5; }
+.workspace-active .sched h3.section-h { margin: 24px 0 8px; font-size: 14px; }
+.runs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.runs li { display: grid; grid-template-columns: 150px 150px minmax(0, 1fr) auto; align-items: center; gap: 2px 16px; min-height: 48px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.7; }
+.runs time { font-size: 13px; }
+.runs .run-why { color: var(--ink-2); }
+.runs .link { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
+.workspace-active .sched .request-details { margin-top: 20px; }
+.sched-list[aria-busy="true"] > *, .team-box[aria-busy="true"] > * { opacity: .55; }
+/* チームの電話 */
+.team-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; }
+.team-tools .sub { font-size: 13px; color: var(--muted); }
+.team-box { min-height: 240px; }
+.team-wrap { overflow-x: auto; }
+.team-table th, .team-table td { padding: 12px 16px; border-top: 1px solid var(--line); text-align: left; vertical-align: middle; font-size: 13px; line-height: 1.7; }
+.team-table thead th { border-top: 0; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.team-table tbody th { min-width: 150px; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.team-table tbody th a { display: inline-flex; align-items: center; min-height: 44px; text-underline-offset: 3px; }
+.team-table tbody th .tag:first-child { margin-left: 0; }
+.team-table time { font-size: 12px; white-space: nowrap; }
+.team-table td:not(:last-child) { white-space: nowrap; }
+.team-table tr.need-emergency > :first-child { box-shadow: inset 4px 0 0 var(--coral); }
+.team-table tr.need-concern > :first-child { box-shadow: inset 4px 0 0 var(--badge); }
+.glance { display: flex; flex-wrap: wrap; gap: 0 14px; }
+.glance span { white-space: nowrap; color: var(--muted); }
+.glance b { font-weight: 600; color: var(--ink); }
+.glance .worry b { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+/* 連絡先: 連絡停止 and the CSV import */
+.item .tag.stopped, .tag.stopped { flex: none; margin-left: 0; border-color: var(--amber-line); background: var(--amber-bg); color: var(--amber); }
+.workspace-active .stopped-box { margin: 18px 0 4px; }
+.stopped-box p { margin: 0 0 10px; }
+.stopped-box > :last-child { margin-bottom: 0; }
+.release-form { margin-top: 10px; color: var(--ink); }
+.release-form textarea { min-height: 88px; }
+.import-zone { max-width: 760px; }
+.import-zone:has(> :not([hidden])) { margin-bottom: 24px; }
+.import-info { margin: 10px 0 0; min-height: 24px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.import-rows { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--line); font-size: 13px; }
+.import-rows li { display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); line-height: 1.7; }
+.import-rows b { overflow-wrap: anywhere; min-width: 0; }
+@media (max-width: 860px) {
+  .runs li { grid-template-columns: minmax(0, 1fr) auto; }
+  .runs .run-why { grid-column: 1 / -1; }
+  .runs .link { grid-column: 1 / -1; }
+  .team-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .team-table, .team-table tbody { display: block; }
+  .team-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; padding: 14px 16px; border-top: 1px solid var(--line); }
+  .team-table tbody tr:first-child { border-top: 0; }
+  .team-table th, .team-table td { display: block; padding: 0; border: 0; box-shadow: none !important; }
+  .team-table tbody th { order: -1; grid-column: 1 / -1; min-width: 0; font-size: 15px; }
+  .team-table td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
+  .team-table td[data-label="聞き取り"] { grid-column: 1 / -1; }
+  .team-table tr.need-emergency { box-shadow: inset 4px 0 0 var(--coral); }
+  .team-table tr.need-concern { box-shadow: inset 4px 0 0 var(--badge); }
+}
+@media (max-width: 560px) {
+  .workspace-active .page-h:has(> .page-actions) { flex-direction: column; align-items: stretch; }
+  .band { padding: 16px; }
+  .checkin-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .checkin-table, .checkin-table tbody, .checkin-table tr, .checkin-table th, .checkin-table td { display: block; width: auto; }
+  .checkin-table tr { padding: 12px 0; border-top: 1px solid var(--line); }
+  .checkin-table th, .checkin-table td { padding: 2px 0; border: 0; }
+  .checkin-table td:nth-child(2) { width: auto; }
+}

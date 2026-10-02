@@ -14,7 +14,9 @@ const LEVEL = { emergency: '緊急', concern: '要確認', none: '' };
 
 /** One line per call. What a person scanning forty calls needs, and nothing that identifies beyond a name. */
 export function callRow(m, { phone = false } = {}) {
-  const checkIn = m.result?.checkIn ?? null, attention = m.attention?.level ?? (checkIn && checkIn.attention !== 'none' ? checkIn.attention : null);
+  // A wellbeing or scheduled call nobody answered needs a look as much as a worrying answer does.
+  const checkIn = m.result?.checkIn ?? null, missed = m.answered === false && (m.schedule ? m.schedule.final !== false : m.phoneRequest?.pace === 'gentle');
+  const attention = m.attention?.level ?? (checkIn && checkIn.attention !== 'none' ? checkIn.attention : missed ? 'concern' : null);
   return { id: m.id, owner: m.owner, direction: m.direction === 'inbound' ? 'inbound' : 'outbound', kind: m.kind === 'phone-request' ? 'request' : 'sales', recipient: m.target?.name ?? '',
     ...(phone ? { phone: m.target?.phone ?? '' } : {}), status: m.status, createdAt: new Date(m.createdAt).toISOString(), finishedAt: m.finishedAt ? new Date(m.finishedAt).toISOString() : null,
     answered: typeof m.answered === 'boolean' ? m.answered : null, attention, scheduled: !!m.schedule,
