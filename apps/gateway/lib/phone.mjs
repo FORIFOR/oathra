@@ -60,7 +60,9 @@ export class Phone {
     });
   }
   async verifyNumber(u,input) {
-    this.service.write(u); const account=this.service.account(u);
+    this.service.write(u);
+    assert(!(this.config.prerelease?.enabled&&this.config.prerelease.paused),'prerelease_paused',503);
+    const account=this.service.account(u);
     assert(account.consentVersion===this.config.consentVersion,'privacy_consent_required',403);
     assert(this.env.TWILIO_VERIFY_SERVICE_SID && this.env.TWILIO_AUTH_TOKEN,'phone_verification_not_configured',503);
     const {phone}=await import('./security.mjs'), number=phone(input.phone);
@@ -143,11 +145,19 @@ export class Phone {
    * number is, in Japanese, and can ask not to be called again. Never an error page and never silence.
    */
   inbound(params) {
+    // This release accepts explicitly approved outbound calls only. Reject before answering or reserving credits.
+    if(this.config.prerelease?.enabled)return '<Response><Reject reason="rejected"/></Response>';
     const withinHours=(ms,h)=>{const t=new Date(ms+9*3600_000),m=t.getUTCHours()*60+t.getUTCMinutes(),mm=v=>Number(v.slice(0,2))*60+Number(v.slice(3));const a=mm(h.from),b=mm(h.to);return a<b?m>=a&&m<b:m>=a||m<b;};
     const from=String(params.From??''),callSid=String(params.CallSid??''),known=/^\+[1-9]\d{7,14}$/.test(from)&&/^CA[a-f0-9]{32}$/i.test(callSid);
-    // The most recent call this service placed to that number says who the caller is answering, and whose call this is.
-    const earlier=known?this.store.list('mission').filter(x=>x.kind==='phone-request'&&x.direction!=='inbound'&&x.target?.phone===from&&x.status!=='DRAFT'&&(x.approvedAt??0)>this.store.now()-30*86400_000).sort((a,b)=>(b.approvedAt??0)-(a.approvedAt??0))[0]:undefined;
-    const cfg=this.config.inbound,reception=!!cfg?.restaurant,ownerId=reception?cfg.owner:earlier?.owner??cfg?.owner,owner=ownerId&&this.config.users.find(u=>u.id===ownerId);
+    // A shared caller ID cannot identify which customer a shop is calling back. Never guess between owners.
+    const cfg=this.config.inbound,reception=!!cfg?.restaurant,candidates=[];
+    if(known&&!reception)for(const row of this.store.db.prepare("SELECT body FROM records WHERE kind='mission'").iterate()) {
+      const x=this.store.open(row.body);
+      if(x.kind==='phone-request'&&x.direction!=='inbound'&&x.target?.phone===from&&x.carrierSid&&(x.approvedAt??0)>this.store.now()-30*86400_000)candidates.push(x);
+    }
+    const ambiguous=new Set(candidates.map(x=>x.owner)).size>1;
+    const earlier=ambiguous?undefined:candidates.sort((a,b)=>(b.approvedAt??0)-(a.approvedAt??0))[0];
+    const ownerId=ambiguous?null:reception?cfg.owner:earlier?.owner??cfg?.owner,owner=ownerId&&this.config.users.find(u=>u.id===ownerId);
     // The owner's own settings (設定 › かけられた時の設定): the name to answer for, the way to answer, the hours.
     const pref=owner&&!reception?this.service.account(owner).inbound??null:null;
     const onBehalf=reception?cfg.restaurant.name:earlier?.phoneRequest?.callerName??(earlier?null:pref?.name??this.service.account(owner||{id:''}).callerName??cfg?.name);
@@ -159,7 +169,9 @@ export class Phone {
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。こちらは、AIによる代理電話サービス、${xml(this.env.OATHRA_BUSINESS_NAME??'Oathra')}の発信用の番号です。${xml(who)}ただいま、この番号ではお電話をお受けできません。</Say>${stop}<Hangup/></Response>`;
     };
     if(!known)return announce('unknown_caller');
+    if(ambiguous)return announce('ambiguous_callback_owner');
     if(!cfg||!owner||this.config.mode!=='live'||!this.config.liveReady)return announce('inbound_not_enabled');
+    if(this.service.account(owner).purchaseBlocked)return announce('purchase_account_blocked');
     if(this.store.suppressed(owner.team,from))return announce('caller_opted_out');
     if(pref?.hours&&!withinHours(this.store.now(),pref.hours))return announce('outside_owner_hours');
     if(pref?.mode==='decline')return announce('owner_declined');

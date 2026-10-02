@@ -6,6 +6,7 @@ services:
     env_file: ../../../.env.gateway
     environment:
       HOST: 0.0.0.0
+      PORT: 4244
       # The gateway is only reachable through Caddy here (port 4244 is exposed, not published).
       OATHRA_TRUST_PROXY: "true"
       OATHRA_DB: /data/gateway.sqlite
@@ -19,6 +20,12 @@ services:
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4244/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

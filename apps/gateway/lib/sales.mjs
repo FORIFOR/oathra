@@ -7,10 +7,11 @@
  * acknowledgement, do-not-contact) and maps the engine's result onto the mission's result shape.
  *
  * This is transcript evidence, not a guarantee of ASR correctness or of a future meeting occurring. */
-let EvidenceEngine, evaluate, defineCall;
+import { phoneReferenceDate } from '../../../packages/core/dist/index.js';
+let EvidenceEngine, evaluate, defineCall, definePhoneRequest;
 try {
   ({ EvidenceEngine, evaluate } = await import('../../../packages/evidence/dist/index.js'));
-  ({ defineCall } = await import('../../../packages/contract/dist/index.js'));
+  ({ defineCall, definePhoneRequest } = await import('../../../packages/contract/dist/index.js'));
 } catch (error) {
   throw new Error('Oathra Gateway needs the built evidence engine. Run `pnpm install --frozen-lockfile && pnpm build` in the repository root first.', { cause: error });
 }
@@ -81,6 +82,15 @@ function agreedMeeting(turns, mission, now) {
 export function evaluateSales(turns, mission, connected, now = Date.now()) {
   if (mission.kind === 'phone-request') {
     const doNotContact = turns.some(t=>t.source==='callee' && wantsNoContact(t.text));
+    if (mission.phoneRequest?.success && !doNotContact) {
+      const contract = definePhoneRequest(mission.phoneRequest);
+      const engine = new EvidenceEngine({ language: 'ja', now: phoneReferenceDate(mission.approvedAt ?? mission.createdAt ?? now), confirmation: contract.confirmation });
+      turns.forEach((t, i) => { if (!t.interrupted && ['caller','callee'].includes(t.source) && t.text?.trim()) engine.ingest({ id: t.id ?? `turn-${i}`, source: t.source, text: t.text, t: i }); });
+      const result = evaluate(contract, engine, connected ? 'completed' : 'failed');
+      return { status: result.complete ? 'COMPLETED' : 'INCOMPLETE', verified: result.fields, evidence: result.evidence,
+        missing: result.missing, constraints: result.constraints, doNotContact: false, proofLevel: 'conversation',
+        caveat: '指定条件を相手の発言で検証した結果です。通話の文字起こしに基づき、相手の予約システムや実施結果の確認とは別です。' };
+    }
     return {status:doNotContact?'DECLINED':'INCOMPLETE',verified:{},evidence:[],doNotContact,
       caveat:mission.goal==='phone.reception'?'予約受付の記録です。成立した予約は予約台帳の記録が正です。':mission.direction==='inbound'?'着信の記録です。用件と折り返し先は会話内容を確認してください。':'通話の記録です。依頼が達成されたかは会話内容を確認してください。'};
   }

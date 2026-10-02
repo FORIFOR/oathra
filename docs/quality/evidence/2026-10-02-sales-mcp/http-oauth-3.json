@@ -1,0 +1,239 @@
+{
+  "capturedAt": "2026-10-01T16:39:38.816Z",
+  "node": "v25.2.1",
+  "source": "Native backup of existing real operator database",
+  "workerStarted": false,
+  "providerRequests": 0,
+  "checks": [
+    {
+      "name": "real_operator_session",
+      "status": "PASS"
+    },
+    {
+      "name": "local_only_status",
+      "status": "PASS"
+    },
+    {
+      "name": "discovery",
+      "status": "PASS"
+    },
+    {
+      "name": "unauthenticated_challenge",
+      "status": "PASS"
+    },
+    {
+      "name": "admin_token_not_mcp_token",
+      "status": "PASS"
+    },
+    {
+      "name": "real_local_client_registration",
+      "status": "PASS"
+    },
+    {
+      "name": "consent_requires_browser_session",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong_resource_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "plain_pkce_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "draft_only_scope_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "explicit_denial_has_no_connection_or_code",
+      "status": "PASS"
+    },
+    {
+      "name": "denied_consent_cannot_be_reused",
+      "status": "PASS"
+    },
+    {
+      "name": "consent_preview",
+      "status": "PASS"
+    },
+    {
+      "name": "consent_nonce_required",
+      "status": "PASS"
+    },
+    {
+      "name": "real_local_callback",
+      "status": "PASS"
+    },
+    {
+      "name": "authorization_code_exchange",
+      "status": "PASS"
+    },
+    {
+      "name": "mcp_initialize",
+      "status": "PASS"
+    },
+    {
+      "name": "no_dial_or_approval_tools",
+      "status": "PASS"
+    },
+    {
+      "name": "read_existing_account_context",
+      "status": "PASS"
+    },
+    {
+      "name": "unknown_dial_tool_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "mcp_token_not_gateway_token",
+      "status": "PASS"
+    },
+    {
+      "name": "foreign_origin_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "unsupported_sse_method",
+      "status": "PASS"
+    },
+    {
+      "name": "notification_empty_202",
+      "status": "PASS"
+    },
+    {
+      "name": "read_only_tools_list",
+      "status": "PASS"
+    },
+    {
+      "name": "read_only_real_account_context",
+      "status": "PASS"
+    },
+    {
+      "name": "read_only_draft_scope_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "explicit_owner_revoke_is_effective_and_idempotent",
+      "status": "PASS"
+    },
+    {
+      "name": "revocation_during_body_rechecked_before_tool_execution",
+      "status": "PASS"
+    },
+    {
+      "name": "oauth_revocation_endpoint_revokes_family",
+      "status": "PASS"
+    },
+    {
+      "name": "logout_during_consent_body_refuses_authorization",
+      "status": "PASS"
+    },
+    {
+      "name": "refresh_rotation",
+      "status": "PASS"
+    },
+    {
+      "name": "refreshed_token_access",
+      "status": "PASS"
+    },
+    {
+      "name": "refresh_reuse_revokes_connection",
+      "status": "PASS"
+    },
+    {
+      "name": "code_reuse_refused",
+      "status": "PASS"
+    },
+    {
+      "name": "connection_list_without_credentials",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_logged_out_desktop_private_data_hidden",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_logged_out_mobile_no_horizontal_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_real_operator_browser_session",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_mobile_consent_scopes_and_call_boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_pointer_approval_real_callback_and_token_exchange",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_revoke_cancel_preserves_connection",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_pointer_revoke_displays_revoked_and_invalidates_token",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_pointer_denial_returns_without_code",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_expired_session_hides_private_connections",
+      "status": "PASS"
+    },
+    {
+      "name": "ui_no_runtime_exceptions",
+      "status": "PASS"
+    },
+    {
+      "name": "existing_business_records_unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "source_unchanged_during_verification",
+      "status": "PASS"
+    }
+  ],
+  "blocked": [
+    {
+      "name": "read_only_existing_sales_status",
+      "reason": "No suitable existing sales record. No fabricated fallback."
+    },
+    {
+      "name": "sales_draft_success",
+      "reason": "This run creates OAuth credentials only; no sales record is created."
+    },
+    {
+      "name": "official_clients_public_call_billing",
+      "reason": "Public deployment, Claude Code/ChatGPT OAuth and paid call not exercised."
+    }
+  ],
+  "sourceHashes": {
+    "scripts/verify-sales-mcp.mjs": "e41d6188e32fb724a2aec4ec20900995bd6a808ea78307dfd88196629b219905",
+    "apps/gateway/server.mjs": "6dfa2bc362fdffbd1f76adf7972efbb8b9c4c979fe255d15b5faaaa8f6c4cf16",
+    "apps/gateway/lib/mcp-oauth.mjs": "c553db83f6c17b98baf3498dd091b57b10fd8066713275dce53a59254a5398dd",
+    "apps/gateway/lib/mcp-sales.mjs": "f5404dae046730f58a5538219677dca041cc73711815748dd3f20dd9935c9652",
+    "apps/gateway/public/connect/index.html": "525ed99de1b56ddc24f7efde69477fb743006b4d8d863a2070ffc7e47435c068",
+    "apps/gateway/public/connect/connect.js": "d9e634eba6fe3e9d6163b04aefa8167048f07d7e6ee13fb1e24a0a3222f4427d",
+    "apps/gateway/public/connect/connect.css": "6a952bd5517919c3367d48096d304c455949078229b10c830714af74b3990f79"
+  },
+  "before": {
+    "rows": 35,
+    "hash": "70eef10082fec3331af33ca97e573c759f37d5ead0e9b15bc157aaeb23597c9a"
+  },
+  "screenshots": [
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-sales-mcp/http-oauth-3-connect-desktop.png",
+    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-sales-mcp/http-oauth-3-connect-mobile.png"
+  ],
+  "uiConsoleErrors": 0,
+  "after": {
+    "rows": 35,
+    "hash": "70eef10082fec3331af33ca97e573c759f37d5ead0e9b15bc157aaeb23597c9a"
+  },
+  "status": "PASS",
+  "temporaryDatabaseRemoved": true
+}

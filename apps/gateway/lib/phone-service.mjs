@@ -3,6 +3,7 @@ import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHON
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
 import { repoUrl } from './paths.mjs';
+import { prereleaseCallsAvailable } from './prerelease.mjs';
 
 /**
  * What was measured about each voice (scripts/voice-samples.mjs): median pitch and how long the same sentence
@@ -39,8 +40,11 @@ function recommend(details) {
 const VOICE_DETAILS=voiceDetails();
 
 export function phoneReadiness(service,config,user) {
- const ready=config.mode==='live'&&config.liveReady;
+ const paused=config.prerelease?.enabled&&config.prerelease.paused;
+ const ready=config.mode==='live'&&config.liveReady&&prereleaseCallsAvailable(config);
  const issues=ready?[]:[config.mode==='simulator'?'確認用の環境です。実発信はできません。':'サービスの電話接続を準備中です。管理者へお問い合わせください。'];
+ if(paused)issues.splice(0,issues.length,'事前プレリリースの新規受付を一時停止しています。残高と履歴は確認できます。');
+ else if(!prereleaseCallsAvailable(config))issues.splice(0,issues.length,'事前プレリリースの発信枠を準備中です。残高と履歴は確認できます。');
  if(!ready&&user?.role==='admin') {
   const labels={TWILIO_ACCOUNT_SID:'電話会社のアカウント',TWILIO_AUTH_TOKEN:'電話会社の認証',TWILIO_PHONE_NUMBER:'発信元の番号',OPENAI_API_KEY:'音声AIの認証',OATHRA_VOICE_MODEL:'音声モデル',OATHRA_BUSINESS_NAME:'相手に名乗る運営者名',OATHRA_RATE_CEILING_USD:'通信費の上限単価',OATHRA_LIVE_POLICY_REVIEWED:'運営方針の確認'};
   if(!config.publicUrl.startsWith('https:'))issues.push('公開HTTPS接続の設定が必要です。');
@@ -92,17 +96,20 @@ export function phoneCalendar(service,m,now=service.store.now()) {
   'BEGIN:VEVENT','UID:'+m.id+'@oathra','DTSTAMP:'+stamp,'DTSTART;TZID=Asia/Tokyo:'+local(day,clock),'DTEND;TZID=Asia/Tokyo:'+local(endDay,String(end.getUTCHours()).padStart(2,'0')+':'+String(end.getUTCMinutes()).padStart(2,'0')),
   'SUMMARY:'+text(`${settled?'【電話で確認】':'【未確定】'}${m.target.name}`),'DESCRIPTION:'+text(lines.join('\n')),'STATUS:'+(settled?'CONFIRMED':'TENTATIVE'),'TRANSP:'+(settled?'OPAQUE':'TRANSPARENT'),'END:VEVENT','END:VCALENDAR',''].join('\r\n');
 }
-export function prepareManagedPhone(service,u,input) {
+export function prepareManagedPhone(service,u,input,limits={}) {
  service.write(u);const request=PhoneRequestSchema.parse({...input,schemaVersion:1,kind:'oathra.phone-request'});
  const config=service.config;
  // An engine this deployment cannot run is refused at the draft, not discovered at dial time.
  if(request.engine)assert((config.voiceEngines??[]).some(e=>e.id===request.engine&&e.ready),'voice_engine_unavailable',400);
  const balanceLimited=service.credits.enabled&&config.mode==='live'&&config.billing?.settlement==='usage-rate-v1';
- const maxSeconds=balanceLimited?config.maxSeconds:Math.min(180,config.maxSeconds);
+ const maxSeconds=Math.min(config.maxSeconds,limits.maxSeconds??(balanceLimited?config.maxSeconds:180));
+ const maxUsd=Math.min(config.maxCallUsd,limits.maxUsd??config.maxCallUsd);
+ const currentQuote=service.credits.quote(config.mode,request.phone);
+ const spendingAmount=balanceLimited?Math.min(service.credits.balance(u.id).available,limits.maxUsd===undefined?Infinity:Math.floor(maxUsd/currentQuote.creditUsd)):undefined;
  const m={id:crypto.randomUUID(),owner:u.id,team:u.team,revision:1,status:'DRAFT',kind:'phone-request',phoneRequest:request,
   target:{name:request.name,phone:request.phone},request:request.instruction,goal:'phone.message',product:null,candidateSlots:[],testOnMe:false,mode:config.mode,
-  maxSeconds,maxUsd:config.maxCallUsd,estimatedMaximumUsd:config.mode==='live'?Math.ceil((maxSeconds+30)/60)*config.rateCeilingUsd*2+config.setupFeeUsd:0,
-  creditQuote:service.credits.quote(config.mode,request.phone,balanceLimited?service.credits.balance(u.id).available:undefined),callerId:config.callerId??'simulator',callPluginIdentity:config.callPluginIdentity??null,createdAt:service.store.now(),origin:null,result:null};
+  maxSeconds,maxUsd,estimatedMaximumUsd:config.mode==='live'?Math.ceil((maxSeconds+30)/60)*config.rateCeilingUsd*2+config.setupFeeUsd:0,
+  creditQuote:service.credits.quote(config.mode,request.phone,spendingAmount),callerId:config.callerId??'simulator',callPluginIdentity:config.callPluginIdentity??null,createdAt:service.store.now(),origin:null,result:null};
  // Balance-limited calls stop at their held budget; the full time ceiling is not prepaid.
  if(balanceLimited)m.estimatedMaximumUsd=Math.min(m.estimatedMaximumUsd,m.maxUsd,m.creditQuote.amount*m.creditQuote.creditUsd);
  assert(m.estimatedMaximumUsd<=m.maxUsd,'estimated_cost_exceeds_budget');service.store.put('mission',m);return m;

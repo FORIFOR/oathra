@@ -94,7 +94,11 @@ export class Store {
   /** Jobs that gave up. They used to disappear without a trace. */
   failedJobs() { return Object.fromEntries(['inbox','outbox'].map(kind => [kind, this.db.prepare("SELECT COUNT(*) AS n FROM records WHERE kind=? AND status='failed'").get(kind).n])); }
   removeMission(m, record = true) {
-    this.tx(() => { for (const kind of ['followup','inbox','outbox']) for (const r of this.list(kind,m.owner)) {
+    this.tx(() => {
+      // Old releases discarded reservations at 48 hours. Preserve a retained real approval before deleting its mission.
+      if(m.direction!=='inbound'&&m.approvedAt>this.now()-35*86400_000&&Number.isFinite(m.estimatedMaximumUsd)&&!this.get('reservation',m.id))
+        this.put('reservation',{id:m.id,owner:m.owner,approvedAt:m.approvedAt,estimatedMaximumUsd:m.estimatedMaximumUsd});
+      for (const kind of ['followup','inbox','outbox']) for (const r of this.list(kind,m.owner)) {
       if (r.missionId===m.id || r.payload?.missionId===m.id || (kind==='inbox' && r.id===m.sourceKey)) this.db.prepare('DELETE FROM records WHERE kind=? AND id=?').run(kind,r.id);
     }
     if(m.sourceKey) this.db.prepare("DELETE FROM records WHERE kind='inbox' AND id=?").run(m.sourceKey);
@@ -106,7 +110,8 @@ export class Store {
     const cutoff = this.now() - retentionDays * 86400_000;
     this.db.prepare('DELETE FROM keys WHERE expires<?').run(this.now());
     this.db.prepare("DELETE FROM records WHERE kind IN ('inbox','outbox') AND status IN ('done','failed') AND updated<?").run(cutoff);
-    this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-48*3600000);
+    // Keep every approval for the entire current Japanese calendar month, even after its mission is deleted.
+    this.db.prepare("DELETE FROM records WHERE kind='reservation' AND updated<?").run(this.now()-35*86400_000);
     this.db.prepare('DELETE FROM audit WHERE created<?').run(this.now() - 90 * 86400_000);
     // A table booking holds a name: it goes once its day is as old as any other record may be.
     for (const row of this.db.prepare("SELECT id,body FROM records WHERE kind='table-booking'").all()) if (Date.parse(this.open(row.body).date + 'T00:00:00+09:00') < cutoff) this.db.prepare("DELETE FROM records WHERE kind='table-booking' AND id=?").run(row.id);

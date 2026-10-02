@@ -31,7 +31,7 @@ node --env-file=.env.gateway apps/gateway/server.mjs
 | 電話 | Twilio REST/Media Streams、既存Oathra Runtime/Voiceとの接続、時間上限、終了、本人番号確認、有人引き継ぎ |
 | 営業結果 | 資料送付了承、商談日時の会話合意、未確定、辞退、連絡停止を区別 |
 | 後続処理 | 個別承認されたGmail送信、Google Calendar招待と応答照合、SMS、HubSpotノート |
-| MCP | stdioの一覧・下書き・結果取得。発信承認ツールは公開しない |
+| MCP | stdio、およびOAuth付きHTTPの読み取り・営業下書き・結果取得。発信承認ツールは公開しない。HTTPの常設公開・公式クライアント接続は未検証 |
 | 保存 | SQLite WAL、本文とイベントのAES-256-GCM暗号化、承認・実行・通知の永続化 |
 
 相手は登録済みの名前、または電話番号で指定できます。日本の国内番号（ハイフン・全角数字を含む）と国番号付き番号を共通Coreで正規化します。名前と番号が矛盾する依頼や複数の番号は拒否します。未登録番号は連絡先を勝手に作らず下書きに保存し、関係と連絡の根拠をWebで登録して依頼を作り直すまで発信承認を発行しません。曖昧な相手を推測して発信せず、Web/iOSで明示選択してもらいます。URLからの抽出は未確認のテキストであり、そのまま自動的に営業へ使いません。
@@ -82,7 +82,9 @@ node apps/gateway/test/runtime-smoke.mjs
 
 ## 認証・API・MCP
 
-`OATHRA_USERS_JSON` は `id / team / role / tokenHash` の配列です。トークンは十分にランダムな値を生成し、SHA-256の16進文字列だけをサーバー設定に置きます。権限は `admin` / `operator` / `viewer` / `agent`。データはアカウント単位、連絡停止はチーム単位です。アカウント登録・課金・SSO・組織横断CRMを完成済みとは扱いません。
+外部AI向けに、所有者の事前委任を使う[電話ボットAPI](../../docs/integrations/multibot.md)を追加しています（experimental v1）。`connect-agent.mjs`で既定の試用枠（10回・1通話最大5分・24時間）と専用資格情報を一括発行し、Multibotまたは`agent-mcp.mjs`で利用できます。APIは`/v1/phone/connections`、既定値確認は`/v1/phone/grants/defaults`です。専用agentは`/v1/agent/phone/calls`へ依頼します。既存のagentによる通常の発信承認は禁止のままです。
+
+`OATHRA_USERS_JSON` は `id / team / role / tokenHash` の配列です。トークンは十分にランダムな値を生成し、SHA-256の16進文字列だけをサーバー設定に置きます。権限は `admin` / `operator` / `viewer` / `agent`。データはアカウント単位、連絡停止はチーム単位です。公開登録とStripe購入は後述の設定で有効化する実装があり、実メール・実決済・常設公開まで検証済みとは扱いません。SSO・MFA・組織横断CRMは未対応です。
 
 業務用の `/v1/` はBearer認証、またはブラウザー用HttpOnlyセッション認証。Cookieで変更する場合は設定済みの同一Originを必須とし、Bearer SDKは従来どおり利用できます。主要ルートは次の通りです。以前の設計用 `src/contracts.ts` と異なり、**動作するHTTP APIの契約は `server.mjs` とテストが基準**です。
 
@@ -102,15 +104,25 @@ POST /v1/followups/:id/refresh
 
 MCPは `node apps/gateway/mcp.mjs`。`OATHRA_GATEWAY_URL` と `OATHRA_GATEWAY_TOKEN` をMCPサーバーの非公開環境変数に設定します。LLMへトークンを貼り付けないでください。公開するのは `oathra_list` / `oathra_draft` / `oathra_status` だけです。人間による発信承認はWeb/iOS/LINE/Slackで行います。既存の `oathra mcp` とは別のGateway用コマンドです。
 
+Claude Code・ChatGPT向けのHTTP接続は `/mcp`、ログイン・接続許可・解除は `/connect` です。`OATHRA_MCP_ENABLED` は初期値 `false`。公開する場合はmanaged構成の固定HTTPS originが必要で、HTTP localhostはローカル接続検証にだけ使えます。ブラウザで許可した読み取り・下書き権限だけを渡し、管理者BearerをMCPへ渡しません。詳細は[接続手順](../../docs/integrations/claude-chatgpt.md)と[検証範囲](../../docs/quality/sales-mcp.md)を参照してください。
+
 ## 配備
 
-永続ストレージと80/443ポートを持つLinuxサーバーに配置し、DNSをそのサーバーへ向けて実行します。
+永続ストレージと80/443ポートを持つLinuxサーバーに配置し、DNSをそのサーバーへ向けます。リポジトリのルートで、作業シェルの `OATHRA_DOMAIN` に管理する実際のDNS名を設定してから実行します。次は**新規配備**の手順です。
 
 ```sh
-OATHRA_DOMAIN=oathra.example.com docker compose -f apps/gateway/deploy/compose.yml up -d --build
+: "${OATHRA_DOMAIN:?管理する実際のDNS名を設定してください}"
+export OATHRA_DOMAIN
+docker compose -p oathra -f apps/gateway/deploy/compose.yml up -d --build
 ```
 
+既存配備の更新・バックアップ・復元では、従来のCompose project名を維持し、上の `-p oathra` をその名前へ置き換えてください。名前を指定せずこのComposeを使っていた場合は通常 `deploy` です。project名を変えると別の名前付きボリュームを参照し、空のDBで起動することがあります。稼働中のproject名を確認してから操作し、通常の更新にボリューム削除を含めないでください。
+
 `.env.gateway` の `OATHRA_PUBLIC_URL` は同じHTTPSドメインにします。Dockerビルド時は同梱の `Dockerfile.dockerignore` により秘密情報を除外します。DBは名前付きボリューム、秘密鍵は設定側です。両方を安全にバックアップしてください。ローカルの試用DBをDocker側へ自動コピーしないため、空の配備先では商品・連絡先を登録し直します。
+
+バックアップはGatewayコンテナ内の `/data/gateway.sqlite` に対してonline backupを実行し、`docker compose cp` で取り出します。ホスト側の `.env.gateway` を読むだけのコマンドでは、名前付きボリューム内のDBを保存できません。権限0700/0600・manifestのhash照合・サーバー外保管を含む [バックアップと復元手順](../../docs/quality/public-service.md#バックアップと復元) に従ってください。
+
+Dockerfileの既定ビルドはGatewayのfixtureテストを通過してから最終イメージを作ります。今回の検証対象はテストデータを生成しない `compile` targetのみで、既定の最終イメージとテストゲートは未実行です。コンパイル確認だけで公開配備の検証が済んだとは扱いません。
 
 これは**単一Gateway・単一実行worker**用です。SQLiteを共有して水平増設する構成ではありません。継続稼働にはログ監視、バックアップ復元試験、トークン管理、キャリア側の費用監視が別途必要です。DB再初期化で不明な発信を消して再発信しないでください。未知状態はキャリア記録と照合します。
 
@@ -189,15 +201,15 @@ const saved = await response.json();
 
 ## OSSとサービス版のクレジット（experimental）
 
-managedのトップ画面は、以前のArenaの電話画面のHTML/CSS（`public/phone/base/`）を使います。電話番号・相手・目的、12種類のテンプレート、目的の履歴、一般連絡先を使い、ヘッダーに残高を表示します。初回は管理者が発行した設定リンクからメールアドレスとパスワードを設定し、以後はメールでログインします。通常画面にトークン入力はありません。8時間のHttpOnly/SameSite=Strict Cookieで再読込時も認証を保持します。HTTPSではSecureと__Hostプレフィックス、Path=/、Domain指定なし。認証用の元トークンをlocalStorage等へ保存しません。ログアウト、期限切れ、利用者設定の削除、tokenHash変更、パスワード変更・再設定で失効します。営業用Gateway画面は `/sales` に残しています。Arenaのlocalhost APIをサービスとして公開する構成ではありません。
+managedのトップ画面は、以前のArenaの電話画面のHTML/CSS（`public/phone/base/`）を使います。電話番号・相手・目的、12種類のテンプレート、目的の履歴、一般連絡先を使い、ヘッダーに残高を表示します。公開登録が有効な環境では、メールの確認リンクからパスワードを設定し、以後はメールでログインします。既存の管理者発行アカウントには従来の設定リンクも使えます。通常画面にトークン入力はありません。8時間のHttpOnly/SameSite=Strict Cookieで再読込時も認証を保持します。HTTPSではSecureと__Hostプレフィックス、Path=/、Domain指定なし。認証用の元トークンをlocalStorage等へ保存しません。ログアウト、期限切れ、利用者設定の削除、tokenHash変更、パスワード変更・再設定で失効します。営業用Gateway画面は `/sales` に残しています。Arenaのlocalhost APIをサービスとして公開する構成ではありません。
 
 入力後に「電話する」→確認画面の「同意して電話する・Nクレジット」の2操作で承認します。確認には宛先・目的・利用額と条件・送信先・文字保存を表示し、戻って編集できます。同意チェックを別操作にせず、最終ボタンで明示承認を受け取ります。最終ボタンに自動フォーカスせず確認見出しから読み始めます。未接続の環境では「下書きを保存」と表示し、発信ボタンは理由付きで無効です。
 
-セッションAPI: `POST /v1/session` はBearer＋同一OriginでCookieを発行し、JSONには資格情報を返しません。`DELETE /v1/session` は同一OriginからCookieを失効させます（期限切れCookieの削除も可）。Cookie認証のリクエストでは任意の `X-Oathra-Account` を現在の利用者IDと照合し、別タブで利用者が変わった古い画面の操作を409で拒否します。opaqueセッション値のハッシュだけをSQLiteへ保存し、有効期間は更新されない固定8時間です。SSOや自動ユーザー登録の代わりではありません。
+セッションAPI: `POST /v1/session` はBearer＋同一OriginでCookieを発行し、JSONには資格情報を返しません。`DELETE /v1/session` は同一OriginからCookieを失効させます（期限切れCookieの削除も可）。Cookie認証のリクエストでは任意の `X-Oathra-Account` を現在の利用者IDと照合し、別タブで利用者が変わった古い画面の操作を409で拒否します。opaqueセッション値のハッシュだけをSQLiteへ保存し、有効期間は更新されない固定8時間です。公開登録・回復は別のメール所有確認フローを通します。SSO・MFAは未対応です。
 
 ### メールログインの初回設定・移行（experimental v1）
 
-`setup-managed.mjs` は秘密ディレクトリの `login-setup-url.txt` に初回リンクを作ります。起動後、ファイル内のURLを開き、ご自身のメールと8〜128文字のパスワードを設定してください。リンクは1時間・1回限りです。メールはログインIDであり、所有確認メールは送りません。
+`setup-managed.mjs` は秘密ディレクトリの `login-setup-url.txt` に初回リンクを作ります。起動後、ファイル内のURLを開き、ご自身のメールと8〜128文字のパスワードを設定してください。リンクは1時間・1回限りです。この管理者発行方式のメールはログインIDであり、所有確認メールは送りません。公開登録の確認メールとは別の方式です。
 
 既存環境、追加した既存利用者、期限切れリンクには次を使います。`operator` は `OATHRA_USERS_JSON` の対象IDに置き換えます。出力ファイルは毎回新しい非公開パスにしてください。
 
@@ -207,7 +219,11 @@ node --env-file=.env.managed apps/gateway/login-setup.mjs operator .oathra/login
 node --env-file=.env.managed apps/gateway/login-setup.mjs operator .oathra/login-reset-url.txt --reset
 ```
 
-このコマンドはアカウントを新規作成せず、対象IDのリンクを更新します。既存ID・残高・連絡先・履歴を保持します。利用者を増やす場合は管理者が `OATHRA_USERS_JSON` に固有ID・権限・十分にランダムなAPIトークンのhashを追加し再起動してからリンクを作ります。公開の自己登録、メール送信による自動再設定、メール所有確認、SSO、MFAは未実装です。リンクとAPIトークンは秘密情報として渡し、ログや公開リポジトリに貼らないでください。
+このコマンドはアカウントを新規作成せず、対象IDのリンクを更新します。既存ID・残高・連絡先・履歴を保持します。管理者発行方式で利用者を増やす場合は `OATHRA_USERS_JSON` に固有ID・権限・十分にランダムなAPIトークンのhashを追加し再起動してからリンクを作ります。リンクとAPIトークンは秘密情報として渡し、ログや公開リポジトリに貼らないでください。
+
+公開の自己登録、メール所有確認、確認済み公開アカウントのパスワード回復も実装しています。managed環境の固定HTTPS origin、Resendの実メール設定、利用規約・プライバシーポリシー、`OATHRA_PUBLIC_SIGNUP=true` が揃った場合だけ公開登録を有効にします。新規利用者は確認メールの1回限りのリンクから規約へ同意して登録し、個別のoperatorアカウントとして永続保存されます。従来の所有未確認メールIDを回復対象へ自動移行しません。SSO・MFAは未対応です。[登録・回復の契約と設定](../../docs/quality/public-accounts.md)・[公開までの未完了項目](../../docs/quality/public-service.md)。
+
+制限付き公開には `OATHRA_RELEASE_STAGE=prerelease` を使います。既定は公開登録10人、本人3回/24時間・全体20回/24時間、1通話180秒、着信応答なし。新規受付は初期停止で、明示した全体費用予算が0のままなら発信を拒否します。開始承認とworkerの両方で制限し、委任APIにも適用します。`OATHRA_PRERELEASE_PAUSED=true` は新規登録・購入・発信の停止であり、既知の支払の照合や残高閲覧は継続します。設定変更は再起動で反映します。[プレリリース制限・検証範囲](../../docs/quality/public-service.md#制限付き事前プレリリース)。
 
 通常ログイン後は「アカウント」で現在のパスワードを確認して変更できます。他の端末のセッションは失効します。リンクはURL fragmentで受け取り即座に履歴から除去し、APIにのみ送ります。サーバーはリンクのhash・期限・対象ID・設定時の資格情報versionを照合し、1回だけ消費します。初回設定で既存のトークン由来Cookieも失効しますが、APIのBearer認証は互換性を保ちます。
 
@@ -384,7 +400,7 @@ if (cost?.basis === 'usage-rate-v1') {
 
 [受け入れ条件・証拠](../../docs/quality/usage-cost.md)。外部請求書との最終一致や新規PSTN通話での再検証とは区別しています。
 
-| API（Bearer認証必須） | 用途 |
+| API（BearerまたはCookie認証必須） | 用途 |
 | --- | --- |
 | `GET /v1/credits` | 自分のavailable/heldと現在のquote |
 | `GET /v1/credits/ledger?after=<seq>` | 自分の台帳。昇順最大100件、最終seqで続ける |
@@ -393,7 +409,11 @@ if (cost?.basis === 'usage-rate-v1') {
 | 既存`/v1/missions/:id/start` | 確保とキュー登録を同一トランザクションで処理 |
 | 既存`/v1/missions/:id/cancel` | 実行前は取消と確保解除を同一トランザクションで処理 |
 
-付与APIのキーは永続的に重複検出します。同じキーで違う利用者/額/理由を指定すると409。決済イベントと接続する場合、サービス側で決済事業者の署名と支払完了を検証してから、決済イベントの一意IDをキーに管理者APIを呼びます。**決済接続・クレジット購入UI・自動ユーザー登録/SSOは含みません。** 管理者キーをブラウザーへ渡さず、通常利用者にはoperator権限の個別トークンを発行してください。払い戻し/販売単価/税務の処理を実装済みと扱わないでください。
+管理者付与APIのキーは永続的に重複検出します。同じキーで違う利用者/額/理由を指定すると409。管理者キーをブラウザーへ渡しません。
+
+Stripe Checkoutのクレジット購入画面/APIも実装しています。`GET /v1/credits/packs` の表示額を確認して `POST /v1/credits/checkout` からStripeへ進み、`GET /v1/credits/purchases` と `POST /v1/credits/purchases/:id/reconcile` で本人の注文を照会します。Stripeの署名付きWebhookまたはサーバーからの照会で、注文・支払額・通貨・支払完了を照合した後、Sessionごとに一度だけ台帳へ付与します。戻り先URLだけでは購入成功にしません。運営者のlive Stripeキー・Webhook秘密・実在するPriceとクレジット数・販売条件/サポートのHTTPS URL、liveの電話設定が揃うまで購入は無効です。返金・異議申立は新規利用を止めて運営者の照合に回し、自動返金・自動解除は行いません。[決済の契約・設定・復旧](../../docs/quality/credit-purchases.md)。
+
+実環境のメール・決済・販売価格設定、実メール配送・実決済、常設公開、登録から購入・実電話会計までの一貫した検証は未完了です。SSO・MFA・自動返金は未対応で、販売条件・税務対応まで完成済みとは扱いません。[サービス公開の実装と残る確認](../../docs/quality/public-service.md)。
 
 SDK入口は `sdk/gateway-client/index.mjs`。管理対象は既存Gatewayのmission APIで、ローカルの画面のAPIを公開する方式ではありません。既存サービスは利用者IDをGatewayのownerへ対応付け、バックエンドで個別トークンを管理できます。
 

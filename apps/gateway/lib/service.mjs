@@ -1,5 +1,6 @@
 import { Credits } from './credits.mjs';
 import { PasswordAccounts } from './password-accounts.mjs';
+import { checkPrereleaseCall } from './prerelease.mjs';
 import { randomUUID } from 'node:crypto';
 import { normalizePhoneNumber, extractPhoneNumber, preparePhoneRequest } from '../../../packages/contract/dist/index.js';
 import { assert, Fault, hash, phone, random, text } from './security.mjs';
@@ -7,8 +8,18 @@ import { assert, Fault, hash, phone, random, text } from './security.mjs';
 export const terminal = s => ['COMPLETED','INCOMPLETE','DECLINED','FAILED','CANCELLED','UNKNOWN'].includes(s);
 export class Service {
   constructor(store, config) { this.store = store; this.config = config; this.credits = new Credits(store, config); this.passwords = new PasswordAccounts(store,config); }
-  user(id) { const u = this.config.users.find(u => u.id === id); assert(u, 'unlinked_account', 403); return u; }
-  auth(token) { const u = this.config.users.find(u => u.tokenHash === hash(token ?? '')); assert(u, 'unauthorized', 401); return u; }
+  user(id) {
+    const configured = this.config.users.find(u => u.id === id); if (configured) return configured;
+    const u = typeof id === 'string' ? this.store.get('agent-identity',id) : null;
+    const owner = u && this.config.users.find(o => o.id === u.owner);
+    assert(u?.status === 'ACTIVE' && u.role === 'agent' && owner && ['admin','operator'].includes(owner.role) && owner.team === u.team, 'unlinked_account',403);
+    return u;
+  }
+  auth(token) {
+    const digest = hash(token ?? ''), configured = this.config.users.find(u => u.tokenHash === digest); if (configured) return configured;
+    const id = this.store.key('agent-token',digest); assert(id,'unauthorized',401);
+    const u = this.user(id); assert(u.tokenHash === digest,'unauthorized',401); return u;
+  }
   write(u) { assert(['admin','operator'].includes(u.role), 'read_only_account', 403); }
   own(kind, id, u) { const r = this.store.get(kind, id); assert(r && r.owner === u.id, 'not_found', 404); return r; }
   account(u) { return this.store.get('account', u.id) ?? { id: u.id, owner: u.id, consentVersion: null, verifiedPhone: null }; }
@@ -17,7 +28,10 @@ export class Service {
   saveMonthlyCap(u, value) { this.write(u); const cap = value === null || value === '' || value === undefined ? null : Number(value); assert(cap === null || (Number.isFinite(cap) && cap >= 0.01 && cap <= 100000), 'invalid_monthly_cap'); this.store.audit(u.id, 'account.monthly_cap_saved', u.id, { cap }); return this.store.put('account', { ...this.account(u), monthlyCapUsd: cap }); }
   monthUsage(u) {
     const tokyo = new Date(this.store.now() + 9 * 3600_000), start = Date.UTC(tokyo.getUTCFullYear(), tokyo.getUTCMonth(), 1) - 9 * 3600_000;
-    const usedUsd = this.store.list('reservation', u.id).filter(x => x.approvedAt >= start).reduce((n, x) => n + x.estimatedMaximumUsd, 0);
+    const reservations=new Map(this.store.all('reservation',u.id).map(x=>[x.id,x]));
+    // Earlier releases pruned reservations after 48 hours. Recover retained real approvals without double counting.
+    for(const m of this.store.all('mission',u.id))if(m.direction!=='inbound'&&m.approvedAt>=start&&!reservations.has(m.id))reservations.set(m.id,m);
+    const usedUsd = [...reservations.values()].filter(x => x.approvedAt >= start).reduce((n, x) => n + x.estimatedMaximumUsd, 0);
     return { usedUsd: Math.round(usedUsd * 100) / 100, capUsd: this.account(u).monthlyCapUsd ?? null, since: new Date(start).toISOString() };
   }
   // How calls to this person's number are answered (the server still decides whether incoming calls are on and whose
@@ -108,7 +122,7 @@ export class Service {
     this.store.audit(u.id, 'phone_request.drafted', draft.id, { target: this.store.phoneRef(request.phone), via: origin.channel });
     return draft;
   }
-  prepare(u, input, origin = null, sourceKey = null, record = true) {
+  prepare(u, input, origin = null, sourceKey = null, record = true, withinTransaction = false) {
     assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);
     if (sourceKey) { const found = this.store.key(`draft:${u.id}`, sourceKey); if (found) return this.own('mission', found, u); }
     const request = text(input.request, 2000), products = this.store.list('product', u.id), contacts = this.store.list('contact', u.id);
@@ -153,7 +167,9 @@ export class Service {
     const m = { id: randomUUID(), owner: u.id, team: u.team, revision: 1, status: 'DRAFT', product, target, request, goal,
       candidateSlots: slots, testOnMe: self, mode: this.config.mode, callerName: this.account(u).callerName || this.config.businessName || null, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
       creditQuote: this.credits.quote(this.config.mode,target.phone), callerId: this.config.callerId ?? 'simulator', callPluginIdentity: this.config.callPluginIdentity ?? null, createdAt: this.store.now(), origin, sourceKey, result: null };
-    this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); });
+    const persist = () => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); };
+    // Internal composition only: MCP couples its durable idempotency record to the draft in one transaction.
+    if (withinTransaction) persist(); else this.store.tx(persist);
     return m;
   }
   edit(u, id, input) {
@@ -193,9 +209,11 @@ export class Service {
     return { grant, m };
   }
   checkPolicy(u, m) {
+    checkPrereleaseCall(this.store,this.config,m);
     this.checkContact(u, m);
     assert(JSON.stringify(m.creditQuote ?? (this.credits.enabled ? null : this.credits.quote(m.mode,m.target?.phone))) === JSON.stringify(this.credits.currentQuote(m)), 'credit_price_changed_review_again', 409);
     const account = this.account(u);
+    assert(!account.purchaseBlocked, 'purchase_account_blocked', 403);
     assert((m.callPluginIdentity??null)===(this.config.callPluginIdentity??null),'call_plugin_changed_review_again',409);
     assert(account.consentVersion === this.config.consentVersion, 'privacy_consent_required', 403);
     assert(!this.store.suppressed(u.team, m.target.phone), 'recipient_suppressed', 403);
@@ -208,14 +226,17 @@ export class Service {
     if (m.mode === 'live') assert(this.config.liveReady, 'live_provider_not_configured', 503);
   }
   start(u, token, idempotencyKey, acknowledged, expectedMissionId = null) {
+    return this.store.tx(() => this.startTx(u, token, idempotencyKey, acknowledged, expectedMissionId));
+  }
+  // Internal composition point: caller must hold Store.tx (agent dispatch creates draft + queue atomically).
+  startTx(u, token, idempotencyKey, acknowledged, expectedMissionId = null) {
     this.write(u); assert(acknowledged === true, 'explicit_call_approval_required', 403);
     const key = text(idempotencyKey, 150), tokenHash = hash(text(token, 200));
-    return this.store.tx(() => {
       const previous = this.store.key(`start:${u.id}`, key);
       if (previous) { const old = JSON.parse(previous); assert(old.tokenHash === tokenHash && (!expectedMissionId || old.id === expectedMissionId), 'idempotency_conflict', 409); return this.own('mission', old.id, u); }
       const { m } = this.validGrant(u, token, 'start'); assert(!expectedMissionId || m.id === expectedMissionId, 'approval_scope_mismatch', 403); assert(m.status === 'DRAFT', 'mission_already_started', 409);
       this.checkPolicy(u, m);
-      const recent = this.store.list('reservation', u.id).filter(x => x.approvedAt > this.store.now() - 86400_000);
+      const recent = this.store.all('reservation', u.id).filter(x => x.approvedAt > this.store.now() - 86400_000);
       assert((this.config.dailyCalls===0||recent.length < this.config.dailyCalls) && (this.config.dailyUsd===0||recent.reduce((n,x) => n + x.estimatedMaximumUsd, 0) + m.estimatedMaximumUsd <= this.config.dailyUsd), 'daily_limit_reached', 429);
       const month = this.monthUsage(u);
       assert(month.capUsd === null || month.usedUsd + m.estimatedMaximumUsd <= month.capUsd + 1e-9, 'monthly_cap_reached', 429);
@@ -227,7 +248,6 @@ export class Service {
       this.store.setKey(`start:${u.id}`, key, JSON.stringify({ id: m.id, tokenHash }));
       this.store.audit(u.id, 'call.approved', m.id, { mission: m.id, revision: m.revision, fingerprint: this.fingerprint(m), target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, callerId: m.callerId, via: key.startsWith('channel:') ? (m.origin?.channel ?? 'channel') : 'api', actor: key.startsWith('channel:') ? hash(m.origin?.actor ?? '') : null });
       this.store.event(m, { type: 'status', status: m.status }); return m;
-    });
   }
   cancel(u, id) {
     this.write(u);

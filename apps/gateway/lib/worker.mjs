@@ -1,4 +1,5 @@
 import { phoneMemory } from '../../../packages/core/dist/index.js';
+import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
 import { evaluateSales, wantsNoContact } from './sales.mjs';
@@ -62,7 +63,7 @@ export class Worker {
         assert(!lease||lease.holder===this.holder,'worker_lease_lost',409);
         this.store.db.prepare('INSERT INTO lease VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires').run(this.holder,this.store.now()+30000);
         // A capture that cannot succeed fails this call only; left outside, it would block every call queued behind it.
-        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);this.service.credits.captureTx(m);}
+        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);checkPhoneDelegation(this.service,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);this.service.credits.captureTx(m);}
         catch(e){m.status='FAILED';m.finishedAt=this.store.now();m.error=e.code??'policy_rejected';this.service.credits.releaseTx(m);this.store.put('mission',m);this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error});this.service.notify(m,'result');return null;}
         if(m.creditQuote?.policy===METERED)m.billing={state:'pending'};
         m.status='DIALING';m.executionId=randomUUID();this.store.put('mission',m);this.store.event(m,{type:'status',status:'DIALING'});
