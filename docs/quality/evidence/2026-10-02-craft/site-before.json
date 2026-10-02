@@ -49,15 +49,15 @@
     }
   ],
   "screenshots": [
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-published-ja.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-ja-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-ja-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-ja-check-empty.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-ja-check-result.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-en-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-en-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-en-check-empty.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-before-en-check-result.png"
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-published-ja.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-check-result.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-check-result.png"
   ],
   "liveHeading": "AIが電話する。結果は、相手の言葉で確かめる。",
   "ja": {

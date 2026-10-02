@@ -97,20 +97,20 @@
     }
   ],
   "screenshots": [
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-story-complete-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-story-complete-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-empty.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-result.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-result-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-story-complete-mobile.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-story-complete-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-empty.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-result.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-result-mobile.png"
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-story-complete-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-story-complete-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-result.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-ja-check-result-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-story-complete-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-story-complete-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-result.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-a-en-check-result-mobile.png"
   ],
   "ja": {
     "heading": "完了には、相手の言葉を。"

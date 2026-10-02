@@ -28,7 +28,7 @@
   "evidence": [
     {
       "file": "docs/quality/evidence/2026-10-02-craft/site-after-c.json",
-      "sha256": "0ed43139699e16b456e6afd892640a396918f0d6583e62da3e4160c2beb54796"
+      "sha256": "58f0fc2ce935e513a431d7445cace1a151c5c6d89433b5a143a3d4ff3421759c"
     },
     {
       "file": "docs/quality/evidence/2026-10-02-craft/site-legacy-links.json",

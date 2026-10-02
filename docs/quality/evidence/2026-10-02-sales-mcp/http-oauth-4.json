@@ -226,8 +226,8 @@
     "hash": "70eef10082fec3331af33ca97e573c759f37d5ead0e9b15bc157aaeb23597c9a"
   },
   "screenshots": [
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-sales-mcp/http-oauth-4-connect-desktop.png",
-    "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-sales-mcp/http-oauth-4-connect-mobile.png"
+    "<repo>/docs/quality/evidence/2026-10-02-sales-mcp/http-oauth-4-connect-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-sales-mcp/http-oauth-4-connect-mobile.png"
   ],
   "uiConsoleErrors": 0,
   "after": {

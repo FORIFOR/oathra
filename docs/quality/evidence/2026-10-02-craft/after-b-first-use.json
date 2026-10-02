@@ -93,7 +93,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-1440.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-1440.png"
     },
     {
       "name": "app",
@@ -206,7 +206,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-app-1440.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-app-1440.png"
     },
     {
       "name": "connect",
@@ -382,7 +382,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-connect-1440.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-connect-1440.png"
     },
     {
       "name": "managed-root",
@@ -471,7 +471,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-390.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-390.png"
     },
     {
       "name": "app",
@@ -584,7 +584,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-app-390.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-app-390.png"
     },
     {
       "name": "connect",
@@ -760,7 +760,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-connect-390.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-connect-390.png"
     },
     {
       "name": "managed-root",
@@ -849,7 +849,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-320.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-managed-root-320.png"
     },
     {
       "name": "app",
@@ -962,7 +962,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-app-320.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-app-320.png"
     },
     {
       "name": "connect",
@@ -1138,7 +1138,7 @@
           }
         ]
       },
-      "screenshot": "/Users/horioshuuhei/Projects/RingZero/docs/quality/evidence/2026-10-02-craft/after-b-connect-320.png"
+      "screenshot": "<repo>/docs/quality/evidence/2026-10-02-craft/after-b-connect-320.png"
     }
   ],
   "runtimeExceptions": 0
