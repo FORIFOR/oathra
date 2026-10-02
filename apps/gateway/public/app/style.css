@@ -755,3 +755,34 @@ label.item.pick b { color: var(--ink); }
   .sum-days li { padding: 8px 0; }
   .sum-days .at { font-size: 12px; letter-spacing: -.04em; }
 }
+
+/* 2026-10-02 pass 4 */
+.glance .worry b { color: var(--ink); font-weight: 700; text-decoration: none; }
+.glance b { font-weight: 400; }
+.verdict-tag { display: inline-block; margin-left: 8px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: 4px; font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+.workspace-active .stopped-box p { color: var(--ink); }
+.workspace-active .stopped-box p b { color: var(--amber); }
+.page-actions .btn .badge { margin-left: 2px; }
+.callback-list { min-height: 120px; }
+.workspace-active .caveat.callback-note { margin: 0 0 20px; }
+.row.callback .who a { font-size: 17px; text-underline-offset: 3px; display: inline-flex; align-items: center; min-height: 44px; }
+.row.callback.done .who a { color: var(--muted); }
+.row.callback .btn { white-space: nowrap; }
+.past:empty { display: none; }
+.past { margin-top: 28px; min-height: 0; }
+.past[aria-busy="true"] > * { opacity: .55; }
+.past-missed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; padding: 12px 14px; border: 1px solid var(--amber-line); border-left-width: 6px; border-radius: 8px; background: var(--amber-bg); font-size: 15px; color: var(--ink); }
+.past-rows { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.past-rows li { display: grid; grid-template-columns: 150px 150px 64px minmax(0, 1fr); align-items: center; gap: 4px 14px; min-height: 48px; padding: 6px 0 6px 10px; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.7; }
+.past-rows li > .lvl { justify-self: start; grid-column: 3; }
+.past-rows li > .glance { grid-column: 4; }
+.past-rows .past-went .lvl { justify-self: start; }
+.past-rows a { display: inline-flex; align-items: center; min-height: 44px; text-underline-offset: 3px; }
+.past-rows li.need-emergency { box-shadow: inset 4px 0 0 var(--coral); }
+.past-rows li.need-concern { box-shadow: inset 4px 0 0 var(--badge); }
+@media (max-width: 860px) {
+  .past-rows li { grid-template-columns: minmax(0, 1fr) auto; }
+  .past-rows li > .lvl { grid-column: 1; }
+  .past-rows li > .glance { grid-column: 1 / -1; }
+}
+.import-rows li > b.tel { font-family: var(--mono); font-size: 12px; font-weight: 600; align-self: center; }
