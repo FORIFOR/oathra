@@ -11,6 +11,7 @@ import { Store } from './lib/store.mjs';
 import { BrowserSessions } from './lib/browser-session.mjs';
 import { Alerts, alertConfiguration } from './lib/alerts.mjs';
 import { Schedules } from './lib/schedules.mjs';
+import { teamCalls, teamRecord, teamCallsCsv, ownCallsCsv, importContacts } from './lib/team.mjs';
 import { PublicAccounts } from './lib/public-accounts.mjs';
 import { Purchases } from './lib/purchases.mjs';
 import { prereleaseConfiguration, prereleaseCallsAvailable } from './lib/prerelease.mjs';
@@ -38,7 +39,7 @@ export function configuration(env=process.env){
   const mode=env.OATHRA_MODE??'simulator';assert(['simulator','live'].includes(mode),'invalid_mode',500);
   let users;try{users=JSON.parse(env.OATHRA_USERS_JSON??'[]');}catch{throw new Fault(500,'invalid_users_json');}
   assert(Array.isArray(users)&&users.length>0,'configure_operator_accounts',500);
-  for(const u of users)assert(/^[a-zA-Z0-9_-]{1,80}$/.test(u.id)&&/^[a-f0-9]{64}$/.test(u.tokenHash)&&typeof u.team==='string'&&['admin','operator','viewer','agent'].includes(u.role),'invalid_user_configuration',500);
+  for(const u of users)assert(/^[a-zA-Z0-9_-]{1,80}$/.test(u.id)&&/^[a-f0-9]{64}$/.test(u.tokenHash)&&typeof u.team==='string'&&['admin','manager','operator','viewer','agent'].includes(u.role),'invalid_user_configuration',500);
   assert(new Set(users.map(u=>u.id)).size===users.length&&new Set(users.map(u=>u.tokenHash)).size===users.length,'duplicate_user_configuration',500);
   const publicUrl=(env.OATHRA_PUBLIC_URL??'http://localhost:4244').replace(/\/$/,'');
   const parsed=new URL(publicUrl);assert(!parsed.username&&!parsed.password&&!parsed.search&&!parsed.hash&&parsed.pathname==='/'&&(parsed.protocol==='https:'||(mode==='simulator'&&['localhost','127.0.0.1'].includes(parsed.hostname))),'public_url_must_be_https_origin',500);
@@ -282,6 +283,12 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&purchaseReconcile)return send(res,200,publicOrder(await purchases.reconcile(u,purchaseReconcile[1])));
       if(path==='/v1/phone/grants/defaults'&&method==='GET')return send(res,200,phoneGrantDefaults(service,u));
       if(path==='/v1/phone/connections'&&method==='POST')return send(res,201,connectPhoneAgent(service,u,data,req.headers['idempotency-key']));
+      if(method==='GET'&&path==='/v1/team/calls')return send(res,200,teamCalls(service,u,{attention:url.searchParams.get('attention')==='1',limit:Number(url.searchParams.get('limit')??200)}));
+      if(method==='GET'&&path==='/v1/team/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-team-calls.csv"');return send(res,200,teamCallsCsv(service,u),'text/csv; charset=utf-8');}
+      const teamCall=/^\/v1\/team\/calls\/([a-f0-9-]{36})$/.exec(path);
+      if(method==='GET'&&teamCall)return send(res,200,teamRecord(service,u,teamCall[1]));
+      if(method==='GET'&&path==='/v1/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-calls.csv"');return send(res,200,ownCallsCsv(service,u),'text/csv; charset=utf-8');}
+      if(method==='POST'&&path==='/v1/contacts/import')return send(res,200,importContacts(service,u,data.contacts));
       if(path==='/v1/schedules'&&method==='POST')return send(res,201,schedules.create(u,data,req.headers['idempotency-key']));
       if(path==='/v1/schedules'&&method==='GET'){service.write(u);return send(res,200,schedules.list(u));}
       const scheduleAction=/^\/v1\/schedules\/([a-f0-9]{32})\/(pause|resume|end)$/.exec(path);
@@ -384,7 +391,7 @@ export async function createGateway(config,options={}){
       if(playPath&&method==='POST'&&playPath[2]==='hangup')return send(res,200,practicePlayHangup(u.id,playPath[1]));
       if(method==='POST'&&path==='/v1/suppressions'){service.write(u);const c=service.own('contact',data.contactId,u);assert(data.acknowledged===true,'suppression_confirmation_required');store.suppress(u.team,c.phone,'manual');store.audit(u.id,'contact.suppressed',c.id);return send(res,200,{suppressed:true});}
       // Undoing a suppression is an administrator's decision with a written reason; the person's own key press stays.
-      if(method==='POST'&&path==='/v1/suppressions/release'){assert(u.role==='admin','admin_required',403);const c=service.own('contact',data.contactId,u),reason=typeof data.reason==='string'?data.reason.trim():'';assert(data.acknowledged===true,'suppression_confirmation_required');assert(reason.length>=5&&reason.length<=300,'release_reason_required');
+      if(method==='POST'&&path==='/v1/suppressions/release'){assert(['admin','manager'].includes(u.role),'supervisor_required',403);const c=service.own('contact',data.contactId,u),reason=typeof data.reason==='string'?data.reason.trim():'';assert(data.acknowledged===true,'suppression_confirmation_required');assert(reason.length>=5&&reason.length<=300,'release_reason_required');
         const outcome=store.unsuppress(u.team,c.phone);assert(outcome!=='opted_out_by_recipient','recipient_opted_out',403);assert(outcome!=='not_suppressed','not_suppressed',409);
         store.audit(u.id,'contact.suppression_released',c.id,{contact:c.id,target:store.phoneRef(c.phone),reason,outcome});return send(res,200,{suppressed:outcome!=='released',outcome});}
       if(method==='POST'&&path==='/v1/followups/preview')return send(res,201,followups.preview(u,data.missionId,data));

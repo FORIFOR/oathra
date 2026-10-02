@@ -14,7 +14,7 @@ export class Service {
     const configured = this.config.users.find(u => u.id === id); if (configured) return configured;
     const u = typeof id === 'string' ? this.store.get('agent-identity',id) : null;
     const owner = u && this.config.users.find(o => o.id === u.owner);
-    assert(u?.status === 'ACTIVE' && u.role === 'agent' && owner && ['admin','operator'].includes(owner.role) && owner.team === u.team, 'unlinked_account',403);
+    assert(u?.status === 'ACTIVE' && u.role === 'agent' && owner && ['admin','manager','operator'].includes(owner.role) && owner.team === u.team, 'unlinked_account',403);
     return u;
   }
   auth(token) {
@@ -22,7 +22,8 @@ export class Service {
     const id = this.store.key('agent-token',digest); assert(id,'unauthorized',401);
     const u = this.user(id); assert(u.tokenHash === digest,'unauthorized',401); return u;
   }
-  write(u) { assert(['admin','operator'].includes(u.role), 'read_only_account', 403); }
+  // A manager is an operator who also sees their own team's calls (lib/team.mjs); an admin runs the deployment.
+  write(u) { assert(['admin','manager','operator'].includes(u.role), 'read_only_account', 403); }
   own(kind, id, u) { const r = this.store.get(kind, id); assert(r && r.owner === u.id, 'not_found', 404); return r; }
   account(u) { return this.store.get('account', u.id) ?? { id: u.id, owner: u.id, consentVersion: null, verifiedPhone: null }; }
   // A monthly cap on what this person's approved calls may cost at most (their estimated maximums, which are
@@ -107,7 +108,7 @@ export class Service {
     return { deleted: true };
   }
   phoneRequest(u, input, origin, sourceKey) {
-    assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);
+    assert(['admin','manager','operator','agent'].includes(u.role), 'read_only_account', 403);
     const namespace = `phone-request:${u.id}`;
     const existing = this.store.key(namespace, sourceKey);
     if (existing) return this.store.open(existing);
@@ -125,7 +126,7 @@ export class Service {
     return draft;
   }
   prepare(u, input, origin = null, sourceKey = null, record = true, withinTransaction = false) {
-    assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);
+    assert(['admin','manager','operator','agent'].includes(u.role), 'read_only_account', 403);
     if (sourceKey) { const found = this.store.key(`draft:${u.id}`, sourceKey); if (found) return this.own('mission', found, u); }
     const request = text(input.request, 2000), products = this.store.list('product', u.id), contacts = this.store.list('contact', u.id);
     const matchingProducts = products.filter(p => request.includes(p.name));
