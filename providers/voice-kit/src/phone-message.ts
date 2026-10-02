@@ -201,6 +201,7 @@ export function phoneMessageInstructions(contract: CallContract, newsAvailable =
     "相手が断る・切りたいと言う・留守番電話になる場合は、そのまま短く挨拶してend_callで終了してください。",
     `【通話の終了】伝言や質問へのやり取りが終わったとき、または相手が『わかったよ』『バイバイ』『じゃあね』などと会話を締めたときは、いきなり切断せず、相手の親しみやすさに合わせて『ありがとうございます。それでは失礼いたします』や『はーい、${who}にお伝えしておきますね、失礼します！』などと挨拶を返してから end_call で終了してください。『お願いします』は依頼や返事であって終話の合図ではありません。`,
   ].join("\n") : [
+    ...(readBack ? [readBack] : []),
     "You are an AI assistant delivering a message and questions on the caller's behalf. Never impersonate their human friend.",
     conversationPolicies(contract.language),
     ...(contract.input.pace === "gentle" ? [gentlePace(contract.language)] : []),
