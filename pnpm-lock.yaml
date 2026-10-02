@@ -340,6 +340,13 @@ importers:
       '@oathra/evidence':
         specifier: workspace:*
         version: link:../../packages/evidence
+      ws:
+        specifier: ^8.18.0
+        version: 8.21.3
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
 
   providers/openai-realtime:
     dependencies:

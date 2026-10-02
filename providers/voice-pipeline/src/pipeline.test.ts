@@ -3,7 +3,7 @@ import { defineCall } from "@oathra/contract";
 import type { SpeechContext } from "@oathra/core";
 import type { DeepgramLiveEvent } from "@oathra/deepgram";
 import { MULAW_8K, PCM_16K, type VoiceOutput } from "@oathra/voice";
-import { isBargeIn, pipelineEngine, type LiveSTTSession } from "./index.js";
+import { isBargeIn, pipelineEngine, type LiveSTTSession, type PipelineTTS } from "./index.js";
 
 /** Hand-driven fake Deepgram session. */
 class FakeStt implements LiveSTTSession {
@@ -163,5 +163,53 @@ describe("pipelineEngine", () => {
     expect(isBargeIn("19時は満席です", "ja")).toBe(true);
     expect(isBargeIn("okay", "en")).toBe(false);
     expect(isBargeIn("hold on a second", "en")).toBe(true);
+  });
+});
+
+async function failureSession(tts: PipelineTTS) {
+  const stt = new FakeStt();
+  const engine = pipelineEngine({ brain: { name: "fixture", respond: async () => ({ text: "" }) }, stt: { live: () => stt }, tts, acknowledgements: false, leadMs: 100000 });
+  const contract = defineCall({ goal: "chat.casual", permissions: { ask: true } });
+  const session = await engine.start({ contract, language: "ja", carrierAudio: MULAW_8K }, { now: () => Date.now() });
+  return session;
+}
+
+describe("TTS failure and cancellation", () => {
+  it("reports rejected text as skipped, never as successfully spoken", async () => {
+    const session = await failureSession({ async synthesizeMulaw8k() { throw new Error("transcript mismatch"); } });
+    const result = await session.speak!("この言葉は再生されていません。");
+    await session.close();
+    const output = [];
+    for await (const item of session.output) output.push(item);
+    expect(result).toMatchObject({ skipped: true, interrupted: true });
+    expect(output.filter(x => x.type === "audio")).toHaveLength(0);
+    expect(output.some(x => x.type === "event" && x.event.type === "error")).toBe(true);
+  });
+  it("empty synthesis is skipped", async () => {
+    const session = await failureSession({ async synthesizeMulaw8k() { return new Uint8Array(); } });
+    expect(await session.speak!("聞こえない発話")).toMatchObject({ skipped: true, interrupted: true });
+    await session.close();
+  });
+  it("clears already queued frames when a stream fails part way through", async () => {
+    const session = await failureSession({ async synthesizeMulaw8k() { return new Uint8Array(); }, async *synthesizeMulaw8kStream() { yield new Uint8Array(160).fill(0x7f); throw new Error("stream failed"); } });
+    const result = await session.speak!("途中で失敗");
+    await session.close();
+    const output = [];
+    for await (const item of session.output) output.push(item);
+    expect(result.interrupted).toBe(true);
+    expect(output.map(x => x.type)).toEqual(["audio", "clear", "event"]);
+  });
+  it.each(["interrupt", "close"])("%s aborts pending synthesis before the first audio frame", async action => {
+    let signal: AbortSignal | undefined;
+    const session = await failureSession({ async synthesizeMulaw8k(_text, opts) {
+      signal = opts.signal;
+      return new Promise((_resolve, reject) => signal!.addEventListener("abort", () => reject(new Error("aborted")), { once: true }));
+    } });
+    const speaking = session.speak!("待機中");
+    await Promise.resolve();
+    if (action === "interrupt") session.interrupt!(); else await session.close();
+    expect(signal?.aborted).toBe(true);
+    expect(await speaking).toMatchObject({ skipped: true, interrupted: true });
+    await session.close();
   });
 });

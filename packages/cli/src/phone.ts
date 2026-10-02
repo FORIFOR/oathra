@@ -14,7 +14,7 @@ import { recordingNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { GeminiTTS } from "@oathra/gemini";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
-import { OpenAIBrain, OpenAITTS } from "@oathra/openai";
+import { OpenAIBrain, createOpenAITTS, type OpenAITTS, type OpenAIRealtimeTTS } from "@oathra/openai";
 import { gptLiveEngine } from "@oathra/openai-realtime";
 import { geminiLiveEngine } from "@oathra/gemini-live";
 import {
@@ -67,8 +67,8 @@ export type PipelineTTSChoice = "openai" | "gemini-lite";
 const CHARACTER_TTS_VOICES: Record<string, string> = { "character-female": PRESET_VOICES["character-tts"]["character-female"], "character-male": PRESET_VOICES["character-tts"]["character-male"] };
 
 /** The pipeline's TTS; `gemini-lite` only for the character presets, since the style is a character's. */
-export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?: string): { tts: OpenAITTS | GeminiTTS; voice?: string; style?: string } {
-  if (choice !== "gemini-lite") return { tts: new OpenAITTS() };
+export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?: string, env: NodeJS.ProcessEnv = process.env): { tts: OpenAITTS | OpenAIRealtimeTTS | GeminiTTS; voice?: string; style?: string } {
+  if (choice !== "gemini-lite") return { tts: createOpenAITTS(env) };
   const voice = voicePreset ? CHARACTER_TTS_VOICES[voicePreset] : undefined;
   if (!voice) throw new Error(`--tts gemini-lite is for the character presets only: add --voice-preset ${Object.keys(CHARACTER_TTS_VOICES).join("|")}`);
   return { tts: new GeminiTTS({ voice, style: CHARACTER_TTS_STYLE }), voice, style: CHARACTER_TTS_STYLE };
@@ -112,7 +112,7 @@ export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.e
     return { ...pipelineEngine({ brain: engineBrainPlaceholder, stt: new DeepgramSTT(), tts, acknowledgements: false, ttsLabel: `Gemini TTS (${tts.voice})` }), id: "character-tts", requires: ENGINE_CREDENTIALS["character-tts"] };
   }
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
-  return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: pipelineTTS(spec.tts, voicePreset).tts });
+  return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: pipelineTTS(spec.tts, voicePreset, env).tts });
 }
 
 export function engineChoices(): Array<{ id: string; label: string; note: string }> {
@@ -602,11 +602,13 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
 async function localConversationTest(flags: { engine?: string; voicePreset?: string; out?: string; maxUsd?: string }): Promise<void> {
   if (!flags.engine) throw new Error("--level conversation needs an explicit --engine (e.g. character-tts)");
   const spec = parseEngineSpec(flags.engine);
+  if ((process.env.OATHRA_TTS_TRANSPORT ?? "speech") !== "speech") throw new Error("Realtime TTS is not enabled for --level conversation: its budget estimator uses legacy per-character speech pricing. Use the adapter contract tests until usage accounting is validated.");
   if (spec.id === "pipeline") throw new Error("--level conversation runs the phone-request engines: gpt-live, gemini-live or character-tts");
   const maxUsd = flags.maxUsd === undefined ? 0.05 : Number(flags.maxUsd);
   if (!(maxUsd > 0 && maxUsd <= 1)) throw new Error("--max-usd must be between 0 and 1");
   const request = parsePhoneRequest({ schemaVersion: 1, kind: "oathra.phone-request", phone: "+819000000000", name: "ゆき", callerName: "田中", conversationMode: "chat", engine: spec.id, ...(flags.voicePreset ? { voicePreset: flags.voicePreset } : {}), instruction: "最近どうしてるか聞いて、気軽に雑談してください。" });
   await ensureEnvKeys(ENGINE_CREDENTIALS[spec.id]);
+  const callee = createOpenAITTS();
   const voice = resolvePhoneVoice(spec.id, request);
   const engine = buildEngine(spec, process.env, voice, request.voicePreset);
   const contract = phoneRequestContract(request);
@@ -616,7 +618,7 @@ async function localConversationTest(flags: { engine?: string; voicePreset?: str
   const brain = engineBrain(spec, engine);
   console.log(`\n${bold("Local conversation")}  ${dim(engine.label)}  ${dim(`(no carrier · paid APIs · stops at $${maxUsd})`)}\n`);
   const { runLocalConversation, wavBytes } = await import("./local-conversation.js");
-  const report = await runLocalConversation({ request, contract, engine, brain, callee: new OpenAITTS(), maxUsd, ...(character ? { systemPrompt: phoneRequestSystemPrompt } : {}) });
+  const report = await runLocalConversation({ request, contract, engine, brain, callee, maxUsd, ...(character ? { systemPrompt: phoneRequestSystemPrompt } : {}) });
   let commit = "unknown";
   try { commit = (await import("node:child_process")).execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a checkout */ }
   const dir = resolve(flags.out ?? join(defaultCallsDir(), "..", "local-conversations", new Date().toISOString().replace(/[:.]/g, "-")));
@@ -634,6 +636,7 @@ async function localConversationTest(flags: { engine?: string; voicePreset?: str
 
 /** Engine loopback: synthesized callee speech → engine → expect agent audio + transcripts. Costs a few yen of API, no telephony. */
 async function localLoopback(spec: EngineSpec, voicePreset?: string): Promise<void> {
+  const tts = createOpenAITTS();
   const engine = buildEngine(spec, process.env, undefined, voicePreset);
   console.log(`\n${bold("Local loopback")}  ${dim(engine.label)}\n`);
   const contract = defineCall({ goal: "chat.casual", input: { topic: "最近ハマっていること", ...(voicePreset ? { voicePreset } : {}) }, permissions: { ask: true } });
@@ -655,7 +658,7 @@ async function localLoopback(spec: EngineSpec, voicePreset?: string): Promise<vo
       } else if (o.type === "event" && (o.event.type === "speech" || o.event.type === "agent.speech")) transcripts.push(`${o.event.type === "speech" ? "callee" : "agent "}: ${o.event.text}`);
     }
   })();
-  const tts = new OpenAITTS();
+  void pump.catch(() => undefined);
   const say = async (text: string) => {
     const mu = await tts.synthesizeMulaw8k(text, { language: "ja" });
     for (let i = 0; i < mu.length; i += 160) {
@@ -670,17 +673,20 @@ async function localLoopback(spec: EngineSpec, voicePreset?: string): Promise<vo
       await new Promise((r) => setTimeout(r, 20));
     }
   };
-  await silence(300);
-  await say("もしもし、久しぶり。最近どう？");
-  const spokeAt = clock.now();
-  if (!engine.speaksItself && session.speak) {
-    await silence(1500);
-    await session.speak("元気だよ。そっちは最近どう？");
-  } else await silence(6000);
-  await say("そっか。じゃあね、バイバイ。");
-  await silence(4000);
-  await session.close();
-  await pump.catch(() => undefined);
+  let spokeAt = clock.now();
+  try {
+    await silence(300);
+    await say("もしもし、久しぶり。最近どう？");
+    spokeAt = clock.now();
+    if (!engine.speaksItself && session.speak) {
+      await silence(1500);
+      await session.speak("元気だよ。そっちは最近どう？");
+    } else await silence(6000);
+    await say("そっか。じゃあね、バイバイ。");
+    await silence(4000);
+  } finally {
+    try { await session.close(); } finally { await pump.catch(() => undefined); }
+  }
   const ttfa = firstOut !== undefined ? firstOut - spokeAt : undefined;
   console.log(`  ${outMs > 500 ? green("✓") : red("✗")} agent audio       ${Math.round(outMs)} ms`);
   console.log(`  ${transcripts.some((t) => t.startsWith("callee")) ? green("✓") : yellow("·")} callee transcript`);
