@@ -735,3 +735,23 @@ label.item.pick input { width: 20px; height: 20px; flex: none; accent-color: var
 }
 label.item.pick b { color: var(--ink); }
 .runs .lvl { justify-self: start; }
+
+/* 2026-10-02 round 3 */
+/* The confirmation column is read on the page: no box that scrolls inside it and cuts a row in half. */
+.workspace-active .ask-side { position: static; max-height: none; overflow: visible; }
+.band.concern h2, .band.concern > p, .band.concern blockquote { color: var(--ink); }
+.band .band-more { font-weight: 700; }
+.workspace-active .call.finished .call-foot { margin-top: 28px; }
+.sum-days .at.em { color: var(--coral); }
+.sum-days li { min-height: 104px; }
+.sum-days .at { font-size: 12px; }
+.contacts-layout .item .grow .tel { overflow: visible; text-overflow: clip; white-space: nowrap; }
+.import-rows li > * { font-family: var(--sans); font-size: 13px; font-weight: 400; }
+.import-rows li > b { font-weight: 700; }
+.stop-how { color: var(--ink); }
+.workspace-active .caveat.released { margin: 18px 0 4px; border-left: 3px solid var(--ink); }
+@media (max-width: 560px) {
+  .sum-days { gap: 2px; }
+  .sum-days li { padding: 8px 0; }
+  .sum-days .at { font-size: 12px; letter-spacing: -.04em; }
+}
