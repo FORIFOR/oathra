@@ -250,7 +250,8 @@ const TOPIC_JA: Record<CheckInTopic, string> = { condition: "体調", meal: "食
  */
 export function checkInNote(report: CheckInReport, who: { name: string; when: string; from: string }): string {
   // Said plainly: an AI made the call on the facility's behalf; the staff member who sends this note did not speak to the person.
-  const lines = [`${who.name}さんへ、${who.from}の代わりにAIがおかけした電話（${who.when}）のご報告です。`];
+  // Addressed to the family about the person: the person is the subject, the reader is the relative.
+  const lines = [`${who.name}さんへの電話（${who.when}）のご報告です。${who.from}の代わりに、AIがおかけしました。`];
   if (!report.answered) return [...lines, "お電話に出られなかったか、お話ができませんでした。職員が改めて様子を確かめます。", "この内容は電話での応答の記録で、ご本人の様子を確かめたものではありません。"].join("\n");
   lines.push("お電話でお話しできました。ご本人が話されたことは次のとおりです。");
   for (const item of report.items) {
