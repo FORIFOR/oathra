@@ -1,4 +1,5 @@
-import { phoneMemory } from '../../../packages/core/dist/index.js';
+import { phoneMemory, detectDistress, distressLevel, checkInReport } from '../../../packages/core/dist/index.js';
+import { worse } from './alerts.mjs';
 import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
@@ -9,7 +10,7 @@ import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
-  constructor(service, channels, execute) { this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.holder=randomUUID(); this.active=null; this.busy=false; }
+  constructor(service, channels, execute, alerts=null) { this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.active=null; this.busy=false; }
   start() {
     assert(this.store.lease(this.holder),'another_gateway_worker_is_active',409);
     const recovery=new Map([...this.store.list('mission'),...this.service.credits.pendingMissions()].map(m=>[m.id,m]));
@@ -28,7 +29,7 @@ export class Worker {
     }
     // Inbox and notifications can be retried; telephone attempts cannot.
     for(const f of this.store.list('followup',undefined,'EXECUTING')) { f.status='UNKNOWN'; f.error='process_interrupted_do_not_resend_without_reconciliation'; this.store.put('followup',f); }
-    for(const kind of ['inbox','outbox']) for(const j of this.store.list(kind,undefined,'processing')) { j.status='pending'; this.store.put(kind,j); }
+    for(const kind of ['inbox','outbox','alert']) for(const j of this.store.list(kind,undefined,'processing')) { j.status='pending'; this.store.put(kind,j); }
     this.leaseTimer=setInterval(() => { if(!this.store.lease(this.holder)) { this.active?.abort.abort(); clearInterval(this.timer); } },5000);
     this.controlTimer=setInterval(()=>{if(this.active && this.store.get('mission',this.active.id)?.status==='CANCEL_REQUESTED')this.active.abort.abort();},200);
     this.timer=setInterval(() => { void this.tick().catch(e => this.log('worker.tick_failed',e)); },300);
@@ -47,6 +48,7 @@ export class Worker {
     try {
       await this.processQueue('inbox',j=>this.channels.process(j));
       await this.processQueue('outbox',j=>this.channels.send(j));
+      if(this.alerts?.config) await this.processQueue('alert',j=>this.alerts.send(j));
       if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
       const m=this.claimNext();
       if(!m)return;
@@ -74,6 +76,17 @@ export class Worker {
   /** Suppress and leave a trace of why: a number that silently stops being callable is as hard to explain as one that does not. */
   suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone,source); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
   finished(current,connected) { this.store.audit(current.owner,'call.result',current.id,{mission:current.id,status:current.status,connected,carrierSid:current.carrierSid??null,doNotContact:current.result?.doNotContact===true,verified:Object.keys(current.result?.verified??{}),error:current.error??null}); }
+  /** A wellbeing call's report: what the person said, topic by topic, and whether anyone answered at all. */
+  checkIn(current,turns,connected) {
+    if(current.kind!=='phone-request'||current.direction==='inbound')return;
+    const report=checkInReport(turns),care=current.phoneRequest?.pace==='gentle';
+    if(!care&&report.items.every(i=>i.answer==='not_asked'))return;
+    current.result.checkIn=report;
+    if(!this.alerts)return;
+    // Nobody answered a call that was meant to find out how someone is: that is itself the finding.
+    if(care&&(!connected||!report.answered)&&current.status!=='CANCEL_REQUESTED')this.alerts.raise(current,'unanswered','concern');
+    else if(report.attention!=='none'&&!current.attention)this.alerts.raise(current,'checkin',report.attention,{categories:report.items.filter(i=>(i.topic==='help'&&i.answer==='yes')||(i.topic!=='help'&&i.answer==='no')).map(i=>i.topic)});
+  }
   async run(m,active) {
     const turns=[]; let connected=false;
     const watchdog=setTimeout(()=>active.abort.abort(),(m.maxSeconds+30)*1000);
@@ -110,6 +123,14 @@ export class Worker {
       if(e.type==='transcript.final') {
         turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})});
         if(current.kind==='phone-request')current.memory=phoneMemory(current.inbound?.reception?{...current.phoneRequest,conversationMode:'chat'}:current.phoneRequest,turns,current.approvedAt??current.createdAt);
+        // Words that mean a person should read this line now. The call goes on; the agent's policy handles what to say.
+        const signals=e.source==='callee'&&!e.interrupted?detectDistress(e.text):[];
+        if(signals.length){
+          const level=distressLevel(signals),before=current.attention?.level;
+          current.attention={level:before?worse(before,level):level,signals:[...(current.attention?.signals??[]),...signals.map(s=>({...s,turn:e.turnId}))].slice(-20)};
+          this.store.event(current,{type:'safety.signal',level,categories:signals.map(s=>s.category),turnId:e.turnId});this.store.put('mission',current);
+          if(before!==current.attention.level)this.alerts?.raise(current,'distress',current.attention.level,{categories:signals.map(s=>s.category),quotes:[e.text]});
+        }
         // A sales call ends at any refusal. In an ordinary request or an answered call, 「結構です」 answers a
         // question; only an explicit request not to be called again ends the call and suppresses the number.
         if(e.source==='callee' && (current.kind==='phone-request'?stopContact(e.text):wantsNoContact(e.text))) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
@@ -128,6 +149,7 @@ export class Worker {
       if(result.doNotContact && !this.store.suppressed(m.team,m.target.phone)) this.suppress(m,'verdict');
       const current=this.store.get('mission',m.id);
       current.result=result; current.transcript=turns; current.runtimeResult=outcome.result??null;
+      this.checkIn(current,turns,connected);
       current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':active.abort.signal.aborted?'INCOMPLETE':result.status;
       if(current.handoff?.status && current.handoff.status!=='COMPLETED') current.status=current.handoff.status==='UNKNOWN'?'UNKNOWN':current.handoff.status==='CONNECTED'?'HANDOFF_ACTIVE':'HANDOFF_PENDING';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
@@ -142,6 +164,7 @@ export class Worker {
       current.status=e.uncertain?'UNKNOWN':result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':'FAILED';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       current.error=e.code??'execution_failed'; current.result=result; current.transcript=turns; current.finishedAt=this.store.now();
+      if(!e.uncertain)this.checkIn(current,turns,connected);
       this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.finished(current,connected); this.service.notify(current,'result');
     } finally {
       clearTimeout(watchdog);clearInterval(creditTimer);

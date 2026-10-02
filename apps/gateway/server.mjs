@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { Store } from './lib/store.mjs';
 import { BrowserSessions } from './lib/browser-session.mjs';
+import { Alerts, alertConfiguration } from './lib/alerts.mjs';
 import { PublicAccounts } from './lib/public-accounts.mjs';
 import { Purchases } from './lib/purchases.mjs';
 import { prereleaseConfiguration, prereleaseCallsAvailable } from './lib/prerelease.mjs';
@@ -142,7 +143,8 @@ export async function createGateway(config,options={}){
   const followups=new Followups(service,env,options.fetchImpl??fetch,registry);
   const channels=options.channels??new Channels(service,env,registry,options.fetchImpl??fetch);
   const execute=(m,hooks)=>{registry.demand(callPlugin,'call:execute');return registry.capability(callPlugin).execute(freezeData(jsonData(m)),{signal:hooks.signal,onEvent:hooks.onEvent,control:hooks.control});};
-  const worker=new Worker(service,channels,execute),limits=new Map();
+  const alerts=new Alerts(service,alertConfiguration(env),{fetchImpl:options.fetchImpl??fetch,...(options.resolve?{resolve:options.resolve}:{})});
+  const worker=new Worker(service,channels,execute,alerts),limits=new Map();
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
     try{

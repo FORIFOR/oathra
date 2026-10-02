@@ -18,7 +18,7 @@ const tools=[
 async function call(name,args){
   const spec=tools.find(t=>t.name===name);
   if(!spec||!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(k=>!Object.hasOwn(spec.inputSchema.properties,k))||spec.inputSchema.required.some(k=>!Object.hasOwn(args,k)))throw Error('Invalid tool arguments');
-  if(name!=='oathra_connection'&&!/^[a-zA-Z0-9_-]{8,128}$/.test(args.operationKey??''))throw Error('A stable operationKey is required');
+  if(name!=='oathra_connection'&&(typeof args.operationKey!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(args.operationKey)))throw Error('A stable operationKey is required');
   const {connection:c,client}=readConnectionFile(process.env.OATHRA_CONNECTION_FILE);
   if(name==='oathra_connection')return client.agentPhoneConnection(c.grantId);
   if(name==='oathra_phone_call')return client.agentPhone({grantId:c.grantId,request:args.request,idempotencyKey:args.operationKey});
