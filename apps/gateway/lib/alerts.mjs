@@ -25,6 +25,7 @@ const TEXT = {
   distress: m => `【要確認】${m.target.name}さんとの電話で、体調や安全に関わる発言がありました。内容をすぐに確認してください。`,
   unanswered: m => `【要確認】${m.target.name}さんへの電話に応答がありませんでした。`,
   inbound: m => `【着信】${m.target.name}さんからお電話がありました。用件を確認してください。`,
+  batch: m => `【要確認】${m.target.name}への電話を一時停止しました。残高や上限を確認してください。`,
   schedule: m => `【要確認】${m.target.name}さんへの定期の電話を、予定どおりに発信できませんでした。`,
   checkin: m => `【要確認】${m.target.name}さんへの電話で、確認が必要な回答がありました。`,
 };

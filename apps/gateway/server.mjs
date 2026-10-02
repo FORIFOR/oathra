@@ -11,6 +11,7 @@ import { Store } from './lib/store.mjs';
 import { BrowserSessions } from './lib/browser-session.mjs';
 import { Alerts, alertConfiguration } from './lib/alerts.mjs';
 import { Schedules } from './lib/schedules.mjs';
+import { Batches } from './lib/batches.mjs';
 import { teamCalls, teamRecord, teamCallsCsv, ownCallsCsv, importContacts } from './lib/team.mjs';
 import { PublicAccounts } from './lib/public-accounts.mjs';
 import { Purchases } from './lib/purchases.mjs';
@@ -161,7 +162,8 @@ export async function createGateway(config,options={}){
   const schedules=new Schedules(service,alerts);
   // Each contact says whether this team has stopped calling it, so the list can show that and offer the release.
   const contactsView=u=>store.list('contact',u.id).map(x=>({...x,suppressed:!!x.phone&&store.suppressed(u.team,x.phone)}));
-  const worker=new Worker(service,channels,execute,alerts,schedules),limits=new Map();
+  const batches=new Batches(service,alerts);
+  const worker=new Worker(service,channels,execute,alerts,schedules,batches),limits=new Map();
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
     try{
@@ -299,6 +301,10 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&teamCall)return send(res,200,teamRecord(service,u,teamCall[1]));
       if(method==='GET'&&path==='/v1/calls.csv'){res.setHeader('content-disposition','attachment; filename="oathra-calls.csv"');return send(res,200,ownCallsCsv(service,u),'text/csv; charset=utf-8');}
       if(method==='POST'&&path==='/v1/contacts/import')return send(res,200,importContacts(service,u,data.contacts));
+      if(path==='/v1/batches'&&method==='POST')return send(res,201,batches.create(u,data,req.headers['idempotency-key']));
+      if(path==='/v1/batches'&&method==='GET'){service.write(u);return send(res,200,batches.list(u));}
+      const batchAction=/^\/v1\/batches\/([a-f0-9]{32})\/(pause|resume|end)$/.exec(path);
+      if(batchAction&&method==='POST')return send(res,200,batches.set(u,batchAction[1],{pause:'PAUSED',resume:'ACTIVE',end:'ENDED'}[batchAction[2]]));
       if(path==='/v1/schedules'&&method==='POST')return send(res,201,schedules.create(u,data,req.headers['idempotency-key']));
       if(path==='/v1/schedules'&&method==='GET'){service.write(u);return send(res,200,schedules.list(u));}
       const scheduleAction=/^\/v1\/schedules\/([a-f0-9]{32})\/(pause|resume|end)$/.exec(path);

@@ -10,7 +10,7 @@ import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
-  constructor(service, channels, execute, alerts=null, schedules=null) { this.schedules=schedules; this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.running=new Map(); this.busy=false; }
+  constructor(service, channels, execute, alerts=null, schedules=null, batches=null) { this.schedules=schedules; this.batches=batches; this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.running=new Map(); this.busy=false; }
   /** How many calls may be in progress at once (OATHRA_MAX_CONCURRENT_CALLS; one unless the operator raised it). */
   get limit() { return Math.max(1,this.service.config.maxConcurrentCalls??1); }
   /** The call in progress, when there is one; with several, the earliest. `activeFor(id)` finds a particular one. */
@@ -58,6 +58,7 @@ export class Worker {
       if(this.draining||this.running.size>=this.limit)return;
       // Standing requests place their next due call into the queue; the claim below treats it like any other.
       if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
+      if(this.batches){try{this.batches.tick();}catch(e){this.log('batch.tick_failed',e);}}
       while(this.running.size<this.limit){
         const m=this.claimNext();
         if(!m)return;
