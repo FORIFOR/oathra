@@ -447,7 +447,8 @@ export class OpenAILiveAgent {
     if (!this.carrierActive) return;
     this.lastActivityMs = this.bridge?.now() ?? 0;
     if (this.watchdog) clearTimeout(this.watchdog);
-    const limit = this.opts.inactivityMs ?? 25000;
+    // A gentle call (contract.input.pace) leaves a slow or absent-minded person a full minute before hanging up.
+    const limit = this.opts.inactivityMs ?? (this.opts.contract.input.pace === "gentle" ? 60000 : 25000);
     this.watchdog = setTimeout(() => {
       if (!this.closed) this.bridge?.emit({ type: "hangup", reason: "inactivity" });
     }, limit);

@@ -33,3 +33,22 @@ describe("hanging up when asked", () => {
     expect(GOODBYE_RE.test("承知しました。失礼いたします。")).toBe(true);
   });
 });
+
+describe("safety and the gentle pace", () => {
+  const request = (extra: Record<string, unknown> = {}) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "山田", instruction: "お変わりないか聞いてください。", ...extra }));
+  it("every call refuses medical advice and never claims to have summoned help", () => {
+    for (const language of ["ja", "en"]) expect(conversationPolicies(language)).toContain("Safety policy:");
+    expect(conversationPolicies("ja")).toContain("診断、病名の推測、薬の種類・量・飲み方の指示");
+    expect(conversationPolicies("ja")).toContain("119番");
+    expect(conversationPolicies("ja")).toContain("あなたは救急車や人を呼べません");
+  });
+  it("the gentle pace is added only when asked for, in both conversation modes, and keeps polite speech", () => {
+    expect(phoneMessageInstructions(request())).not.toContain("ゆっくり・やさしく話す");
+    for (const conversationMode of ["message", "chat"] as const) {
+      const text = phoneMessageInstructions(request({ conversationMode, pace: "gentle" }));
+      expect(text).toContain("【ゆっくり・やさしく話す】");
+      expect(text).toContain("依頼にタメ口の指定があっても");
+      expect(text.indexOf("【ゆっくり・やさしく話す】")).toBeGreaterThan(text.indexOf("Hang-up policy:"));
+    }
+  });
+});

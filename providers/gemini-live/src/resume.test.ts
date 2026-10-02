@@ -53,3 +53,9 @@ it("a dropped socket without a handle ends the call as before", async () => {
   try { await agent.connect(bridge); await wait(200); expect(events.some((e) => e.type === "hangup")).toBe(true); expect(s.count()).toBe(1); }
   finally { agent.close(); await s.close(); }
 });
+
+it("a gentle call waits longer for the end of a turn", () => {
+  const detection = (gentle?: boolean) => (liveSetup({ model: "m", voice: "v", instructions: "", tools: [], ...(gentle ? { gentle } : {}) }) as any).realtimeInputConfig.automaticActivityDetection.silenceDurationMs;
+  expect(detection()).toBe(650);
+  expect(detection(true)).toBe(1400);
+});

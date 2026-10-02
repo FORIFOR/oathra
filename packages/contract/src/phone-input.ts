@@ -180,6 +180,9 @@ export const PhoneRequestFieldsSchema = z.object({
   voice: z.enum([...PHONE_VOICES, ...GEMINI_VOICES]).optional(),
   // Optional: a base voice and a speaking style chosen together. Never changes permissions or the verdict.
   voicePreset: z.enum(VOICE_PRESETS).optional(),
+  // Optional: "gentle" is for someone who needs time: older people, the hard of hearing. Slower, plainer speech and
+  // longer waits before the line is treated as silent. Never changes permissions or the verdict.
+  pace: z.enum(["gentle"]).optional(),
   instruction: z.string().trim().min(1).max(2000).refine(value => !/\{\{[^{}]+\}\}/.test(value), "テンプレートの {{項目}} を具体的な内容に書き換えてください。"),
 }).strict();
 
@@ -191,7 +194,7 @@ export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, c
 });
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset" | "task" | "success">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset" | "pace" | "task" | "success">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {
