@@ -81,3 +81,14 @@ describe("answering a business line", () => {
     expect(kept[0]!.a).toHaveLength(300);
   });
 });
+
+describe("reading terms back", () => {
+  const request = (extra: Record<string, unknown> = {}) => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "丸山商事", instruction: "納期を確認してください。", ...extra }));
+  it("a call with conditions to confirm is told to read them back and wait for a yes; a plain errand is not", () => {
+    const text = phoneMessageInstructions(request({ success: { required: ["quantity", "date", "confirmed"], expected: { quantity: "50ケース", date: "2026-10-20" } } }));
+    expect(text).toContain("【確認の仕方】");
+    expect(text).toContain("「〜でよろしいでしょうか」と一つの質問で確かめ");
+    expect(text).toContain("復唱して「はい」をもらうまで、決まったとは言わないでください");
+    expect(phoneMessageInstructions(request())).not.toContain("【確認の仕方】");
+  });
+});

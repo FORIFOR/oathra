@@ -147,6 +147,11 @@ export function phoneMessageInstructions(contract: CallContract, newsAvailable =
   const input = `Input: ${JSON.stringify({ name: contract.target.name, ...(callerName ? { callerName } : {}), request: contract.input.request,
     ...(Object.keys(contract.constraints).length ? { requiredConditions: contract.constraints, conditionsPolicy: '依頼文よりこの条件を優先し、違う条件で確定しない。満たせない場合は持ち帰る。' } : {}),
     ...(Object.keys(contract.require).length ? { fieldsToConfirm: Object.keys(contract.require).filter(k => contract.require[k]) } : {}) })}`;
+  // The verdict is read from the other side's words by fixed rules, which recognise a plain yes to a read-back far more
+  // reliably than free-form agreement. So the agent turns every agreement into one: read the terms back, ask, wait.
+  const readBack = Object.keys(contract.require).some(k => contract.require[k]) ? (contract.language === "ja"
+    ? "【確認の仕方】相手が条件に同意したように聞こえても、それで終わりにせず、必ず条件（日付・時刻・数量・人数・金額のうち該当するもの）をそのまま復唱して「〜でよろしいでしょうか」と一つの質問で確かめ、相手の「はい」または「いいえ」を待ってください。相手が別の条件を言ったら、その条件を復唱して同じように確かめてください。復唱して「はい」をもらうまで、決まったとは言わないでください。"
+    : "Confirming: even when the other person sounds as if they agree, read the terms back (the date, time, quantity, party size or price that apply) exactly, ask in one question whether that is right, and wait for their yes or no. If they name different terms, read those back and ask the same way. Until you have read it back and heard yes, do not say it is settled.") : undefined;
   // Someone who does not know who is calling hangs up. "誰?" outranks whatever was being said.
   const identity = contract.language === "ja"
     ? `相手が「誰?」「どちら様?」「何の電話?」のように相手や用件を尋ねたら、話していた内容を止めて最優先で答えてください: あなたはAIであること、${callerName ? `${callerName}さんに頼まれて代わりに電話していること` : "相手の知り合いの方に頼まれて代わりに電話していること（依頼者の名前は預かっていないと正直に伝える）"}、そして用件を一、二文で。答えたあとは相手の反応を待ってください。名乗るときは「${callerName ? `${callerName}さんの代わりにお電話しているAIです` : "知り合いの方の代わりにお電話しているAIです"}」のように、誰の代わりかを必ず含めてください。相手が驚いていたり戸惑っている様子なら「突然のお電話ですみません！」と優しく添えて安心させてください。`
@@ -177,6 +182,7 @@ export function phoneMessageInstructions(contract: CallContract, newsAvailable =
     `Maximum call duration: ${Math.round(contract.budget.maxDurationMs / 1000)} seconds. Respect the runtime's time limit.`,
   ].join("\n");
   return contract.language === "ja" ? [
+    ...(readBack ? [readBack] : []),
     "あなたは依頼者の代わりに伝言と確認・質問を届けるAIアシスタントです。人間の友人本人を装わないでください。",
     conversationPolicies(contract.language),
     ...(contract.input.pace === "gentle" ? [gentlePace(contract.language)] : []),
