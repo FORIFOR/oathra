@@ -151,6 +151,8 @@ export async function createGateway(config,options={}){
   const execute=(m,hooks)=>{registry.demand(callPlugin,'call:execute');return registry.capability(callPlugin).execute(freezeData(jsonData(m)),{signal:hooks.signal,onEvent:hooks.onEvent,control:hooks.control});};
   const alerts=new Alerts(service,alertConfiguration(env),{fetchImpl:options.fetchImpl??fetch,...(options.resolve?{resolve:options.resolve}:{})});
   const schedules=new Schedules(service,alerts);
+  // Each contact says whether this team has stopped calling it, so the list can show that and offer the release.
+  const contactsView=u=>store.list('contact',u.id).map(x=>({...x,suppressed:!!x.phone&&store.suppressed(u.team,x.phone)}));
   const worker=new Worker(service,channels,execute,alerts,schedules),limits=new Map();
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
@@ -319,7 +321,7 @@ export async function createGateway(config,options={}){
         sessions.create(req,res,u,version);return send(res,200,{changed:true});
       }
       if(path==='/v1/session'&&method==='POST'){assert(auth?.startsWith('Bearer '),'bearer_required',401);sessions.create(req,res,u);return send(res,200,{signedIn:true,expiresInSeconds:8*3600});}
-      if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:store.list('contact',u.id),missions:store.list('mission',u.id).filter(m=>m.direction!=='inbound').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
+      if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:contactsView(u),missions:store.list('mission',u.id).filter(m=>m.direction!=='inbound').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
         ...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         // Lets the page hide what cannot work here instead of offering it and failing.
         available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
@@ -370,7 +372,7 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&path==='/v1/products/import'){service.write(u);return send(res,200,await importProduct(data.url));}
       if(method==='POST'&&path==='/v1/products')return send(res,201,service.product(u,data));
       if(method==='POST'&&path==='/v1/contacts')return send(res,201,service.contact(u,data,req.headers['idempotency-key']));
-      if(method==='GET'&&path==='/v1/contacts')return send(res,200,store.list('contact',u.id));
+      if(method==='GET'&&path==='/v1/contacts')return send(res,200,contactsView(u));
       const contactPath=path.match(/^\/v1\/contacts\/([a-f0-9-]{36})$/);
       if(method==='DELETE'&&contactPath)return send(res,200,service.removeContact(u,contactPath[1]));
       if(method==='POST'&&path==='/v1/phone/verify')return send(res,200,await phone.verifyNumber(u,data));
