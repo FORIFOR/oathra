@@ -155,7 +155,7 @@ function toast(text) { const t = $('#toast'); t.textContent = text; t.hidden = f
 })();
 
 // ---------------------------------------------------------------- words
-const FIELD = { date: '日付', time: '時刻', partySize: '人数', price: '料金', confirmed: '相手の確認', breakfast: '朝食', smoking: '喫煙', serial: 'シリアル番号',
+const FIELD = { date: '日付', time: '時刻', partySize: '人数', price: '料金', quantity: '数量', confirmed: '相手の確認', breakfast: '朝食', smoking: '喫煙', serial: 'シリアル番号',
   meeting_agreed_on_call: '商談の日時', material_send_allowed: '資料を送ってよいか', presentation_acknowledged: '説明を聞いてもらえたか' };
 const fmtValue = (field, v) => ['confirmed', 'material_send_allowed', 'presentation_acknowledged'].includes(field) ? (v ? 'はい' : 'いいえ')
   : ['breakfast', 'smoking'].includes(field) ? (v ? 'あり' : 'なし') : field === 'partySize' ? `${v}名` : field === 'price' ? `${Number(v).toLocaleString('ja-JP')}円`
@@ -185,7 +185,12 @@ const when = iso => { const d = new Date(iso); if (isNaN(d)) return ''; const to
 const mmss = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const LIVE = ['starting', 'running', 'stopping'];
 // A wellbeing call is read by what was said (its check-in); a date the memory only guessed at is not a thing to settle.
-const notesOf = r => (r.memory?.notes ?? []).filter(n => FIELD[n.field] && (!r.checkIn || n.status === 'verified'));
+// A request with stated conditions (success) shows every one of them: what was asked comes from the request itself,
+// and a condition the other side never spoke to is listed as not yet confirmed rather than left out.
+const notesOf = r => { const want = r.request?.success, list = (r.memory?.notes ?? []).filter(n => FIELD[n.field] && (!r.checkIn || n.status === 'verified'))
+    .map(n => n.requested === undefined && want?.expected?.[n.field] !== undefined ? { ...n, requested: want.expected[n.field] } : n);
+  for (const f of want?.required ?? []) if (FIELD[f] && !list.some(n => n.field === f)) list.push({ field: f, status: 'missing', ...(want.expected?.[f] !== undefined ? { requested: want.expected[f] } : {}) });
+  return list; };
 function outcome(r) {
   const notes = notesOf(r), ok = notes.filter(n => n.status === 'verified').length;
   if (r.state === 'draft') return { text: '発信前の確認待ち', tone: 'warn' };
@@ -235,7 +240,7 @@ function renderBar() {
 }
 
 // ---------------------------------------------------------------- router
-const routes = { '': home, requests, schedule, new: ask, call, practice, contacts, settings, standing, team: (id) => id ? call(id, undefined, true) : team(), lists: (id) => id === 'new' ? listNew() : lists(), callbacks };
+const routes = { '': home, requests, schedule, new: ask, call, practice, contacts, settings, standing, team: (id, sub) => id === 'people' ? people() : id === 'person' ? person(sub) : id ? call(id, undefined, true) : team(), lists: (id) => id === 'new' ? listNew() : lists(), callbacks };
 let routeVersion = 0;
 function renderRouteError(view, error) {
   const retry = error.readOnlyRetry === false ? el('a', { class: 'btn primary', href: '#/', text: 'ホームで状態を確認' }) : el('button', { class: 'btn primary', type: 'button', text: 'もう一度読み込む', onclick: async () => {
@@ -438,7 +443,7 @@ function needCard(r) {
   if (r.state === 'unknown') {
     return el('div', { class: 'card warn' }, el('div', {},
       el('div', { class: 'k' }, el('span', { class: 'attention-dot dot' }), '電話が終わったか確かめられていません'),
-      el('h3', { text: `${r.request.name}　${r.request.instruction.slice(0, 24)}` }),
+      el('h3', { text: `${r.request.name}　${splitScope(r.request.instruction).body.slice(0, 24)}` }),
       el('p', { class: 'note', text: `${when(r.createdAt)} · 途中で接続が切れました。通話会社の記録で終わったことを確かめてから押してください。` })),
       el('button', { class: 'btn', type: 'button', text: '確かめました', onclick: async () => {
         if (!confirm('通話会社の記録で、この電話が終わっていることを確かめましたか？')) return;
@@ -447,7 +452,7 @@ function needCard(r) {
   }
   return el('div', { class: 'card' }, el('div', {},
     el('div', { class: 'k dim', text: '発信前の確認待ち' }),
-    el('h3', { text: `${r.request.name}　${r.request.instruction.slice(0, 24)}` }),
+    el('h3', { text: `${r.request.name}　${splitScope(r.request.instruction).body.slice(0, 24)}` }),
     el('p', { class: 'note', text: `${when(r.createdAt)} に作成 · あなたが承認するまで電話はかかりません。` })),
     el('a', { class: 'btn primary', href: `#/new?draft=${r.id}`, text: '内容を見る' }));
 }
@@ -482,7 +487,7 @@ async function ask() {
   const pre = from?.request ?? {}, preContact = params.get('contact') ? b.contacts.find(c => c.id === params.get('contact')) : null;
   const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '', voiceName: pre.voice ?? '', engine: pre.engine ?? '',
     purpose: from?.sales ? from.goal : pre.conversationMode === 'chat' ? 'chat' : '', contactId: preContact?.id ?? (from ? b.contacts.find(c => c.phone === pre.phone)?.id : undefined) ?? null, productId: from?.product?.id ?? b.products[0]?.id ?? '' };
-  const scoped = splitScope(form.instruction); form.instruction = scoped.body; form.ok = scoped.ok; form.hold = scoped.hold;
+  const scoped = splitScope(form.instruction); form.instruction = scoped.body.replace(/\n確かめる条件：[^\n]*$/, ''); form.ok = scoped.ok; form.hold = scoped.hold;
   let review = null, suggested = !form.instruction;
   // Purposes: a request in plain words, a chat, or one of the sales goals (a registered contact and a reviewed product).
   // What kind of call: grouped the way people think of them. A template kind brings fields for its {{…}} blanks;
@@ -590,6 +595,27 @@ async function ask() {
   const scopeBox = el('div', { class: 'scopes' });
   // Deciding on the spot matters for a request in plain words and for a booking.
   const usesScope = () => form.kind === '' || form.kind === 'reserve';
+  // 相手の言葉で確かめる条件 (納期を確認, 見積・在庫と価格): an optional quantity and date the other side must say back.
+  // The units are the contract's QUANTITY_UNITS in their one spelling; no unit is converted into another.
+  const UNITS = [['数える', ['個', 'ケース', '箱', '台', '本', '枚', '袋', '缶', '束', 'セット', 'ダース', 'パック', '点', '冊', '着', '足', '脚', '基', '式', 'ロット', '反', '俵', '梱包']], ['重さ・量・長さ', ['kg', 'g', 't', 'L', 'm']], ['英語', ['units', 'pieces', 'cases', 'boxes', 'cartons', 'pallets']]];
+  const usesTerms = () => ['delivery-date', 'quote-request'].includes(form.kind);
+  const wanted = /^(\d+(?:\.\d+)?)(.+)$/.exec(pre.success?.expected?.quantity ?? '');
+  const qtyAmount = el('input', { type: 'text', id: 'ask-qty', inputmode: 'decimal', autocomplete: 'off', placeholder: '例：50', value: wanted?.[1] ?? '', 'aria-describedby': 'ask-terms-note' });
+  const qtyUnit = el('select', { id: 'ask-qty-unit', 'aria-label': '数量の単位' }, el('option', { value: '', text: '単位を選ぶ' }), ...UNITS.map(([g, list]) => el('optgroup', { label: g }, ...list.map(u => el('option', { value: u, text: u })))));
+  qtyUnit.value = wanted?.[2] ?? '';
+  const dueDate = el('input', { type: 'date', id: 'ask-due', value: pre.success?.expected?.date ?? '' });
+  /** { success } for the draft, {} when nothing was entered, or a message saying what to fix. */
+  const terms = () => {
+    if (!usesTerms()) return {};
+    const amount = qtyAmount.value.trim().normalize('NFKC'), expected = {};
+    if (amount || qtyUnit.value) {
+      if (!/^\d+(\.\d+)?$/.test(amount) || !(Number(amount) > 0)) return { error: '数量は、0より大きい数で入れてください（例：50、1.5）。' };
+      if (!qtyUnit.value) return { error: '数量の単位を選んでください（例：50 ケース）。' };
+      expected.quantity = `${Number(amount)}${qtyUnit.value}`;
+    }
+    if (dueDate.value) expected.date = dueDate.value;
+    return Object.keys(expected).length ? { success: { required: [...Object.keys(expected), 'confirmed'], expected }, text: [expected.quantity ? `数量 ${expected.quantity}` : '', expected.date ? `納期 ${fmtDate(expected.date)}` : ''].filter(Boolean).join('・') } : {};
+  };
   function renderScope() {
     const col = (key, title, cls, mark, sug) => {
       const next = sug.find(x => !form[key].includes(x));
@@ -632,7 +658,7 @@ async function ask() {
     review = null; err.hidden = true; consentBox.checked = false; rep.on = false; rep.key = null; repOn.checked = false; repAck.checked = false; repGo.disabled = true;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
     for (const c of kindCards.children) c.setAttribute('aria-pressed', String(c.dataset.kind === form.kind));
-    fitText(); productRow.hidden = !isSales(); voiceField.hidden = isSales(); paceField.hidden = isSales(); scopeField.hidden = !usesScope();
+    fitText(); productRow.hidden = !isSales(); voiceField.hidden = isSales(); paceField.hidden = isSales(); scopeField.hidden = !usesScope(); termsField.hidden = !usesTerms();
     renderSide();
   }
   // Typing a number by hand means it is not the chosen contact any more.
@@ -741,6 +767,7 @@ async function ask() {
       ...(form.kind === 'reserve' ? [el('p', { class: 'nomargin' }, el('mark', { text: 'AIが予約を取ります。' }), '日時・人数・名前を復唱し、相手がはっきり了承したときだけ成立とします。支払い・カード番号は伝えません。')] : []),
       ...(isSales() ? [el('p', { text: `紹介する商品：${b.products.find(x => x.id === form.productId)?.name ?? '（未選択）'}。確認済みの説明だけを使い、値引き・契約・支払いは約束しません。` })] : []),
       el('blockquote', { text: v.body || '入力した用件がここに表示されます。' }),
+      ...(terms().text ? [el('p', { class: 'nomargin' }, '相手の言葉で確かめる条件：', el('mark', { text: terms().text }))] : []),
       ...(usesScope() && form.ok.length ? [el('p', { class: 'nomargin' }, 'その場で決めてよいこと：', el('mark', { text: form.ok.join('、') }))] : []),
       ...(usesScope() && form.hold.length ? [el('p', { class: 'nomargin' }, '次の話が出たら、決めずに持ち帰ります：', el('mark', { class: 'hold', text: form.hold.join('、') }))] : []),
       el('p', { text: `最初に、AIであること・${callerFor() ? `${callerFor()}の代わりであること・` : ''}記録していることを伝えます。支払いの約束はしません。` }));
@@ -750,7 +777,8 @@ async function ask() {
       ...(v.engine && v.engine !== st.defaultEngine ? [el('dt', { text: '音声AI' }), el('dd', { text: engineLabel(v.engine).replace(/（[^）]*）$/, '') })] : []),
       ...(form.pace && !v.preset && !isSales() ? [] : [el('dt', { text: '話し方' }), el('dd', { text: v.preset ? (v.voiceName ? (st.voicePresets[v.preset] ?? v.preset).replace(/・(女性|男性)声$/, '（口調のみ）') : (st.voicePresets[v.preset] ?? v.preset)) : '標準' })]),
       el('dt', { text: '声' }), el('dd', { class: 'num', text: v.voiceName || 'おまかせ' }),
-      ...(form.pace && !isSales() ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : []));
+      ...(form.pace && !isSales() ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : []),
+      ...(terms().text ? [el('dt', { text: '確かめる条件' }), el('dd', { text: `${terms().text}。相手がこのとおりに答えたときだけ「決まりました」になります。` })] : []));
     const warns = [];
     // The setup details are for whoever runs the server: one line here, the details in 設定.
     if (isPaused(b.configuration)) warns.push(el('p', { class: 'warnbox', text: '発信の受付を一時停止しています。保存済みの依頼内容と過去の報告は確認できます。' }));
@@ -804,7 +832,9 @@ async function ask() {
         if (left.length) throw new Error(`「${left.join('」「')}」を入れてください（文の中に、まだ（${left[0]}）が残っています）。`);
         const empty = blanks().filter(k => !(form.fill[k] ?? '').trim());
         if (tpl() && form.kind !== 'chat' && suggested && empty.length) throw new Error(`「${empty.join('」「')}」を入れてください。`);
-        const requestBody = { phone: v.phone, name: v.name, instruction: v.instruction, ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
+        const cond = terms(); if (cond.error) throw new Error(cond.error);
+        const asks = cond.success ? `\n確かめる条件：${cond.text}。相手が違う数量や日を答えたら、決めずに、聞いた内容を持ち帰ってください。` : '';
+        const requestBody = { phone: v.phone, name: v.name, instruction: (v.instruction + asks).slice(0, 2000), ...(cond.success ? { success: cond.success } : {}), ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
         ...(form.mode ? { conversationMode: form.mode } : {}), ...(callerFor() ? { callerName: callerFor() } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}), ...(engine && v.voiceName ? { voice: v.voiceName } : {}), ...(form.pace ? { pace: 'gentle' } : {}) };
         review = await api('/phone/draft', { method: 'POST', body: requestBody });
         review.request = requestBody;
@@ -821,7 +851,8 @@ async function ask() {
       app.boot = null; await loadAll(); location.hash = `#/call/${review.mission.id}`;
     } catch (e) { err.textContent = e.message; err.hidden = false; go.disabled = isPaused(b.configuration); }
   });
-  let voiceField, scopeField, paceField;
+  let voiceField, scopeField, paceField, termsField;
+  for (const n of [qtyAmount, qtyUnit, dueDate]) { n.addEventListener('input', () => changed()); n.addEventListener('change', () => changed()); }
   const field = (k, d, ...content) => el('div', { class: 'field' }, el('div', { class: 'k' }, el('b', { text: k, ...(k === '何をしてほしいか' ? { id: 'ask-instruction-label' } : {}) }), d ? el('span', { text: d }) : null), el('div', {}, ...content));
   const view = el('div', { class: 'ask' },
     el('section', { class: 'ask-form' },
@@ -831,6 +862,10 @@ async function ask() {
       field('何の電話か', '種類を選ぶと、必要なことを聞きます', purposeChips),
       field('何をしてほしいか', 'ふだんの言葉で。種類から作った文も書き換えられます', instruction, productRow),
       scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
+      termsField = field('相手の言葉で確かめる条件', '任意。入れると、相手がそのとおりに答えたかで結果を判定します', el('div', { class: 'terms' },
+        el('div', {}, el('label', { class: 'lbl', for: 'ask-qty', text: '数量' }), el('div', { class: 'play-row' }, qtyAmount, qtyUnit)),
+        el('div', {}, el('label', { class: 'lbl', for: 'ask-due', text: '納期（この日）' }), dueDate)),
+        el('p', { class: 'note', id: 'ask-terms-note', text: '単位はそのまま比べます（1ダースと12個は、別のものとして扱います）。AIは発注や数量の変更を決めません。相手の答えを聞いて持ち帰ります。' })),
       paceField = field('話す速さ', '', el('label', { class: 'check' }, gentle, 'ゆっくり・やさしく話す'),
         el('p', { class: 'note', id: 'ask-gentle-note', text: '高齢の方や、耳の遠い方に。ゆっくり、やさしい言葉で話し、返事を長めに待ちます。' })),
       voiceField = el('details', { class: 'voice-options' }, el('summary', {}, el('b', { text: '声と話し方を調整' }), el('span', { text: '任意 · 選んだ設定は確認欄に表示されます' })), field('声', '話すAIと声。判定は、どれでも同じです', el('div', { class: 'stack tight' },
@@ -856,7 +891,8 @@ const checkSaid = (topic, answer) => answer === 'unclear' ? 'はっきりしな�
 const callWent = c => c.status === 'FAILED' ? missTag('かけられませんでした') : c.status === 'DECLINED' ? missTag('断られました') : c.status === 'UNKNOWN' ? missTag('要照合') : c.answered === false ? missTag('応答なし')
   : c.answered === true || c.status === 'COMPLETED' ? '話せました' : c.status === 'CANCELLED' ? '取り消しました' : c.status === 'INCOMPLETE' ? '応答の記録なし' : '進行中';
 // What a wellbeing call heard, in the report table's own words (things said, never facts). Not links, so not underlined.
-const saidGlance = c => { const parts = Object.entries(c ?? {}).filter(([, a]) => a !== 'not_asked').map(([t, a]) => el('span', { class: checkWorry(t, a) ? 'worry' : '' }, `${CHECK_TOPIC[t]?.slice(0, 2) ?? t}：`, el('b', { text: checkSaid(t, a) })));
+const saidGlance = (c, levels) => { const parts = Object.entries(c ?? {}).filter(([, a]) => a !== 'not_asked').map(([t, a]) => { const level = levels ? levels[t] : checkWorry(t, a) ? 'concern' : null;
+  return el('span', { class: level ? 'worry' : '' }, `${CHECK_TOPIC[t]?.slice(0, 2) ?? t}：`, el('b', { text: checkSaid(t, a) }), level ? levelTag(level) : null); });
   return parts.length ? el('span', { class: 'glance' }, ...parts) : null; };
 // An answer a person should read: trouble said, something raised, or nothing clear.
 const checkWorry = (topic, answer) => answer === 'unclear' || answer === 'no_answer' || (topic === 'help' ? answer === 'yes' : answer === 'no');
@@ -943,7 +979,7 @@ async function call(id, _sub, team = false) {
       return el('div', { class: `rrow ${n.status === 'verified' ? 'ok' : ''}` },
         el('span', { class: 'rk', text: FIELD[n.field] }),
         el('div', { class: 'rv' }, el('b', { text: n.value !== undefined ? fmtValue(n.field, n.value) : n.requested !== undefined ? fmtValue(n.field, n.requested) : '—' }), asked ? el('span', { class: 'muted small', text: `頼んだのは ${fmtValue(n.field, n.requested)}` }) : null),
-        el('div', { class: 'rq' }, n.status === 'verified' && words ? [el('span', { class: 'said' }, '「', el('mark', { class: 'proof-fill', text: words }), '」'), t?.startMs !== undefined ? el('span', { class: 'span num', text: `${clock(t.startMs)} – ${clock(t.endMs)}` }) : null] : el('span', { class: 'muted small', text: n.status === 'proposed' ? '提案中・まだ確かめていません' : 'まだ確かめていません' })),
+        el('div', { class: 'rq' }, n.status === 'verified' && words ? [el('span', { class: 'said' }, '「', el('mark', { class: 'proof-fill', text: words }), '」'), t?.startMs !== undefined ? el('span', { class: 'span num', text: `${clock(t.startMs)} – ${clock(t.endMs)}` }) : null] : el('span', { class: 'muted small', text: asked ? `相手の答えは ${fmtValue(n.field, n.value)} でした。頼んだ ${fmtValue(n.field, n.requested)} とは違うので、決まっていません` : n.status === 'proposed' ? '提案中・まだ確かめていません' : 'まだ確かめていません' })),
         n.status === 'verified' ? el('span', { class: 'tick big', text: '✓', 'aria-label': '相手の言葉で確認済み' }) : el('span', { class: 'tick no big' }));
     })));
     if (notes.some(n => ['date', 'time'].includes(n.field) && n.status === 'verified')) main.append(el('p', { class: 'caveat', text: '確かめたのは、電話での合意までです。お店や相手のシステムへの登録は、別に確かめてください。' }));
@@ -1294,13 +1330,69 @@ function callbackRow(c) {
 }
 async function callbacks() {
   const box = el('div', { class: 'callback-list' });
-  loadInto(box, () => api('/callbacks'), d => { const list = [...d.callbacks].sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+  loadInto(box, async () => {
+    if (isSupervisor() && !app.teamNames) app.teamNames = await api('/team/people?days=90').then(t => Object.fromEntries(t.people.map(x => [x.owner, x.ownerName]))).catch(() => undefined);
+    return api('/callbacks');
+  }, d => { const list = [...d.callbacks].sort((x, y) => y.createdAt.localeCompare(x.createdAt));
     return list.length ? el('div', { class: 'rows' }, ...list.map(callbackRow)) : el('div', { class: 'rows' }, el('p', { class: 'empty', text: '折り返しの依頼はありません。' })); });
   return el('div', { class: 'page' },
     el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'),
     el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '折り返しの依頼' }), el('p', { class: 'page-intro', text: '電話がつながらなかった方が、折り返しを希望して残した番号です。新しい順に並べています。' }))),
     el('p', { class: 'caveat callback-note', text: 'かけてきた方には「折り返しの希望を担当に伝えます」とだけ案内しています。折り返すことは約束していません。折り返しの電話は、あなたがかけてください。' }),
     box);
+}
+
+// これまでの電話（30日）: one person's calls, newest first. `link` says where a row's report opens (none for a row that has no report here).
+function pastBlocks(h, link) {
+  const t = h.summary; if (!t.calls) return [];
+  return [el('h2', { class: 'section-h', text: 'これまでの電話（30日）' }),
+    t.missedInARow >= 2 ? el('p', { class: 'past-missed' }, levelTag('concern'), el('b', { text: `${t.missedInARow}回続けて応答がありません` })) : null,
+    el('p', { class: 'note', text: `${t.calls}回の電話のうち、話せました ${t.answered}回・応答なし ${t.unanswered}回・要確認 ${t.attention}回${t.emergency ? `（うち緊急 ${t.emergency}回）` : ''}。「話したこと」は本人の返事で、実際の様子を確かめたものではありません。` }),
+    el('ul', { class: 'past-rows' }, ...[...h.calls].reverse().map(c => { const href = link(c), when = el('time', { datetime: c.createdAt, text: japanTime(c.createdAt) });
+      return el('li', { class: c.attention ? `need-${c.attention}` : '' },
+        href ? el('a', { class: 'num', href, 'aria-label': `${japanTime(c.createdAt)} の報告を開く` }, when) : el('span', { class: 'num' }, when),
+        el('span', { class: 'past-went' }, callWent(c)), c.attention ? levelTag(c.attention) : null, saidGlance(c.checkIn, c.checkInLevels)); }))].filter(Boolean);
+}
+
+// ---------------------------------------------------------------- 相手ごとの様子
+// One line per person the team calls (lib/team.mjs teamPeople): the server sorts what needs a look first. No phone numbers.
+async function people() {
+  if (!isSupervisor()) return team();
+  const box = el('div', { class: 'team-box' }), me = app.boot.user.id, count = el('span', { class: 'sub', role: 'status' });
+  const cell = (label, content) => el('td', { 'data-label': label, class: content ? '' : 'none' }, content ?? el('span', { class: 'muted', text: '—' }));
+  loadInto(box, () => api('/team/people?days=30'), d => {
+    count.textContent = `${d.people.length}人（確かめたい相手 ${d.needsAttention}人）`;
+    app.teamNames = { ...app.teamNames, ...Object.fromEntries(d.people.map(x => [x.owner, x.ownerName])) };
+    if (!d.people.length) return el('div', { class: 'rows' }, el('p', { class: 'empty', text: 'この30日に、チームがかけた電話はありません。' }));
+    return el('div', { class: 'rows team-wrap' }, el('table', { class: 'team-table people-table' },
+      el('thead', {}, el('tr', {}, ...['相手', 'かける人', '最後の電話', '確かめたいこと', '最後に話したこと（見守りの返事）', '30日の電話'].map(h => el('th', { scope: 'col', text: h })))),
+      el('tbody', {}, ...d.people.map(x => { const last = x.last, href = x.contactId ? `#/team/person/${x.contactId}` : last.kind === 'request' ? `#/team/${last.id}` : null;
+        const level = last.attention === 'emergency' ? 'emergency' : x.missedInARow >= 2 || last.attention ? 'concern' : null;
+        return el('tr', { class: level ? `need-${level}` : '' },
+          el('th', { scope: 'row' }, href ? el('a', { href, text: x.recipient || '（名前なし）' }) : el('span', { text: x.recipient || '（名前なし）' }), x.scheduled ? el('span', { class: 'tag', text: '定期' }) : null),
+          el('td', { 'data-label': 'かける人', text: x.owner === me ? '自分' : x.ownerName || shortId(x.owner) }),
+          el('td', { 'data-label': '最後の電話' }, el('time', { datetime: last.createdAt, text: japanTime(last.createdAt) }), ' ', last.answered === false ? missTag('応答なし') : last.answered === true ? '話せました' : '応答の記録なし'),
+          cell('確かめたいこと', level ? [last.attention === 'emergency' ? levelTag('emergency') : levelTag('concern'), x.missedInARow >= 2 ? el('b', { class: 'missed-run', text: `${x.missedInARow}回続けて応答がありません` }) : null] : null),
+          cell('最後に話したこと（見守りの返事）', saidGlance(last.checkIn, last.checkInLevels)),
+          el('td', { 'data-label': '30日の電話', text: `${x.calls}回・うち応答なし ${x.unanswered}回` })); }))));
+  });
+  return el('div', { class: 'page team-page' },
+    el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' › ', el('a', { href: '#/team', text: 'チームの電話' }), ' ›'),
+    el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '相手ごとの様子' }), el('p', { class: 'page-intro', text: 'チームが電話をかけている相手を、ひとり1行で。確かめたい相手を先に並べています。名前から、その相手のこれまでの電話を開けます。' }))),
+    el('div', { class: 'team-tools' }, count),
+    box,
+    el('p', { class: 'note', text: '「話したこと」は、いちばん最近の見守りの電話で本人が話した返事です。実際の様子を確かめたものではありません。電話番号は出しません。' }));
+}
+// A teammate's contact, read by a supervisor: the same これまでの電話, each row opening the read-only report.
+async function person(contactId) {
+  if (!isSupervisor() || !/^[a-f0-9-]{36}$/.test(contactId ?? '')) return team();
+  const h = await api(`/contacts/${contactId}/history?days=30`);
+  const blocks = pastBlocks(h, c => c.kind === 'request' ? `#/team/${c.id}` : null);
+  return el('div', { class: 'page team-page' },
+    el('div', { class: 'crumb' }, el('a', { href: '#/team', text: 'チームの電話' }), ' › ', el('a', { href: '#/team/people', text: '相手ごとの様子' }), ' ›'),
+    el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: h.contact.name }), el('p', { class: 'page-intro', text: 'チームの人が電話をかけている相手です。読むだけの画面で、開いたことは記録されます。' }))),
+    el('section', { class: 'card past person-past' }, ...(blocks.length ? blocks : [el('p', { class: 'muted', text: 'この30日に、この相手への電話はありません。' })])),
+    el('div', { class: 'actions' }, el('a', { class: 'btn', href: '#/team/people', text: '相手ごとの様子に戻る' })));
 }
 
 // ---------------------------------------------------------------- チームの電話
@@ -1315,7 +1407,7 @@ async function team() {
   const filter = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(only), text: '要確認だけ', onclick: () => { only = !only; app.teamAttention = only; filter.setAttribute('aria-pressed', String(only)); read(); } });
   const total = el('span', { class: 'sub', role: 'status' });
   // The verdict, only where a call had something to settle (a sales call), as a small label apart from how the call went.
-  const verdict = c => c.kind === 'sales' && ['COMPLETED', 'INCOMPLETE'].includes(c.status) ? el('span', { class: 'verdict-tag', text: c.status === 'COMPLETED' ? '決まりました' : '決まっていません' }) : null;
+  const verdict = c => c.settles && ['COMPLETED', 'INCOMPLETE'].includes(c.status) ? el('span', { class: 'verdict-tag', text: c.settled ? '決まりました' : '決まっていません' }) : null;
   const rank = c => c.attention === 'emergency' ? 0 : c.attention ? 1 : 2;
   const cell = (label, content) => el('td', { 'data-label': label, class: content ? '' : 'none' }, content ?? el('span', { class: 'muted', text: '—' }));
   const draw = data => {
@@ -1334,7 +1426,7 @@ async function team() {
           c.kind === 'sales' ? el('span', { class: 'tag', text: '営業' }) : null, c.direction === 'inbound' ? el('span', { class: 'tag', text: '着信' }) : null, c.scheduled ? el('span', { class: 'tag', text: '定期' }) : null),
         cell('電話の結果', [callWent(c), verdict(c)]),
         cell('要確認', c.attention ? levelTag(c.attention) : null),
-        cell('話したこと（見守りの返事）', saidGlance(c.checkIn)))))));
+        cell('話したこと（見守りの返事）', saidGlance(c.checkIn, c.checkInLevels)))))));
   };
   const read = () => loadInto(box, () => api(`/team/calls${only ? '?attention=1' : ''}`), draw);
   read();
@@ -1355,7 +1447,7 @@ async function team() {
   return el('div', { class: 'page team-page' },
     el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'),
     el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: 'チームの電話' }), el('p', { class: 'page-intro', text: '同じチームの人が頼んだ電話です。一覧に電話番号と会話は出ません。相手の名前から報告を開けます（開いたことは記録されます）。' })),
-      el('a', { class: 'btn', href: '/v1/team/calls.csv', download: 'oathra-team-calls.csv', text: 'CSVで保存' })),
+      el('div', { class: 'actions page-actions' }, el('a', { class: 'btn', href: '#/team/people', text: '相手ごとの様子' }), el('a', { class: 'btn', href: '/v1/team/calls.csv', download: 'oathra-team-calls.csv', text: 'CSVで保存' }))),
     sum,
     el('div', { class: 'team-tools' }, filter, total),
     box,
@@ -1676,15 +1768,7 @@ async function contacts(id) {
       : releaseForm ? [releaseOpen, releaseForm] : el('p', { text: '解除は、管理者かマネージャーに頼んでください。' })) : null;
   // これまでの電話（30日）: this person's calls over time, newest first. Nothing is shown for a contact with no calls.
   const past = sel?.phone ? el('section', { class: 'past', 'aria-label': 'これまでの電話（30日）' }) : null;
-  if (past) loadInto(past, () => api(`/contacts/${sel.id}/history?days=30`), h => {
-    const t = h.summary; if (!t.calls) return [];
-    return [el('h2', { class: 'section-h', text: 'これまでの電話（30日）' }),
-      t.missedInARow >= 2 ? el('p', { class: 'past-missed' }, levelTag('concern'), el('b', { text: `${t.missedInARow}回続けて応答がありません` })) : null,
-      el('p', { class: 'note', text: `${t.calls}回の電話のうち、話せました ${t.answered}回・応答なし ${t.unanswered}回・要確認 ${t.attention}回${t.emergency ? `（うち緊急 ${t.emergency}回）` : ''}。「話したこと」は本人の返事で、実際の様子を確かめたものではありません。` }),
-      el('ul', { class: 'past-rows' }, ...[...h.calls].reverse().map(c => el('li', { class: c.attention ? `need-${c.attention}` : '' },
-        el('a', { class: 'num', href: `#/call/${c.id}`, 'aria-label': `${japanTime(c.createdAt)} の報告を開く` }, el('time', { datetime: c.createdAt, text: japanTime(c.createdAt) })),
-        el('span', { class: 'past-went' }, callWent(c)), c.attention ? levelTag(c.attention) : null, saidGlance(c.checkIn))))].filter(Boolean);
-  });
+  if (past) loadInto(past, () => api(`/contacts/${sel.id}/history?days=30`), h => pastBlocks(h, c => `#/call/${c.id}`));
   const calls = sel ? app.history.filter(r => r.request.phone === sel.phone) : [];
   const detail = sel ? el('div', { class: 'card contact-detail' },
     el('div', { class: 'metric-k' }, el('div', { class: 'split' }, el('span', { class: 'avatar big', text: (sel.name || sel.company || '?').slice(0, 1) }), el('div', {}, el('h2', { class: 'headline', text: sel.name || sel.company }), el('span', { text: sel.name ? sel.company : '' }))),

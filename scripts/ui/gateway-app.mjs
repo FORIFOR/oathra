@@ -310,6 +310,10 @@ try {
   const mateCall = await care(mateApi, "田村 節子", "+819012340001", [["caller", "ご飯は召し上がりましたか。"], ["callee", "食欲がなくて、朝から何も食べていません。"], ["caller", "お薬は飲まれましたか。"], ["callee", "はい、飲みました。"]]);
   // Nothing flagged as a line, but an answer that needs a look: the report must still carry a 要確認 banner.
   const mateQuiet = await care(mateApi, "石井 トメ", "+819012340003", [["caller", "お薬は飲まれましたか。"], ["callee", "まだです。"], ["caller", "夜はよく眠れましたか。"], ["callee", "はい、眠れました。"]]);
+  // A teammate's saved contact (its history opens from 相手ごとの様子), and a trade call that asked for 50ケース and heard 30.
+  const tamuraContact = await mateApi("/contacts", { name: "田村 節子", phone: "+819012340001", basis: "9/25 ご家族から見守りの電話の同意をいただいた" });
+  const tradeCall = (await api("/phone/draft", { phone: "+81312340009", name: "青木商店", instruction: "田中商会の田中の代理として、りんごジュースの納期を確認してください。", success: { required: ["quantity", "confirmed"], expected: { quantity: "50ケース" } } })).mission.id;
+  put(tradeCall, "INCOMPLETE", [["caller", "りんごジュースを50ケース、今月中に納品いただけますか。"], ["callee", "申し訳ありません、今月は30ケースまでなら納品できます。"]]);
   const mateLong = (await mateApi("/phone/draft", { phone: "+81312340002", name: "特別養護老人ホームひかり苑 第二事業所 地域連携室 山田太郎", instruction: "来週の面会の予定をお知らせしてください。" })).mission.id;
   put(mateLong, "COMPLETED", [["caller", "来週の面会の予定をお知らせします。"], ["callee", "分かりました。ありがとうございます。"]]);
   // ---- 2026-10-02: ゆっくり・やさしく話す, the wellbeing report, 定期の電話, チームの電話, 連絡停止 and the CSV import.
@@ -403,6 +407,25 @@ try {
   await clickText("内容を確かめる", ".ask-side");
   await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review (not a contact)" });
   c.ok(!(await page.js("!!document.querySelector('#rep-on')")) && /連絡先に保存した相手だけ/.test(await page.text(".rep")), "a number that is not a saved contact cannot be made a standing request, and the screen says why");
+  // 相手の言葉で確かめる条件: a quantity and a date for the trade kinds, checked before anything is sent.
+  await go("#/new", "!!document.querySelector('#ask-phone')");
+  c.ok(await page.js("document.querySelector('#ask-qty').closest('.field').hidden"), "確かめる条件 is not shown for other kinds");
+  await page.js("document.querySelector('[data-group=trade]').click();document.querySelector('[data-kind=delivery-date]').click()");
+  await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='山本 ハル').click()");
+  await page.js("for (const [k,v] of [['会社名と自分の名前','田中商会の田中'],['注文番号や品名','りんごジュース']]) { const i=document.querySelector(`[data-blank='${k}']`); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); }");
+  const setTerms = (amount, unit, date) => page.js(`{const a=document.querySelector('#ask-qty'),u=document.querySelector('#ask-qty-unit'),d=document.querySelector('#ask-due');a.value=${JSON.stringify(amount)};u.value=${JSON.stringify(unit)};d.value=${JSON.stringify(date)};a.dispatchEvent(new Event('input',{bubbles:true}))}`);
+  await setTerms("0", "ケース", ""); await clickText("内容を確かめる", ".ask-side"); await sleep(300);
+  const zeroErr = await page.text(".ask-side .errbox");
+  await setTerms("50", "", ""); await clickText("内容を確かめる", ".ask-side"); await sleep(300);
+  c.ok(/0より大きい数/.test(zeroErr) && /単位を選んでください/.test(await page.text(".ask-side .errbox")) && !(await page.js("!!document.querySelector('#ask-ack')")), "a quantity of 0, or one without a unit, is refused before anything is sent", zeroErr);
+  await setTerms("50", "ケース", day(18));
+  await page.js("document.querySelector('#ask-qty').scrollIntoView({block:'center'})"); await sleep(200);
+  await page.screenshot(join(out, "gateway-app-ask-terms.png"));
+  await small("電話を頼む (確かめる条件)");
+  await clickText("内容を確かめる", ".ask-side");
+  await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review (terms)" });
+  const termsDraft = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.phoneRequest?.success);
+  c.ok(/確かめる条件/.test(await page.text(".ask-side .defs")) && /数量 50ケース・納期 /.test(await page.text(".ask-side .defs")) && termsDraft?.phoneRequest.success.expected.quantity === "50ケース" && termsDraft.phoneRequest.success.expected.date === day(18) && termsDraft.phoneRequest.success.required.join() === "quantity,date,confirmed" && /確かめる条件：数量 50ケース・納期 /.test(termsDraft.phoneRequest.instruction) && /確かめる条件：数量 50ケース/.test(await page.text(".ask-side .brief")), "the conditions show in the confirmation and go with the draft as the contract writes them (50ケース)", JSON.stringify(termsDraft?.phoneRequest.success));
   config.mode = "simulator"; config.liveReady = false;
 
   // 定期の電話: status, next and past runs in plain words, pause / resume / end.
@@ -410,7 +433,7 @@ try {
   c.ok(await page.js("[...document.querySelectorAll('.page-actions a')].map(a=>a.textContent).join()") === "定期の電話,名簿の電話,折り返しの依頼2,チームの電話" && await page.js("document.querySelector('a[href=\"/v1/calls.csv\"]')?.textContent") === "電話の記録をCSVで保存", "依頼: 定期の電話, 名簿の電話, チームの電話 (supervisor) and 電話の記録をCSVで保存");
   const ownCsv = await fetch(base + "/v1/calls.csv", { headers: { authorization: "Bearer " + token } });
   c.ok(ownCsv.status === 200 && /text\/csv/.test(ownCsv.headers.get("content-type")) && /attachment/.test(ownCsv.headers.get("content-disposition")) && /日時,担当,相手,電話番号/.test(await ownCsv.text()), "/v1/calls.csv answers a CSV file to save");
-  c.ok(/応答がありませんでした/.test(await page.text("#view")) && /緊急の確認があります/.test(await page.text("#view")), "依頼: a wellbeing call nobody answered, and one with an emergency line, say so in the list");
+  c.ok(!/【任せる/.test(await page.text("#view")) && /応答がありませんでした/.test(await page.text("#view")) && /緊急の確認があります/.test(await page.text("#view")), "依頼: a wellbeing call nobody answered, and one with an emergency line, say so in the list");
   await clickText("定期の電話", ".page-actions");
   await page.until("location.hash==='#/standing' && document.querySelectorAll('.sched').length===2", { label: "standing list" });
   const standingText = await page.text("#view");
@@ -462,7 +485,7 @@ try {
   const ranks = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.team-table tbody tr')].map(r=>r.querySelector('td .lvl.emergency')?0:r.classList.contains('need-concern')?1:2))"));
   c.ok(ranks[0] === 0 && ranks.every((v, i) => i === 0 || ranks[i - 1] <= v) && ranks.filter((v) => v < 2).length === 6, "the unfiltered list puts what needs a look first: 緊急, then 要確認, then the rest", ranks.join(""));
   const tableText = await page.text(".team-table");
-  c.ok(!/確認済み|未確定/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()") === "決まりました" && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined");
+  c.ok(!/確認済み|未確定/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()") === "決まりました,決まっていません" && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined");
   const sumText = await page.text(".team-sum");
   c.ok(new RegExp(`電話${teamAll.total}件`).test(sumText) && /応答57\.1%だれかが出たかを記録した7件のうち、4件で応答。それより前の電話\d+件には、この記録がありません。/.test(sumText) && /応答なし3件/.test(sumText) && /要確認6件うち緊急 1件/.test(sumText) && /要確認\d（うち緊急1）/.test(await page.text(".sum-days")) && await page.js("document.querySelectorAll('.sum-days li').length") === 7, "この7日間: calls, the answer rate with the count it is based on, needs-attention, emergencies, and seven days", sumText);
   c.ok(await page.noSidewaysScroll() && !/\+81|090-/.test(await page.text(".team-table")), "a long recipient name does not widen the page; the list carries no phone numbers");
@@ -482,6 +505,25 @@ try {
   await page.screenshot(join(out, "gateway-app-team-report.png"), { fullPage: true });
   await go(`#/team/${mateQuiet}`, "!!document.querySelector('.checkin-table')");
   c.ok(await page.js("!!document.querySelector('.band.concern')") && /要確認の返事が1件あります（下の表）。/.test(await page.text(".band")) && await page.js("document.querySelectorAll('.checkin-table tbody .lvl.concern').length") === 1, "a report whose table says 要確認 with no flagged line still carries a 要確認 banner (team report, same rule)", await page.text(".band"));
+  // The trade call's report: the quantity the other side offered is not what was asked, so it reads as not settled.
+  await go(`#/call/${tradeCall}`, "!!document.querySelector('.report-top')");
+  const tradeReport = await page.text("#view");
+  c.ok(/数量/.test(tradeReport) && /相手の答えは 30ケース でした。頼んだ 50ケース とは違うので、決まっていません/.test(tradeReport) && await page.js("document.querySelectorAll('.rrow').length") === 2 && !/決まりました/.test(await page.text(".verdict")), "報告: a quantity the other side did not confirm reads as not settled, with what they offered", tradeReport.slice(0, 200));
+  await page.screenshot(join(out, "gateway-app-report-quantity.png"));
+  // 相手ごとの様子: one line per person the team calls; what needs a look first; opens the person's history.
+  await go("#/team", "!!document.querySelector('.team-table')");
+  await clickText("相手ごとの様子", ".page-actions");
+  await page.until("location.hash==='#/team/people' && !!document.querySelector('.people-table')", { label: "people board" });
+  const peopleRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.people-table tbody tr')].map(r=>r.className+'|'+r.textContent))"));
+  c.ok(/^need-emergency\|山本 ハル/.test(peopleRows[0]) && /緊急/.test(peopleRows[0]) && /話せました/.test(peopleRows[0]) && /^need-concern\|佐々木 ミツ/.test(peopleRows[1]) && /応答なし/.test(peopleRows[1]) && /2回続けて応答がありません/.test(peopleRows[1]) && /3回・うち応答なし 2回/.test(peopleRows[1]), "相手ごとの様子: the emergency first, then two unanswered in a row, with the counts for 30 days", peopleRows.slice(0, 2).join(" || "));
+  const tamuraPerson = peopleRows.find((r) => /田村 節子/.test(r)) ?? "";
+  c.ok(/鈴木/.test(tamuraPerson) && /食事：まだ食べていないと話しました要確認/.test(tamuraPerson) && await page.js("document.querySelectorAll('.people-table .glance .lvl.emergency').length") === 1 && !/\+81|090-|03-/.test(await page.text(".people-table")) && await page.noSidewaysScroll(), "who calls them, the last answers as things said with 緊急 and 要確認 marked apart, and no phone numbers", tamuraPerson);
+  await page.screenshot(join(out, "gateway-app-people.png"), { fullPage: true });
+  await small("相手ごとの様子");
+  await page.js("[...document.querySelectorAll('.people-table tbody th a')].find(a=>a.textContent==='田村 節子').click()");
+  await page.until(`location.hash==='#/team/person/${tamuraContact.id}' && document.querySelectorAll('.past-rows li').length===1`, { label: "teammate's person history" });
+  c.ok(/開いたことは記録されます/.test(await page.text("#view")) && await page.js(`document.querySelector('.past-rows a').getAttribute('href')`) === `#/team/${mateCall}` && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "team.history_viewed"), "a teammate's person opens これまでの電話, says it is recorded, links to the read-only report, and the server recorded it");
+  await page.screenshot(join(out, "gateway-app-person.png"));
   // A read that fails offers the read again; an answer that arrives after the person has moved on changes nothing.
   await page.js("window.__fetch=window.fetch;window.fetch=()=>Promise.reject(new TypeError('offline'))");
   await go("#/team", "!!document.querySelector('.team-box .errbox')", "team read fails");
@@ -663,6 +705,13 @@ try {
   await page.js("document.querySelector('.team-tools .chip').click()");
   await page.until("document.querySelector('.team-tools .chip').getAttribute('aria-pressed')==='true' && document.querySelectorAll('.team-table tbody tr').length===6", { label: "390 要確認 only" });
   await page.screenshot(join(out, "gateway-app-team-attention-mobile.png"), { fullPage: true });
+  await at390("people", "#/team/people", "!!document.querySelector('.people-table')");
+  await page.screenshot(join(out, "gateway-app-people-mobile.png"), { fullPage: true });
+  await at390("person", `#/team/person/${tamuraContact.id}`, "document.querySelectorAll('.past-rows li').length===1");
+  await page.screenshot(join(out, "gateway-app-person-mobile.png"));
+  await at390("ask-terms", "#/new?kind=delivery-date", "!!document.querySelector('#ask-qty') && !document.querySelector('#ask-qty').closest('.field').hidden");
+  await page.js("document.querySelector('#ask-qty').scrollIntoView({block:'center'})"); await sleep(200);
+  await page.screenshot(join(out, "gateway-app-ask-terms-mobile.png"));
   await at390("callbacks", "#/callbacks", "document.querySelectorAll('.row.callback').length===3");
   await page.screenshot(join(out, "gateway-app-callbacks-mobile.png"), { fullPage: true });
   await at390("contact history", `#/contacts/${mitsu.id}`, "document.querySelectorAll('.past-rows li').length===3");

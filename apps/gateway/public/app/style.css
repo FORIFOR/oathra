@@ -786,3 +786,24 @@ label.item.pick b { color: var(--ink); }
   .past-rows li > .glance { grid-column: 1 / -1; }
 }
 .import-rows li > b.tel { font-family: var(--mono); font-size: 12px; font-weight: 600; align-self: center; }
+
+/* 2026-10-02 pass 5 */
+.glance .lvl { margin-left: 6px; min-height: 20px; padding: 0 7px; font-size: 11px; vertical-align: 1px; }
+.terms { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; }
+.terms .play-row select { flex: 0 0 150px; width: 150px; }
+.people-table .missed-run { display: inline-block; margin-left: 8px; font-size: 13px; white-space: normal; }
+.people-table td:nth-child(4) { white-space: normal; }
+.people-table td .lvl { margin-left: 6px; }
+.workspace-active .person-past { margin-top: 0; }
+@media (max-width: 860px) {
+  .team-table td[data-label^="最後に話したこと"], .team-table td[data-label="確かめたいこと"] { grid-column: 1 / -1; }
+  .people-table .missed-run { margin-left: 6px; }
+}
+@media (max-width: 560px) {
+  .terms { grid-template-columns: minmax(0, 1fr); }
+}
+.people-table td:last-child { white-space: nowrap; }
+@media (max-width: 860px) {
+  .team-table td, .people-table td:last-child { white-space: normal; }
+  .team-table td[data-label="最後の電話"] { grid-column: 1 / -1; }
+}
