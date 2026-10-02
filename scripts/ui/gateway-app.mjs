@@ -455,7 +455,7 @@ try {
   await page.until("location.hash==='#/standing' && document.querySelectorAll('.sched').length===2", { label: "standing list" });
   const standingText = await page.text("#view");
   c.ok(/山本 ハル/.test(standingText) && /毎日 09:00/.test(standingText) && /30分後にかけ直す（2回まで）/.test(standingText) && /終了日までに最大 \d+ 回（これからの\d+回 × かけ直しを含め3回・かける日 \d+日）/.test(standingText) && /次の回/.test(standingText), "定期の電話: when, until when, retries and the upper bound", standingText.slice(0, 200));
-  c.ok(!/応答あり/.test(standingText) && /話せました/.test(standingText) && await page.js("document.querySelectorAll('.runs .lvl.emergency').length") === 1 && /応答なし/.test(standingText) && /3回かけました/.test(standingText) && !/× 見送り|かけられませんでした/.test(standingText) && /時刻を過ぎたため、遅れてかけずに見送りました/.test(standingText) && /クレジットが足りません/.test(standingText) && await page.js("document.querySelectorAll('.runs .lvl.concern').length") >= 3 && await page.js("[...document.querySelectorAll('.runs .lvl.miss')].map(n=>n.textContent).join()") === [...(todayPassed ? ["かけていません"] : []), "応答なし", "かけていません", "かけていません"].join() && await page.js("document.querySelectorAll('.runs li').length") === 4 + (todayPassed ? 1 : 0), "past runs: answered, unanswered, skipped and failed, each with its reason; the two that did not reach the person carry a mark");
+  c.ok(!/応答あり/.test(standingText) && /話せました/.test(standingText) && await page.js("document.querySelectorAll('.runs .lvl.emergency').length") === 1 && /応答なし/.test(standingText) && /3回かけました/.test(standingText) && !/× 見送り|かけられませんでした/.test(standingText) && /時刻を過ぎたため、かけていません/.test(standingText) && !/見送りました/.test(standingText) && /クレジットが足りません/.test(standingText) && await page.js("document.querySelectorAll('.runs .lvl.concern').length") >= 3 && await page.js("[...document.querySelectorAll('.runs .lvl.miss')].map(n=>n.textContent).join()") === [...(todayPassed ? ["かけていません"] : []), "応答なし", "かけていません", "かけていません"].join() && await page.js("document.querySelectorAll('.runs li').length") === 4 + (todayPassed ? 1 : 0), "past runs: answered, unanswered, skipped and failed, each with its reason; the two that did not reach the person carry a mark");
   c.ok(!/window_passed|insufficient_credits|UNANSWERED|ANSWERED|SKIPPED|FAILED|ACTIVE|PAUSED|undefined|NaN/.test(standingText), "no state names or codes on 定期の電話");
   await page.screenshot(join(out, "gateway-app-standing.png"), { fullPage: true });
   await small("定期の電話");
@@ -493,7 +493,7 @@ try {
   c.ok(await page.js("!!document.querySelector('.band.concern h2 .lvl.concern') && !document.querySelector('.no-answer')") && /ご本人の様子を確かめてください/.test(missedBand) && /電話に出なかったか、何も話しませんでした。3回目の電話で、この回のかけ直しはここまでです。/.test(missedBand) && /AIはどこにも連絡していません。/.test(missedBand) && /定期の電話・3回目/.test(await page.text(".call-when")) && /10:01/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.checkin-table')")) && await page.js("(()=>{const f=document.querySelector('.call-foot').getBoundingClientRect(),d=[...document.querySelectorAll('.request-details')].pop().getBoundingClientRect();return f.top-d.bottom<80})()"), "a wellbeing call nobody answered: the same 要確認 banner form, which try it was, at a time a schedule could ring; the button sits under the content", missedBand);
   await page.js("document.querySelector('.family-note summary').click()"); await sleep(200);
   const unansweredNote = await page.text(".family-note .request-text");
-  c.ok(/さんへ、.*の代わりにAIがおかけした電話/.test(unansweredNote) && /AIがかけた電話の記録として/.test(await page.text(".family-note summary")), "the family note on an unanswered call: the new opening, under a heading that says an AI made the call", unansweredNote.slice(0, 80));
+  c.ok(/^山本 ハルさんへの電話（10月\d+日 \d+時ごろ）のご報告です。担当の代わりに、AIがおかけしました。/.test(unansweredNote) && /AIがかけた電話の記録として/.test(await page.text(".family-note summary")), "the family note on an unanswered call: the new opening, under a heading that says an AI made the call", unansweredNote.slice(0, 80));
   await page.screenshot(join(out, "gateway-app-report-unanswered.png"), { fullPage: true });
 
   // チームの電話 (manager / admin): rows at a glance, 要確認 only, a teammate's report read-only, CSV.
@@ -526,8 +526,10 @@ try {
   await small("チームの電話");
   const teamCsv = await fetch(base + "/v1/team/calls.csv", { headers: { authorization: "Bearer " + token } }), mateCsv = await fetch(base + "/v1/team/calls.csv", { headers: { authorization: "Bearer " + mateToken } });
   c.ok(await page.js("(()=>{const a=document.querySelector('a[href=\"/v1/team/calls.csv\"]');return !!a&&a.hasAttribute('download')&&a.textContent==='CSVで保存'})()") && teamCsv.status === 200 && /attachment/.test(teamCsv.headers.get("content-disposition")) && mateCsv.status === 403, "CSVで保存 points at the team file; the server refuses it to an operator");
+  c.ok(await page.js("(()=>{const c=[...document.querySelectorAll('.team-tools .chip')];return c.length===2&&c[0].getAttribute('aria-pressed')==='false'&&c[1].getAttribute('aria-pressed')==='true'&&getComputedStyle(c[1]).backgroundColor!==getComputedStyle(c[0]).backgroundColor})()") && new RegExp(`すべて（${teamAll.total}件）`).test(await page.text(".team-tools")), "two tabs: すべて（the total）is the selected one, visibly");
   await page.js("document.querySelector('.team-tools .chip').click()");
   await page.until(`document.querySelectorAll('.team-table tbody tr').length===${teamAll.needsAttention - teamAll.notPlaced.length} && document.querySelector('.team-tools .chip').getAttribute('aria-pressed')==='true'`, { label: "要確認 only" });
+  c.ok(new RegExp(`すべて（${teamAll.total}件）`).test(await page.text(".team-tools")) && await page.js("document.querySelectorAll('.team-tools .chip')[1].getAttribute('aria-pressed')==='false'"), "filtered, the other tab still says the total");
   c.ok(await page.js("[...document.querySelectorAll('.team-table tbody tr')].some(r=>r.querySelector('.lvl.miss')?.textContent==='応答なし')") && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')];return !!r[0].querySelector('.lvl.emergency') && r.slice(1).every(x=>!x.querySelector('.lvl.emergency'))})()"), "要確認だけ: only the calls that need a look, the unanswered wellbeing call among them, emergencies first");
   await page.screenshot(join(out, "gateway-app-team-attention.png"), { fullPage: true });
   await page.js("[...document.querySelectorAll('.team-table tbody th a')].find(a=>a.textContent==='田村 節子').click()");
@@ -567,7 +569,10 @@ try {
   await page.screenshot(join(out, "gateway-app-person.png"));
   await go("#/team/people", "!!document.querySelector('.people-table')");
   await page.js("[...document.querySelectorAll('.people-table tbody th a')].find(a=>a.textContent==='山本 ハル').click()");
-  await page.until(`location.hash==='#/team/person/${haru.id}' && document.querySelectorAll('.past-rows li').length>=1`, { label: "person with unplaced scheduled calls" });
+  const haruHistory = await api(`/contacts/${haru.id}/history?days=30`);
+  await page.until(`location.hash==='#/team/person/${haru.id}' && document.querySelectorAll('.past-rows li').length===${haruHistory.calls.length + haruHistory.notPlaced.length}`, { label: "person with unplaced scheduled calls" });
+  const haruRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.past-rows li')].map(r=>r.className+'|'+r.textContent))"));
+  c.ok(haruHistory.notPlaced.length === 2 && haruRows.filter((r) => /^need-concern not-placed\|/.test(r) && /かけていません要確認定期の電話。(時刻を過ぎたため|クレジットが足りなかったため)、かけていません。/.test(r)).length === 2 && new RegExp(`かけていない定期 2回。`).test(await page.text(".person-past .note")) && (await page.js("[...document.querySelectorAll('.past-rows li time')].map(t=>t.getAttribute('datetime'))")).every((v, i, a) => i === 0 || Date.parse(a[i - 1]) >= Date.parse(v)), "a person's history: the scheduled calls never placed as rows among the calls, in date order, each with its reason and a mark, and counted in the summary", haruRows.join("\n"));
   await page.screenshot(join(out, "gateway-app-person-unplaced.png"), { fullPage: true });
   // A read that fails offers the read again; an answer that arrives after the person has moved on changes nothing.
   await page.js("window.__fetch=window.fetch;window.fetch=()=>Promise.reject(new TypeError('offline'))");
@@ -743,7 +748,15 @@ try {
   await page.screenshot(join(out, "gateway-app-standing-mobile.png"), { fullPage: true });
   await at390("team", "#/team", "!!document.querySelector('.team-table')");
   c.ok(await page.js("[...document.querySelectorAll('.team-table td.none')].every(n=>getComputedStyle(n).display==='none') && [...document.querySelectorAll('.team-table td[data-label^=\"話したこと\"]:not(.none)')].length>=2 && document.querySelectorAll('.sum-days li').length===7"), "390 team: no empty fields on the cards; the answers sit under a 話したこと label; the seven-day strip fits");
-  await page.screenshot(join(out, "gateway-app-team-mobile.png"), { fullPage: true });
+  // Over 3000px the one tall capture is illegible: the top (summary, the blocks) and the list are saved apart, at a 2400px viewport.
+  { const tall = await page.js("document.documentElement.scrollHeight") > 3000;
+    if (tall) { await page.viewport(390, 2400); await sleep(300); await page.js("scrollTo(0,0)"); await sleep(200);
+      await page.screenshot(join(out, "gateway-app-team-mobile-top.png"));
+      await page.js("scrollTo(0, document.querySelector('.team-wrap').getBoundingClientRect().top+scrollY-8)"); await sleep(300);
+      await page.screenshot(join(out, "gateway-app-team-mobile-list.png"));
+      await page.js("scrollTo(0,0)"); await page.viewport(390, 844); await sleep(300); }
+    else await page.screenshot(join(out, "gateway-app-team-mobile.png"), { fullPage: true }); }
+  c.ok(await page.js("[...document.querySelectorAll('.sum-days .at.wide')].every(n=>getComputedStyle(n).display==='none') && [...document.querySelectorAll('.sum-days .at.narrow')].some(n=>/^(緊急|未発信)\\d+$/.test(n.textContent))"), "390 day strip: short labels, nothing broken inside a word");
   await page.js("document.querySelector('.team-tools .chip').click()");
   await page.until("document.querySelector('.team-tools .chip').getAttribute('aria-pressed')==='true' && document.querySelectorAll('.team-table tbody tr').length===7", { label: "390 要確認 only" });
   await page.screenshot(join(out, "gateway-app-team-attention-mobile.png"), { fullPage: true });

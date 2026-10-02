@@ -849,3 +849,8 @@ label.item.pick b { color: var(--ink); }
 @media (max-width: 860px) { .team-runs li { grid-template-columns: minmax(0, 1fr) auto; } .team-runs .run-why, .team-runs .link { grid-column: 1 / -1; } }
 .people-table td:last-child { white-space: normal; min-width: 150px; }
 .people-table td:last-child .nowrap { display: inline-block; }
+mark.proof mark.proof { text-underline-offset: 2px; }
+.sum-days .at.narrow { display: none; }
+@media (max-width: 480px) { .sum-days .at.wide { display: none; } .sum-days .at.narrow { display: inline; } }
+.past-rows li.not-placed .run-why { color: var(--muted); }
+.people-table .apart { display: block; font-weight: 400; }

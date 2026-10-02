@@ -17,16 +17,23 @@ const el = (tag, attrs = {}, ...kids) => {
   return n;
 };
 // A line with the words that settled a field underlined and numbered (the field's number in 確かめること).
+// A clause that holds the words of other fields (「…10月21日の納品で承りました」) is one mark around theirs.
 function marked(text, marks) {
-  const p = el('p'); let rest = String(text);
-  const hits = marks.filter(m => m.quote && m.quote.length < rest.length && rest.includes(m.quote)).sort((a, b) => rest.indexOf(a.quote) - rest.indexOf(b.quote));
-  let at = 0;
-  for (const m of hits) {
-    const i = rest.indexOf(m.quote, at); if (i < 0) continue;
-    p.append(rest.slice(at, i), el('mark', { class: 'proof' }, m.quote, el('sup', { text: String(m.n) }))); at = i + m.quote.length;
-  }
-  p.append(rest.slice(at));
-  return p;
+  const s = String(text);
+  const hits = marks.filter(m => m.quote && m.quote.length < s.length && s.includes(m.quote)).map(m => { const i = s.indexOf(m.quote); return { n: m.n, i, j: i + m.quote.length }; }).sort((a, b) => a.i - b.i || b.j - a.j);
+  const render = (from, to, list) => { const out = []; let at = from;
+    for (let k = 0; k < list.length; k++) { const m = list[k]; if (m.i < at) continue;
+      const inner = []; while (list[k + 1] && list[k + 1].j <= m.j) inner.push(list[++k]);
+      out.push(s.slice(at, m.i), el('mark', { class: 'proof' }, ...render(m.i, m.j, inner), el('sup', { text: String(m.n) }))); at = m.j; }
+    out.push(s.slice(at, to)); return out; };
+  return el('p', {}, ...render(0, s.length, hits));
+}
+// The callee's words for a field, from the start of their clause: a span that begins inside a word (「日の納品で承りました」)
+// is widened back to the start of its sentence (「はい、50ケース、10月21日の納品で承りました」). A span that starts a number stays.
+function clauseOf(text, span) {
+  if (!text || !span) return span; const i = String(text).indexOf(span); if (i <= 0 || /^[0-9０-９]/.test(span) || /[。、！？!?,.・\s]/.test(text[i - 1])) return span;
+  const start = Math.max(...['。', '！', '？', '!', '?'].map(c => text.lastIndexOf(c, i - 1) + 1));
+  return text.slice(start, i) + span;
 }
 // A bar filled to a share (0–1). The width is set through the style object, which the CSP allows (no inline style).
 function meter(share) { const pct = Math.max(0, Math.min(100, Math.round(share * 100))), i = el('i'); i.style.width = `${pct}%`; return el('div', { class: 'bar-meter', role: 'img', 'aria-label': `上限の${pct}%` }, i); }
@@ -977,7 +984,7 @@ async function call(id, _sub, team = false) {
       el('div', {}, el('p', { class: 'meta num', text: meta }), el('h1', { class: 'verdict', text: o.text }), el('p', { class: 'summary', text: summary })),
       ringFor(notes.length, notes.map(n => n.status === 'verified'))));
     main.append(el('div', { class: 'report-rows' }, ...notes.map(n => {
-      const t = turnOf(n.turnId), words = n.span || n.quote, asked = n.requested !== undefined && n.value !== undefined && String(n.requested) !== String(n.value);
+      const t = turnOf(n.turnId), words = clauseOf(t?.text, n.span || n.quote), asked = n.requested !== undefined && n.value !== undefined && String(n.requested) !== String(n.value);
       return el('div', { class: `rrow ${n.status === 'verified' ? 'ok' : ''}` },
         el('span', { class: 'rk', text: n.field === 'date' && r.request?.success?.required?.includes('quantity') ? '納期' : FIELD[n.field] }),
         el('div', { class: 'rv' }, n.value === undefined && n.requested === undefined ? null : el('span', { class: 'rv-k', text: asked ? '相手の答え' : n.status === 'verified' ? '相手の言葉で確認' : n.requested !== undefined && n.value === undefined ? '頼んだ内容' : n.requested !== undefined ? '話に出た内容' : '相手の答え' }), el('b', { text: n.value !== undefined ? fmtValue(n.field, n.value) : n.requested !== undefined ? fmtValue(n.field, n.requested) : '—' }), asked ? el('span', { class: 'rv-asked', text: `頼んだのは ${fmtValue(n.field, n.requested)}` }) : null),
@@ -1035,7 +1042,7 @@ async function call(id, _sub, team = false) {
   const transcript = el('div', { class: 'transcript', 'aria-live': live ? 'polite' : 'off' },
     ...(r.transcript?.length ? r.transcript.map(t => el('div', { class: `line ${t.source === 'callee' ? 'callee' : ''}` },
       el('div', { class: 'who' }, t.source === 'callee' ? r.request.name : 'AI', typeof t.startMs === 'number' ? el('time', { text: mmss(t.startMs / 1000) }) : typeof t.t === 'number' ? el('time', { text: mmss(t.t / 1000) }) : null),
-      marked(t.text, t.source === 'callee' ? notes.map((n, k) => ({ quote: n.status === 'verified' && n.turnId === t.id ? (n.span || n.quote) : n.status === 'verified' && !n.turnId ? n.quote : '', n: k + 1 })) : []),
+      marked(t.text, t.source === 'callee' ? notes.map((n, k) => ({ quote: n.status === 'verified' && n.turnId === t.id ? clauseOf(t.text, n.span || n.quote) : n.status === 'verified' && !n.turnId ? n.quote : '', n: k + 1 })) : []),
       t.source !== 'callee' && CLAIMS_DONE.test(t.text) ? el('span', { class: 'claim', text: 'AIの発言・判定に数えません' }) : null,
       flagged.has(t.id) ? el('div', { class: 'flag-line' }, levelTag(flagged.get(t.id), flagged.get(t.id) === 'emergency' ? '緊急の発言' : '要確認の発言')) : null,
       !live && !r.checkIn && t.source === 'callee' && notes.some(n => n.status === 'verified' && n.turnId === t.id) ? el('span', { class: 'span num', text: '相手の言葉で確認した発言' }) : null))
@@ -1116,7 +1123,7 @@ const SCHED_STATE = { ACTIVE: '有効', PAUSED: '一時停止中', ENDED: '終�
 const SCHED_ENDED = { ended_by_owner: 'あなたが終了しました。', reached_end_date: '終了日になりました。', recipient_asked_not_to_be_called: '相手から、電話しないでほしいと言われました。', recipient_suppressed: '相手が連絡停止になりました。',
   contact_changed_review_again: '連絡先の内容が変わったため、止めました。もう一度登録してください。', privacy_consent_required: '会話データの取り扱いへの同意が必要になりました。', unauthorized: 'このアカウントでは発信できなくなりました。', read_only_account: 'このアカウントでは発信できなくなりました。', unlinked_account: 'このアカウントでは発信できなくなりました。', not_found: '連絡先かアカウントが見つからなくなりました。' };
 const RUN_STATE = { RUNNING: 'かけています', ANSWERED: '話せました', UNANSWERED: '応答なし', SKIPPED: 'かけていません', FAILED: 'かけていません', DECLINED: '相手に断られました', CANCELLED: '取り消しました' };
-const RUN_REASON = { outside_calling_hours: 'かけられる時間を過ぎたため、かけていません。', window_passed: '時刻を過ぎたため、遅れてかけずに見送りました。', service_was_not_running: 'サービスが止まっていたため、この回はかけていません。', schedule_deleted: '定期の電話が削除されています。', record_deleted: '電話の記録が削除されています。', unknown_state_needs_reconciliation: '電話が終わったか確かめられていません。「依頼」で確かめてください。',
+const RUN_REASON = { outside_calling_hours: 'かけられる時間を過ぎたため、かけていません。', window_passed: '時刻を過ぎたため、かけていません。', service_was_not_running: 'サービスが止まっていたため、この回はかけていません。', schedule_deleted: '定期の電話が削除されています。', record_deleted: '電話の記録が削除されています。', unknown_state_needs_reconciliation: '電話が終わったか確かめられていません。「依頼」で確かめてください。',
   recipient_has_active_call: '同じ相手への電話が進行中でした。', schedule_deleted: 'この定期の電話は、もうありません。', recipient_asked_not_to_be_called: '相手から、電話しないでほしいと言われました。', dispatch_failed: '発信の準備ができませんでした。', contact_changed_review_again: '連絡先の内容が変わっていました。' };
 const NOT_PLACED_WHY = { service_was_not_running: 'サービスが止まっていたため', window_passed: '時刻を過ぎたため', outside_calling_hours: 'かけられる時間を過ぎたため', insufficient_credits: 'クレジットが足りなかったため', monthly_cap_reached: '月の上限に達したため', recipient_suppressed: '連絡停止中のため' };
 const runReason = run => !run.reason ? (run.state === 'DECLINED' ? '相手から、電話しないでほしいと言われました。' : '') : RUN_REASON[run.reason] ?? ERRORS[run.reason] ?? `（問い合わせ用コード：${run.reason}）`;
@@ -1181,6 +1188,8 @@ async function standing() {
 // on screen before the approval; the server decides again when the list is registered.
 const SKIP_WHY = { same_number_as_another_contact: '同じ番号の連絡先が、この名簿にもうあります', contact_phone_required: '電話番号がありません', recipient_suppressed: '連絡停止中です', simulator_contact_not_valid_for_live: '練習用の連絡先です', contact_relationship_required: '「この相手との関係」が登録されていません',
   contact_basis_required: '「電話してよい根拠」が書かれていません', ended_by_owner: '名簿を終了したため、かけていません', batch_expired: '7日の期限が過ぎたため、かけていません' };
+// Not calling someone because of a failure (the number changed after approval, a clash) needs a look; an exclusion at approval does not.
+const LIST_FAILURE = new Set(['contact_changed_review_again', 'same_number_as_another_contact']);
 const LIST_GOAL = { materials: ['資料を送ってよいか聞く', '商品を簡単に説明して、資料を送ってよいか聞いてください。'], meeting: ['商談の日時を決める', '商品を説明して、興味があれば15分の商談の日時を相談してください。'], introduce: ['商品を説明する', '商品を簡単に説明してください。'] };
 async function listNew() {
   await loadAll();
@@ -1303,8 +1312,8 @@ function batchCard(bt) {
       ...(bt.kind === 'sales' ? [el('dt', { text: '商品' }), el('dd', { text: app.boot?.products.find(x => x.id === bt.spec.productId)?.name ?? '—' })] : bt.spec.pace === 'gentle' ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : [])),
     el('div', { class: 'team-wrap list-items' }, el('table', { class: 'team-table' },
       el('thead', {}, el('tr', {}, ...['相手', '状態', 'くわしく', '報告'].map(h => el('th', { scope: 'col', text: h })))),
-      el('tbody', {}, ...bt.items.map(i => { const why = more(i); return el('tr', {},
-        el('th', { scope: 'row', text: i.name || '（名前なし）' }), el('td', { 'data-label': '状態' }, state(i)),
+      el('tbody', {}, ...bt.items.map(i => { const why = more(i), failed = i.state === 'FAILED' || i.outcome === 'FAILED' || (i.state === 'SKIPPED' && LIST_FAILURE.has(i.reason)); return el('tr', { class: failed ? 'need-concern' : '' },
+        el('th', { scope: 'row' }, i.name || '（名前なし）', failed ? [' ', levelTag('concern')] : null), el('td', { 'data-label': '状態' }, state(i)),
         el('td', { 'data-label': 'くわしく', class: why ? '' : 'none' }, why || el('span', { class: 'muted', text: '—' })),
         el('td', { 'data-label': '報告', class: i.missionId && i.outcome !== 'RECORD_DELETED' ? '' : 'none' }, i.missionId && i.outcome !== 'RECORD_DELETED' ? el('a', { class: 'link', href: `#/call/${i.missionId}`, text: '報告を開く' }) : el('span', { class: 'muted', text: '—' }))); })))),
     el('details', { class: 'request-details' }, el('summary', { text: '頼んだ内容を見る' }), el('p', { class: 'request-text', text: bt.spec.instruction ?? bt.spec.request ?? '' })),
@@ -1363,12 +1372,18 @@ async function callbacks() {
 }
 
 // これまでの電話（30日）: one person's calls, newest first. `link` says where a row's report opens (none for a row that has no report here).
+// A scheduled call never placed is a row among them (「× かけていません」 and why), in date order, and counted apart.
 function pastBlocks(h, link) {
-  const t = h.summary; if (!t.calls) return [];
+  const t = h.summary, notPlaced = h.notPlaced ?? []; if (!t.calls && !notPlaced.length) return [];
+  const jst = iso => new Date(new Date(iso).getTime() + 9 * 3600e3).toISOString().slice(0, 16);
+  const rows = [...h.calls.map(c => ({ at: jst(c.createdAt), call: c })), ...notPlaced.map(np => ({ at: `${np.date}T${np.time}`, np }))].sort((a, b) => b.at.localeCompare(a.at));
   return [el('h2', { class: 'section-h', text: 'これまでの電話（30日）' }),
     t.missedInARow >= 2 ? el('p', { class: 'past-missed' }, levelTag('concern'), el('b', { text: `${t.missedInARow}回続けて応答がありません` })) : null,
-    el('p', { class: 'note', text: `${t.calls}回の電話のうち、話せました ${t.answered}回・応答なし ${t.unanswered}回・要確認 ${t.attention}回${t.emergency ? `（うち緊急 ${t.emergency}回）` : ''}。「話したこと」は本人の返事で、実際の様子を確かめたものではありません。` }),
-    el('ul', { class: 'past-rows' }, ...[...h.calls].reverse().map(c => { const href = link(c), when = el('time', { datetime: c.createdAt, text: japanTime(c.createdAt) });
+    el('p', { class: 'note', text: `${t.calls ? `${t.calls}回の電話のうち、話せました ${t.answered}回・応答なし ${t.unanswered}回・要確認 ${t.attention}回${t.emergency ? `（うち緊急 ${t.emergency}回）` : ''}。` : ''}${notPlaced.length ? `かけていない定期 ${notPlaced.length}回。` : ''}「話したこと」は本人の返事で、実際の様子を確かめたものではありません。` }),
+    el('ul', { class: 'past-rows' }, ...rows.map(({ call: c, np }) => {
+      if (np) return el('li', { class: 'need-concern not-placed' }, el('span', { class: 'num' }, el('time', { datetime: `${np.date}T${np.time}:00+09:00`, text: `${Number(np.date.slice(5, 7))}/${Number(np.date.slice(8))}(${WEEK[new Date(`${np.date}T00:00:00Z`).getUTCDay()]}) ${np.time}` })),
+        el('span', { class: 'past-went' }, missTag('かけていません')), levelTag('concern'), el('span', { class: 'glance run-why', text: `定期の電話。${NOT_PLACED_WHY[np.reason] ?? '理由は記録がありません'}、かけていません。` }));
+      const href = link(c), when = el('time', { datetime: c.createdAt, text: japanTime(c.createdAt) });
       return el('li', { class: c.attention ? `need-${c.attention}` : '' },
         href ? el('a', { class: 'num', href, 'aria-label': `${japanTime(c.createdAt)} の報告を開く` }, when) : el('span', { class: 'num' }, when),
         el('span', { class: 'past-went' }, callWent(c)), c.attention ? levelTag(c.attention) : null, saidGlance(c.checkIn, c.checkInLevels)); }))].filter(Boolean);
@@ -1388,11 +1403,12 @@ async function people() {
     return el('div', { class: 'rows team-wrap' }, el('table', { class: 'team-table people-table' },
       el('thead', {}, el('tr', {}, ...['相手', 'かける人', '最後の電話', '確かめたいこと', '最後に話したこと（見守りの返事）', '30日の電話'].map(h => el('th', { scope: 'col', text: h })))),
       el('tbody', {}, ...d.people.map(x => { const last = x.last, href = x.contactId ? `#/team/person/${x.contactId}` : last?.kind === 'request' ? `#/team/${last.id}` : null;
+        const twin = d.people.some(y => y !== x && y.recipient === x.recipient), own = twin && x.owner === me ? app.boot.contacts.find(c => c.id === x.contactId) : null, apart = own?.company || own?.notes || '';
         const level = last?.attention === 'emergency' ? 'emergency' : x.missedInARow >= 2 || x.notCheckedSince || last?.attention ? 'concern' : null, np = x.lastNotPlaced;
         // A scheduled call that was never placed is a day nobody checked on this person: it is said on their line.
         const notPlaced = np ? `${Number(np.date.slice(5, 7))}/${Number(np.date.slice(8))} ${np.time} の定期の電話は、かけていません（${NOT_PLACED_WHY[np.reason] ?? '理由は記録がありません'}）` : null;
         return el('tr', { class: level ? `need-${level}` : '' },
-          el('th', { scope: 'row' }, href ? el('a', { href, text: x.recipient || '（名前なし）' }) : el('span', { text: x.recipient || '（名前なし）' }), x.scheduled ? el('span', { class: 'tag', text: '定期' }) : null),
+          el('th', { scope: 'row' }, href ? el('a', { href, text: x.recipient || '（名前なし）' }) : el('span', { text: x.recipient || '（名前なし）' }), x.scheduled ? el('span', { class: 'tag', text: '定期' }) : null, apart ? el('span', { class: 'muted small apart', text: apart }) : null),
           el('td', { 'data-label': 'かける人', text: x.owner === me ? '自分' : x.ownerName || shortId(x.owner) }),
           el('td', { 'data-label': '最後の電話' }, last ? [el('time', { datetime: last.createdAt, text: japanTime(last.createdAt) }), ' ', callWent(last)] : 'まだ一度もかけていません'),
           cell('確かめたいこと', level ? [last?.attention === 'emergency' ? levelTag('emergency') : levelTag('concern'), x.missedInARow >= 2 ? el('b', { class: 'missed-run', text: `${x.missedInARow}回続けて応答がありません` }) : null,
@@ -1428,8 +1444,10 @@ async function team() {
     el('p', { class: 'muted', text: 'この画面は、管理者とマネージャーだけが開けます。' }), el('div', { class: 'actions' }, el('a', { class: 'btn', href: '#/', text: 'ホームへ' })));
   let only = app.teamAttention === true;
   const box = el('div', { class: 'team-box' }), me = app.boot.user.id;
-  const filter = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(only), text: '要確認だけ', onclick: () => { only = !only; app.teamAttention = only; filter.setAttribute('aria-pressed', String(only)); read(); } });
-  const total = el('span', { class: 'sub', role: 'status' });
+  // Two tabs over one read: 要確認だけ（N件）and すべて（総数）. The list is filtered here, so the total never changes with the tab.
+  const pick = v => { only = v; app.teamAttention = only; filter.setAttribute('aria-pressed', String(only)); total.setAttribute('aria-pressed', String(!only)); read(); };
+  const filter = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(only), text: '要確認だけ', onclick: () => pick(!only) });
+  const total = el('button', { class: 'chip', type: 'button', 'aria-pressed': String(!only), text: 'すべて', onclick: () => pick(false) });
   // The verdict, only where a call had something to settle (a sales call), as a small label apart from how the call went.
   const verdict = c => c.settles && ['COMPLETED', 'INCOMPLETE'].includes(c.status) ? el('span', { class: 'verdict-tag', text: c.settled ? '決まりました' : '決まっていません' }) : null;
   const rank = c => c.attention === 'emergency' ? 0 : c.attention ? 1 : 2;
@@ -1439,7 +1457,7 @@ async function team() {
     data.calls.sort((x, y) => rank(x) - rank(y));
     app.teamNames = Object.fromEntries(data.calls.map(c => [c.owner, c.ownerName]));
     filter.textContent = `要確認だけ（${data.needsAttention}件）`;
-    total.textContent = data.total > data.calls.length ? `${data.total}件のうち、新しい${data.calls.length}件` : `${data.total}件`;
+    total.textContent = data.total > data.all.length ? `すべて（${data.total}件のうち、新しい${data.all.length}件）` : `すべて（${data.total}件）`;
     const peopleHref = x => app.personByKey?.[`${x.owner}:${x.recipient}`] ? `#/team/person/${app.personByKey[`${x.owner}:${x.recipient}`]}` : '#/team/people';
     // Scheduled calls never placed: nobody checked on that person that day. They need a look as much as a worrying answer.
     const unplaced = data.notPlaced?.length ? el('section', { class: 'team-block need-concern', 'aria-label': 'かけられなかった定期の電話' },
@@ -1470,7 +1488,7 @@ async function team() {
   const read = () => loadInto(box, async () => {
     // The board's people, so an unplaced call can open that person's history.
     if (!app.personByKey) app.personByKey = await api('/team/people?days=30').then(t => Object.fromEntries(t.people.filter(x => x.contactId).map(x => [`${x.owner}:${x.recipient}`, x.contactId]))).catch(() => ({}));
-    return api(`/team/calls${only ? '?attention=1' : ''}`);
+    const data = await api('/team/calls'); data.all = data.calls; if (only) data.calls = data.calls.filter(c => c.attention); return data;
   }, draw);
   read();
   // この7日間: plain numbers. The answer rate is of the calls where it is known whether anyone picked up.
@@ -1485,7 +1503,8 @@ async function team() {
         tile('応答なし', `${t.unanswered}件`, t.notPlaced ? `ほかに、かけられなかった電話 ${t.notPlaced}件` : null), tile('要確認', `${t.attention + (t.notPlacedScheduled ?? 0)}件`, `うち緊急 ${t.emergency}件${t.notPlacedScheduled ? `・かけられなかった定期 ${t.notPlacedScheduled}件` : ''}`)),
       el('ol', { class: 'sum-days', 'aria-label': '日ごとの件数' }, ...days.map(date => { const x = by.get(date);
         return el('li', { class: x?.attention ? 'has' : '' }, el('time', { datetime: date, text: `${Number(date.slice(5, 7))}/${Number(date.slice(8))}` }), el('span', { class: 'wd', text: WEEK[new Date(`${date}T00:00:00Z`).getUTCDay()] }),
-          el('b', { text: `${x?.calls ?? 0}件` }), el('span', { class: 'at', text: x?.attention ? `要確認${x.attention}` : '' }), el('span', { class: 'at nowrap', text: x?.emergency ? `（うち緊急${x.emergency}）` : '' }), el('span', { class: 'at np nowrap', text: x?.notPlacedScheduled ? `かけられなかった定期${x.notPlacedScheduled}` : '' })); }))];
+          el('b', { text: `${x?.calls ?? 0}件` }), el('span', { class: 'at', text: x?.attention ? `要確認${x.attention}` : '' }), el('span', { class: 'at nowrap wide', text: x?.emergency ? `（うち緊急${x.emergency}）` : '' }), el('span', { class: 'at nowrap narrow', text: x?.emergency ? `緊急${x.emergency}` : '' }),
+          el('span', { class: 'at np nowrap wide', text: x?.notPlacedScheduled ? `かけられなかった定期${x.notPlacedScheduled}` : '' }), el('span', { class: 'at np nowrap narrow', text: x?.notPlacedScheduled ? `未発信${x.notPlacedScheduled}` : '' })); }))];
   });
   return el('div', { class: 'page team-page' },
     el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'),
