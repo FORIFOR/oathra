@@ -56,16 +56,16 @@
 
 画面の確認で分かった穴: 見守りの依頼文に「（施設名や依頼者の名前）」が残ったまま承認へ進めた。画面側で止めた。
 
-未確認: 暗い配色、読み上げソフト、実機、キーボードだけでの全操作、営業の名簿の登録、利用者による評価。
+暗い配色は 13 画面を撮って確認した（薄かった札の枠を直した）。未確認: 読み上げソフト、実機、キーボードだけでの全操作、営業の名簿の登録、利用者による評価。
 
 ## 実行した確認（2026-10-02 最終）
 
 - `pnpm build`: 成功
-- `pnpm test`: 4,215 件合格（スキップ 1、todo 6）
-- `pnpm test:gateway`: 609 件合格
+- `pnpm test`: 4,216 件合格（スキップ 1、todo 6）
+- `pnpm test:gateway`: 610 件合格
 - `pnpm lint:deps`: 成功
 - `oathra eval --adversarial 10000`: False Completion 0 / 10000、完了 3298（変更前と同じ）
-- `pnpm test:ui`: gateway-flow 53/53、gateway-app 214/214、gateway-local 12/12（gateway-local のタブの高さの期待値は、以前の改修で 48px になっていたバーに合わせて 44 → 48 に直した）
+- `pnpm test:ui`: gateway-flow 53/53、gateway-app 232/232、gateway-local 12/12（gateway-local のタブの高さの期待値は、以前の改修で 48px になっていたバーに合わせて 44 → 48 に直した）
 
 ## 確かめていないこと（UNVERIFIED）
 
