@@ -59,3 +59,6 @@ export class OpenAIBrain implements BrainProvider {
 }
 
 export { OpenAITTS, type OpenAITTSOptions } from "./tts.js";
+
+export { OpenAIRealtimeTTS, REALTIME_TTS_MODEL, type OpenAIRealtimeTTSOptions } from "./realtime-tts.js";
+export { createOpenAITTS } from "./tts-factory.js";

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GeminiTTS } from "@oathra/gemini";
-import { OpenAITTS } from "@oathra/openai";
+import { OpenAITTS, OpenAIRealtimeTTS } from "@oathra/openai";
 import { definePhoneRequest, preparePhoneRequest } from "@oathra/contract";
-import { buildEngine, CHARACTER_TTS_STYLE, engineBrain, parseEngineSpec, phoneRequestSystemPrompt, pipelineTTS } from "./phone.js";
+import { buildEngine, CHARACTER_TTS_STYLE, engineBrain, parseEngineSpec, phoneRequestSystemPrompt, phoneTest, pipelineTTS } from "./phone.js";
 
 describe("pipeline TTS choice (character prototype)", () => {
   it("gemini-lite speaks with the character preset's voice and the approved style", () => {
@@ -48,5 +48,18 @@ describe("character-tts engine (acting voice on a real call)", () => {
   it("speech-to-speech engines still write their own replies", async () => {
     const engine = buildEngine(parseEngineSpec("gpt-live"), {});
     await expect(engineBrain(parseEngineSpec("gpt-live"), engine).respond({} as never)).rejects.toThrow(/speaks itself/);
+  });
+});
+
+afterEach(() => vi.unstubAllEnvs());
+describe("Realtime TTS rollout boundaries", () => {
+  it("selects opt-in TTS from the explicit environment and preserves native GPT-Live default", () => {
+    expect(pipelineTTS(undefined, undefined, { OATHRA_TTS_TRANSPORT: "realtime", OPENAI_API_KEY: "fixture" }).tts).toBeInstanceOf(OpenAIRealtimeTTS);
+    expect(parseEngineSpec()).toEqual({ id: "gpt-live" });
+    expect(buildEngine(parseEngineSpec(), { OATHRA_TTS_TRANSPORT: "realtime" }).id).toBe("gpt-live");
+  });
+  it("does not apply legacy conversation budget estimates to Realtime TTS", async () => {
+    vi.stubEnv("OATHRA_TTS_TRANSPORT", "realtime");
+    await expect(phoneTest({ level: "conversation", engine: "gpt-live" })).rejects.toThrow("budget estimator uses legacy");
   });
 });

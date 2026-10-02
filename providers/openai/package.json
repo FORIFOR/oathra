@@ -23,6 +23,10 @@
     "@oathra/core": "workspace:*",
     "@oathra/brain-kit": "workspace:*",
     "@oathra/audio-kit": "workspace:*",
-    "@oathra/evidence": "workspace:*"
+    "@oathra/evidence": "workspace:*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
   }
 }
