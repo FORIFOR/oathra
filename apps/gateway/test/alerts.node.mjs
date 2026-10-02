@@ -120,3 +120,21 @@ test('a wellbeing report carries a note a person may pass on to a relative, in s
   assert.ok(note.endsWith('ご本人の様子を確かめたものではありません。'));
   const plain=await f.run(f.mission(),['B: 営業時間は10時からです']);assert.equal(phoneRecord(f.service,plain.saved).familyNote,undefined);
 }));
+
+test('the voice model’s own report alerts when the word rules heard nothing, and is kept as the AI’s account',using(async f=>{
+  const m=f.mission({pace:'gentle'}),w=new Worker(f.service,{process:async()=>{},send:async()=>{}},async(_,hooks)=>{hooks.onEvent({type:'call.connected'});
+    hooks.onEvent({type:'transcript.final',turnId:'t0',source:'callee',text:'ばあちゃんが風呂場で動かんごとなっとる'});
+    hooks.onEvent({type:'safety.reported',level:'emergency',heard:'ばあちゃんが風呂場で動かんごとなっとる'});
+    hooks.onEvent({type:'safety.reported',level:'concern',heard:'さびしか'});return {};},f.alerts);
+  await w.run(m,{id:m.id,abort:new AbortController(),control:{}});
+  const saved=f.store.get('mission',m.id);
+  assert.equal(saved.attention.level,'emergency');assert.ok(saved.attention.signals.some(s=>s.source==='model'&&s.category==='reported'));
+  assert.deepEqual(f.queued().filter(j=>j.payload.reason==='distress').map(j=>j.payload.level),['emergency'],'one alert at the level reached; a lower later report adds none');
+}));
+test('a recording the word rules do not know is still not an answer when the voice model says a machine answered',using(async f=>{
+  const m=f.mission({pace:'gentle'}),w=new Worker(f.service,{process:async()=>{},send:async()=>{}},async(_,hooks)=>{hooks.onEvent({type:'call.connected'});
+    hooks.onEvent({type:'transcript.final',turnId:'t0',source:'callee',text:'まいどおおきに、いまちょっと出とりますねん'});hooks.onEvent({type:'safety.reported',level:'machine',heard:'留守番電話'});return {};},f.alerts);
+  await w.run(m,{id:m.id,abort:new AbortController(),control:{}});
+  const saved=f.store.get('mission',m.id);
+  assert.deepEqual([saved.answered,saved.machineAnswered],[false,true]);assert.deepEqual(f.queued().map(j=>j.payload.reason),['unanswered']);
+}));

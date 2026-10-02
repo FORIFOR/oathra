@@ -97,7 +97,8 @@ export class Worker {
     if(current.direction==='inbound')return;
     const report=checkInReport(turns),care=current.phoneRequest?.pace==='gentle';
     // Someone spoke on the other end, and it was not a recording. A voicemail greeting or a network announcement is not an answer.
-    const machine=turns.some(t=>t.source==='callee'&&isMachineGreeting(t.text));if(machine)current.machineAnswered=true;
+    // A recording by the word rules, or by the voice model's own report when the rules did not know the announcement.
+    const machine=turns.some(t=>t.source==='callee'&&isMachineGreeting(t.text))||current.machineReported===true;if(machine)current.machineAnswered=true;
     current.answered=connected&&report.answered&&!machine;
     if(current.kind!=='phone-request')return;
     if(care||report.items.some(i=>i.answer!=='not_asked'))current.result.checkIn=report;
@@ -139,6 +140,17 @@ export class Worker {
       if(e.type==='carrier.sid') current.carrierSid=e.sid;
       if(e.type==='callee.consent') current.calleeConsented=true;
       if(e.type==='recording.notice') current.recordingNotice={method:e.method,text:e.text};
+      // The voice model's own report of a worrying line: a second reader beside the word rules. Either one alerts.
+      if(e.type==='safety.reported') {
+        if(e.level==='machine'){current.machineReported=true;this.store.put('mission',current);this.store.event(current,{type:'safety.reported',level:'machine'});}
+        else{
+          const before=current.attention?.level,level=e.level==='emergency'?'emergency':'concern';
+          current.attention={level:before?worse(before,level):level,signals:[...(current.attention?.signals??[]),{level,category:'reported',phrase:String(e.heard).slice(0,300),source:'model'}].slice(-20)};
+          this.store.event(current,{type:'safety.reported',level});this.store.put('mission',current);
+          if(before!==current.attention.level)this.alerts?.raise(current,'distress',current.attention.level,{categories:['reported_by_ai'],quotes:[e.heard]});
+        }
+        return;
+      }
       if(e.type==='contact.opt_out') { current.optOut=true; this.suppress(m,'dtmf'); shouldAbort=true; }
       if(e.type==='transcript.final') {
         turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})});

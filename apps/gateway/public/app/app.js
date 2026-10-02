@@ -896,7 +896,7 @@ const saidGlance = (c, levels) => { const parts = Object.entries(c ?? {}).filter
   return parts.length ? el('span', { class: 'glance' }, ...parts) : null; };
 // An answer a person should read: trouble said, something raised, or nothing clear.
 const checkWorry = (topic, answer) => answer === 'unclear' || answer === 'no_answer' || (topic === 'help' ? answer === 'yes' : answer === 'no');
-const SIGNAL = { life: '助けを求める言葉・動けない', self_harm: '死にたい気持ちの言葉', breathing: '息や胸の苦しさ・しびれ', fall: '転んだ・ぶつけた', pain: '痛み・つらさ', illness: '体調がよくない', intake: '食事や薬がとれていない', mood: '眠れない・不安・さびしさ' };
+const SIGNAL = { life: '助けを求める言葉・動けない', self_harm: '死にたい気持ちの言葉', breathing: '息や胸の苦しさ・しびれ', fall: '転んだ・ぶつけた', pain: '痛み・つらさ', illness: '体調がよくない', intake: '食事や薬がとれていない', mood: '眠れない・不安・さびしさ', reported: 'AIが気になった発言（AIによる聞き取り）' };
 const LEVEL = { emergency: '緊急', concern: '要確認' };
 const levelTag = (level, text = LEVEL[level]) => el('span', { class: `lvl ${level}`, text });
 // A word and a mark for a call that did not reach the person (never colour alone).

@@ -15,7 +15,7 @@ import type { Action, CallContract } from "@oathra/contract";
 import { DEFAULT_GEMINI_VOICE, GEMINI_VOICES, requiredFields } from "@oathra/contract";
 import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler } from "@oathra/audio-kit";
 import type { MissionView, SessionEvent } from "@oathra/core";
-import { callInstructions, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
+import { callInstructions, CONCERN_TOOL, concernEvent, concernInstruction, type ConcernEvent, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 import type { AgentBridge } from "./index.js";
 
 export const DEFAULT_GEMINI_LIVE_MODEL = "gemini-3.8-live";
@@ -43,6 +43,8 @@ export type GeminiLiveAgentOptions = {
   onDesk?: (event: DeskEvent) => void;
   /** A decision the model made within 任せる範囲 (its own account; never evidence). */
   onDecision?: (event: DecisionEvent) => void;
+  /** The model's own report that a line should be checked by a person (see voice-kit concern.ts). Offered only when set. */
+  onConcern?: (event: ConcernEvent) => void;
   /** The clock used to read dates back ("あさって"); defaults to the wall clock. */
   today?: () => Date;
 };
@@ -169,6 +171,8 @@ export class GeminiLiveAgent {
     if (this.desk) tools.push(...(DESK_TOOLS as unknown as Json[]).map((tool) => ({ ...functionDeclaration(tool), behavior: "BLOCKING" })));
     // Recording a decision must not hold the conversation: the model keeps talking and the answer is silent.
     if (recordsDecisions(this.opts.contract)) tools.push({ ...functionDeclaration(DECISION_TOOL as unknown as Json), behavior: "NON_BLOCKING" });
+    // Reporting a worrying line must not hold the conversation either.
+    if (this.opts.onConcern) tools.push({ ...functionDeclaration(CONCERN_TOOL as unknown as Json), behavior: "NON_BLOCKING" });
     this.tools = tools;
     this.send({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools, gentle: this.opts.contract.input.pace === "gentle" }) });
     await new Promise<void>((res, rej) => {
@@ -243,6 +247,7 @@ export class GeminiLiveAgent {
       "",
       "## Tools",
       "- end_call: call it right after a goodbye, when the other person says goodbye or asks you to hang up, on voicemail, or when the conversation is over. Never leave the line open.",
+      ...(this.opts.onConcern ? [`- report_concern: ${concernInstruction(c.language)}`] : []),
       ...(this.desk ? ["- check_table / book_table: the reservation desk. Availability and bookings come only from these; a booking exists only when book_table returns status=booked."] : []),
       ...(c.goal.startsWith("chat.") ? [] : ["- request_action: required before any action outside the permitted list."]),
       "You cannot search the web or look anything up; if asked, say so honestly.",
@@ -415,6 +420,12 @@ export class GeminiLiveAgent {
   private onToolCall(id: string, name: string, args: Json): void {
     const b = this.bridge;
     if (!b || !id) return;
+    if (name === "report_concern") {
+      const event = concernEvent(args);
+      if (event) { try { this.opts.onConcern?.(event); } catch { /* observers never break the call */ } }
+      this.send({ toolResponse: { functionResponses: [{ id, name, response: { ok: Boolean(event), scheduling: "SILENT" } }] } });
+      return;
+    }
     if (name === "record_decision") {
       const event = decisionEvent(args);
       if (event) { try { this.opts.onDecision?.(event); } catch { /* observers never break the call */ } }

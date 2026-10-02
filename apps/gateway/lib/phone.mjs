@@ -295,7 +295,8 @@ export class Phone {
       character={pipelineEngine,tts,stt:new DeepgramSTT({apiKey:this.env.DEEPGRAM_API_KEY})};
     }
     // The AI's own account of what it decided within 任せる範囲 (outbound requests only); stored with the call's events.
-    const decisions=m.phoneRequest&&m.direction!=='inbound'?{onDecision:e=>hooks.onEvent({...e})}:{};
+    // Every call offers the model a way to tell the staff about a worrying line (voice-kit concern.ts); decisions only where the request delegates some.
+    const decisions={onConcern:e=>hooks.onEvent({...e}),...(m.phoneRequest&&m.direction!=='inbound'?{onDecision:e=>hooks.onEvent({...e})}:{})};
     const engine=engineId==='character-tts'
       ?{...character.pipelineEngine({brain:textBrain,stt:character.stt,tts:character.tts,acknowledgements:false,ttsLabel:`Gemini TTS (${character.tts.voice})`}),id:'character-tts'}
       :engineId==='gemini-live'
