@@ -10,6 +10,7 @@ import { resolve } from 'node:path';
 import { Store } from './lib/store.mjs';
 import { BrowserSessions } from './lib/browser-session.mjs';
 import { Alerts, alertConfiguration } from './lib/alerts.mjs';
+import { Schedules } from './lib/schedules.mjs';
 import { PublicAccounts } from './lib/public-accounts.mjs';
 import { Purchases } from './lib/purchases.mjs';
 import { prereleaseConfiguration, prereleaseCallsAvailable } from './lib/prerelease.mjs';
@@ -148,7 +149,8 @@ export async function createGateway(config,options={}){
   const channels=options.channels??new Channels(service,env,registry,options.fetchImpl??fetch);
   const execute=(m,hooks)=>{registry.demand(callPlugin,'call:execute');return registry.capability(callPlugin).execute(freezeData(jsonData(m)),{signal:hooks.signal,onEvent:hooks.onEvent,control:hooks.control});};
   const alerts=new Alerts(service,alertConfiguration(env),{fetchImpl:options.fetchImpl??fetch,...(options.resolve?{resolve:options.resolve}:{})});
-  const worker=new Worker(service,channels,execute,alerts),limits=new Map();
+  const schedules=new Schedules(service,alerts);
+  const worker=new Worker(service,channels,execute,alerts,schedules),limits=new Map();
   const server=createServer(async(req,res)=>{
     const requestId=crypto.randomUUID();res.setHeader('x-request-id',requestId);
     try{
@@ -280,6 +282,10 @@ export async function createGateway(config,options={}){
       if(method==='POST'&&purchaseReconcile)return send(res,200,publicOrder(await purchases.reconcile(u,purchaseReconcile[1])));
       if(path==='/v1/phone/grants/defaults'&&method==='GET')return send(res,200,phoneGrantDefaults(service,u));
       if(path==='/v1/phone/connections'&&method==='POST')return send(res,201,connectPhoneAgent(service,u,data,req.headers['idempotency-key']));
+      if(path==='/v1/schedules'&&method==='POST')return send(res,201,schedules.create(u,data,req.headers['idempotency-key']));
+      if(path==='/v1/schedules'&&method==='GET'){service.write(u);return send(res,200,schedules.list(u));}
+      const scheduleAction=/^\/v1\/schedules\/([a-f0-9]{32})\/(pause|resume|end)$/.exec(path);
+      if(scheduleAction&&method==='POST')return send(res,200,schedules.set(u,scheduleAction[1],{pause:'PAUSED',resume:'ACTIVE',end:'ENDED'}[scheduleAction[2]]));
       if(path==='/v1/phone/grants'&&method==='POST')return send(res,201,grantPhone(service,u,data));
       if(path==='/v1/phone/grants'&&method==='GET'){service.write(u);return send(res,200,store.all('phone-grant',u.id));}
       const revokeGrant=path.match(/^\/v1\/phone\/grants\/([a-f0-9-]{36})\/revoke$/);

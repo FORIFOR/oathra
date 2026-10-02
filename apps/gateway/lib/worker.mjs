@@ -10,7 +10,7 @@ import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
-  constructor(service, channels, execute, alerts=null) { this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.active=null; this.busy=false; }
+  constructor(service, channels, execute, alerts=null, schedules=null) { this.schedules=schedules; this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.active=null; this.busy=false; }
   start() {
     assert(this.store.lease(this.holder),'another_gateway_worker_is_active',409);
     const recovery=new Map([...this.store.list('mission'),...this.service.credits.pendingMissions()].map(m=>[m.id,m]));
@@ -50,6 +50,8 @@ export class Worker {
       await this.processQueue('outbox',j=>this.channels.send(j));
       if(this.alerts?.config) await this.processQueue('alert',j=>this.alerts.send(j));
       if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
+      // Standing requests place their next due call into the queue; the claim below treats it like any other.
+      if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
       const m=this.claimNext();
       if(!m)return;
       this.service.notify(m,'発信しています。');
@@ -80,12 +82,14 @@ export class Worker {
   checkIn(current,turns,connected) {
     if(current.kind!=='phone-request'||current.direction==='inbound')return;
     const report=checkInReport(turns),care=current.phoneRequest?.pace==='gentle';
-    if(!care&&report.items.every(i=>i.answer==='not_asked'))return;
-    current.result.checkIn=report;
+    // Someone spoke on the other end. A voicemail greeting also counts as speech: this is "the line was picked up", not "the person is well".
+    current.answered=connected&&report.answered;
+    if(care||report.items.some(i=>i.answer!=='not_asked'))current.result.checkIn=report;
     if(!this.alerts)return;
     // Nobody answered a call that was meant to find out how someone is: that is itself the finding.
-    if(care&&(!connected||!report.answered)&&current.status!=='CANCEL_REQUESTED')this.alerts.raise(current,'unanswered','concern');
-    else if(report.attention!=='none'&&!current.attention)this.alerts.raise(current,'checkin',report.attention,{categories:report.items.filter(i=>(i.topic==='help'&&i.answer==='yes')||(i.topic!=='help'&&i.answer==='no')).map(i=>i.topic)});
+    // A scheduled call that will be retried is not yet a finding; its last attempt is.
+    if((care||current.schedule)&&!current.answered&&current.status!=='CANCEL_REQUESTED'){if(!current.schedule||current.schedule.final)this.alerts.raise(current,'unanswered','concern');}
+    else if(current.result.checkIn&&report.attention!=='none'&&!current.attention)this.alerts.raise(current,'checkin',report.attention,{categories:report.items.filter(i=>(i.topic==='help'&&i.answer==='yes')||(i.topic!=='help'&&i.answer==='no')).map(i=>i.topic)});
   }
   async run(m,active) {
     const turns=[]; let connected=false;
