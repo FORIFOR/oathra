@@ -22,7 +22,7 @@ export class Batches {
 
   create(owner, input, key) {
     const s = this.service; s.write(owner);
-    assert(input && typeof input === 'object' && !Array.isArray(input) && Object.keys(input).every(k => ['kind', 'contactIds', 'sales', 'request', 'acknowledged'].includes(k)), 'invalid_batch');
+    assert(input && typeof input === 'object' && !Array.isArray(input) && Object.keys(input).every(k => ['kind', 'contactIds', 'sales', 'request', 'retry', 'acknowledged'].includes(k)), 'invalid_batch');
     assert(input.acknowledged === true, 'explicit_batch_approval_required', 403);
     assert(typeof key === 'string' && /^[a-zA-Z0-9_-]{8,128}$/.test(key), 'idempotency_key_required');
     const id = hash(`batch:${owner.id}:${key}`).slice(0, 32), fingerprint = hash(canonical(input));
@@ -47,6 +47,9 @@ export class Batches {
         assert(!checked.task, 'batch_cannot_reserve');
         const { phone, name, schemaVersion, kind, ...fields } = checked; spec = fields;
       }
+      // Nobody picked up (or a machine did): try that contact again later, a bounded number of times. Never after a refusal or an unknown state.
+      const retry = input.retry ?? { count: 0, minutes: 60 };
+      assert(retry && Number.isInteger(retry.count) && retry.count >= 0 && retry.count <= 2 && Number.isInteger(retry.minutes) && retry.minutes >= 30 && retry.minutes <= 1440 && Object.keys(retry).every(k => ['count', 'minutes'].includes(k)), 'invalid_batch_retry');
       const items = contacts.map(c => {
         // Said now, so the person approving sees who will not be called and why.
         const reason = !c.phone ? 'contact_phone_required' : this.store.suppressed(owner.team, c.phone) ? 'recipient_suppressed' : c.simulationOnly && s.config.mode === 'live' ? 'simulator_contact_not_valid_for_live'
@@ -54,7 +57,7 @@ export class Batches {
         return { contactId: c.id, name: c.name || c.company, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
       });
       assert(items.some(i => i.state === 'PENDING'), 'batch_has_no_callable_contact');
-      const batch = { id, owner: owner.id, team: owner.team, status: 'ACTIVE', fingerprint, kind: input.kind, spec, items, consentVersion: s.config.consentVersion, createdAt: this.store.now(), expiresAt: this.store.now() + 7 * 86400_000 };
+      const batch = { id, owner: owner.id, team: owner.team, status: 'ACTIVE', fingerprint, kind: input.kind, spec, retry: { count: retry.count, minutes: retry.minutes }, items, consentVersion: s.config.consentVersion, createdAt: this.store.now(), expiresAt: this.store.now() + 7 * 86400_000 };
       this.store.put('batch', batch);
       this.store.audit(owner.id, 'batch.created', id, { batch: id, kind: input.kind, contacts: items.length, callable: items.filter(i => i.state === 'PENDING').length });
       return this.view(batch);
@@ -88,11 +91,14 @@ export class Batches {
       for (const item of batch.items.filter(i => i.state === 'CALLING')) {
         const m = this.store.get('mission', item.missionId);
         if (m && !terminal(m.status)) continue;
-        item.state = 'DONE'; item.outcome = m ? m.status : 'RECORD_DELETED'; changed = true;
+        changed = true; item.attempts = (item.attempts ?? 0) + 1;
+        const unanswered = m && m.answered === false && ['INCOMPLETE', 'FAILED'].includes(m.status) && !m.stopNeedsReconciliation;
+        if (unanswered && item.attempts <= (batch.retry?.count ?? 0) && batch.status !== 'ENDED') { item.state = 'PENDING'; item.notBefore = now + batch.retry.minutes * 60_000; continue; }
+        item.state = 'DONE'; item.outcome = m ? (unanswered ? 'UNANSWERED' : m.status) : 'RECORD_DELETED';
       }
       if (batch.status === 'ACTIVE' && now >= batch.expiresAt) { for (const item of batch.items) if (item.state === 'PENDING') { item.state = 'SKIPPED'; item.reason = 'batch_expired'; } changed = true; }
       if (batch.status === 'ACTIVE') for (const item of batch.items) {
-        if (item.state !== 'PENDING' || inUse >= lines) continue;
+        if (item.state !== 'PENDING' || inUse >= lines || (item.notBefore ?? 0) > now) continue;
         const outcome = this.dispatch(batch, item); changed = true;
         if (outcome === 'queued') inUse++;
         else if (outcome === 'later') break;
@@ -114,7 +120,7 @@ export class Batches {
           : prepareManagedPhone(s, owner, { ...batch.spec, phone: contact.phone, name: contact.name || contact.company });
         draft.batch = { id: batch.id }; this.store.put('mission', draft);
         const { approvalToken } = s.review(owner, draft.id);
-        s.startTx(owner, approvalToken, `batch:${batch.id}:${item.contactId}`, true, draft.id);
+        s.startTx(owner, approvalToken, `batch:${batch.id}:${item.contactId}:${item.attempts ?? 0}`, true, draft.id);
         item.state = 'CALLING'; item.missionId = draft.id;
         this.store.audit(owner.id, 'batch.dispatched', draft.id, { batch: batch.id, mission: draft.id });
       });

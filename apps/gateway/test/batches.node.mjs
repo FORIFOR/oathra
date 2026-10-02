@@ -18,7 +18,7 @@ function fixture({live=false,lines=1,callHours}={}){
   const product=service.product(alice,{name:'Example product',facts:'Only the reviewed feature.',reviewed:true});
   const contact=(n,extra={})=>service.contact(alice,{name:`取引先${n}`,phone:`+8190000002${String(n).padStart(2,'0')}`,relationship:'customer',basis:'既存の取引先',...extra});
   const alerts=new Alerts(service,null),batches=new Batches(service,alerts),dialed=[];
-  const execute=async(m,{onEvent})=>{dialed.push(m.target.name);onEvent({type:'call.connected'});onEvent({type:'transcript.final',turnId:'t1',source:'callee',text:typeof reply==='function'?reply(m):reply});return {};};
+  const execute=async(m,{onEvent})=>{dialed.push(m.target.name);const said=typeof reply==='function'?reply(m):reply;if(said===null)return {};onEvent({type:'call.connected'});onEvent({type:'transcript.final',turnId:'t1',source:'callee',text:typeof reply==='function'?reply(m):reply});return {};};
   const worker=new Worker(service,{process:async()=>{},send:async()=>{}},execute,alerts,null,batches);worker.log=()=>{};
   const pass=async()=>{clock+=1000;await worker.tick();await Promise.all([...worker.running.values()].map(a=>a.promise));};
   const sales=(ids,key='batch-key-1',extra={})=>batches.create(alice,{kind:'sales',contactIds:ids,sales:{productId:product.id,request:'新しいプランのご案内',goal:'introduce'},acknowledged:true,...extra},key);
@@ -98,3 +98,23 @@ test('outside the calling hours the list waits and loses nobody; inside them it 
   f.config.callHours={sales:{from:'09:00',to:'20:00'},request:null};
   await f.pass();assert.equal(f.dialed.length,1);
 },{live:true,callHours:{sales:{from:'13:00',to:'14:00'},request:null}}));
+
+test('a contact who did not pick up is tried again after the wait, a bounded number of times; a refusal never is',using(async f=>{
+  const [a,b]=[1,2].map(n=>f.contact(n));let tries=0;
+  f.says(m=>m.target.name==='取引先1'?(++tries<3?null:'はい、お願いします'):'結構です');
+  f.sales([a.id,b.id],'retry-key-01',{retry:{count:2,minutes:30}});
+  await f.pass();await f.pass();await f.pass();
+  assert.deepEqual(f.dialed,['取引先1','取引先2']);
+  assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>[i.state,i.outcome??null,i.attempts]),[['PENDING',null,1],['DONE','DECLINED',1]]);
+  f.advance(29*60_000);await f.pass();assert.equal(f.dialed.length,2,'not before the wait is over');
+  f.advance(2*60_000);await f.pass();await f.pass();assert.equal(f.dialed.length,3);
+  f.advance(31*60_000);await f.pass();await f.pass();assert.equal(f.dialed.length,4);
+  const done=f.batches.list(f.alice)[0];assert.equal(done.status,'FINISHED');assert.equal(done.items[0].attempts,3);assert.notEqual(done.items[0].outcome,'UNANSWERED');
+  f.advance(86400_000);await f.pass();assert.equal(f.dialed.length,4);
+}));
+test('a contact who never picks up ends as unanswered once the tries are used up; without retries there is one call',using(async f=>{
+  f.says(null);f.sales([f.contact(1).id],'retry-key-02',{retry:{count:1,minutes:30}});
+  await f.pass();await f.pass();f.advance(31*60_000);await f.pass();await f.pass();f.advance(31*60_000);await f.pass();await f.pass();
+  assert.equal(f.dialed.length,2);assert.deepEqual(f.batches.list(f.alice)[0].items.map(i=>[i.state,i.outcome,i.attempts]),[['DONE','UNANSWERED',2]]);
+  for(const retry of [{count:3,minutes:30},{count:1,minutes:10},{count:1,minutes:30,extra:1}])assert.equal(code(()=>f.sales([f.contact(2).id],'retry-key-03',{retry})),'invalid_batch_retry');
+}));

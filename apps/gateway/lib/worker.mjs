@@ -89,11 +89,12 @@ export class Worker {
   finished(current,connected) { this.store.audit(current.owner,'call.result',current.id,{mission:current.id,status:current.status,connected,carrierSid:current.carrierSid??null,doNotContact:current.result?.doNotContact===true,verified:Object.keys(current.result?.verified??{}),error:current.error??null}); }
   /** A wellbeing call's report: what the person said, topic by topic, and whether anyone answered at all. */
   checkIn(current,turns,connected) {
-    if(current.kind!=='phone-request'||current.direction==='inbound')return;
+    if(current.direction==='inbound')return;
     const report=checkInReport(turns),care=current.phoneRequest?.pace==='gentle';
     // Someone spoke on the other end, and it was not a recording. A voicemail greeting or a network announcement is not an answer.
     const machine=turns.some(t=>t.source==='callee'&&isMachineGreeting(t.text));if(machine)current.machineAnswered=true;
     current.answered=connected&&report.answered&&!machine;
+    if(current.kind!=='phone-request')return;
     if(care||report.items.some(i=>i.answer!=='not_asked'))current.result.checkIn=report;
     if(!this.alerts)return;
     // Nobody answered a call that was meant to find out how someone is: that is itself the finding.
