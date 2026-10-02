@@ -97,3 +97,11 @@ test('a stop a staff member set by hand is their team’s own; what the person s
   f.store.suppress('two',p,'manual');assert.equal(f.store.suppressed('two',p),true);assert.equal(f.store.suppressed('one',p),false);
   f.store.suppress('two',q,'transcript');assert.equal(f.store.suppressed('one',q),true);
 }));
+
+test('in a wellbeing call, a person who says their husband has died is not cut off or suppressed; in a sales call the same answer stops the calls',using(async f=>{
+  const m=f.approved();asRequest(f,m);
+  assert.equal(await hears(f,m,'主人は亡くなりました。'),false);assert.equal(f.store.suppressed('one',f.contact.phone),false);
+  const {stopContact}=await import('../lib/sales.mjs');
+  assert.equal(stopContact('主人は亡くなりました。'),true);assert.equal(stopContact('主人は亡くなりました。',{gone:false}),false);
+  assert.equal(stopContact('亡くなりましたので、もうかけないでください。',{gone:false}),true);
+}));

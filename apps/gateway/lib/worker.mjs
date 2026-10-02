@@ -158,7 +158,7 @@ export class Worker {
         }
         // A sales call ends at any refusal. In an ordinary request or an answered call, 「結構です」 answers a
         // question; only an explicit request not to be called again ends the call and suppresses the number.
-        if(e.source==='callee' && (current.kind==='phone-request'?stopContact(e.text):wantsNoContact(e.text))) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
+        if(e.source==='callee' && (current.kind==='phone-request'?stopContact(e.text,{gone:false}):wantsNoContact(e.text))) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
       }
       if(['call.connected','carrier.sid','callee.consent','recording.notice','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff','news.lookup','decision.made'].includes(e.type)) {
         this.store.event(current,e); this.store.put('mission',current);
