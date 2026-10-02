@@ -27,6 +27,10 @@ export const stopContact = t => STOP_CONTACT.test(normal(t));
 export const refusal = { test: t => REFUSAL.test(normal(t)) };
 /** Sales calls only: the callee asked not to be called again, or declined. Either way: stop this call and suppress the number. */
 export const wantsNoContact = t => stopContact(t) || refusal.test(t);
+// Someone on a business line who wants a person, not the AI. Deliberately about "talk to / put me through to", never a bare 「担当者」:
+// 「担当者に伝えてください」 is a message, not a transfer.
+const WANTS_PERSON = /(?:担当|係|人間|オペレーター|スタッフ|社員|店員|職員|責任者|上の(?:人|方|者)|店長|社長|誰か)[^。、]{0,10}(?:に|と|へ)[^。、]{0,6}(?:代わ|かわ|替わ|変わ|つな|繋|回し|まわし|話(?:し|せ|が|を))|(?:人|ひと)(?:と|に)(?:直接)?(?:話|代わ|かわ)|(?:AI|機械|ロボット|自動音声)(?:じゃ|では)(?:なく|ない(?:人|方))|(?:speak|talk) (?:to|with) (?:a |an )?(?:person|human|someone|agent|representative|staff)|transfer me|put me through/i;
+export const asksForPerson = t => WANTS_PERSON.test(normal(t));
 const uncertain = /仮(?:予約|押さえ)?|未確定|承認待ち|多分|たぶん|かもしれ|確認してから|検討|maybe|perhaps|tentative|not sure|pending/i;
 const negative = /キャンセル|取り消|無理|できません|難しい|だめ|ダメ|変更|cancel|cannot|can't|not available/i;
 const question = /[?？]|ですか|でしょうか|ませんか/;

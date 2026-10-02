@@ -368,12 +368,12 @@ export { PHONE_PURPOSE_TEMPLATES } from "./phone-templates.js";
  * one: it answers on the owner's behalf, takes the message, and promises nothing. `context` is what the service
  * already knows (for example that this number was called earlier, and why); it is data, not an instruction.
  */
-export function definePhoneInbound(call: { ownerName: string; callerPhone: string; callerName?: string; context?: string; business?: boolean; guidance?: { q: string; a: string }[] }, budget: Partial<CallContract["budget"]> = {}): CallContract {
+export function definePhoneInbound(call: { ownerName: string; callerPhone: string; callerName?: string; context?: string; business?: boolean; guidance?: { q: string; a: string }[]; transfer?: boolean }, budget: Partial<CallContract["budget"]> = {}): CallContract {
   const ownerName = call.ownerName.trim().slice(0, 40), context = call.context?.trim().slice(0, 600);
   // What the line may answer on its own: the operator's own short answers, never more than a page of them.
   const guidance = (call.guidance ?? []).slice(0, 30).map((g) => ({ q: String(g.q).trim().slice(0, 80), a: String(g.a).trim().slice(0, 300) })).filter((g) => g.q && g.a);
   return defineCall({ goal: "phone.inbound", language: "ja",
-    input: { ownerName, ...(context ? { context } : {}), ...(call.business ? { business: true } : {}), ...(guidance.length ? { guidance } : {}), policy: "着信への応対。AIであることと誰の電話かを最初に伝える。用件・名前・折り返し先を聞き取り、依頼者へ伝えると約束するだけにする。予約・購入・支払い・契約・個人情報の提供・依頼者の予定や居場所の回答は行わない。相手が切りたければ終了する。" },
+    input: { ownerName, ...(context ? { context } : {}), ...(call.business ? { business: true } : {}), ...(call.transfer ? { transfer: true } : {}), ...(guidance.length ? { guidance } : {}), policy: "着信への応対。AIであることと誰の電話かを最初に伝える。用件・名前・折り返し先を聞き取り、依頼者へ伝えると約束するだけにする。予約・購入・支払い・契約・個人情報の提供・依頼者の予定や居場所の回答は行わない。相手が切りたければ終了する。" },
     permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
     target: { phone: call.callerPhone, name: call.callerName?.trim().slice(0, 100) || "着信" },
   });

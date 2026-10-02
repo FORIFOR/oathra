@@ -58,3 +58,39 @@ test('two calls to the same number are never in progress together, however many 
   const again=f.service.prepare(f.u,{request:'もう一度提案',contactId:contact.id,productId:product.id}),r=f.service.review(f.u,again.id);
   assert.throws(()=>f.service.start(f.u,r.approvalToken,'key-again',true),/recipient_has_active_call/);
 },3));
+
+// ---------------------------------------------------------------------------------------------- a caller who asks for a person
+{
+  const { asksForPerson } = await import('../lib/sales.mjs');
+  for (const line of ['担当の方に代わってください', '人と話したいんですが', 'オペレーターにつないでください', '責任者と話をさせて', 'AIじゃなくて人に代わって', '誰か人間に代わってもらえますか', '店長に回してください', 'ｓｐｅａｋ　ｔｏ　ａ　ｐｅｒｓｏｎ', 'please transfer me'])
+    test(`asks for a person: ${line}`, () => assert.equal(asksForPerson(line), true));
+  for (const line of ['担当者に伝えてください', '担当の方はいらっしゃいますか', '予約をお願いします', 'AIですか', '人数は三人です', '担当者から折り返してください', 'スタッフの対応がよかったです', ''])
+    test(`does not ask for a person: ${line || '(empty)'}`, () => assert.equal(asksForPerson(line), false));
+
+  const inboundCall = (f, extra = {}) => { const m = { id: crypto.randomUUID(), owner: f.u.id, team: 'one', kind: 'phone-request', direction: 'inbound', status: 'DIALING', revision: 1, mode: 'live', maxSeconds: 180, origin: null, createdAt: start, target: { phone: '+819011112222', name: '着信' }, request: '着信',
+    phoneRequest: { schemaVersion: 1, kind: 'oathra.phone-request', phone: '+819011112222', name: '着信', instruction: '着信。用件を聞き取って伝えます。' }, inbound: { ownerName: '丸山商事', business: true }, ...extra }; f.store.put('mission', m); return m; };
+  const hear = async (f, m, lines, { handoff = true } = {}) => { let asked = 0;
+    const w = new Worker(f.service, { process: async () => {}, send: async () => {} }, async (_, hooks) => { if (handoff) hooks.control.handoff = async () => { asked++; return { requested: true }; }; hooks.onEvent({ type: 'call.connected' });
+      lines.forEach((text, i) => hooks.onEvent({ type: 'transcript.final', turnId: `t${i}`, source: 'callee', text })); await new Promise(r => setImmediate(r)); return {}; }); w.log = () => {};
+    await w.run(m, { id: m.id, abort: new AbortController(), control: {} }); return asked; };
+  test('a caller who asks for a person is put through once, where the operator named a number', using(async f => {
+    f.config.inbound = { transferTo: '+81312345678' };
+    assert.equal(await hear(f, inboundCall(f), ['営業時間を教えてください', '担当の方に代わってください', '人と話したいんです']), 1);
+  }));
+  test('without a transfer number, or on a call we placed, nobody is put through', using(async f => {
+    f.config.inbound = {};
+    assert.equal(await hear(f, inboundCall(f), ['担当の方に代わってください']), 0);
+    f.config.inbound = { transferTo: '+81312345678' };
+    assert.equal(await hear(f, inboundCall(f, { direction: undefined, inbound: undefined }), ['担当の方に代わってください']), 0);
+    assert.equal(await hear(f, inboundCall(f), ['担当者に伝えてください']), 0);
+  }));
+  test('a transfer that cannot be made leaves the call going and is recorded', using(async f => {
+    f.config.inbound = { transferTo: '+81312345678' };
+    const m = inboundCall(f); let ended = false;
+    const w = new Worker(f.service, { process: async () => {}, send: async () => {} }, async (_, hooks) => { hooks.control.handoff = async () => { const e = new Error('metered_handoff_not_supported'); e.code = 'metered_handoff_not_supported'; throw e; };
+      hooks.onEvent({ type: 'call.connected' }); hooks.onEvent({ type: 'transcript.final', turnId: 't0', source: 'callee', text: '担当の方に代わってください' }); await new Promise(r => setImmediate(r)); ended = hooks.signal.aborted; return {}; }); w.log = () => {};
+    await w.run(m, { id: m.id, abort: new AbortController(), control: {} });
+    assert.equal(ended, false);
+    assert.deepEqual(f.store.events(m.id, m.owner).filter(e => e.type.startsWith('transfer.')).map(e => [e.type, e.code ?? null]), [['transfer.requested', null], ['transfer.failed', 'metered_handoff_not_supported']]);
+  }));
+}

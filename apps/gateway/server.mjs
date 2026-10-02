@@ -58,7 +58,9 @@ export function configuration(env=process.env){
     let guidance=[];
     if(env.OATHRA_INBOUND_GUIDANCE_JSON){try{guidance=JSON.parse(env.OATHRA_INBOUND_GUIDANCE_JSON)}catch{throw new Fault(500,'configure_inbound_guidance_json')}
       assert(Array.isArray(guidance)&&guidance.length<=30&&guidance.every(g=>g&&typeof g.q==='string'&&typeof g.a==='string'&&g.q.trim()&&g.a.trim()&&g.q.length<=80&&g.a.length<=300&&Object.keys(g).every(k=>['q','a'].includes(k))),'configure_inbound_guidance_json',500);}
-    inbound={business:env.OATHRA_INBOUND_BUSINESS==='true',guidance,hours:hours(env,'OATHRA_INBOUND_HOURS',null),owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
+    // Where a caller who asks for a person is put through. A plain carrier transfer: nothing after it is recorded or transcribed.
+    const transferTo=env.OATHRA_INBOUND_TRANSFER_TO||null;assert(!transferTo||(/^\+[1-9]\d{7,14}$/.test(transferTo)&&transferTo!==env.TWILIO_PHONE_NUMBER),'invalid_OATHRA_INBOUND_TRANSFER_TO',500);
+    inbound={transferTo,business:env.OATHRA_INBOUND_BUSINESS==='true',guidance,hours:hours(env,'OATHRA_INBOUND_HOURS',null),owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
   }
   // Metered billing prices one voice model per minute (billing.mjs), so a second engine is only offered under the fixed per-call policy.
   const geminiReady=!!env.GEMINI_API_KEY&&billing.policy!==METERED;

@@ -285,7 +285,7 @@ export class Phone {
     const restaurant=m.inbound?.reception?this.config.inbound?.restaurant:null;assert(!m.inbound?.reception||restaurant,'restaurant_not_configured',409);
     const contract=restaurant?defineRestaurantReception({restaurantName:restaurant.name,callerPhone:m.target.phone,callerName:m.target.name,today:tokyoDate(this.store.now()),seatings:Object.keys(restaurant.slots).sort(),maxParty:restaurant.maxParty,
         ...(restaurant.closedWeekdays?.length||restaurant.closedDates?.length?{closedNote:[restaurant.closedWeekdays?.length?'毎週'+restaurant.closedWeekdays.map(d=>'日月火水木金土'[d]+'曜').join('・'):'',...(restaurant.closedDates??[]).filter(d=>d>=tokyoDate(this.store.now())).slice(0,6)].filter(Boolean).join('、')}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
-      :m.direction==='inbound'?definePhoneInbound({ownerName:m.inbound.ownerName,callerPhone:m.target.phone,callerName:m.target.name,...(m.inbound.context?{context:m.inbound.context}:{}),...(m.inbound.business?{business:true,guidance:this.config.inbound?.guidance??[]}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
+      :m.direction==='inbound'?definePhoneInbound({ownerName:m.inbound.ownerName,callerPhone:m.target.phone,callerName:m.target.name,...(m.inbound.context?{context:m.inbound.context}:{}),...(m.inbound.business?{business:true,guidance:this.config.inbound?.guidance??[]}:{}),...(this.config.inbound?.transferTo&&m.creditQuote?.policy!==METERED?{transfer:true}:{})},{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd})
       :m.kind==='phone-request'?definePhoneRequest(m.phoneRequest,{maxDurationMs:m.maxSeconds*1000,maxCostUsd:m.maxUsd}):defineCall({goal:`sales.${m.goal}`,target:{phone:m.target.phone,name:m.target.name},language:'ja',
       input:{ request:m.request,product_name:m.product.name,reviewed_facts:m.product.facts,candidate_slots:m.candidateSlots,
         policy:SALES_CALL_POLICY,
@@ -300,7 +300,9 @@ export class Phone {
     hooks.control.handoff=async()=>{
       assert(m.creditQuote?.policy!==METERED,'metered_handoff_not_supported',409);
       const u=this.service.user(m.owner), account=this.service.account(u);
-      verifiedOperatorNumber(account, m.target.phone);
+      // An answered call goes to the number the operator named for it; a call we placed goes to the owner's own verified phone.
+      const transferTo=m.direction==='inbound'?this.config.inbound?.transferTo:null;
+      if(m.direction==='inbound')assert(transferTo&&transferTo!==m.target.phone,'transfer_number_not_configured',409);else verifiedOperatorNumber(account, m.target.phone);
       assert(carrier.sid && carrier.streamSid && !carrier.ended && !carrier.transferred,'call_not_ready_for_handoff',409);
       const current=this.store.get('mission',m.id), token=random();
       this.store.setKey('handoff',token,m.id,86400_000);
@@ -308,7 +310,7 @@ export class Phone {
       const callback=this.config.publicUrl+'/hooks/twilio/handoff/'+token;
       const remaining=Math.max(1,Math.floor(m.maxSeconds-(Date.now()-carrier.started)/1000)); assert(remaining>=20,'insufficient_time_for_handoff',409);
       carrier.clear(); carrier.transferring=true;
-      try { await this.update(carrier.sid,{Twiml:`<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">担当者におつなぎします。</Say><Dial timeout="15" timeLimit="${remaining}" callerId="${xml(this.config.callerId)}"><Number statusCallback="${xml(callback)}" statusCallbackEvent="answered completed" statusCallbackMethod="POST">${xml(account.verifiedPhone)}</Number></Dial><Hangup/></Response>`});
+      try { await this.update(carrier.sid,{Twiml:`<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">担当者におつなぎします。</Say><Dial timeout="15" timeLimit="${remaining}" callerId="${xml(this.config.callerId)}"><Number statusCallback="${xml(callback)}" statusCallbackEvent="answered completed" statusCallbackMethod="POST">${xml(transferTo??account.verifiedPhone)}</Number></Dial><Hangup/></Response>`});
       } catch(error) { carrier.transferring=false; carrier.closing=null; await carrier.hangup(); const failed=this.store.get('mission',m.id); failed.handoff={status:'UNKNOWN'}; failed.status='UNKNOWN'; this.store.put('mission',failed); throw new Fault(502,'handoff_outcome_unknown'); }
       carrier.transferring=false; carrier.transferred=true; carrier.finish(); this.store.audit(u.id,'call.handoff_requested',m.id,{mission:m.id,carrierSid:carrier.sid}); return {requested:true,connected:false};
     };
