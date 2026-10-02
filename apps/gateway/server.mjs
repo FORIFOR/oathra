@@ -161,7 +161,7 @@ export async function createGateway(config,options={}){
   const alerts=new Alerts(service,alertConfiguration(env),{...(options.fetchImpl?{fetchImpl:options.fetchImpl}:{}),...(options.resolve?{resolve:options.resolve}:{})});
   const schedules=new Schedules(service,alerts);
   // Each contact says whether this team has stopped calling it, so the list can show that and offer the release.
-  const contactsView=u=>store.list('contact',u.id).map(x=>{const by=x.phone?store.suppressionSource(u.team,x.phone):null;return {...x,suppressed:!!by,...(by?{suppressedBy:by}:{})};});
+  const contactsView=u=>store.list('contact',u.id).map(x=>{const stop=x.phone?store.suppression(u.team,x.phone):null;return {...x,suppressed:!!stop,...(stop?{suppressedBy:stop.by,suppressedHow:stop.how,suppressedAt:stop.at}:{})};});
   const batches=new Batches(service,alerts);
   const worker=new Worker(service,channels,execute,alerts,schedules,batches),limits=new Map();worker.planEveryMs=options.planEveryMs??5000;
   const server=createServer(async(req,res)=>{

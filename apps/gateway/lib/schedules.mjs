@@ -65,11 +65,17 @@ export class Schedules {
   view(schedule) {
     const runs = this.store.all('schedule-run', schedule.owner).filter(r => r.scheduleId === schedule.id).sort((a, b) => a.id < b.id ? 1 : -1).slice(0, 14);
     // Count the days the schedule actually rings on, from today to the end date, in Japan time.
-    let days = 0; for (let t = this.store.now(); t < schedule.until && days < 100; t += 86400_000) if (schedule.weekdays.includes(jst(t).weekday)) days++;
+    // Every listed time on a chosen weekday that is still ahead and before the end, in Japan time.
+    const now = this.store.now(); let days = 0, occurrences = 0;
+    for (let t = now, n = 0; n < 100; t += 86400_000, n++) {
+      const d = jst(t); if (!schedule.weekdays.includes(d.weekday)) continue;
+      const ahead = schedule.times.filter(time => { const at = Date.parse(`${d.date}T${time}:00+09:00`); return at >= now && at < schedule.until; }).length;
+      if (ahead) { days++; occurrences += ahead; }
+    }
     const { fingerprint, ...rest } = schedule;
     return { ...rest, until: new Date(schedule.until).toISOString(), runs: runs.map(r => ({ date: r.date, time: r.time, state: r.state, reason: r.reason ?? null, attempts: r.attempts.length, missionId: r.attempts.at(-1)?.missionId ?? null })),
       // An upper bound for the approval screen, not a forecast: every listed time on every remaining chosen weekday, with every retry.
-      bounds: { days, callsUpperBound: days * schedule.times.length * (1 + schedule.retries.count) } };
+      bounds: { days, occurrences, callsUpperBound: occurrences * (1 + schedule.retries.count) } };
   }
   list(owner) { return this.store.all('schedule', owner.id).sort((a, b) => b.createdAt - a.createdAt).map(x => this.view(x)); }
   set(owner, id, status) {

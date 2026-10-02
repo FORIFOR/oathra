@@ -62,10 +62,17 @@ export class Store {
   suppress(team, phone, source = 'true') {
     const k = mac(this.cipherKey, phone);
     // The person's own key press is never written over: a later manual or transcript entry must not make it releasable.
-    for (const scope of [`suppress:${team}`, 'suppress:*']) if (!/dtmf/.test(this.key(scope, k) ?? '')) this.setKey(scope, k, source);
+    // The value is "<how>@<when>": enough to tell the person looking at the contact how and when the calls were stopped.
+    for (const scope of [`suppress:${team}`, 'suppress:*']) if (!/dtmf/.test(this.key(scope, k) ?? '')) this.setKey(scope, k, `${source}@${this.now()}`);
   }
   /** How this team's stop on a number came about: 'recipient' (their own key press), 'other', or null when there is none. */
-  suppressionSource(team, phone) { const k = mac(this.cipherKey, phone), v = this.key(`suppress:${team}`, k) ?? this.key('suppress:*', k); return !v ? null : /dtmf/.test(v) ? 'recipient' : 'other'; }
+  suppressionSource(team, phone) { return this.suppression(team, phone)?.by ?? null; }
+  /** `{ by: 'recipient'|'other', how: 'key_press'|'said'|'manual'|'unknown', at }` or null. Entries from before the time was kept have no `at`. */
+  suppression(team, phone) {
+    const k = mac(this.cipherKey, phone), v = this.key(`suppress:${team}`, k) ?? this.key('suppress:*', k); if (!v) return null;
+    const [source, at] = v.split('@'), key = /dtmf/.test(source);
+    return { by: key ? 'recipient' : 'other', how: key ? 'key_press' : ['transcript', 'verdict'].includes(source) ? 'said' : source === 'manual' ? 'manual' : 'unknown', at: Number(at) ? new Date(Number(at)).toISOString() : null };
+  }
   /** Lifts this team's suppression, and the shared one only when no other team still holds the number. */
   unsuppress(team, phone) {
     const k = mac(this.cipherKey, phone), held = this.key(`suppress:${team}`, k);

@@ -57,7 +57,7 @@ test('the same key returns the same schedule; a changed request under that key i
   assert.equal(code(()=>f.create({times:['10:00']})),'idempotency_conflict');
   assert.equal(a.bounds.callsUpperBound,30*1*3);assert.equal(a.fingerprint,undefined);
   // Only the chosen weekdays are counted: Fridays from 2 Oct to 31 Oct 2026 are five.
-  assert.deepEqual(f.create({weekdays:[5],retries:{count:1,minutes:30}},'weekday-key-1').bounds,{days:5,callsUpperBound:10});
+  assert.deepEqual(f.create({weekdays:[5],retries:{count:1,minutes:30}},'weekday-key-1').bounds,{days:5,occurrences:5,callsUpperBound:10});
 }));
 
 test('nothing is dialled before the time; at the time one call goes through the ordinary path and is recorded',using(async f=>{
