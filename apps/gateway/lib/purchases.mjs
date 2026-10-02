@@ -271,7 +271,9 @@ export class Purchases {
       const o = typeof supplied.metadata?.oathra_order === 'string' ? this.store.get(KIND, supplied.metadata.oathra_order) : null;
       if (!o) assert(supplied.metadata?.oathra_contract !== CONTRACT || supplied.metadata?.oathra_service !== hash(this.config.publicUrl).slice(0, 32), 'purchase_record_missing', 409);
       if (o) {
-        this.validateSession(o, supplied, false);
+        // A signed event that contradicts its order is a finding for the operator, the same as a mismatch found by reconciliation.
+        try { this.validateSession(o, supplied, false); }
+        catch (error) { this.block(o, 'payment_record_mismatch'); throw error; }
         this.store.tx(() => { this.bindTx('session', supplied.id, o.id); this.update(o.id, { sessionId: supplied.id }); });
         await this.reconcileOrder(this.store.get(KIND, o.id)); orderId = o.id;
       }

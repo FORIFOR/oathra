@@ -59,6 +59,6 @@ export function checkPrereleaseCall(store,config,mission) {
   }
   assert(ownerCalls<p.dailyCallsPerAccount,'prerelease_call_limit',429);
   assert(globalCalls<p.globalDailyCalls,'prerelease_global_call_limit',429);
-  assert(p.dailyUsdPerAccount>0&&ownerUsd+mission.estimatedMaximumUsd<=p.dailyUsdPerAccount,'prerelease_budget_limit',429);
-  assert(p.globalDailyUsd>0&&globalUsd+mission.estimatedMaximumUsd<=p.globalDailyUsd,'prerelease_global_budget_limit',429);
+  assert(p.dailyUsdPerAccount>0&&ownerUsd+mission.estimatedMaximumUsd<=p.dailyUsdPerAccount+1e-9,'prerelease_budget_limit',429);
+  assert(p.globalDailyUsd>0&&globalUsd+mission.estimatedMaximumUsd<=p.globalDailyUsd+1e-9,'prerelease_global_budget_limit',429);
 }

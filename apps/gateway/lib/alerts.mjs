@@ -8,7 +8,7 @@ import { createHmac } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { assert, publicIPv4 } from './security.mjs';
 
-const LEVELS = ['concern', 'emergency'];
+const LEVELS = ['notice', 'concern', 'emergency'];
 export const worse = (a, b) => LEVELS.indexOf(a) >= LEVELS.indexOf(b) ? a : b;
 
 /** `null` when no endpoint is configured. A half-configured endpoint stops the service from starting. */
@@ -24,6 +24,7 @@ export function alertSignature(secret, timestamp, body) { return `t=${timestamp}
 const TEXT = {
   distress: m => `【要確認】${m.target.name}さんとの電話で、体調や安全に関わる発言がありました。内容をすぐに確認してください。`,
   unanswered: m => `【要確認】${m.target.name}さんへの電話に応答がありませんでした。`,
+  inbound: m => `【着信】${m.target.name}さんからお電話がありました。用件を確認してください。`,
   checkin: m => `【要確認】${m.target.name}さんへの電話で、確認が必要な回答がありました。`,
 };
 

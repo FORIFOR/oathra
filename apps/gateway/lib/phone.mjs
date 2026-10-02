@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault, jsonFetch, random, twilioSignature } from './security.mjs';
 import { METERED, USAGE_RATE, carrierCost } from './billing.mjs';
+import { withinHours } from './service.mjs';
 
 const xml = s => String(s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
 export const RECORDING_NOTICE='この通話は記録されています。';
@@ -147,7 +148,6 @@ export class Phone {
   inbound(params) {
     // This release accepts explicitly approved outbound calls only. Reject before answering or reserving credits.
     if(this.config.prerelease?.enabled)return '<Response><Reject reason="rejected"/></Response>';
-    const withinHours=(ms,h)=>{const t=new Date(ms+9*3600_000),m=t.getUTCHours()*60+t.getUTCMinutes(),mm=v=>Number(v.slice(0,2))*60+Number(v.slice(3));const a=mm(h.from),b=mm(h.to);return a<b?m>=a&&m<b:m>=a||m<b;};
     const from=String(params.From??''),callSid=String(params.CallSid??''),known=/^\+[1-9]\d{7,14}$/.test(from)&&/^CA[a-f0-9]{32}$/i.test(callSid);
     // A shared caller ID cannot identify which customer a shop is calling back. Never guess between owners.
     const cfg=this.config.inbound,reception=!!cfg?.restaurant,candidates=[];
@@ -166,6 +166,8 @@ export class Phone {
       const token=random();if(known&&owner)this.store.setKey('inbound-optout',token,this.store.seal({team:owner.team,owner:owner.id,phone:from}),3600_000);
       const who=earlier?(earlier.phoneRequest?.callerName?`先ほどのお電話は、${earlier.phoneRequest.callerName}さんのご依頼で、AIが代わりにおかけしたものです。`:'先ほどのお電話は、お知り合いの方のご依頼で、AIが代わりにおかけしたものです。'):'';
       const stop=known&&owner?`<Gather numDigits="1" timeout="6" action="${xml(this.config.publicUrl+'/hooks/twilio/inbound-optout/'+token)}" method="POST"><Say language="ja-JP" voice="${NOTICE_VOICE}">今後、この番号からのお電話を希望されない場合は、数字の2を押してください。</Say></Gather>`:'';
+      // A shop's own line is not "a number for outgoing calls": say whose line it is and when to try again.
+      if(reception)return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。${xml(cfg.restaurant.name)}です。${reason==='outside_business_hours'?'ただいまの時間は、お電話の受付時間外です。':'ただいま、お電話をお受けできません。'}おそれいりますが、時間をおいて、おかけ直しください。</Say>${stop}<Hangup/></Response>`;
       return `<Response><Say language="ja-JP" voice="${NOTICE_VOICE}">お電話ありがとうございます。こちらは、AIによる代理電話サービス、${xml(this.env.OATHRA_BUSINESS_NAME??'Oathra')}の発信用の番号です。${xml(who)}ただいま、この番号ではお電話をお受けできません。</Say>${stop}<Hangup/></Response>`;
     };
     if(!known)return announce('unknown_caller');
@@ -173,6 +175,7 @@ export class Phone {
     if(!cfg||!owner||this.config.mode!=='live'||!this.config.liveReady)return announce('inbound_not_enabled');
     if(this.service.account(owner).purchaseBlocked)return announce('purchase_account_blocked');
     if(this.store.suppressed(owner.team,from))return announce('caller_opted_out');
+    if(cfg.hours&&!withinHours(this.store.now(),cfg.hours))return announce('outside_business_hours');
     if(pref?.hours&&!withinHours(this.store.now(),pref.hours))return announce('outside_owner_hours');
     if(pref?.mode==='decline')return announce('owner_declined');
     if(pref?.mode==='forward'){

@@ -150,6 +150,8 @@ export class Worker {
       const current=this.store.get('mission',m.id);
       current.result=result; current.transcript=turns; current.runtimeResult=outcome.result??null;
       this.checkIn(current,turns,connected);
+      // A call that was answered for someone is only useful once they know it happened.
+      if(current.direction==='inbound'&&connected)this.alerts?.raise(current,'inbound','notice');
       current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':active.abort.signal.aborted?'INCOMPLETE':result.status;
       if(current.handoff?.status && current.handoff.status!=='COMPLETED') current.status=current.handoff.status==='UNKNOWN'?'UNKNOWN':current.handoff.status==='CONNECTED'?'HANDOFF_ACTIVE':'HANDOFF_PENDING';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';

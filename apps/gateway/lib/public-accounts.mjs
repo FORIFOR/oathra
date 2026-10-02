@@ -11,7 +11,7 @@ function publicHttps(value,{origin=false}={}) {
   try {
     if(typeof value!=='string'||value.length>2048)return null;
     const u=new URL(value);
-    if(u.protocol!=='https:'||u.username||u.password||u.hash||u.search||u.port||isIP(u.hostname)||!u.hostname.includes('.')||/^(localhost|127\.)/.test(u.hostname)||/\.(localhost|local|test|invalid|example|internal|trycloudflare\.com)$/.test(u.hostname))return null;
+    if(u.protocol!=='https:'||u.username||u.password||u.hash||u.search||u.port||isIP(u.hostname)||!u.hostname.includes('.')||u.hostname.endsWith('.')||/^(localhost|127\.)/.test(u.hostname)||/\.(localhost|local|test|invalid|example|internal|trycloudflare\.com)$/.test(u.hostname))return null;
     if(origin&&u.pathname!=='/')return null;
     return origin?u.origin:u.href;
   }catch{return null;}

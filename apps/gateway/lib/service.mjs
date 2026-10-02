@@ -6,6 +6,8 @@ import { normalizePhoneNumber, extractPhoneNumber, preparePhoneRequest } from '.
 import { assert, Fault, hash, phone, random, text } from './security.mjs';
 
 export const terminal = s => ['COMPLETED','INCOMPLETE','DECLINED','FAILED','CANCELLED','UNKNOWN'].includes(s);
+/** Japan time. `{from:'09:00',to:'20:00'}`; a window that crosses midnight (22:00-06:00) is the hours outside the day. */
+export function withinHours(ms, h) { const t = new Date(ms + 9 * 3600_000), m = t.getUTCHours() * 60 + t.getUTCMinutes(), mm = v => Number(v.slice(0, 2)) * 60 + Number(v.slice(3)); const a = mm(h.from), b = mm(h.to); return a < b ? m >= a && m < b : m >= a || m < b; }
 export class Service {
   constructor(store, config) { this.store = store; this.config = config; this.credits = new Credits(store, config); this.passwords = new PasswordAccounts(store,config); }
   user(id) {
@@ -209,6 +211,8 @@ export class Service {
     return { grant, m };
   }
   checkPolicy(u, m) {
+    // Real calls to other people keep to the hours the operator set: sales calls by default, ordinary requests when configured.
+    if (m.mode === 'live' && !m.testOnMe && m.direction !== 'inbound') { const hours = this.config.callHours?.[m.kind === 'phone-request' ? 'request' : 'sales']; assert(!hours || withinHours(this.store.now(), hours), 'outside_calling_hours', 409); }
     checkPrereleaseCall(this.store,this.config,m);
     this.checkContact(u, m);
     assert(JSON.stringify(m.creditQuote ?? (this.credits.enabled ? null : this.credits.quote(m.mode,m.target?.phone))) === JSON.stringify(this.credits.currentQuote(m)), 'credit_price_changed_review_again', 409);

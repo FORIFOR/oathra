@@ -26,6 +26,8 @@ import { billingConfiguration, METERED } from './lib/billing.mjs';
 import { assert, Fault, hash, importProduct, text } from './lib/security.mjs';
 import { repoUrl } from './lib/paths.mjs';
 
+/** `HH:MM-HH:MM` in Japan time, or `off`. */
+function hours(env,key,fallback){const v=env[key]??fallback;if(!v||v==='off')return null;assert(/^(?:[01]\d|2[0-3]):[0-5]\d-(?:[01]\d|2[0-3]):[0-5]\d$/.test(v)&&v.slice(0,5)!==v.slice(6),`invalid_${key}`,500);return {from:v.slice(0,5),to:v.slice(6)};}
 function number(env,key,fallback,min,max){const n=Number(env[key]??fallback);assert(Number.isFinite(n)&&n>=min&&n<=max,`invalid_${key}`,500);return n;}
 const isLoopback=a=>/^(127\.|::1$|::ffff:127\.)/.test(String(a??''));
 export function configuration(env=process.env){
@@ -50,7 +52,7 @@ export function configuration(env=process.env){
     let restaurant=null;
     if(env.OATHRA_RESTAURANT_JSON){try{restaurant=parseDeskConfig(JSON.parse(env.OATHRA_RESTAURANT_JSON))}catch{throw new Fault(500,'configure_restaurant_json')}}
     const name=String(env.OATHRA_INBOUND_NAME??'').trim();assert(restaurant||(name.length>0&&name.length<=40&&!/[\d@<>{}]/.test(name)),'configure_inbound_name',500);
-    inbound={owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
+    inbound={hours:hours(env,'OATHRA_INBOUND_HOURS',null),owner:env.OATHRA_INBOUND_OWNER,name:restaurant?restaurant.name:name,restaurant,maxSeconds:number(env,'OATHRA_INBOUND_MAX_SECONDS',180,30,600),perCallerPerHour:number(env,'OATHRA_INBOUND_PER_CALLER_PER_HOUR',3,1,60),perHour:number(env,'OATHRA_INBOUND_PER_HOUR',12,1,600)};
   }
   // Metered billing prices one voice model per minute (billing.mjs), so a second engine is only offered under the fixed per-call policy.
   const geminiReady=!!env.GEMINI_API_KEY&&billing.policy!==METERED;
@@ -65,6 +67,8 @@ export function configuration(env=process.env){
   return {deployment,creditsPerCall,billing,mode,users,publicUrl,liveReady,missing,inbound,prerelease,newsAvailable:true,callerId:env.TWILIO_PHONE_NUMBER,businessName:env.OATHRA_BUSINESS_NAME??null,consentVersion:'2026-09-19-v1',voiceEngines,defaultVoiceEngine,geminiLiveModel:env.OATHRA_GEMINI_LIVE_MODEL??'gemini-3.8-live',
     localOpen:env.OATHRA_LOCAL_OPEN==='true',dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     ...limits,
+    // Sales calls keep to daytime hours unless the operator says otherwise; ordinary requests are unrestricted unless set.
+    callHours:{sales:hours(env,'OATHRA_SALES_CALL_HOURS','09:00-20:00'),request:hours(env,'OATHRA_REQUEST_CALL_HOURS',null)},
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),
     // Only set this when the gateway is reachable exclusively through a reverse proxy that overwrites X-Forwarded-For.
     trustProxy:env.OATHRA_TRUST_PROXY==='true'};
