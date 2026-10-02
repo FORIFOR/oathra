@@ -1,0 +1,11 @@
+{
+  "observedAt": "2026-10-01T18:21:11.011Z",
+  "method": "Existing history aggregate only; no identifiers or text saved",
+  "observed": {
+    "existingRecords": 26,
+    "withNotes": 8,
+    "withVerifiedNotes": 0,
+    "withTranscript": 21
+  },
+  "evidenceReportCoverage": "BLOCKED: no existing verified evidence notes in current phone history; selected existing report is a conversation-only report, not a booking-verification success"
+}

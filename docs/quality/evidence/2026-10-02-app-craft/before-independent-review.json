@@ -1,0 +1,81 @@
+{
+  "recordedAt": "2026-10-01T18:07:05.116Z",
+  "reviewer": "Independent reviewer; did not edit product code",
+  "environment": {
+    "preview": "preview.json",
+    "sources": "before-source.json",
+    "browser": "Local Chrome responsive viewport; no physical-device claim"
+  },
+  "scope": "Authenticated app first-use preparation, existing report and settings",
+  "checks": [
+    {
+      "id": "find-primary-tasks",
+      "method": "Actual pointer exploration before reading implementation",
+      "expected": "Find preparation, existing result and configuration without implementer directions",
+      "observed": "Home header opens blank request; latest-report action opens an existing record and transcript; desktop Settings opens configuration.",
+      "status": "PASS",
+      "evidence": [
+        "before-new-1440.png",
+        "before-authenticated-captures.json"
+      ]
+    },
+    {
+      "id": "mobile-global-navigation",
+      "method": "390px actual browser screenshot",
+      "expected": "Settings is discoverable in the visible navigation",
+      "observed": "Settings label is clipped at the right edge with weak horizontal-scroll affordance.",
+      "status": "FAIL",
+      "priority": "P2",
+      "evidence": [
+        "before-new-390.png"
+      ]
+    },
+    {
+      "id": "mobile-settings-density",
+      "method": "390px first settings render",
+      "expected": "Reach the current settings without passing a long menu",
+      "observed": "Original six-item vertical menu consumed roughly 300px before settings content. First capture was subsequently replaced by a privacy-corrected intermediate capture, so this observation is not backed by an unchanged-before image.",
+      "status": "FAIL",
+      "priority": "P2",
+      "evidence": [
+        "before-authenticated-captures.json"
+      ]
+    },
+    {
+      "id": "report-evidence-priority",
+      "method": "Existing report at 1440px and 390px, request/transcript masked without changing original layout",
+      "expected": "Read the result and find supporting conversation promptly",
+      "observed": "Long original request occupies the mobile result area; desktop conversation is near the bottom below a large empty region. Layout metrics are being checked separately.",
+      "status": "FAIL",
+      "priority": "P2",
+      "evidence": [
+        "before-report-1440-redacted.png",
+        "before-report-390-redacted.png"
+      ]
+    },
+    {
+      "id": "new-business-success",
+      "method": "No save or call performed",
+      "expected": "Validate an actual new prepared request, approval and completed result",
+      "observed": "No authorized new real request supplied and synthetic records forbidden. Existing record reading does not establish new production call success.",
+      "status": "BLOCKED",
+      "evidence": []
+    },
+    {
+      "id": "navigation-race",
+      "method": "Real CDP 800ms latency and pointer navigation; complete Fetch settling observed",
+      "expected": "Latest route determines current view",
+      "observed": "new→home produced URL #/ with rendered title 電話を頼む; cost→home passed.",
+      "status": "FAIL",
+      "priority": "P2",
+      "evidence": [
+        "navigation-race-observed.json"
+      ]
+    }
+  ],
+  "limitations": [
+    "Current comparison includes two completely unchanged-before new-request images and six explicitly intermediate privacy-redacted images.",
+    "Sensitive transcript, identities and request content are not available in screenshots; some static copy was also masked conservatively.",
+    "No mocked response, fabricated record, paid call, payment, email or setting save was used."
+  ]
+}

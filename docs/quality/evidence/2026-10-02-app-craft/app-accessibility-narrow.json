@@ -1,0 +1,100 @@
+{
+  "observedAt": "2026-10-01T18:19:29.889Z",
+  "method": "Actual Chrome keyboard Enter/Tab; native empty form validation; 720px reflow and CSS zoom 200%, reduced-motion media. Existing operator records only.",
+  "sourceBefore": {
+    "apps/gateway/public/app/app.js": "1003cccdbf85f8be694f0d3c9cb1b067bc138778fa74a2552e5ede6b64c9e80e",
+    "apps/gateway/public/app/style.css": "eac00754ff659d6ef0f5c2cd8acb79eb5c474b261b5c64a6653b036f8717ed69"
+  },
+  "checks": [
+    {
+      "id": "report_details_keyboard",
+      "expected": "Enter expands and collapses original request; focus visible",
+      "observed": {
+        "open": true,
+        "closed": true,
+        "summaryFocused": true,
+        "visibleOutline": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "products_native_empty_validation",
+      "expected": "Native validation focuses first missing required field without sending a request",
+      "observed": {
+        "focusedField": "product-name",
+        "invalid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "product_keyboard_order",
+      "expected": "Tab advances from name to facts field",
+      "observed": {
+        "id": "product-facts",
+        "tag": "TEXTAREA"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "720_reflow",
+      "expected": "Read-only request, product and report views fit 720px",
+      "observed": [
+        {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "innerWidth": 720
+        },
+        {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "innerWidth": 720
+        },
+        {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "innerWidth": 720
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "css_zoom_200",
+      "expected": "CSS zoom 200% fits horizontal viewport on empty product settings",
+      "observed": {
+        "cssZoom": "2",
+        "clientWidth": 1440,
+        "scrollWidth": 1440,
+        "headingInViewport": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "reduced_motion",
+      "expected": "Reduced-motion preference applied and existing live indicator has no animation",
+      "observed": {
+        "preference": true,
+        "liveDotAnimation": "none"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "no_business_writes",
+      "expected": "No POST/PUT/PATCH/DELETE outside session lifecycle",
+      "observed": {
+        "count": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "runtimeExceptions": 0,
+  "sourceAfter": {
+    "apps/gateway/public/app/app.js": "1003cccdbf85f8be694f0d3c9cb1b067bc138778fa74a2552e5ede6b64c9e80e",
+    "apps/gateway/public/app/style.css": "eac00754ff659d6ef0f5c2cd8acb79eb5c474b261b5c64a6653b036f8717ed69"
+  },
+  "sourceUnchanged": true,
+  "limitations": [
+    "CSS zoom and 720px reflow are measured separately; native browser 200% zoom was not verified.",
+    "No screen-reader, Japanese IME, physical mobile device, active call, new record persistence or paid/email action.",
+    "Contact form has no browser required constraints; only read-only field labelling and actual empty state were reviewed."
+  ]
+}

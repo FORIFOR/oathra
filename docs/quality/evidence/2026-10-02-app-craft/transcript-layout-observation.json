@@ -1,0 +1,24 @@
+{
+  "observedAt": "2026-10-01T18:06:28.910Z",
+  "method": "Read-only real existing report; numeric layout metrics only; no transcript text saved",
+  "observed": {
+    "viewportHeight": 900,
+    "transcriptTop": 250.984375,
+    "transcriptBottom": 1018.984375,
+    "justifyContent": "flex-end",
+    "lineCount": 2,
+    "lineBounds": [
+      {
+        "top": 807.203125,
+        "bottom": 891.203125
+      },
+      {
+        "top": 891.203125,
+        "bottom": 994.984375
+      }
+    ],
+    "scrollTop": 0,
+    "scrollHeight": 768,
+    "clientHeight": 768
+  }
+}

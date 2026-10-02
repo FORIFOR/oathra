@@ -390,3 +390,18 @@ fieldset.choices .choice b { text-align: left; }
 :root:not([data-theme="dark"]) input:focus, :root:not([data-theme="dark"]) textarea:focus, :root:not([data-theme="dark"]) select:focus, :root:not([data-theme="dark"]) button:focus-visible { outline-color: var(--ink); }
 /* The header's 設定・ログアウト stay plain text links in Ring Zero too (the quiet-button white fill is for the page). */
 :root:not([data-theme="dark"]) header button.quiet.small, :root:not([data-theme="dark"]) header button.quiet.small:hover { background: transparent; border: 0; }
+
+/* Keep detailed settings connected to the application, including narrow screens. */
+.workspace-back { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-size: 13px; text-underline-offset: 4px; }
+.workspace-login { display: flex; justify-content: center; align-items: center; min-height: 48px; margin: 22px auto; color: var(--ink); font-weight: 600; text-underline-offset: 5px; }
+@media (max-width: 760px) {
+  body.signed-in header { flex-wrap: wrap; gap: 8px 14px; }
+  .workspace-back { order: 2; flex-basis: 100%; }
+}
+@media (max-width: 600px) {
+  .banner { flex-direction: column; align-items: stretch; }
+  .banner .steps { display: grid; width: 100%; }
+  .banner .steps li { flex-wrap: nowrap; }
+  .banner .steps li span { min-width: 0; }
+  .banner .steps li button { flex: none; min-height: 44px; }
+}

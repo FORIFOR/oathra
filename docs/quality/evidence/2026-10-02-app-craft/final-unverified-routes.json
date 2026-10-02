@@ -1,0 +1,132 @@
+{
+  "observedAt": "2026-10-01T18:21:45.181Z",
+  "origin": "http://127.0.0.1:61758",
+  "label": "final-unverified",
+  "method": "Existing operator and existing business records; no form save, playback, phone, email or payment action",
+  "sourceHashes": {
+    "apps/gateway/public/app/app.js": "1003cccdbf85f8be694f0d3c9cb1b067bc138778fa74a2552e5ede6b64c9e80e",
+    "apps/gateway/public/app/style.css": "eac00754ff659d6ef0f5c2cd8acb79eb5c474b261b5c64a6653b036f8717ed69",
+    "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129",
+    "apps/gateway/public/phone/public-service.js": "c242e6fe64f59c0af097aeeb06802dcc4a7d535cbcb8f3c57595c9720ed3a6c8",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/phone/account.js": "e78da7e61133c35d8385b36eed9639cd5235c3a2bef2157f6ecc70f1828e546e"
+  },
+  "views": [
+    {
+      "name": "report",
+      "width": 1440,
+      "screenshot": "final-unverified-report-1440-redacted.png",
+      "layout": {
+        "clientWidth": 1440,
+        "scrollWidth": 1440,
+        "innerWidth": 1440,
+        "visualViewportWidth": 1440
+      },
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 101,
+        "applied": true
+      },
+      "h1": [
+        "話しました"
+      ],
+      "h2": [],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 33,
+      "inputs": [],
+      "transcriptLayout": {
+        "justifyContent": "flex-start",
+        "top": 217.59375,
+        "firstLineTop": 225.59375
+      },
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "report",
+      "width": 390,
+      "screenshot": "final-unverified-report-390-redacted.png",
+      "layout": {
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "visualViewportWidth": 390
+      },
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 101,
+        "applied": true
+      },
+      "h1": [
+        "話しました"
+      ],
+      "h2": [],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 33,
+      "inputs": [],
+      "transcriptLayout": {
+        "justifyContent": "flex-start",
+        "top": 883.671875,
+        "firstLineTop": 891.671875
+      },
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Private record text and nonempty field values hidden with verified CSSOM masking; content layout preserved, some generic text also hidden.",
+    "Successful new request, business approval, live calling, payment, email and persistence are not exercised."
+  ],
+  "runtimeExceptions": 0,
+  "sourceUnchanged": true
+}

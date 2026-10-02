@@ -1,0 +1,25 @@
+{
+  "role": "author verification, not independent",
+  "capturedAt": "2026-10-01T18:18:10.706467+00:00",
+  "url": "http://127.0.0.1:61758/app/#/new",
+  "browser": "Safari native UI",
+  "image": "final-new-safari-desktop.png",
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "privacy": "Actual empty new-request form; no PII masking or content substitution. Existing placeholder text is product UI, not added evidence data.",
+  "observed": [
+    "All six navigation destinations visible",
+    "Pause status and compact utilization details visible",
+    "Phone and recipient inputs empty",
+    "Instruction editor empty",
+    "Review and cost panel visible; review button disabled while empty",
+    "Review tab closed after screenshot"
+  ],
+  "actions": "Read-only page navigation using existing session; no record created, no calls/payments/email",
+  "sourceSha256": {
+    "apps/gateway/public/app/app.js": "1003cccdbf85f8be694f0d3c9cb1b067bc138778fa74a2552e5ede6b64c9e80e",
+    "apps/gateway/public/app/style.css": "eac00754ff659d6ef0f5c2cd8acb79eb5c474b261b5c64a6653b036f8717ed69"
+  }
+}

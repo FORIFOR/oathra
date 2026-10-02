@@ -1,0 +1,57 @@
+{
+  "observedAt": "2026-10-01T18:04:48.057Z",
+  "checks": [
+    {
+      "name": "actual_existing_login",
+      "pass": true
+    },
+    {
+      "name": "ledger_scrolled",
+      "pass": true
+    },
+    {
+      "name": "reopen_resets_scroll",
+      "pass": true
+    },
+    {
+      "name": "balance_visible_below_header",
+      "pass": true
+    },
+    {
+      "name": "privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "dark_no_horizontal_overflow",
+      "pass": true
+    },
+    {
+      "name": "reduced_motion_preference",
+      "pass": true
+    },
+    {
+      "name": "shared_app_pause_notice_once",
+      "pass": true
+    },
+    {
+      "name": "shared_app_purchase_disabled",
+      "pass": true
+    },
+    {
+      "name": "no_runtime_errors",
+      "pass": true
+    }
+  ],
+  "images": [
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-final-small.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-final-dark.png"
+  ],
+  "pageErrors": [],
+  "sourceSha256": {
+    "apps/gateway/public/phone/account.js": "e78da7e61133c35d8385b36eed9639cd5235c3a2bef2157f6ecc70f1828e546e",
+    "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+    "apps/gateway/public/phone/public-service.js": "051ce08100b64e72802a9465da4229aa211a6c91f87008e610d3e18c530f43f1",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310"
+  }
+}

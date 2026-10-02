@@ -1,0 +1,425 @@
+{
+  "at": "2026-10-01T18:17:15.105Z",
+  "method": "Real Chrome CDP network observation and real isolated-server session cookie; existing operator only. No fetch interception, fabricated responses, business-record mutations, provider calls or screenshots.",
+  "environment": {
+    "origin": "http://127.0.0.1:61758",
+    "browser": "Chrome/154.0.8037.58",
+    "os": "27.0.1"
+  },
+  "sourceHashes": {
+    "apps/gateway/public/app.js": "770619fbb70ea840c33b6f8cb513f57065d20a3f13d152d204f92ebc9fa2ad14",
+    "apps/gateway/public/app/app.js": "1003cccdbf85f8be694f0d3c9cb1b067bc138778fa74a2552e5ede6b64c9e80e"
+  },
+  "checks": [
+    {
+      "id": "existing_operator_real_session_created",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "real_owner_resolved_in_memory_only",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "workspace_refresh_bound_to_authenticated_owner",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 1,
+        "allBound": true,
+        "statuses": [
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "workspace_session_really_revoked",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "workspace_expired_request_retained_old_owner_and_was_denied",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "workspace_expiry_shows_shared_login",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "existing_operator_second_real_session_created",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "app_bound_/v1/phone/history",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 2,
+        "statuses": [
+          200,
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_bound_/v1/account/month",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 2,
+        "statuses": [
+          200,
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_bound_/v1/phone/status",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 1,
+        "statuses": [
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_bound_/v1/credits/ledger",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 1,
+        "statuses": [
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_bound_/v1/public/service",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 1,
+        "statuses": [
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_bound_/v1/credits/purchases",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "requests": 1,
+        "statuses": [
+          200
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_bootstrap_precedes_owner_scoped_reads",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "app_purchase_refresh_bound_to_authenticated_owner",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "app_session_really_revoked",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "app_expired_request_retained_old_owner_and_was_denied",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "app_expiry_recreates_document_with_full_reload",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "recreated": true,
+        "type": "reload"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "app_expiry_removes_old_forms_and_authenticated_navigation",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": {
+        "recreated": true,
+        "type": "reload",
+        "tabsHidden": true,
+        "barHidden": true,
+        "noPurchaseForm": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "no_runtime_exceptions",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    },
+    {
+      "id": "reviewed_source_unchanged_during_verification",
+      "method": "real Chrome / isolated HTTP",
+      "expected": true,
+      "observed": true,
+      "status": "PASS"
+    }
+  ],
+  "requests": [
+    {
+      "stage": "workspace_initial",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": false,
+      "matchesExpectedOwner": false,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "workspace_refresh",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "workspace_expired",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 401
+    },
+    {
+      "stage": "workspace_expired",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": false,
+      "matchesExpectedOwner": false,
+      "hasBearer": false,
+      "status": 401
+    },
+    {
+      "stage": "workspace_expired",
+      "path": "/v1/public/service",
+      "method": "GET",
+      "hasOwnerBinding": false,
+      "matchesExpectedOwner": false,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": false,
+      "matchesExpectedOwner": false,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/phone/history",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/account/month",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/phone/status",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/phone/templates",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/credits/ledger",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/public/service",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/credits/purchases",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/phone/history",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_initial",
+      "path": "/v1/account/month",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_refresh",
+      "path": "/v1/credits/purchases",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_refresh",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_refresh",
+      "path": "/v1/phone/history",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_refresh",
+      "path": "/v1/account/month",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 200
+    },
+    {
+      "stage": "app_expired",
+      "path": "/v1/credits/purchases",
+      "method": "GET",
+      "hasOwnerBinding": true,
+      "matchesExpectedOwner": true,
+      "hasBearer": false,
+      "status": 401
+    },
+    {
+      "stage": "app_expired",
+      "path": "/v1/bootstrap",
+      "method": "GET",
+      "hasOwnerBinding": false,
+      "matchesExpectedOwner": false,
+      "hasBearer": false,
+      "status": 401
+    },
+    {
+      "stage": "app_expired",
+      "path": "/v1/public/service",
+      "method": "GET",
+      "hasOwnerBinding": false,
+      "matchesExpectedOwner": false,
+      "hasBearer": false,
+      "status": 200
+    }
+  ],
+  "limits": [
+    "Cross-account transition not executed: no second real account credential used.",
+    "Browser document reload tested with real own-session revocation (HTTP 401), not fabricated HTTP 409.",
+    "Provider/payment behavior outside scope."
+  ],
+  "privacy": "Tokens, cookies, owner IDs, email, request bodies and response bodies are never serialized.",
+  "result": "PASS"
+}

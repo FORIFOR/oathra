@@ -1,0 +1,109 @@
+/* Public account and payments use each host page's existing type, colour and button tokens. */
+.public-access { text-align: left; }
+.public-access h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.4; }
+.public-access-intro { margin: 0 0 24px; font-size: 14px; line-height: 1.8; color: var(--muted); }
+.public-account-pane { min-width: 0; }
+.public-access-entry { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,440px); gap: clamp(36px,6vw,88px); align-items: start; }
+.public-access:not(.public-access-entry) .public-account-pane { max-width: 460px; margin-inline: auto; }
+.public-overview { min-width: 0; padding-top: 12px; }
+.public-eyebrow { font-size: 12px; font-weight: 650; letter-spacing: .06em; margin: 0 0 18px; color: var(--muted); }
+.public-overview h1 { margin: 0; font-size: clamp(32px,3.2vw,44px); font-weight: 650; letter-spacing: -.045em; line-height: 1.5; }
+.public-overview-copy { max-width: 30em; margin: 24px 0 0; font-size: 15px; line-height: 1.95; color: var(--ink-2,var(--muted)); }
+.public-workflow { list-style: none; margin: 36px 0; padding: 0; display: grid; gap: 24px; }
+.public-workflow li { display: flex; align-items: baseline; gap: 18px; }
+.public-workflow-number { font-family: var(--mono,monospace); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.public-workflow li:last-child .public-workflow-number { color: var(--ok,#0b7a58); }
+.public-workflow strong { font-size: 15px; font-weight: 650; }
+.public-workflow p { font-size: 13px; line-height: 1.7; margin: 5px 0 0; color: var(--muted); }
+.public-entry-links { border-top: 1px solid var(--line); }
+.public-entry-links a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 76px; padding: 14px 0; color: var(--ink); text-decoration: none; }
+.public-entry-links a + a { border-top: 1px solid var(--line); }
+.public-entry-links strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.6; }
+.public-entry-links small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.public-entry-links a > span:last-child { font-size: 20px; }
+.public-entry-links a:hover strong { text-decoration: underline; text-underline-offset: 4px; }
+.public-availability { margin: 20px 0 0; font-size: 12px; line-height: 1.8; color: var(--muted); }
+.public-form, .public-field { display: grid; gap: 10px; }
+.public-form { gap: 18px; }
+.public-field > label { font-size: 14px; font-weight: 650; }
+.public-field > input { width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line-2,var(--line)); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; }
+.public-field .note { margin: 0; }
+.public-form > .btn { min-height: 48px; white-space: normal; line-height: 1.5; padding: 10px 16px; }
+.public-auth-actions { display: grid; gap: 10px; margin-top: 18px; }
+.public-auth-actions .btn { white-space: normal; min-height: 44px; line-height: 1.5; padding: 10px 16px; }
+.public-text-button { border: 0; background: none; color: inherit; text-decoration: underline; text-underline-offset: 3px; padding: 10px; min-height: 44px; font: inherit; font-size: 13px; cursor: pointer; }
+.public-error { padding: 12px 14px; margin: 10px 0; color: var(--coral,#a13b25); background: var(--panel); border-left: 3px solid currentColor; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.public-status { padding: 12px 14px; margin: 10px 0; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.public-policies { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; line-height: 1.8; }
+.public-policies a { color: inherit; min-height: 32px; display: inline-flex; align-items: center; text-underline-offset: 3px; }
+.public-check { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.8; cursor: pointer; }
+.public-check input { flex: 0 0 20px; width: 20px; min-height: 20px !important; height: 20px; margin: 3px 0; accent-color: var(--ink); }
+.public-purchase { border-top: 1px solid var(--line); margin: 24px 0; padding: 16px 0 0; }
+.public-purchase h3 { font-size: 16px; margin: 0 0 8px; }
+.public-purchase > .note { margin: 0 0 16px; font-size: 13px; }
+.public-purchase > h3:not(:first-child) { margin-top: 28px; }
+.public-purchase-admission { margin: 12px 0 24px; padding: 0 0 0 14px; border-left: 2px solid var(--line-2,var(--line)); color: var(--ink-2,var(--muted)); font-size: 14px; line-height: 1.8; }
+.public-order-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.public-order-heading h3 { margin: 0; }
+.public-order-heading > .btn { min-height: 44px; white-space: normal; }
+.public-purchase-empty { margin: 16px 0 0; font-size: 14px; line-height: 1.8; color: var(--ink-2,var(--muted)); }
+.public-packs { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.public-packs legend { margin-bottom: 10px; font-weight: 650; font-size: 14px; }
+.public-pack { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line-2,var(--line)); border-radius: 10px; padding: 14px; cursor: pointer; }
+.public-pack:has(input:checked) { border-color: var(--ink); background: var(--bg-2,var(--bg)); }
+.public-pack > input { width: 20px; min-height: 20px; height: 20px; flex: 0 0 20px; margin: 0; accent-color: var(--ink); }
+.public-pack > span { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; width: 100%; }
+.public-pack strong { font-size: 16px; }
+.public-pack span span { font-size: 14px; font-variant-numeric: tabular-nums; }
+.public-purchase .public-policies { margin-top: 16px; }
+.public-orders { margin: 16px 0 0; }
+.public-order { border-bottom: 1px solid var(--line); padding: 14px 0; font-size: 14px; }
+.public-order:first-child { padding-top: 0; }
+.public-order strong { line-height: 1.7; }
+.public-order-state { font-weight: 650; margin: 6px 0 0; line-height: 1.7; }
+.public-order .note { overflow-wrap: anywhere; margin: 6px 0; }
+.public-access [hidden], .public-purchase [hidden] { display: none !important; }
+.public-access :focus-visible, .public-purchase :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.managed-phone #managed-credits { width: min(560px,calc(100vw - 32px)); }
+.managed-phone #managed-login-form input[type=checkbox] { width: 20px; }
+.managed-phone #managed-login-title { margin-bottom: 12px; }
+/* The public login form must be visible even when background rendering defers animations. */
+.managed-phone #managed-login { animation: none; }
+@media(max-width:480px) {
+  .public-access h2 { font-size: 22px; }
+  .public-pack > span { display: grid; gap: 4px; }
+}
+
+.public-prerelease { padding: 0 0 0 14px; margin: 0 0 24px; border-left: 2px solid var(--line-2,var(--line)); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.public-prerelease[hidden], .public-prerelease-wrap[hidden] { display: none !important; }
+.public-prerelease-title { font-size: 14px; }
+.public-prerelease p { margin: 4px 0 0; }
+.public-prerelease-limits { color: var(--muted); }
+.public-prerelease .note { font-size: 12px; }
+.public-prerelease-details { margin: 6px 0 0; border: 0; padding: 0; }
+.public-prerelease-details > summary { min-height: 44px; display: list-item; list-style: disclosure-closed inside; padding: 10px 0; font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.public-prerelease-details > summary::before { content: none; }
+.public-prerelease-details > summary::-webkit-details-marker { display: initial; }
+.public-prerelease-details[open] > summary { list-style-type: disclosure-open; }
+.public-prerelease-details[open] { padding-bottom: 4px; }
+.public-prerelease-wrap { max-width: 1124px; margin: 0 auto; padding: 20px 28px 0; }
+.public-prerelease-wrap .public-prerelease { margin: 0 0 12px; }
+.public-review-purchase { margin: 0 0 16px; white-space: normal; }
+@media(max-width:480px) {
+  .public-prerelease-wrap { padding: 16px 16px 0; }
+}
+@media(max-width:800px) {
+  .public-access-entry { grid-template-columns: minmax(0,1fr); gap: 28px; }
+  .public-overview { display: contents; }
+  .public-eyebrow { display: none; }
+  .public-overview h1 { font-size: 28px; line-height: 1.5; letter-spacing: -.035em; }
+  .public-overview-copy { font-size: 14px; margin: -14px 0 0; }
+  .public-workflow { display: none; }
+  .public-entry-links { display: flex; flex-wrap: wrap; gap: 0 24px; order: 0; margin-top: -14px; border-top: 0; }
+  .public-entry-links a { min-height: 44px; padding: 8px 0; gap: 8px; }
+  .public-entry-links a + a { border-top: 0; }
+  .public-entry-links strong { font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+  .public-entry-links small { display: none; }
+  .public-entry-links a > span:last-child { font-size: 16px; }
+  .public-account-pane { order: 1; }
+}

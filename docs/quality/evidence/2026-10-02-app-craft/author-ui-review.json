@@ -1,0 +1,54 @@
+{
+  "recordedAt": "2026-10-01T18:13:59.658Z",
+  "role": "author verification, not independent review",
+  "preview": "http://127.0.0.1:61758",
+  "browser": "Native Safari 27.0.1; responsive design mode 390 × 844, 1x",
+  "data": "Existing operator signed in through the password-protected token field; credentials read only in memory and never stored in evidence. Real native DB backup. No customer or business record created.",
+  "actions": [
+    {
+      "check": "Unauthenticated page → existing operator sign-in → empty new-request screen",
+      "result": "PASS"
+    },
+    {
+      "check": "New-request controls have phone/name/instruction accessible labels",
+      "result": "PASS"
+    },
+    {
+      "check": "390px: all six navigation destinations visible; pause retained and conditions compact",
+      "result": "PASS"
+    },
+    {
+      "check": "Conditions disclosure opens via pointer and closes via Space",
+      "result": "PASS"
+    },
+    {
+      "check": "Settings → Products: existing empty state; product name/facts/source accessible labels; review checkbox initially unchecked",
+      "result": "PASS"
+    },
+    {
+      "check": "Empty product submission is stopped by native required-field validation and focuses product name",
+      "result": "PASS"
+    },
+    {
+      "check": "Responsive mode exited and author-created tab closed",
+      "result": "PASS"
+    }
+  ],
+  "screenshots": [
+    "author-new-safari-desktop.png",
+    "author-new-safari-round-b-390.png",
+    "author-products-safari-390.png"
+  ],
+  "static": {
+    "jsSyntax": "PASS",
+    "cssParse": "PASS",
+    "cssWarnings": []
+  },
+  "limits": [
+    "Screenshots show the actual empty forms and existing product placeholder strings, not newly fabricated records.",
+    "The author reviewed shared before/after screenshots separately; this native Safari interaction covers only the empty request and product forms.",
+    "Root account/session fixes landed after this browser module loaded; final fixed-source regression is delegated to the independent reviewer.",
+    "No live call, paid model invocation, payment, email, or completed business write was performed.",
+    "The live-ready + paused combination was reviewed statically only; no synthetic bootstrap was used."
+  ]
+}

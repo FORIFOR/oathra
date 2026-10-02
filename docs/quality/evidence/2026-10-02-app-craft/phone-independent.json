@@ -1,0 +1,77 @@
+{
+  "observedAt": "2026-10-01T18:16:28.053Z",
+  "method": "Independent actual Chrome existing operator session; account/credits read-only, no password, contact, booking, payment or calling action",
+  "sourceBefore": {
+    "apps/gateway/public/phone/account.js": "e78da7e61133c35d8385b36eed9639cd5235c3a2bef2157f6ecc70f1828e546e",
+    "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+    "apps/gateway/public/phone/public-service.js": "c242e6fe64f59c0af097aeeb06802dcc4a7d535cbcb8f3c57595c9720ed3a6c8",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310"
+  },
+  "checks": [
+    {
+      "id": "booking_ledger",
+      "expected": "Read actual enabled reception ledger",
+      "observed": {
+        "entryVisible": false,
+        "receptionScreenVisible": false
+      },
+      "status": "BLOCKED",
+      "reason": "Existing operator has no enabled reception entry; no restaurant or booking was created."
+    },
+    {
+      "id": "account_320_readonly",
+      "expected": "Dialog close reachable, no sideways scroll, password fields labelled and empty form invalid",
+      "observed": {
+        "open": true,
+        "scrollTop": 0,
+        "closeVisible": true,
+        "clientWidth": 320,
+        "scrollWidth": 320,
+        "passwordFieldsLabelled": true,
+        "emptyPasswordInvalid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "account_escape",
+      "expected": "Escape closes account dialog",
+      "observed": {
+        "closed": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "credits_320_readonly",
+      "expected": "Actual balance visible below header and purchases unavailable while paused",
+      "observed": {
+        "open": true,
+        "scrollTop": 0,
+        "balanceBelowHeader": true,
+        "clientWidth": 320,
+        "scrollWidth": 320,
+        "noCheckoutLink": true,
+        "purchaseFormHidden": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "credits_escape",
+      "expected": "Escape closes credits dialog",
+      "observed": {
+        "closed": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "sourceAfter": {
+    "apps/gateway/public/phone/account.js": "e78da7e61133c35d8385b36eed9639cd5235c3a2bef2157f6ecc70f1828e546e",
+    "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+    "apps/gateway/public/phone/public-service.js": "c242e6fe64f59c0af097aeeb06802dcc4a7d535cbcb8f3c57595c9720ed3a6c8",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310"
+  },
+  "sourceUnchanged": true,
+  "runtimeExceptions": 0,
+  "privacy": "No private record text, balances, emails, tokens or screenshots saved by this check."
+}
