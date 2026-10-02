@@ -80,10 +80,13 @@ export class Schedules {
   end(schedule, reason) { schedule.status = 'ENDED'; schedule.endedReason = reason; this.store.put('schedule', schedule); this.store.audit(schedule.owner, 'schedule.ended', schedule.id, { schedule: schedule.id, reason }); }
   note(schedule, run, level = 'concern') { this.alerts?.raise({ id: run.id, owner: schedule.owner, team: schedule.team, origin: null, target: { name: schedule.request.name } }, 'schedule', level, { categories: [run.reason ?? run.state] }); }
 
-  /** At most one new call per tick, and only when the line is free. Safe to call as often as the worker likes. */
+  /** Starts what is due, only onto a free line. Safe to call as often as the worker likes. */
   tick() {
     const now = this.store.now(), today = jst(now);
-    let idle = !this.store.some('mission', x => BUSY.includes(x.status));
+    // A free line, of however many the operator allowed. Each dispatch below takes one.
+    let inUse = 0; const lines = Math.max(1, this.service.config.maxConcurrentCalls ?? 1);
+    this.store.some('mission', x => { if (BUSY.includes(x.status)) inUse++; return false; });
+    let idle = inUse < lines;
     for (const schedule of this.store.list('schedule', undefined, 'ACTIVE').sort((a, b) => a.createdAt - b.createdAt)) {
       if (now >= schedule.until) { this.end(schedule, 'reached_end_date'); continue; }
       const runs = this.store.all('schedule-run', schedule.owner).filter(r => r.scheduleId === schedule.id);
@@ -100,7 +103,7 @@ export class Schedules {
         if (m.answered) { done('ANSWERED'); continue; }
         if (run.attempts.length > schedule.retries.count || jst(now).date !== run.date) { done('UNANSWERED'); continue; }
         if (now < (m.finishedAt ?? now) + schedule.retries.minutes * 60_000 || !idle) continue;
-        if (this.dispatch(schedule, run)) idle = false;
+        if (this.dispatch(schedule, run)) idle = ++inUse < lines;
       }
       if (schedule.status !== 'ACTIVE' || !schedule.weekdays.includes(today.weekday)) continue;
       // 2. Start what is due. A time that passed while the line was busy or the service was down is skipped, not made up late.
@@ -113,7 +116,7 @@ export class Schedules {
         if (predates) continue;
         if (today.minutes >= at + schedule.windowMinutes) { run.state = 'SKIPPED'; run.reason = 'window_passed'; this.store.put('schedule-run', run); this.note(schedule, run); continue; }
         if (!idle) continue;
-        if (this.dispatch(schedule, run)) idle = false;
+        if (this.dispatch(schedule, run)) idle = ++inUse < lines;
       }
     }
   }

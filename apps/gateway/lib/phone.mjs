@@ -192,8 +192,9 @@ export class Phone {
     if(!onBehalf)return announce('owner_name_unknown');
     const hour=Math.floor(this.store.now()/3600_000),caller=`${hour}:${this.store.phoneRef(from)}`,perCaller=Number(this.store.key('inbound-rate',caller)??0),all=Number(this.store.key('inbound-rate',`${hour}:*`)??0);
     if(perCaller>=cfg.perCallerPerHour||all>=cfg.perHour)return announce('rate_limited');
-    // One call at a time: the line that is being answered or dialled keeps the worker.
-    if(this.store.some('mission',x=>['QUEUED','DIALING','ACTIVE','VERIFYING','CANCEL_REQUESTED'].includes(x.status)))return announce('busy');
+    // Every line the operator allowed is in use (one, unless OATHRA_MAX_CONCURRENT_CALLS says more).
+    let inUse=0;const lines=Math.max(1,this.config.maxConcurrentCalls??1);
+    if(this.store.some('mission',x=>['QUEUED','DIALING','ACTIVE','VERIFYING','CANCEL_REQUESTED'].includes(x.status)&&++inUse>=lines))return announce('busy');
     let m;
     try{
       m=this.store.tx(()=>{

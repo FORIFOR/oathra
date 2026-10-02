@@ -10,7 +10,12 @@ import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
-  constructor(service, channels, execute, alerts=null, schedules=null) { this.schedules=schedules; this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.active=null; this.busy=false; }
+  constructor(service, channels, execute, alerts=null, schedules=null) { this.schedules=schedules; this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.running=new Map(); this.busy=false; }
+  /** How many calls may be in progress at once (OATHRA_MAX_CONCURRENT_CALLS; one unless the operator raised it). */
+  get limit() { return Math.max(1,this.service.config.maxConcurrentCalls??1); }
+  /** The call in progress, when there is one; with several, the earliest. `activeFor(id)` finds a particular one. */
+  get active() { return this.running.values().next().value??null; }
+  activeFor(id) { return this.running.get(id)??null; }
   start() {
     assert(this.store.lease(this.holder),'another_gateway_worker_is_active',409);
     const recovery=new Map([...this.store.list('mission'),...this.service.credits.pendingMissions()].map(m=>[m.id,m]));
@@ -30,8 +35,8 @@ export class Worker {
     // Inbox and notifications can be retried; telephone attempts cannot.
     for(const f of this.store.list('followup',undefined,'EXECUTING')) { f.status='UNKNOWN'; f.error='process_interrupted_do_not_resend_without_reconciliation'; this.store.put('followup',f); }
     for(const kind of ['inbox','outbox','alert']) for(const j of this.store.list(kind,undefined,'processing')) { j.status='pending'; this.store.put(kind,j); }
-    this.leaseTimer=setInterval(() => { if(!this.store.lease(this.holder)) { this.active?.abort.abort(); clearInterval(this.timer); } },5000);
-    this.controlTimer=setInterval(()=>{if(this.active && this.store.get('mission',this.active.id)?.status==='CANCEL_REQUESTED')this.active.abort.abort();},200);
+    this.leaseTimer=setInterval(() => { if(!this.store.lease(this.holder)) { for(const a of this.running.values())a.abort.abort(); clearInterval(this.timer); } },5000);
+    this.controlTimer=setInterval(()=>{for(const a of this.running.values())if(this.store.get('mission',a.id)?.status==='CANCEL_REQUESTED')a.abort.abort();},200);
     this.timer=setInterval(() => { void this.tick().catch(e => this.log('worker.tick_failed',e)); },300);
   }
   /** Codes only: never message text, names or numbers. */
@@ -49,15 +54,17 @@ export class Worker {
       await this.processQueue('inbox',j=>this.channels.process(j));
       await this.processQueue('outbox',j=>this.channels.send(j));
       if(this.alerts?.config) await this.processQueue('alert',j=>this.alerts.send(j));
-      if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
-      if(this.draining)return;
+      for(const a of this.running.values()) if(this.store.get('mission',a.id)?.status==='CANCEL_REQUESTED') a.abort.abort();
+      if(this.draining||this.running.size>=this.limit)return;
       // Standing requests place their next due call into the queue; the claim below treats it like any other.
       if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
-      const m=this.claimNext();
-      if(!m)return;
-      this.service.notify(m,'発信しています。');
-      const active={ id:m.id,abort:new AbortController(),control:{} }; this.active=active;
-      active.promise=this.run(m,active).catch(error=>this.log('call.run_failed',error,{mission:m.id})).finally(()=>{ if(this.active===active) this.active=null; });
+      while(this.running.size<this.limit){
+        const m=this.claimNext();
+        if(!m)return;
+        this.service.notify(m,'発信しています。');
+        const active={ id:m.id,abort:new AbortController(),control:{} }; this.running.set(m.id,active);
+        active.promise=this.run(m,active).catch(error=>this.log('call.run_failed',error,{mission:m.id})).finally(()=>{ if(this.running.get(m.id)===active) this.running.delete(m.id); });
+      }
     } finally { this.busy=false; }
   }
   /** Atomically commits an execution claim and its credits; does not contact a carrier. */
@@ -183,12 +190,13 @@ export class Worker {
   /** Before a restart: take no new call, let the one in progress finish (up to `graceMs`), then stop. A deploy should not hang up on anyone. */
   async drain(graceMs) {
     this.draining=true; this.service.config.draining=true;
-    if(this.active?.promise) await Promise.race([this.active.promise,new Promise(r=>{const t=setTimeout(r,graceMs);t.unref?.();})]);
-    const cut=!!this.active; await this.stop(); return {cut};
+    if(this.running.size) await Promise.race([Promise.all([...this.running.values()].map(a=>a.promise)),new Promise(r=>{const t=setTimeout(r,graceMs);t.unref?.();})]);
+    const cut=this.running.size>0; await this.stop(); return {cut};
   }
   async stop() {
-    clearInterval(this.timer); clearInterval(this.leaseTimer); clearInterval(this.controlTimer); this.active?.abort.abort();
-    if(this.active?.promise) await this.active.promise;
+    clearInterval(this.timer); clearInterval(this.leaseTimer); clearInterval(this.controlTimer);
+    const running=[...this.running.values()]; for(const a of running)a.abort.abort();
+    await Promise.all(running.map(a=>a.promise));
     this.store.db.prepare('DELETE FROM lease WHERE holder=?').run(this.holder);
   }
 }

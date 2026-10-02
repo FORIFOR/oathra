@@ -74,6 +74,8 @@ export function configuration(env=process.env){
     localOpen:env.OATHRA_LOCAL_OPEN==='true',dataKey:env.OATHRA_DATA_KEY,dbPath:env.OATHRA_DB??'.oathra/gateway.sqlite',port:number(env,'PORT',4244,0,65535),host:env.HOST??'127.0.0.1',
     ...limits,
     // Sales calls keep to daytime hours unless the operator says otherwise; ordinary requests are unrestricted unless set.
+    // Calls in progress at once. One line at a time unless the operator has checked that the carrier, the voice model's rate limits and the host can carry more.
+    maxConcurrentCalls:number(env,'OATHRA_MAX_CONCURRENT_CALLS',1,1,20),
     callHours:{sales:hours(env,'OATHRA_SALES_CALL_HOURS','09:00-20:00'),request:hours(env,'OATHRA_REQUEST_CALL_HOURS',null)},
     rateCeilingUsd:number(env,'OATHRA_RATE_CEILING_USD',1,0.001,20),setupFeeUsd:number(env,'OATHRA_SETUP_FEE_USD',0,0,10),
     // Only set this when the gateway is reachable exclusively through a reverse proxy that overwrites X-Forwarded-For.
@@ -314,7 +316,7 @@ export async function createGateway(config,options={}){
         const call=path.match(/^\/v1\/agent\/phone\/calls\/([a-zA-Z0-9_-]{8,128})(\/cancel)?$/);
         if(call&&method==='GET'&&!call[2])return send(res,200,readAgentPhone(service,u,call[1]));
         if(call&&method==='POST'&&call[2]){
-          const result=cancelAgentPhone(service,u,call[1]);if(worker.active?.id===result.missionId)worker.active.abort.abort();return send(res,200,result);
+          const result=cancelAgentPhone(service,u,call[1]);worker.activeFor(result.missionId)?.abort.abort();return send(res,200,result);
         }
         throw new Fault(404,'not_found');
       }
@@ -414,11 +416,11 @@ export async function createGateway(config,options={}){
         if(method==='POST'&&action==='review')return send(res,200,service.review(u,id));
         if(method==='POST'&&action==='start')return send(res,202,service.start(u,data.approvalToken,req.headers['idempotency-key'],data.acknowledged,id));
         if(method==='POST'&&action==='cancel'){
-          const cancelled=service.cancel(u,id); if(worker.active?.id===id)worker.active.abort.abort(); if(m.status.startsWith('HANDOFF_'))await phone.reconcile(u,id,true);return send(res,200,cancelled);
+          const cancelled=service.cancel(u,id); worker.activeFor(id)?.abort.abort(); if(m.status.startsWith('HANDOFF_'))await phone.reconcile(u,id,true);return send(res,200,cancelled);
         }
         if(method==='POST'&&action==='handoff'){
-          service.write(u);assert(data.acknowledged===true,'handoff_confirmation_required');assert(worker.active?.id===id&&typeof worker.active.control.handoff==='function','handoff_not_available',409);
-          return send(res,202,await worker.active.control.handoff());
+          service.write(u);assert(data.acknowledged===true,'handoff_confirmation_required');assert(typeof worker.activeFor(id)?.control.handoff==='function','handoff_not_available',409);
+          return send(res,202,await worker.activeFor(id).control.handoff());
         }
         if(method==='POST'&&action==='reconcile'){assert(data.acknowledged===true,'reconciliation_confirmation_required');return send(res,200,await phone.reconcile(u,id,data.stop===true));}
         if(method==='GET'&&action==='events'){
