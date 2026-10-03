@@ -571,7 +571,8 @@ try {
   c.ok(/^依頼 › チームの電話 › 田村 節子/.test(await page.text(".crumb")) && /頼んだ人：鈴木/.test(mateReport) && /開いたことは記録されます/.test(mateReport) && await page.js("!!document.querySelector('.band.concern') && !document.querySelector('.band .lvl.emergency')") && /「食欲がなくて、朝から何も食べていません。」/.test(mateReport), "a teammate's report opens with its 要確認 banner (not 緊急)");
   c.ok(!/同じ相手にまた頼む|通話を終える|カレンダーに入れる/.test(mateReport) && /チームの電話に戻る/.test(mateReport) && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "team.record_viewed"), "it is read-only, and opening it was recorded");
   await page.screenshot(join(out, "gateway-app-team-report.png"), { fullPage: true });
-  await go(`#/team/${mateQuiet}`, "!!document.querySelector('.checkin-table')");
+  // The previous report has a check-in table too: wait for this one's name, not just for a table.
+  await go(`#/team/${mateQuiet}`, "!!document.querySelector('.checkin-table') && /石井 トメ/.test(document.querySelector('.crumb')?.textContent ?? '')");
   c.ok(await page.js("!!document.querySelector('.band.concern')") && /要確認の返事が1件あります（下の表）。/.test(await page.text(".band")) && await page.js("document.querySelectorAll('.checkin-table tbody .lvl.concern').length") === 1, "a report whose table says 要確認 with no flagged line still carries a 要確認 banner (team report, same rule)", await page.text(".band"));
   // The trade call's report: the quantity the other side offered is not what was asked, so it reads as not settled.
   await go(`#/call/${tradeCall}`, "!!document.querySelector('.report-top')");
