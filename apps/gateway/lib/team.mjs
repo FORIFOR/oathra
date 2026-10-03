@@ -4,7 +4,7 @@
  * whether it needs a look. Never another team's. The list carries no phone numbers and no speech; opening
  * one call's record is audited. Contact import and CSV export are the two ends of working from a list. */
 import { normalizePhoneNumber } from '../../../packages/contract/dist/index.js';
-import { phoneRecord } from './phone-service.mjs';
+import { phoneRecord, isCareRequest } from './phone-service.mjs';
 import { assert } from './security.mjs';
 
 const supervisor = u => assert(['admin', 'manager'].includes(u.role), 'supervisor_required', 403);
@@ -28,7 +28,7 @@ export function outcomeOf(m) {
 /** One line per call. What a person scanning forty calls needs, and nothing that identifies beyond a name. */
 export function callRow(m, { phone = false } = {}) {
   // A wellbeing or scheduled call nobody answered needs a look as much as a worrying answer does.
-  const checkIn = m.result?.checkIn ?? null, missed = m.answered === false && (m.schedule ? m.schedule.final !== false : m.phoneRequest?.pace === 'gentle');
+  const checkIn = m.result?.checkIn ?? null, missed = m.answered === false && (m.schedule ? m.schedule.final !== false : isCareRequest(m.phoneRequest));
   const attention = m.attention?.level ?? (checkIn && checkIn.attention !== 'none' ? checkIn.attention : missed ? 'concern' : null);
   return { id: m.id, owner: m.owner, direction: m.direction === 'inbound' ? 'inbound' : 'outbound', kind: m.kind === 'phone-request' ? 'request' : 'sales', recipient: m.target?.name ?? '',
     ...(phone ? { phone: m.target?.phone ?? '' } : {}), status: m.status, createdAt: new Date(m.createdAt).toISOString(), finishedAt: m.finishedAt ? new Date(m.finishedAt).toISOString() : null,

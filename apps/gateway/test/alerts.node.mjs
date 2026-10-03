@@ -138,3 +138,22 @@ test('a recording the word rules do not know is still not an answer when the voi
   const saved=f.store.get('mission',m.id);
   assert.deepEqual([saved.answered,saved.machineAnswered],[false,true]);assert.deepEqual(f.queued().map(j=>j.payload.reason),['unanswered']);
 }));
+
+// From a real call on 2026-10-03: the callee's phone screened the call first, then the person answered and talked.
+const SCREENED=['B:発信先が応答できるかどうか確認します','A:もしもし。知り合いの方の代わりにお電話しているAIなんだけど、今、少し話せる?','B:ありがとうございます。通話を切らずにこのままお待ちください',
+  'B:いただきました。はい、もしもし','A:あ、もしもし。今、少し話せる?','B:はい。話せるよ','A:最近なんかハマってることある?','B:最近、AIアプリ作ってるよ'];
+test('a screening assistant that hands over to the person is an answered call, not a recording',using(async f=>{
+  const {saved}=await f.run(f.mission({pace:'gentle'}),SCREENED);
+  assert.equal(saved.answered,true);assert.notEqual(saved.machineAnswered,true);
+  assert.deepEqual(f.queued().filter(j=>j.payload.reason==='unanswered'),[]);
+}));
+test('a voicemail greeting with nobody after it is still not an answer',using(async f=>{
+  const {saved}=await f.run(f.mission({pace:'gentle'}),['A:もしもし、お変わりないですか。','B:ただいま電話に出ることができません。発信音のあとにメッセージをどうぞ。','A:また改めておかけします。']);
+  assert.equal(saved.answered,false);assert.equal(saved.machineAnswered,true);
+}));
+test('a chat at a gentle pace is not a wellbeing check: no check-in table and no care alert',using(async f=>{
+  const {saved}=await f.run(f.mission({pace:'gentle',conversationMode:'chat'}),SCREENED);
+  assert.equal(saved.result.checkIn,undefined);assert.equal(f.queued().length,0);
+  const missed=await f.run(f.mission({pace:'gentle',conversationMode:'chat'}),[],{connect:false});
+  assert.equal(missed.saved.result.checkIn,undefined);assert.equal(f.queued().length,0);
+}));

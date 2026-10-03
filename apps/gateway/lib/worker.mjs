@@ -1,5 +1,6 @@
 import { phoneMemory, detectDistress, distressLevel, checkInReport, isMachineGreeting } from '../../../packages/core/dist/index.js';
 import { worse } from './alerts.mjs';
+import { isCareRequest } from './phone-service.mjs';
 import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
@@ -95,10 +96,15 @@ export class Worker {
   /** A wellbeing call's report: what the person said, topic by topic, and whether anyone answered at all. */
   checkIn(current,turns,connected) {
     if(current.direction==='inbound')return;
-    const report=checkInReport(turns),care=current.phoneRequest?.pace==='gentle';
+    // A care call is a gentle-paced request that is not a free chat: choosing ゆっくり for a chat does not make it a wellbeing check.
+    const report=checkInReport(turns),care=isCareRequest(current.phoneRequest);
     // Someone spoke on the other end, and it was not a recording. A voicemail greeting or a network announcement is not an answer.
     // A recording by the word rules, or by the voice model's own report when the rules did not know the announcement.
-    const machine=turns.some(t=>t.source==='callee'&&isMachineGreeting(t.text))||current.machineReported===true;if(machine)current.machineAnswered=true;
+    // A screening assistant (「発信先が応答できるかどうか確認します」) that hands over to the person is not a recording:
+    // after the last machine line the AI spoke and the other end answered as a person.
+    const machineAt=turns.map((t,i)=>t.source==='callee'&&isMachineGreeting(t.text)?i:-1).filter(i=>i>=0),last=machineAt.at(-1)??-1;
+    const caller=turns.findIndex((t,i)=>i>last&&t.source==='caller'),person=caller>=0&&turns.some((t,i)=>i>caller&&t.source==='callee'&&String(t.text??'').trim()&&!isMachineGreeting(t.text));
+    const machine=(machineAt.length>0&&!person)||current.machineReported===true;if(machine)current.machineAnswered=true;
     current.answered=connected&&report.answered&&!machine;
     if(current.kind!=='phone-request')return;
     if(care||report.items.some(i=>i.answer!=='not_asked'))current.result.checkIn=report;

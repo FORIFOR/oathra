@@ -140,3 +140,6 @@ export function carrierChargeTotals(store, owner, now = store.now()) {
   }
   return out;
 }
+
+/** A wellbeing call: gentle pace, and not a free chat. Choosing ゆっくり for a chat does not make it a check-in. */
+export const isCareRequest = r => r?.pace === 'gentle' && r?.conversationMode !== 'chat';
