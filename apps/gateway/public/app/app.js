@@ -177,7 +177,20 @@ function fromSales(m) {
   return { id: m.id, sales: true, goal: m.goal, product: m.product, practice: m.mode === 'simulator', direction: 'outbound', request: { name: m.target?.name ?? '', phone: m.target?.phone ?? '', instruction: m.request ?? '' },
     state: SALES_STATE[m.status] ?? (m.status === 'HANDOFF_PENDING' || m.status === 'HANDOFF_ACTIVE' ? 'running' : 'ended'), createdAt: new Date(m.createdAt).toISOString(),
     transcript: m.transcript ?? [], error: m.error, creditUsage: m.creditUsage, doNotContact: m.result?.doNotContact === true,
+    carrierCharge: m.mode === 'live' ? (m.carrierCharge ?? (m.carrierSid ? { pending: true } : null)) : null,
     memory: field ? { notes: [{ field, status: value !== undefined ? 'verified' : 'missing', ...(value !== undefined ? { value } : {}), ...(quote ? { quote } : {}) }] } : { notes: [] } };
+}
+// What the carrier charged, as it reported it. Yen to the nearest yen; other currencies as they came.
+function fmtCharge(amount, currency) {
+  if (currency === 'JPY') return amount > 0 && amount < 0.5 ? '1円未満' : `約${Math.round(amount).toLocaleString('ja-JP')}円`;
+  if (currency === 'USD') return `${amount.toFixed(amount < 1 ? 3 : 2)}ドル`;
+  return `${amount} ${currency}`;
+}
+const fmtCharges = amounts => Object.entries(amounts ?? {}).map(([c, a]) => fmtCharge(a, c)).join(' + ') || '0円';
+function chargeNote(c) {
+  if (!c) return null;
+  if (c.pending) return el('p', { class: 'note', text: '電話会社の通話料は、確定すると（通話の数分後）ここに出ます。' });
+  return el('p', { class: 'note num', text: `電話会社の通話料 ${fmtCharge(c.amount, c.currency)}（通話 ${c.durationSeconds}秒）。AIの音声の費用は含みません。` });
 }
 function fmtDate(v) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v)); if (!m) return String(v); const d = new Date(`${v}T00:00:00+09:00`); return `${Number(m[2])}月${Number(m[3])}日（${'日月火水木金土'[d.getDay()]}）`; }
 // A Japanese number as people write it: 090-1234-5678, 03-5555-0142, 0120-123-456. Others stay as dialled.
@@ -437,6 +450,13 @@ async function requests() {
   page.append(el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '依頼' }), el('p', { class: 'page-intro', text: '発信前の確認と、終わった電話の報告をまとめています。' })),
     el('div', { class: 'actions page-actions' }, el('a', { class: 'btn', href: '#/standing', text: '定期の電話' }), el('a', { class: 'btn', href: '#/lists', text: '名簿の電話' }),
       el('a', { class: 'btn', href: '#/callbacks' }, '折り返しの依頼', callbackOpen ? el('span', { class: 'badge', 'aria-label': `未対応 ${callbackOpen}件`, text: String(callbackOpen) }) : null), isSupervisor() ? el('a', { class: 'btn', href: '#/team', text: 'チームの電話' }) : null)));
+  const costs = app.boot?.carrierCharges;
+  if (app.boot?.configuration?.mode === 'live' && costs) page.append(el('section', { class: 'cost-strip', 'aria-label': '通話料' },
+    el('div', { class: 'cost-head' }, el('b', { text: '通話料（電話会社）' }), el('span', { class: 'sub', text: 'AIの音声（OpenAI）の費用は含みません。OpenAIの管理画面の Usage で確認できます。' })),
+    el('dl', { class: 'cost-cells num' },
+      el('div', {}, el('dt', { text: '今日' }), el('dd', { text: `${fmtCharges(costs.today.amounts)}` }), el('dd', { class: 'sub', text: `${costs.today.calls}件・${costs.today.seconds}秒` })),
+      el('div', {}, el('dt', { text: '今月' }), el('dd', { text: `${fmtCharges(costs.month.amounts)}` }), el('dd', { class: 'sub', text: `${costs.month.calls}件・${costs.month.seconds}秒` })),
+      costs.pending ? el('div', {}, el('dt', { text: '確定待ち' }), el('dd', { text: `${costs.pending}件` }), el('dd', { class: 'sub', text: '通話の数分後に確定します' })) : null)));
   page.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'あなたの確認が必要' }), need.length ? el('span', { class: 'sub', text: `${need.length}件` }) : null));
   page.append(need.length ? el('div', { class: 'need' }, ...need.map(needCard)) : el('p', { class: 'muted', text: '確認が必要なものはありません。' }));
   if (live.length) { page.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: '進行中' }))); page.append(callRows(live, '')); }
@@ -1036,6 +1056,7 @@ async function call(id, _sub, team = false) {
     foot.append(el('a', { class: 'btn primary', href: `#/new?again=${r.id}`, text: '同じ相手にまた頼む' }));
     if (notes.some(n => n.field === 'date' && n.status === 'verified')) foot.append(el('a', { class: 'btn', href: `/v1/phone/calls/${r.id}/calendar.ics`, text: 'カレンダーに入れる' }));
     const used = r.creditUsage; if (used?.consumed) foot.append(el('p', { class: 'note', text: `消費 ${used.consumed} クレジット` }));
+    const charge = chargeNote(r.carrierCharge); if (charge) foot.append(charge);
     if (!live && notes.length) foot.append(el('p', { class: 'note', text: ok === notes.length ? '輪が閉じました。相手の言葉で確かめられています。' : `${notes.length}項目中 ${ok} 項目を相手の言葉で確かめました。` }));
   }
   main.append(foot);

@@ -67,6 +67,7 @@ export function phoneRecord(service,m) {
  const voiceSetting=service.store.events(m.id,m.owner).find(e=>e.type==='voice.setting')?.setting??null;
  return {id:m.id,direction:m.direction==='inbound'?'inbound':'outbound',request:m.phoneRequest,voiceSetting,memory:m.memory?.turnCount===transcript.length&&m.memory?.lastTurnId===(transcript.at(-1)?.id??null)?m.memory:phoneMemory(m.inbound?.reception?{...m.phoneRequest,conversationMode:'chat'}:m.phoneRequest,transcript,m.approvedAt??m.createdAt),state:map[m.status]??'unknown',createdAt:new Date(m.createdAt).toISOString(),updatedAt:new Date(m.finishedAt??m.approvedAt??m.createdAt).toISOString(),creditState:service.credits.status(m),creditQuote:m.creditQuote,creditUsage:service.credits.usage(m),
   billing:m.billing?{state:m.billing.state,durationSeconds:m.billing.carrier?.durationSeconds,cost:m.billing.cost}:undefined,
+  carrierCharge:m.mode==='live'?(m.carrierCharge??(m.carrierSid?{pending:true}:null)):null,
   news:service.store.events(m.id,m.owner).filter(e=>e.type==='news.lookup').map(e=>e.result),
   // What the AI says it decided within 任せる範囲: its own account, shown as such; never evidence.
   decisions:service.store.events(m.id,m.owner).filter(e=>e.type==='decision.made').map(e=>({decision:e.decision,...(e.within?{within:e.within}:{}),...(typeof e.t==='number'?{t:e.t}:{})})),
@@ -122,3 +123,20 @@ export function prepareManagedPhone(service,u,input,limits={}) {
  assert(m.estimatedMaximumUsd<=m.maxUsd,'estimated_cost_exceeds_budget');service.store.put('mission',m);return m;
 }
 export { PHONE_PURPOSE_TEMPLATES, PHONE_VOICES };
+
+/** What real calls cost at the carrier, today and this month (Japan time), per currency. AI voice usage is not included. */
+export function carrierChargeTotals(store, owner, now = store.now()) {
+  const jst = t => new Date(t + 9 * 3600_000).toISOString(), today = jst(now).slice(0, 10), month = today.slice(0, 7);
+  const sum = () => ({ calls: 0, seconds: 0, amounts: {} }), out = { today: sum(), month: sum(), pending: 0 };
+  for (const m of store.all('mission', owner)) {
+    if (m.mode !== 'live' || !m.carrierSid) continue;
+    const day = jst(m.finishedAt ?? m.approvedAt ?? m.createdAt).slice(0, 10);
+    if (!day.startsWith(month)) continue;
+    if (!m.carrierCharge) { out.pending++; continue; }
+    for (const [key, bucket] of [['month', out.month], ...(day === today ? [['today', out.today]] : [])]) {
+      bucket.calls++; bucket.seconds += m.carrierCharge.durationSeconds;
+      bucket.amounts[m.carrierCharge.currency] = Math.round(((bucket.amounts[m.carrierCharge.currency] ?? 0) + m.carrierCharge.amount) * 100000) / 100000;
+    }
+  }
+  return out;
+}

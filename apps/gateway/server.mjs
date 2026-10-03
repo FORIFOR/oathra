@@ -2,7 +2,7 @@ import { phonePage } from './lib/phone-ui.mjs';
 import { grantPhone, phoneGrantDefaults, connectPhoneAgent, agentPhoneConnection, revokePhoneGrant, dispatchPhone, readAgentPhone, cancelAgentPhone } from './lib/agent-phone.mjs';
 import { practiceList, practiceRun, practicePlayStart, practicePlayState, practicePlayReply, practicePlayHangup, practiceBrains, practiceRecords, practiceRecord, configurePractice } from './lib/practice.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
-import { phoneReadiness, phoneRecord, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
+import { phoneReadiness, phoneRecord, carrierChargeTotals, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -363,7 +363,7 @@ export async function createGateway(config,options={}){
       }
       if(path==='/v1/session'&&method==='POST'){assert(auth?.startsWith('Bearer '),'bearer_required',401);sessions.create(req,res,u);return send(res,200,{signedIn:true,expiresInSeconds:8*3600});}
       if(method==='GET'&&path==='/v1/bootstrap')return send(res,200,{user:{id:u.id,role:u.role},login:service.passwords.profile(u.id),account:service.account(u),credits:{enabled:service.credits.enabled,...service.credits.balance(u.id),quote:service.credits.quote(config.mode)},integrations:followups.available(u),plugins:registry.list(),followups:store.list('followup',u.id),products:store.list('product',u.id),contacts:contactsView(u),missions:store.list('mission',u.id).filter(m=>m.direction!=='inbound').map(({transcript,runtimeResult,...m})=>({...m,creditState:service.credits.status(m),creditUsage:service.credits.usage(m)})),
-        alertsConfigured:!!alerts.config,scheduleHours:config.callHours?.request??{from:'07:00',to:'21:00'},...(['admin','manager'].includes(u.role)?{undeliveredAlerts:store.countStatus('alert',['pending','processing'])}:{}),...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
+        carrierCharges:carrierChargeTotals(store,u.id),alertsConfigured:!!alerts.config,scheduleHours:config.callHours?.request??{from:'07:00',to:'21:00'},...(['admin','manager'].includes(u.role)?{undeliveredAlerts:store.countStatus('alert',['pending','processing'])}:{}),...(u.role==='admin'?{failedJobs:store.failedJobs()}:{}),
         // Lets the page hide what cannot work here instead of offering it and failing.
         available:{phoneVerification:Boolean(env.TWILIO_VERIFY_SERVICE_SID&&env.TWILIO_AUTH_TOKEN)},
         configuration:{mode:config.mode,liveReady:config.liveReady,missing:config.missing,consentVersion:config.consentVersion,callerId:config.callerId??'simulator',maxSeconds:config.maxSeconds,maxCallUsd:config.maxCallUsd,publicUrl:config.publicUrl,prerelease:config.prerelease??{enabled:false},voiceEngines:(config.voiceEngines??[]).map(({id,label,ready})=>({id,label,ready})),inbound:config.inbound?{owner:config.inbound.owner===u.id,restaurant:Boolean(config.inbound.restaurant)}:null}});
@@ -484,7 +484,7 @@ export async function createGateway(config,options={}){
     }
   });
   server.requestTimeout=15000;server.headersTimeout=10000;server.maxHeadersCount=64;
-  if(config.liveReady&&!options.execute){await phone.attach(server);if(config.billing?.policy===METERED)phone.startBilling();}
+  if(config.liveReady&&!options.execute){await phone.attach(server);if(config.billing?.policy===METERED)phone.startBilling();phone.startCarrierCharges();}
   return {server,service,store,worker,phone,channels,registry,async drain(graceMs){const result=await worker.drain(graceMs);await this.close();return result;},
     async close(){await worker.stop();await phone.stopBilling?.();server.closeAllConnections();await new Promise(r=>server.close(r));phone.wss?.close();await registry.close();if(!options.store)store.close();}};
 }

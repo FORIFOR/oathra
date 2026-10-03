@@ -47,7 +47,29 @@ export class Phone {
       this.billingPending=(async()=>{for(const m of due){checked.set(m.id,Date.now());try{await this.reconcileBilling(m)}catch(e){console.error(JSON.stringify({event:'billing.reconcile_failed',code:e.code??e.name,mission:m.id}))}}})().finally(()=>{this.billingPending=null});
     },5000);this.billingTimer.unref();
   }
-  async stopBilling(){clearInterval(this.billingTimer);await this.billingPending;}
+  async stopBilling(){clearInterval(this.billingTimer);await this.billingPending;clearInterval(this.chargeTimer);await this.chargePending;}
+  /** What the carrier actually charged for a finished real call, as Twilio reports it (price arrives a little after the call). */
+  async fetchCarrierCharge(m) {
+    const data=await jsonFetch(this.callURL(m.carrierSid),{headers:{authorization:this.auth()}});
+    assert(data.sid===m.carrierSid&&data.account_sid===this.env.TWILIO_ACCOUNT_SID,'carrier_charge_identity_mismatch',502);
+    if(!['completed','failed','busy','no-answer','canceled'].includes(data.status))return null;
+    const amount=data.price===null||data.price===undefined||data.price===''?null:Math.abs(Number(data.price));
+    const durationSeconds=/^\d+$/.test(String(data.duration??''))?Number(data.duration):0;
+    if(amount===null&&data.status==='completed'&&durationSeconds>0)return null; // not priced yet
+    return {amount:Number.isFinite(amount)?amount:0,currency:String(data.price_unit||'USD').toUpperCase(),durationSeconds,checkedAt:this.store.now()};
+  }
+  /** Every finished real call gets its carrier charge recorded, whatever the billing policy, so the person can see it. */
+  startCarrierCharges() {
+    const tried=new Map(),ended=['COMPLETED','INCOMPLETE','FAILED','CANCELLED','DECLINED'];
+    this.chargeTimer=setInterval(()=>{
+      if(this.chargePending)return;
+      const now=this.store.now();
+      const due=this.store.list('mission').filter(m=>m.mode==='live'&&m.carrierSid&&!m.carrierCharge&&ended.includes(m.status)&&(m.finishedAt??m.createdAt)>now-86400_000&&Date.now()-(tried.get(m.id)??0)>30000).slice(0,5);
+      this.chargePending=(async()=>{for(const m of due){tried.set(m.id,Date.now());try{const charge=await this.fetchCarrierCharge(m);if(!charge)continue;
+        this.store.tx(()=>{const current=this.store.get('mission',m.id);if(!current||current.carrierCharge)return;current.carrierCharge=charge;this.store.put('mission',current);});
+      }catch(e){console.error(JSON.stringify({event:'carrier.charge_failed',code:e.code??e.name,mission:m.id}))}}})().finally(()=>{this.chargePending=null});
+    },5000);this.chargeTimer.unref();
+  }
   async reconcile(u,id,stop=false) {
     const m=this.service.own('mission',id,u); this.service.write(u); assert(m.carrierSid,'carrier_sid_unknown_check_provider_console',409);
     if(stop) await this.update(m.carrierSid,{Status:'completed'});

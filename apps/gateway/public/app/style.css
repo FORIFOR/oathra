@@ -856,3 +856,11 @@ mark.proof mark.proof { text-underline-offset: 2px; }
 .people-table .apart { display: block; font-weight: 400; }
 /* Dark only: the small outlined chips (名簿・定期・営業, 決まりました) sat grey on grey; a lighter border and ink lift them without changing the light theme. */
 :root[data-theme="dark"] .tag, :root[data-theme="dark"] .verdict-tag { border-color: #5a5750; color: var(--ink); }
+
+/* Carrier charges on the request list: what the phone company billed, today and this month. */
+.cost-strip { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 14px 16px; margin: 0 0 20px; }
+.cost-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 10px; }
+.cost-cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 0; }
+.cost-cells dt { font-size: 12px; color: var(--muted); }
+.cost-cells dd { margin: 2px 0 0; font-size: 18px; font-weight: 700; }
+.cost-cells dd.sub { font-size: 12px; font-weight: 400; color: var(--muted); }
