@@ -49,7 +49,7 @@ const ERRORS = {
   unauthorized: 'トークンが違うか、期限が切れています。', invalid_token: 'トークンが違います。',
   cross_origin_request_denied: 'このページのアドレスが、サーバーの設定と違います。設定された公開アドレスから開いてください。',
   review_current_privacy_notice: '会話データの取り扱いへの同意が必要です。',
-  approval_expired_or_used: '確認の有効期限が切れました。もう一度「内容を確かめる」を押してください。',
+  approval_expired_or_used: '確認の有効期限が切れました。電話はかけていません。もう一度「内容を確かめる」を押してください。',
   mission_changed_review_again: '内容が変わりました。もう一度確かめてください。',
   voice_engine_unavailable: 'この声は、このサーバーではまだ使えません。標準の声を選んでください。',
   invalid_phone_request: '電話番号・相手の名前・頼むことを確かめてください（名前に数字や記号は使えません）。',
@@ -186,7 +186,8 @@ function fmtCharge(amount, currency) {
   if (currency === 'USD') return `${amount.toFixed(amount < 1 ? 3 : 2)}ドル`;
   return `${amount} ${currency}`;
 }
-const fmtCharges = amounts => Object.entries(amounts ?? {}).map(([c, a]) => fmtCharge(a, c)).join(' + ') || '0円';
+// No priced call is 0円 only when nothing is waiting for a price; otherwise it is not known yet.
+const fmtCharges = (amounts, pending = 0) => Object.entries(amounts ?? {}).map(([c, a]) => fmtCharge(a, c)).join(' + ') || (pending ? '確定待ち' : '0円');
 function chargeNote(c) {
   if (!c) return null;
   if (c.pending) return el('p', { class: 'note', text: '電話会社の通話料は、確定すると（通話の数分後）ここに出ます。' });
@@ -257,7 +258,7 @@ function renderBar() {
   const need = app.history.filter(needsYou).length, live = app.history.find(r => LIVE.includes(r.state));
   $('#attention-badge').hidden = !need; $('#attention-badge').textContent = String(need);
   $('#live-pill').hidden = !live;
-  if (live) { $('#live-pill').href = `#/call/${live.id}`; $('#live-pill-time').textContent = `・${live.request.name} ${mmss((Date.now() - Date.parse(live.createdAt)) / 1000)}`; }
+  if (live) { $('#live-pill-state').textContent = live.state === 'stopping' ? '停止の確認中' : '電話中'; $('#live-pill').href = `#/call/${live.id}`; $('#live-pill-time').textContent = `・${live.request.name} ${mmss((Date.now() - Date.parse(live.createdAt)) / 1000)}`; }
 }
 
 // ---------------------------------------------------------------- router
@@ -307,10 +308,17 @@ async function route() {
   try {
     const content = await render(id, sub);
     // An older request may finish after the person has chosen another screen.
-    if (current()) view.replaceChildren(content);
+    if (current()) { view.replaceChildren(content); app.liveSince = Date.now(); }
   } catch (e) {
     if (!current()) return;
     if (e.status === 401) { app.boot = null; return renderLogin(); }
+    // While a call runs, a failed refresh keeps the screen and its stop button, says when it last updated, and tries again.
+    if (app.liveCall && location.hash.split('?')[0] === app.liveCall && view.querySelector('.call:not(.finished)')) {
+      let stale = view.querySelector('.live-stale');
+      if (!stale) { stale = el('p', { class: 'errbox live-stale', role: 'alert' }); view.querySelector('.call-main')?.prepend(stale); }
+      stale.textContent = `状況を取得できません（${new Date(app.liveSince).toLocaleTimeString('ja-JP')} の表示のままです）。通話は続いている可能性があります。自動でもう一度読み込みます。`;
+      app.timer = setTimeout(route, 3000); return;
+    }
     renderRouteError(view, e);
   }
 }
@@ -391,7 +399,7 @@ async function home() {
     el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: 'ホーム' }), el('p', { class: 'page-intro', text: '依頼の状況と、相手の言葉から確かめられたこと。' })), el('time', { class: 'sub', text: new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' }) })));
   if (need.length) page.append(el('div', { class: 'attention', role: 'status' }, el('span', { class: 'dot' }), el('span', { text: `あなたの確認が必要な依頼が ${need.length} 件あります` }), el('a', { class: 'btn', href: '#/requests', text: '確認する' })));
   const credit = b.credits?.enabled
-    ? el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: 'クレジット残高' })), el('div', { class: 'metric-v', text: String(b.credits.available ?? 0) }),
+    ? el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: 'クレジット残高' })), el('div', { class: 'metric-v', text: Number.isFinite(b.credits.available) ? String(b.credits.available) : '取得できません' }),
       el('p', { class: 'note', text: b.credits.held ? `確保中 ${b.credits.held}` : '本番の電話1回ごとに、承認のときに確保して終わったら精算します。' }), el('a', { class: 'btn', href: '#/settings/cost', text: 'クレジットと費用' }))
     : app.month.capUsd !== null
       ? el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: '今月の費用（見込みの上限）' }), el('span', { class: 'num', text: `${new Date(app.month.since).getMonth() + 1}月` })),
@@ -444,18 +452,18 @@ function callRows(list, emptyText) {
 async function requests() {
   await loadAll();
   // People who could not get through and asked for a call back: the open count, when there is one (never blocks the page).
-  const callbackOpen = (await api('/callbacks').catch(() => null))?.open ?? 0;
+  const callbackOpen = await api('/callbacks').then(x => x?.open ?? 0, () => null);
   const need = app.history.filter(needsYou), live = app.history.filter(r => LIVE.includes(r.state)), done = app.history.filter(r => !needsYou(r) && !LIVE.includes(r.state));
   const page = el('div', { class: 'page' });
   page.append(el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: '依頼' }), el('p', { class: 'page-intro', text: '発信前の確認と、終わった電話の報告をまとめています。' })),
     el('div', { class: 'actions page-actions' }, el('a', { class: 'btn', href: '#/standing', text: '定期の電話' }), el('a', { class: 'btn', href: '#/lists', text: '名簿の電話' }),
-      el('a', { class: 'btn', href: '#/callbacks' }, '折り返しの依頼', callbackOpen ? el('span', { class: 'badge', 'aria-label': `未対応 ${callbackOpen}件`, text: String(callbackOpen) }) : null), isSupervisor() ? el('a', { class: 'btn', href: '#/team', text: 'チームの電話' }) : null)));
+      el('a', { class: 'btn', href: '#/callbacks' }, '折り返しの依頼', callbackOpen === null ? el('span', { class: 'badge unknown', 'aria-label': '未対応の件数を取得できません', text: '?' }) : callbackOpen ? el('span', { class: 'badge', 'aria-label': `未対応 ${callbackOpen}件`, text: String(callbackOpen) }) : null), isSupervisor() ? el('a', { class: 'btn', href: '#/team', text: 'チームの電話' }) : null)));
   const costs = app.boot?.carrierCharges;
   if (app.boot?.configuration?.mode === 'live' && costs) page.append(el('section', { class: 'cost-strip', 'aria-label': '通話料' },
     el('div', { class: 'cost-head' }, el('b', { text: '通話料（電話会社）' }), el('span', { class: 'sub', text: 'AIの音声（OpenAI）の費用は含みません。OpenAIの管理画面の Usage で確認できます。' })),
     el('dl', { class: 'cost-cells num' },
-      el('div', {}, el('dt', { text: '今日' }), el('dd', { text: `${fmtCharges(costs.today.amounts)}` }), el('dd', { class: 'sub', text: `${costs.today.calls}件・${costs.today.seconds}秒` })),
-      el('div', {}, el('dt', { text: '今月' }), el('dd', { text: `${fmtCharges(costs.month.amounts)}` }), el('dd', { class: 'sub', text: `${costs.month.calls}件・${costs.month.seconds}秒` })),
+      el('div', {}, el('dt', { text: '今日' }), el('dd', { text: `${fmtCharges(costs.today.amounts, costs.pending)}` }), el('dd', { class: 'sub', text: `${costs.today.calls}件・${costs.today.seconds}秒` })),
+      el('div', {}, el('dt', { text: '今月' }), el('dd', { text: `${fmtCharges(costs.month.amounts, costs.pending)}` }), el('dd', { class: 'sub', text: `${costs.month.calls}件・${costs.month.seconds}秒` })),
       costs.pending ? el('div', {}, el('dt', { text: '確定待ち' }), el('dd', { text: `${costs.pending}件` }), el('dd', { class: 'sub', text: '通話の数分後に確定します' })) : null)));
   page.append(el('div', { class: 'page-h' }, el('h2', { class: 'section-h', text: 'あなたの確認が必要' }), need.length ? el('span', { class: 'sub', text: `${need.length}件` }) : null));
   page.append(need.length ? el('div', { class: 'need' }, ...need.map(needCard)) : el('p', { class: 'muted', text: '確認が必要なものはありません。' }));
@@ -683,6 +691,9 @@ async function ask() {
     return own === undefined ? (b.account?.callerName ?? '') : own.length <= 40 && !/[\d@<>{}]|https?:/i.test(own) ? own : ''; };
   function values() { const body = instruction.value.trim(); return { phone: phone.value.trim(), name: name.value.trim(), body, instruction: usesScope() && body ? withScope(body, form.ok, form.hold) : body, preset: voice.value, voiceName: voiceName.value, engine: engineSel.value }; }
   function changed() {
+    // A draft this form made only to show the confirmation is dropped once that confirmation no longer holds,
+    // so edits and expiries do not pile up as 発信前の確認待ち. A draft opened from 依頼 is the person's own and stays.
+    const stale = review; if (stale?.madeHere && stale.mission?.id) api(`/missions/${stale.mission.id}`, { method: 'DELETE' }).catch(() => null);
     review = null; err.hidden = true; consentBox.checked = false; rep.on = false; rep.key = null; repOn.checked = false; repAck.checked = false; repGo.disabled = true;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
     for (const c of kindCards.children) c.setAttribute('aria-pressed', String(c.dataset.kind === form.kind));
@@ -834,7 +845,7 @@ async function ask() {
       ...(!consented ? [el('label', { class: 'check' }, consentAgree, '会話データの取り扱い（電話会社と音声AIに音声と文字が渡り、記録はこのサーバーに30日保存）に同意します。')] : []),
       ...(review && rep.on ? [] : [review ? el('label', { class: 'check' }, consentBox, '相手・頼むこと・費用を確かめました。この1件の発信を承認します。') : check]),
       ...(review && !rep.on ? [go] : []),
-      ...(review && !rep.on ? [el('p', { class: 'note', text: '押すまで電話はかかりません。承認はこの内容だけに有効です。' })] : !review ? [el('p', { class: 'note', text: 'まだ電話はかかりません。内容を確かめると、費用の見込みと承認のチェックが出ます。' })] : []),
+      ...(review && !rep.on ? [el('p', { class: 'note', text: `押すまで電話はかかりません。この確認は ${new Date(review.expiresAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} まで有効です。` + '承認はこの内容だけに有効です。' })] : !review ? [el('p', { class: 'note', text: 'まだ電話はかかりません。内容を確かめると、費用の見込みと承認のチェックが出ます。' })] : []),
       // Repeating it: only a reviewed phone request (review.request), never a sales call.
       ...(review?.request ? [el('div', { class: 'rep' },
         form.kind === 'reserve' ? el('p', { class: 'note', text: '予約を取る電話は、定期の電話にできません。' })
@@ -854,7 +865,7 @@ async function ask() {
         if (!form.contactId) throw new Error('営業の電話は、連絡先から相手を選んでください（連絡先の画面で登録できます）。');
         if (!form.productId) throw new Error('紹介する商品を選んでください（設定の「商品」で登録できます）。');
         const m = await api('/missions/draft', { method: 'POST', body: { request: v.body, productId: form.productId, goal: form.purpose, contactId: form.contactId, maxSeconds: Math.min(180, b.configuration.maxSeconds) } });
-        review = { ...(await api(`/missions/${m.id}/review`, { method: 'POST', body: {} })), readiness: st };
+        review = { ...(await api(`/missions/${m.id}/review`, { method: 'POST', body: {} })), readiness: st }; review.expiresAt = Date.now() + (review.expiresInSeconds ?? 300) * 1000;
       } else {
         const left = blanks().filter(k => v.body.includes(`（${k}）`));
         if (left.length) throw new Error(`「${left.join('」「')}」を入れてください（文の中に、まだ（${left[0]}）が残っています）。`);
@@ -864,7 +875,7 @@ async function ask() {
         const asks = cond.success ? `\n確かめる条件：${cond.text}。相手が違う数量や日を答えたら、決めずに、聞いた内容を持ち帰ってください。` : '';
         const requestBody = { phone: v.phone, name: v.name, instruction: (v.instruction + asks).slice(0, 2000), ...(cond.success ? { success: cond.success } : {}), ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
         ...(form.mode ? { conversationMode: form.mode } : {}), ...(callerFor() ? { callerName: callerFor() } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}), ...(engine && v.voiceName ? { voice: v.voiceName } : {}), ...(form.pace ? { pace: 'gentle' } : {}) };
-        review = await api('/phone/draft', { method: 'POST', body: requestBody });
+        review = await api('/phone/draft', { method: 'POST', body: requestBody }); review.madeHere = true; review.expiresAt = Date.now() + (review.expiresInSeconds ?? 300) * 1000;
         review.request = requestBody;
       }
       review.key = crypto.randomUUID();
@@ -877,7 +888,11 @@ async function ask() {
     try {
       await api(`/missions/${review.mission.id}/start`, { method: 'POST', body: { approvalToken: review.approvalToken, acknowledged: true }, headers: { 'Idempotency-Key': review.key } });
       app.boot = null; await loadAll(); location.hash = `#/call/${review.mission.id}`;
-    } catch (e) { err.textContent = e.message; err.hidden = false; go.disabled = isPaused(b.configuration); }
+    } catch (e) {
+      // An approval that expired or no longer matches the request starts again from 内容を確かめる (nothing was dialled).
+      if (['approval_expired_or_used', 'mission_changed_review_again', 'contact_changed_review_again', 'credit_price_changed_review_again'].includes(e.code)) changed();
+      err.textContent = e.message; err.hidden = false; go.disabled = !review || isPaused(b.configuration);
+    }
   });
   let voiceField, scopeField, paceField, termsField;
   for (const n of [qtyAmount, qtyUnit, dueDate]) { n.addEventListener('input', () => changed()); n.addEventListener('change', () => changed()); }
@@ -978,15 +993,17 @@ async function call(id, _sub, team = false) {
   const r = team ? await api(`/team/calls/${encodeURIComponent(id)}`) : known?.sales ? fromSales(await api(`/missions/${encodeURIComponent(id)}`)) : await api(`/phone/calls/${encodeURIComponent(id)}`);
   const i = team ? -1 : app.history.findIndex(x => x.id === r.id); if (i >= 0) app.history[i] = r;
   const here = `#/${team ? 'team' : 'call'}/${r.id}`;
-  const live = LIVE.includes(r.state), notes = notesOf(r), ok = notes.filter(n => n.status === 'verified').length, o = outcome(r);
+  const live = LIVE.includes(r.state), stopping = r.state === 'stopping', notes = notesOf(r), ok = notes.filter(n => n.status === 'verified').length, o = outcome(r);
+  // Kept so a refresh that fails while the call runs leaves this screen (and its stop button) in place.
+  app.liveCall = live && !team ? here : null;
   const seconds = r.billing?.durationSeconds ?? (live ? (Date.now() - Date.parse(r.createdAt)) / 1000 : 0);
   const head = el('div', { class: 'head' },
     notes.length ? ringFor(notes.length, notes.map(n => n.status === 'verified')) : null,
     el('div', {},
       r.createdAt ? el('p', { class: 'call-when num' }, el('time', { datetime: r.createdAt, text: japanTime(r.createdAt) }), r.attempt ? `　定期の電話・${r.attempt.number}回目` : '') : null,
-      el('div', { class: `state-line ${live ? 'state-live' : ''}` }, live ? el('span', { class: 'dot' }) : null, live ? '電話中' : r.state === 'failed' || r.state === 'unknown' ? o.text : '電話が終わりました', seconds ? el('time', { class: 'num', text: ` ${mmss(seconds)}` }) : null,
-        live ? el('span', { class: 'muted small', text: ' · 上限の時間になると、あいさつして切ります' }) : null),
-      el('h1', { class: 'headline', text: live ? (r.transcript?.length ? '相手と話しています' : '発信しています') : o.text })));
+      el('div', { class: `state-line ${live ? 'state-live' : ''}` }, live ? el('span', { class: 'dot' }) : null, stopping ? '停止を受け付けました' : live ? '電話中' : r.state === 'failed' || r.state === 'unknown' ? o.text : '電話が終わりました', seconds ? el('time', { class: 'num', text: ` ${mmss(seconds)}` }) : null,
+        live && !stopping ? el('span', { class: 'muted small', text: ' · 上限の時間になると、あいさつして切ります' }) : null),
+      el('h1', { class: 'headline', text: stopping ? '電話が切れたことを確認しています' : live ? (r.transcript?.length ? '相手と話しています' : '発信しています') : o.text })));
   const main = el('section', { class: 'call-main' },
     el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' › ', ...(team ? [el('a', { href: '#/team', text: 'チームの電話' }), ' › '] : []), el('b', { text: r.request.name }), el('span', { class: 'tag', text: r.direction === 'inbound' ? '着信' : r.practice ? '練習' : '本番' }), r.scheduled ? el('span', { class: 'tag', text: '定期' }) : null),
     ...(team ? [el('p', { class: 'note', text: `頼んだ人：${r.owner === app.boot.user.id ? '自分' : app.teamNames?.[r.owner] || r.owner}。読むだけの画面です。${r.owner === app.boot.user.id ? '' : '開いたことは記録されます。'}` })] : []),
@@ -1046,11 +1063,17 @@ async function call(id, _sub, team = false) {
   }
   const foot = el('div', { class: 'call-foot' });
   if (team) foot.append(el('a', { class: 'btn', href: '#/team', text: 'チームの電話に戻る' }));
-  else if (live) foot.append(el('button', { class: 'btn danger', type: 'button', text: '通話を終える', onclick: async e => {
-    e.currentTarget.disabled = true;
-    try { await api(`/missions/${r.id}/cancel`, { method: 'POST', body: {} }); } catch (err) { toast(err.message); }
-    route();
-  } }), el('p', { class: 'note', text: '終えると、ここまでの内容で報告を作ります。' }));
+  else if (stopping) foot.append(el('p', { class: 'note', role: 'status', text: '停止を受け付けました。電話会社で通話が切れたことを確かめると、ここに報告が出ます。もう一度押す必要はありません。' }));
+  else if (live) {
+    // A failed stop stays on screen until the next try: a call that may still be running is not a passing notice.
+    const stopErr = el('p', { class: 'errbox', role: 'alert', hidden: true });
+    foot.append(el('button', { class: 'btn danger stop-call', type: 'button', text: '通話を終える', onclick: async e => {
+      const button = e.currentTarget; button.disabled = true; stopErr.hidden = true;
+      try { await api(`/missions/${r.id}/cancel`, { method: 'POST', body: {} }); }
+      catch (err) { stopErr.textContent = `停止を受け付けたか確認できませんでした。通話は続いている可能性があります。${err.message}`; stopErr.hidden = false; button.disabled = false; return; }
+      route();
+    } }), stopErr, el('p', { class: 'note', text: '終えると、ここまでの内容で報告を作ります。' }));
+  }
   else {
     if (r.state === 'unknown' && !r.resolvedAt) foot.append(needCard(r).querySelector('button'));
     foot.append(el('a', { class: 'btn primary', href: `#/new?again=${r.id}`, text: '同じ相手にまた頼む' }));
@@ -1932,7 +1955,7 @@ async function settings(tab) {
     const ledger = b.credits?.enabled ? (await api('/credits/ledger')).entries : [];
     const labels = { grant: '追加', reserve: '確保', consume: '消費', release: '返却' };
     const purchaseView = createCreditPurchase({ api, owner: b.user.id, isBlocked: () => app.boot?.account?.purchaseBlocked === true, onBalanceChange: async () => { await loadAll(); if (balanceLabel.isConnected) balanceLabel.textContent = String(app.boot.credits.available); } });
-    const balanceLabel = el('b', { class: 'num', text: `${b.credits?.available ?? 0}` });
+    const balanceLabel = el('b', { class: 'num', text: Number.isFinite(b.credits?.available) ? `${b.credits.available}` : '取得できません' });
     body = [el('h2', { text: '費用とクレジット' }),
       b.credits?.enabled ? row('クレジット残高', '', balanceLabel, el('span', { class: 'note', text: b.credits.held ? ` 確保中 ${b.credits.held}` : '' }))
         : row('費用', 'このサーバーはクレジット制ではありません', el('span', { text: `1回の上限 $${cfg.maxCallUsd}（見込みが上限を超える電話は発信しません）` })),

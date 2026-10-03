@@ -133,6 +133,26 @@ try {
   put(running, "ACTIVE", [["caller", "もしもし、田中さんの代わりにお電話しているAIです。"], ["callee", "え、そうなの？どうしたの？"], ["caller", "最近どうしてるかなと思って。"]]);
   await page.until("/最近どうしてるかなと思って/.test(document.querySelector('.transcript').textContent)", { timeout: 6000, label: "live update" });
   c.ok(true, "電話中: a new line appears within the poll interval");
+  // A refresh that fails during a call keeps the screen and its stop button, says so, and recovers by itself.
+  await page.js("window.__liveFetch=window.fetch;window.fetch=()=>Promise.reject(new TypeError('offline'))");
+  await page.until("!!document.querySelector('.live-stale')", { timeout: 8000, label: "live refresh failure" });
+  c.ok(await page.js("!!document.querySelector('.stop-call') && !document.querySelector('.stop-call').disabled && /状況を取得できません/.test(document.querySelector('.live-stale').textContent) && /通話は続いている可能性があります/.test(document.querySelector('.live-stale').textContent)"), "電話中: a failed refresh keeps the stop button and says the call may still be running");
+  await page.screenshot(join(out, "gateway-app-live-stale.png"));
+  await page.js("window.fetch=window.__liveFetch"); await page.until("!document.querySelector('.live-stale')", { timeout: 8000, label: "live refresh recovers" });
+  c.ok(true, "電話中: the screen recovers by itself when the connection returns");
+  // A stop that cannot be sent stays on screen with the button usable again; nothing claims the call ended.
+  await page.js("window.__liveFetch=window.fetch;window.fetch=(u,o)=>/\\/cancel$/.test(String(u))?Promise.reject(new TypeError('offline')):window.__liveFetch(u,o)");
+  await page.js("document.querySelector('.stop-call').click()");
+  await page.until("!!document.querySelector('.call-foot .errbox:not([hidden])')", { timeout: 6000, label: "stop failure" });
+  c.ok(await page.js("/停止を受け付けたか確認できませんでした/.test(document.querySelector('.call-foot .errbox').textContent) && !document.querySelector('.stop-call').disabled"), "電話中: a stop that could not be sent stays on screen and can be pressed again");
+  await page.js("window.fetch=window.__liveFetch");
+  // Stop accepted is not the call ended: the screen says it is confirming, and offers no second stop.
+  { const m = app.store.get("mission", running); m.status = "CANCEL_REQUESTED"; app.store.put("mission", m); }
+  await page.until("/停止を受け付けました/.test(document.querySelector('#view').textContent)", { timeout: 6000, label: "stopping" });
+  c.ok(await page.js("!document.querySelector('.stop-call') && /電話が切れたことを確認しています/.test(document.querySelector('.headline').textContent) && !/電話が終わりました/.test(document.querySelector('#view').textContent) && !/上限の時間になると/.test(document.querySelector('#view').textContent) && /停止の確認中/.test(document.querySelector('#live-pill').textContent)"), "停止の受付: says the stop was accepted and is being confirmed, not that the call ended, with no second stop");
+  await page.screenshot(join(out, "gateway-app-live-stopping.png"));
+  { const m = app.store.get("mission", running); m.status = "ACTIVE"; app.store.put("mission", m); }
+  await page.until("!!document.querySelector('.stop-call')", { timeout: 6000, label: "back to running" });
 
   await page.js(`location.hash='#/call/${done}'`); await page.until("!!document.querySelector('.report-top')");
   const report = await page.text("#view");
@@ -378,6 +398,19 @@ try {
   await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review" });
   const reviewed = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.target.name === "佐々木 ミツ");
   c.ok(/話す速さ/.test(await page.text(".ask-side")) && /ゆっくり・やさしく話す/.test(await page.text(".ask-side .defs")) && reviewed?.phoneRequest.pace === "gentle" && reviewed.phoneRequest.callerName === "ひかり苑" && !/gpt-live-1/.test(await page.text(".ask-side .defs")), "the review shows 話す速さ and no model id; the draft carries the gentle pace and the one caller name", String(reviewed?.phoneRequest.pace));
+  // The confirmation says until when it holds; an expired one goes back to 内容を確かめる, says nothing was dialled, and dials nothing.
+  c.ok(/\d{2}:\d{2} まで有効です/.test(await page.text(".ask-side")), "the confirmation says until when it is valid");
+  const placedBefore = app.store.list("mission", user.id).filter((m) => m.target?.name === "佐々木 ミツ" && m.status !== "DRAFT").length;
+  await page.js("document.querySelector('#ask-ack').click()");
+  await page.js("window.__askFetch=window.fetch;window.fetch=(u,o)=>/\\/start$/.test(String(u))?Promise.resolve(new Response(JSON.stringify({error:'approval_expired_or_used'}),{status:409,headers:{'content-type':'application/json'}})):window.__askFetch(u,o)");
+  await page.js("[...document.querySelectorAll('.ask-side button')].find(b=>b.textContent==='この内容で電話をかける').click()");
+  await page.until("!document.querySelector('#ask-ack')", { timeout: 6000, label: "expired approval resets" });
+  c.ok(await page.js("[...document.querySelectorAll('.ask-side button')].find(b=>b.textContent==='内容を確かめる')?.disabled===false") && /電話はかけていません/.test(await page.text(".ask-side .errbox")) && app.store.list("mission", user.id).filter((m) => m.target?.name === "佐々木 ミツ" && m.status !== "DRAFT").length === placedBefore, "an expired approval returns to 内容を確かめる, says nothing was dialled, and nothing was dialled");
+  await page.js("window.fetch=window.__askFetch");
+  await sleep(500);
+  c.ok(!app.store.list("mission", user.id).some((m) => m.status === "DRAFT" && m.target?.name === "佐々木 ミツ"), "the draft made for the expired confirmation is not left waiting for approval");
+  await clickText("内容を確かめる", ".ask-side");
+  await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review again" });
   // 定期の電話にする: times, weekdays, end date, retries, the rules and the upper bound, then an explicit approval.
   await page.js("document.querySelector('#rep-on').click()");
   await page.until("!!document.querySelector('.rep-panel')", { label: "repeat panel" });
