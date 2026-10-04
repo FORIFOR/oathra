@@ -407,6 +407,10 @@ export async function createGateway(config,options={}){
       if(method==='GET'&&path==='/v1/plugins'){assert(u.role==='admin','administrator_required',403);return send(res,200,{apiVersion:1,plugins:registry.list()});}
       if(method==='POST'&&path==='/v1/consent')return send(res,200,service.saveConsent(u,data.version));
       if(method==='POST'&&path==='/v1/account/caller-name')return send(res,200,service.saveCallerName(u,data.callerName));
+      if(method==='POST'&&path==='/v1/account/profile')return send(res,200,service.saveProfile(u,data.profile));
+      if(method==='GET'&&path==='/v1/presets')return send(res,200,service.presets(u));
+      if(method==='POST'&&path==='/v1/presets')return send(res,200,service.savePreset(u,data));
+      if(method==='DELETE'&&/^\/v1\/presets\/[0-9a-f-]{36}$/.test(path))return send(res,200,service.removePreset(u,path.split('/').pop()));
       if(method==='POST'&&path==='/v1/account/inbound')return send(res,200,service.saveInbound(u,data));
       if(method==='POST'&&path==='/v1/account/monthly-cap')return send(res,200,service.saveMonthlyCap(u,data.capUsd));
       if(method==='GET'&&path==='/v1/account/month')return send(res,200,service.monthUsage(u));

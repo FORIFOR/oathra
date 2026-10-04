@@ -1,5 +1,5 @@
 import { phoneMemory, checkInNote } from '../../../packages/core/dist/index.js';
-import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
+import { PhoneRequestSchema, normalizePhoneNumber, extractPhoneNumber, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
 import { repoUrl } from './paths.mjs';
@@ -104,8 +104,27 @@ export function phoneCalendar(service,m,now=service.store.now()) {
   'BEGIN:VEVENT','UID:'+m.id+'@oathra','DTSTAMP:'+stamp,'DTSTART;TZID=Asia/Tokyo:'+local(day,clock),'DTEND;TZID=Asia/Tokyo:'+local(endDay,String(end.getUTCHours()).padStart(2,'0')+':'+String(end.getUTCMinutes()).padStart(2,'0')),
   'SUMMARY:'+text(`${settled?'【電話で確認】':'【未確定】'}${m.target.name}`),'DESCRIPTION:'+text(lines.join('\n')),'STATUS:'+(settled?'CONFIRMED':'TENTATIVE'),'TRANSP:'+(settled?'OPAQUE':'TRANSPARENT'),'END:VEVENT','END:VCALENDAR',''].join('\r\n');
 }
+/** Who a request written in plain words is for: a number in the text, or the one contact it names. Never a guess. */
+export function resolvePhoneTarget(service,u,instruction,given={}) {
+ const text=String(instruction??''),contacts=service.store.list('contact',u.id).filter(c=>c.phone);
+ if(given.phone)return {phone:given.phone,name:given.name||contacts.find(c=>c.phone===normalizePhoneNumber(String(given.phone)))?.name||contacts.find(c=>c.phone===normalizePhoneNumber(String(given.phone)))?.company||''};
+ let spoken=null;try{const x=extractPhoneNumber(text);spoken=x?normalizePhoneNumber(x):null;}catch{assert(false,'phone_target_unclear',400);}
+ const named=contacts.filter(c=>[c.name,c.company].some(label=>label&&label.length>=2&&text.includes(label)));
+ if(spoken){const known=contacts.find(c=>c.phone===spoken);return {phone:spoken,name:given.name||known?.name||known?.company||named.find(c=>c.phone===spoken)?.name||'相手'};}
+ assert(named.length,'phone_target_not_found',400);
+ // Several contacts named: the longest name that contains the others wins (「田中商事」 over 「田中」); otherwise ask.
+ const best=named.filter(c=>!named.some(o=>o!==c&&(o.name||o.company).length>(c.name||c.company).length&&(o.name||o.company).includes(c.name||c.company)));
+ assert(best.length===1,'select_one_contact',409);
+ return {phone:best[0].phone,name:given.name||best[0].name||best[0].company};
+}
 export function prepareManagedPhone(service,u,input,limits={}) {
- service.write(u);const request=PhoneRequestSchema.parse({...input,schemaVersion:1,kind:'oathra.phone-request'});
+ service.write(u);
+ // Written in plain words: the target comes from the text, and what the person asked us to remember goes with it.
+ const account=service.account(u);
+ if(!input.phone||!input.name){const t=resolvePhoneTarget(service,u,input.instruction,{phone:input.phone,name:input.name});input={...input,phone:t.phone,name:t.name};}
+ if(input.callerName===undefined&&account.callerName)input={...input,callerName:account.callerName};
+ if(input.callerProfile===undefined&&account.profile)input={...input,callerProfile:account.profile};
+ const request=PhoneRequestSchema.parse({...input,schemaVersion:1,kind:'oathra.phone-request'});
  const config=service.config;
  // An engine this deployment cannot run is refused at the draft, not discovered at dial time.
  if(request.engine)assert((config.voiceEngines??[]).some(e=>e.id===request.engine&&e.ready),'voice_engine_unavailable',400);

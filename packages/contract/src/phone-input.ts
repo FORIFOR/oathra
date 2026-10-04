@@ -203,6 +203,9 @@ export const PhoneRequestFieldsSchema = z.object({
   // Optional: "gentle" is for someone who needs time: older people, the hard of hearing. Slower, plainer speech and
   // longer waits before the line is treated as silent. Never changes permissions or the verdict.
   pace: z.enum(["gentle"]).optional(),
+  // Optional: what the requester asked the service to remember about them (company, role, a call-back number, how they
+  // describe what they do). Facts the AI may use when asked or when the call needs them; never instructions to it.
+  callerProfile: z.string().trim().min(1).max(2000).optional(),
   instruction: z.string().trim().min(1).max(2000).refine(value => !/\{\{[^{}]+\}\}/.test(value), "テンプレートの {{項目}} を具体的な内容に書き換えてください。"),
 }).strict();
 
@@ -214,7 +217,7 @@ export const PhoneRequestSchema = PhoneRequestFieldsSchema.superRefine((value, c
 });
 
 export type PhoneRequest = z.infer<typeof PhoneRequestSchema>;
-export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "engine" | "voicePreset" | "pace" | "task" | "success">;
+export type PhoneRequestInput = Pick<PhoneRequest, "phone" | "name" | "instruction" | "conversationMode" | "voice" | "callerName" | "callerProfile" | "engine" | "voicePreset" | "pace" | "task" | "success">;
 
 /** Validate user-entered fields and create an inert handoff. Throws ZodError. */
 export function preparePhoneRequest(input: PhoneRequestInput): PhoneRequest {

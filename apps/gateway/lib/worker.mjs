@@ -239,7 +239,7 @@ export class Worker {
 /** Demonstration is explicit and cannot reach a carrier. It deliberately returns no fabricated success. */
 export async function simulate(m,{signal,onEvent}) {
   onEvent({type:'call.connected'});
-  const turns=[{id:'sim-1',source:'caller',text:`${m.product.name}についてAIアシスタントからご案内です。`},{id:'sim-2',source:'callee',text:'資料を送ってください。日程はまだ決められません。'}];
+  const turns=[{id:'sim-1',source:'caller',text:`${m.product?.name ?? '新しいサービス'}についてAIアシスタントからご案内です。`},{id:'sim-2',source:'callee',text:'資料を送ってください。日程はまだ決められません。'}];
   for(const t of turns) { if(signal.aborted) break; await new Promise(r=>setTimeout(r,200)); onEvent({type:'transcript.final',turnId:t.id,...t}); }
   return {transcript:turns,result:{simulation:true}};
 }

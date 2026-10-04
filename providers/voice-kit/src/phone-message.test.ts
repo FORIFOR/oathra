@@ -92,3 +92,18 @@ describe("reading terms back", () => {
     expect(phoneMessageInstructions(request())).not.toContain("【確認の仕方】");
   });
 });
+
+describe("what the requester asked us to remember", () => {
+  const base = { phone: "09012345678", name: "田中", instruction: "明日の打ち合わせの時間を確認してください。" } as const;
+  it("reaches the AI as facts to use when needed, with a rule not to invent beyond them", () => {
+    const contract = definePhoneRequest(preparePhoneRequest({ ...base, callerName: "堀尾", callerProfile: "株式会社リングゼロ 営業部。折り返しは 03-1234-5678。" }));
+    expect(contract.input.callerProfile).toBe("株式会社リングゼロ 営業部。折り返しは 03-1234-5678。");
+    const text = phoneMessageInstructions(contract);
+    expect(text).toContain("株式会社リングゼロ 営業部。折り返しは 03-1234-5678。");
+    expect(text).toContain("ここに無いことは作らないでください");
+  });
+  it("is left out when there is nothing remembered", () => {
+    const text = phoneMessageInstructions(definePhoneRequest(preparePhoneRequest(base)));
+    expect(text).not.toContain("callerProfile");
+  });
+});

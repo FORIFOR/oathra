@@ -35,7 +35,7 @@ function result(service, user, m, detailed=false) {
   return {
     missionId:m.id,state:m.status,mode:m.mode,terminal:terminal(m.status)&&!unknown,
     outcome:unknown?'unknown':m.status==='DRAFT'?'awaiting_human_approval':!terminal(m.status)?'pending':m.status==='COMPLETED'?'conversation_goal_verified':m.status==='DECLINED'?'declined':m.status==='FAILED'?'failed':m.status==='CANCELLED'?'cancelled':'needs_review',
-    target:{name:m.target.name,phone:m.target.phone},product:{id:m.product.id,name:m.product.name},request:m.request,goal:m.goal,
+    target:{name:m.target.name,phone:m.target.phone},product:m.product?{id:m.product.id,name:m.product.name}:null,request:m.request,goal:m.goal,
     maxSeconds:m.maxSeconds,estimatedMaximumUsd:m.estimatedMaximumUsd,
     creditQuote:m.creditQuote,creditUsage:service.credits.usage(m),result:m.result,
     reviewUrl:service.config.publicUrl+'/connect?mission='+encodeURIComponent(m.id),

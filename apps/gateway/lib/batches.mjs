@@ -36,9 +36,10 @@ export class Batches {
       let spec;
       if (input.kind === 'sales') {
         const sales = input.sales; assert(sales && typeof sales === 'object' && Object.keys(sales).every(k => ['productId', 'request', 'goal'].includes(k)) && input.request === undefined, 'invalid_batch');
-        const product = s.own('product', sales.productId, owner); // products are only ever saved as reviewed (service.product)
+        // A product is optional; when given it must be one of the owner's (products are only ever saved as reviewed).
+        const product = sales.productId ? s.own('product', sales.productId, owner) : null;
         assert(sales.goal === undefined || ['meeting', 'materials', 'introduce'].includes(sales.goal), 'invalid_goal');
-        spec = { productId: product.id, request: text(sales.request, 2000), ...(sales.goal ? { goal: sales.goal } : {}) };
+        spec = { ...(product ? { productId: product.id } : {}), request: text(sales.request, 2000), ...(sales.goal ? { goal: sales.goal } : {}) };
       } else {
         assert(input.kind === 'request' && input.request && typeof input.request === 'object' && input.sales === undefined, 'invalid_batch');
         assert(!('phone' in input.request) && !('name' in input.request), 'batch_request_names_no_recipient');
@@ -59,13 +60,12 @@ export class Batches {
     });
   }
   /** Who would be called and who would not, and why. Said before the person commits, and again when they do. */
-  items(owner, kind, contacts) {
+  items(owner, _kind, contacts) {
     const s = this.service;
     return contacts.map(c => {
-      const reason = !c.phone ? 'contact_phone_required' : this.store.suppressed(owner.team, c.phone) ? 'recipient_suppressed' : c.simulationOnly && s.config.mode === 'live' ? 'simulator_contact_not_valid_for_live'
-        : kind === 'sales' && !['inquiry', 'customer', 'consented'].includes(c.relationship) ? 'contact_relationship_required'
-        // One approval reaches many people, so each needs it written down why they may be called, sales or not.
-        : !c.basis?.trim() ? 'contact_basis_required' : null;
+      // Who asked not to be called, and numbers that cannot be dialled here, are left out. A relationship and a basis are
+      // kept on the contact as notes; they are not required to call.
+      const reason = !c.phone ? 'contact_phone_required' : this.store.suppressed(owner.team, c.phone) ? 'recipient_suppressed' : c.simulationOnly && s.config.mode === 'live' ? 'simulator_contact_not_valid_for_live' : null;
       return { contactId: c.id, name: c.name || c.company, ref: c.phone ? this.store.phoneRef(c.phone) : null, state: reason ? 'SKIPPED' : 'PENDING', ...(reason ? { reason } : {}) };
     // The same number saved twice is one person: they are called once.
     }).map((item, index, all) => item.state === 'PENDING' && item.ref && all.findIndex(x => x.state === 'PENDING' && x.ref === item.ref) < index ? { ...item, state: 'SKIPPED', reason: 'same_number_as_another_contact' } : item);
