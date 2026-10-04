@@ -107,3 +107,26 @@ describe("what the requester asked us to remember", () => {
     expect(text).not.toContain("callerProfile");
   });
 });
+
+describe("a two-way call, not a yes-machine (2026-10-04)", () => {
+  const ask = (extra = {}) => phoneMessageInstructions(definePhoneRequest(preparePhoneRequest({ phone: "09012345678", name: "田中", instruction: "新しいサービスをご案内してください。", ...extra })));
+  it("an ordinary request asks open questions about the situation and keeps yes/no for permission and agreement", () => {
+    const text = ask();
+    expect(text).toContain("【双方向の会話】");
+    expect(text).toContain("「どんな」「どのように」「何が」で聞いてください");
+    expect(text).toContain("今話せるかの確認と、送付・予約・日程などへの同意を確かめるときだけ");
+    expect(text).toContain("毎回、発言の最後を質問にしないでください");
+    expect(text).toContain("確かめていない機能・実績・効果・相手の感情を作らないでください");
+    expect(text).not.toContain("承知いたしました、依頼者にもそのようにお伝えしておきますね");
+  });
+  it("a read-back is still a yes/no question when terms must be settled", () => {
+    const text = phoneMessageInstructions(definePhoneRequest(preparePhoneRequest({ phone: "09012345678", name: "店", instruction: "予約してください。", task: "reservation" })));
+    expect(text).toContain("〜でよろしいでしょうか");
+    expect(text).toContain("【双方向の会話】");
+  });
+  it("a chat asks what and how, not did-you questions", () => {
+    const text = ask({ conversationMode: "chat" });
+    expect(text).toContain("はい・いいえで終わる質問");
+    expect(text).toContain("最近どんなことしてた？");
+  });
+});
