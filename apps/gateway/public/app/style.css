@@ -864,3 +864,10 @@ mark.proof mark.proof { text-underline-offset: 2px; }
 .cost-cells dt { font-size: 12px; color: var(--muted); }
 .cost-cells dd { margin: 2px 0 0; font-size: 18px; font-weight: 700; }
 .cost-cells dd.sub { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* Credits a finished call used: under its time in the lists, and as its own line on the report. */
+.row-end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.credit-mini { font-size: 12px; color: var(--muted); white-space: nowrap; }
+@media (max-width: 979px) {
+  .row .row-end { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 12px; margin-top: -8px; }
+}

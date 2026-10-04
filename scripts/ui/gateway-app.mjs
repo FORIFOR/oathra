@@ -123,6 +123,7 @@ try {
   await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.page-actions a[href$=standing]')");
   const req = await page.text("#view");
   c.ok(/電話が終わったか確かめられていません/.test(req) && /発信前の確認待ち/.test(req) && /進行中/.test(req) && /終了した電話/.test(req), "依頼: needs-you cards, in progress and done", req.slice(0, 300));
+  c.ok(await page.js("[...document.querySelectorAll('.rows .row')].filter(r=>/話しました|決まりました|決まりませんでした|応答がありません|かけられません|確かめ/.test(r.textContent)&&!/電話中|発信前/.test(r.textContent)).every(r=>!!r.querySelector('.credit-mini'))"), "依頼: every finished call in the list shows its credits");
   await page.screenshot(join(out, "gateway-app-requests.png"), { fullPage: true });
 
   await page.js(`location.hash='#/call/${running}'`); await page.until("/通話を終える/.test(document.querySelector('#view').textContent)");
@@ -158,6 +159,15 @@ try {
   const report = await page.text("#view");
   c.ok(/決まりました/.test(report) && await page.js("!!document.querySelector('.ring')") && /ご予約承りました/.test(report), "報告: the ring, the settled fields with the callee's words", report.slice(0, 160));
   c.ok(!/phone\.|phone_|undefined|NaN/.test(report), "no internal ids or undefined on the report");
+  // Every finished call says what it used in credits: a server without credits says so instead of leaving it out.
+  c.ok(/^消費 0 クレジット（(このサーバーはクレジットを使わない設定です|練習の電話)）$/.test(await page.text(".credit-used")), "報告: the credits used are always stated, here that this server does not use credits", await page.text(".credit-used"));
+  for (const [usage, expect, label] of [[{ status: "settled", consumed: 3, held: 0, released: 2 }, /^消費 3 クレジット（確保した分のうち 2 クレジットを返却）$/, "settled"], [{ status: "pending", consumed: 0, held: 5, released: 0 }, /^精算待ち（5 クレジットを確保中/, "pending"]]) {
+    await page.js(`window.__creditFetch=window.fetch;window.fetch=async(u,o)=>{const r=await window.__creditFetch(u,o);if(!/\\/v1\\/(phone\\/calls\\/${done}|bootstrap)$/.test(String(u)))return r;const j=await r.json();if(j.credits)j.credits.enabled=true;else{j.creditUsage=${JSON.stringify(usage)};j.creditQuote={mode:'credits',amount:5,unit:'credit'};j.practice=false;}return new Response(JSON.stringify(j),{status:r.status,headers:{'content-type':'application/json'}})}`);
+    await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.rows .row')");
+    await page.js(`location.hash='#/call/${done}'`); await page.until("!!document.querySelector('.credit-used')");
+    c.ok(expect.test(await page.text(".credit-used")), `報告 with credits (${label}): ${expect}`, await page.text(".credit-used"));
+    await page.js("window.fetch=window.__creditFetch");
+  }
   c.ok(await page.js("!!document.querySelector('.report-top .verdict') && document.querySelectorAll('.rrow').length===4") && /確かめたのは、電話での合意までです/.test(report) && /会話の \d\d:\d\d/.test(report) && !/\d\d:\d\d\.\d{3}/.test(report), "報告 as in the film: verdict with summary, one row per field with the callee's words and their time, the caveat");
   c.ok(/AIの発言・判定に数えません/.test(await page.text(".transcript")) && /会話の記録/.test(await page.text(".side-top")), "the AI's own 「できました」 is marked as not counted; the side is the evidence");
   c.ok(/AIが判断したこと/.test(report) && /20時半で予約をお願いしました/.test(report) && /任せた範囲「時間は第一希望から2時間以内」の中です/.test(report) && /AIの報告です/.test(report), "報告: AIが判断したこと, marked as the AI's own account");

@@ -188,6 +188,19 @@ function fmtCharge(amount, currency) {
 }
 // No priced call is 0円 only when nothing is waiting for a price; otherwise it is not known yet.
 const fmtCharges = (amounts, pending = 0) => Object.entries(amounts ?? {}).map(([c, a]) => fmtCharge(a, c)).join(' + ') || (pending ? '確定待ち' : '0円');
+// Credits this call used, always said once the call has ended: what was taken, what is still held, what came back.
+// A server that does not use credits says so, rather than leaving the line out.
+function creditText(r) {
+  const u = r.creditUsage ?? {}, uses = app.boot?.credits?.enabled === true || r.creditQuote?.mode === 'credits';
+  if (r.practice) return '消費 0 クレジット（練習の電話）';
+  if (!uses) return '消費 0 クレジット（このサーバーはクレジットを使わない設定です）';
+  if (u.status === 'pending' || u.status === 'held') return `精算待ち（${u.held ?? 0} クレジットを確保中。確定すると消費量が出ます）`;
+  if (u.status === 'waived') return '消費 0 クレジット（この電話の費用は運営者の負担です）';
+  const consumed = Number.isFinite(u.consumed) ? u.consumed : null;
+  if (consumed === null) return '消費クレジットを取得できません';
+  return `消費 ${consumed} クレジット${u.released ? `（確保した分のうち ${u.released} クレジットを返却）` : ''}`;
+}
+const creditNote = r => el('p', { class: 'note num credit-used', text: creditText(r) });
 function chargeNote(c) {
   if (!c) return null;
   if (c.pending) return el('p', { class: 'note', text: '電話会社の通話料は、確定すると（通話の数分後）ここに出ます。' });
@@ -444,9 +457,11 @@ function callRows(list, emptyText) {
     return el('a', { class: 'row', href: `#/call/${r.id}` },
       el('div', {}, el('div', { class: 'who' }, r.request.name, el('span', { class: 'tag', text: r.direction === 'inbound' ? '着信' : r.practice ? '練習' : '本番' })), el('div', { class: 'what', text: splitScope(r.request.instruction).body.slice(0, 60) })),
       el('div', { class: `outcome ${o.tone === 'warn' ? 'warn' : o.tone === 'dim' ? 'dim' : ''}` }, o.tone === 'ok' ? el('span', { class: 'tick', text: '✓' }) : null, o.text),
-      el('time', { class: 'num', datetime: r.createdAt, text: when(r.createdAt) }));
+      el('div', { class: 'row-end' }, el('time', { class: 'num', datetime: r.createdAt, text: when(r.createdAt) }),
+        LIVE.includes(r.state) || r.state === 'draft' ? null : el('span', { class: 'credit-mini num', text: creditMini(r) })));
   }));
 }
+const creditMini = r => { const t = creditText(r); return /^消費 (\d+) クレジット/.test(t) ? `${RegExp.$1} クレジット` : /^精算待ち/.test(t) ? '精算待ち' : 'クレジット不明'; };
 
 // ---------------------------------------------------------------- 依頼
 async function requests() {
@@ -1062,7 +1077,7 @@ async function call(id, _sub, team = false) {
       } }), copied)));
   }
   const foot = el('div', { class: 'call-foot' });
-  if (team) foot.append(el('a', { class: 'btn', href: '#/team', text: 'チームの電話に戻る' }));
+  if (team) foot.append(el('a', { class: 'btn', href: '#/team', text: 'チームの電話に戻る' }), ...(live || !r.creditUsage ? [] : [creditNote(r)]));
   else if (stopping) foot.append(el('p', { class: 'note', role: 'status', text: '停止を受け付けました。電話会社で通話が切れたことを確かめると、ここに報告が出ます。もう一度押す必要はありません。' }));
   else if (live) {
     // A failed stop stays on screen until the next try: a call that may still be running is not a passing notice.
@@ -1078,7 +1093,7 @@ async function call(id, _sub, team = false) {
     if (r.state === 'unknown' && !r.resolvedAt) foot.append(needCard(r).querySelector('button'));
     foot.append(el('a', { class: 'btn primary', href: `#/new?again=${r.id}`, text: '同じ相手にまた頼む' }));
     if (notes.some(n => n.field === 'date' && n.status === 'verified')) foot.append(el('a', { class: 'btn', href: `/v1/phone/calls/${r.id}/calendar.ics`, text: 'カレンダーに入れる' }));
-    const used = r.creditUsage; if (used?.consumed) foot.append(el('p', { class: 'note', text: `消費 ${used.consumed} クレジット` }));
+    foot.append(creditNote(r));
     const charge = chargeNote(r.carrierCharge); if (charge) foot.append(charge);
     if (!live && notes.length) foot.append(el('p', { class: 'note', text: ok === notes.length ? '輪が閉じました。相手の言葉で確かめられています。' : `${notes.length}項目中 ${ok} 項目を相手の言葉で確かめました。` }));
   }
