@@ -543,6 +543,9 @@ try {
   try { await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "sales review without product" }); } catch (e) { console.log("SIDE:", await page.text(".ask-side")); throw e; }
   const salesDraft = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.kind !== "phone-request" && m.target.name === "山田商店");
   c.ok(/山田商店（03-5555-0199）/.test(await page.text(".ask-side .target-found")) && /紹介する商品：指定なし/.test(await page.text(".ask-side .brief")) && salesDraft?.product === null && salesDraft.target.id === null, "a sales request without a product, to a typed number and name, reaches the confirmation", await page.text(".ask-side .brief"));
+  // With no product and nothing remembered, the confirmation says the AI has nothing to describe and will not invent it.
+  { const remembered = Boolean(app.store.get("account", user.id)?.profile); const warned = await page.js("!!document.querySelector('.ask-side .sales-empty')");
+    c.ok(warned === !remembered, `営業: with no product ${remembered ? "but 覚えておくこと filled, no" : "and nothing remembered, a"} warning that the AI has nothing to describe`, String(warned)); }
   if (salesDraft) await fetch(`${base}/v1/missions/${salesDraft.id}`, { method: "DELETE", headers: { authorization: "Bearer " + token } });
   // 覚えておくこと: saved in 設定, read back after a reload, and named in the confirmation.
   await go("#/settings/out", "!!document.querySelector('#set-profile')");

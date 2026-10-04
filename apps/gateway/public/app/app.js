@@ -944,6 +944,8 @@ async function ask() {
     if (blocked) warns.push(el('p', { class: 'warnbox' }, `${blocked.request.name}の電話が終わったか確かめるまで、発信できません。`, el('a', { href: '#/requests', text: '依頼一覧で確かめる' })));
     if (review && app.month.capUsd !== null && app.month.usedUsd + review.mission.estimatedMaximumUsd > app.month.capUsd + 1e-9)
       warns.push(el('p', { class: 'warnbox' }, `今月の上限（$${app.month.capUsd}）を超えるので、この電話はかけられません（今月 $${app.month.usedUsd.toFixed(2)}＋この電話 最大 $${review.mission.estimatedMaximumUsd.toFixed(2)}）。`, el('a', { href: '#/settings/cost', text: '上限を見直す' })));
+    // A sales call with nothing to say about the product: the AI will not invent it, so say so before approval.
+    if (isSales() && !form.productId && !b.account?.profile?.trim()) warns.push(el('p', { class: 'warnbox sales-empty' }, 'AIが話せる商品の説明がありません。商品を選ぶか、設定の「覚えておくこと」に会社やサービスの説明を書いてください。このままだと、AIは会社名と用件だけを伝え、中身は「担当から改めてご案内します」と持ち帰ります。', el('a', { href: '#/settings', text: '覚えておくことを書く' })));
     if (liveNow) warns.push(el('p', { class: 'warnbox' }, 'いまの電話が終わるまで、次の電話はかけられません。', el('a', { href: `#/call/${liveNow.id}`, text: '電話中の画面へ' })));
     // Sales calls also run in practice mode (the scripted partner answers); other requests need a real line.
     const practiceSales = isSales() && b.configuration.mode === 'simulator';

@@ -80,7 +80,7 @@ test('only an administrator releases a suppression, with a reason, and it is aud
 
 test('a sales call is told to say who, by what, about what and that it is a sales call before anything else, and never to press after a no',async()=>{
   const {SALES_CALL_POLICY}=await import('../lib/phone.mjs');
-  for(const part of ['caller_identity の会社名・名前','AIアシスタントが代わりにかけている電話','商品・サービスの種類（product_name。無ければ request に書かれた用件）','営業（ご案内）のお電話であること','これらを告げる前に商品の説明や質問を始めない','引き留めたり言い換えて再度すすめたりせず'])assert.ok(SALES_CALL_POLICY.includes(part),part);
+  for(const part of ['caller_identity の会社名・名前','AIアシスタントが代わりにかけている電話','商品・サービスの種類（product_name。無ければ request に書かれた用件）','営業（ご案内）のお電話であること','これらを告げる前に商品の説明や質問を始めない','引き留めたり言い換えて再度すすめたりせず','商品の特徴・効果・分野（「業務効率化」など）を作って話さず'])assert.ok(SALES_CALL_POLICY.includes(part),part);
   assert.ok(SALES_CALL_POLICY.indexOf('(1)')<SALES_CALL_POLICY.indexOf('(4)'));
 });
 
