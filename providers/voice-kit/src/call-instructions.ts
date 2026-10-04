@@ -107,8 +107,8 @@ export function callInstructions(opts: CallInstructionOptions): string {
       : []),
     ...(c.intake ? [ja ? "追加聞き取りは開始条件と同意文の後、依存条件を満たす宣言済み質問を1回に1つだけ尋ねる。選択肢は1つだけ一致した場合に記録し、推測せず拒否・曖昧な返答なら停止する。" : "For optional intake, ask the consent prompt after start conditions, then one declared question whose dependencies are met; accept one matching choice only, never infer attributes and stop on decline or ambiguity."] : []),
     conversationPolicies(c.language),
-    // Sales and other business calls: the other side's words decide what comes next (see dialoguePolicy).
-    ...(c.goal.startsWith("sales.") ? [dialoguePolicy(c.language)] : []),
+    // Every call the AI leads (sales, bookings, follow-ups): the other side's words decide what comes next (see dialoguePolicy).
+    dialoguePolicy(c.language),
   ].join("\n");
 }
 
