@@ -62,13 +62,18 @@ const ERRORS = {
   insufficient_credits: 'クレジットが足りません。設定の「費用とクレジット」から追加できます。',
   purchase_account_blocked: '購入について運営が確認中のため、新しい発信を受け付けられません。設定の「費用とクレジット」で購入履歴を確認し、運営へお問い合わせください。',
   contact_name_or_company_required: '名前か会社名を入れてください。',
-  contact_relationship_required: '営業の電話には、連絡先に「この相手との関係」（問い合わせ・既存のお客さま・同意済み）が必要です。連絡先で登録してください。',
-  contact_basis_required: '営業の電話には、連絡先に「電話してよい根拠」が必要です。連絡先で書いてください。',
-  select_one_reviewed_product: '紹介する商品を選んでください（設定の「商品」で登録できます）。',
+  contact_relationship_required: '「この相手との関係」は、問い合わせ・既存のお客さま・同意済みのどれかを選んでください。',
+  contact_basis_required: '「電話してよい根拠」を書いてください。',
+  select_one_reviewed_product: '紹介する商品を選び直してください（設定の「商品」で確かめられます）。',
   contact_has_active_call: 'この相手への電話が進行中です。終わってから削除してください。',
+  phone_target_not_found: 'だれにかけるか分かりませんでした。電話番号を書くか、連絡先にある名前を入れてください。',
+  phone_target_unclear: '文中の電話番号が読み取れませんでした。番号を「だれに」の電話番号の欄に入れてください（例：090-1234-5678）。',
+  phone_target_conflict: '依頼文の中の相手と、「だれに」で選んだ相手が違います。どちらかに合わせてください。',
+  preset_title_required: 'プリセットの名前を、40文字以内で入れてください。', preset_instruction_required: '何をしてほしいかを書いてから保存してください（2000文字まで）。',
+  too_many_presets: 'プリセットは200件までです。使わないものを削除してください。', profile_too_long: '覚えておくことは、2000文字以内にしてください。',
   invalid_contact_phone: '電話番号を確かめてください（例：090-1234-5678、03-5555-0142、+81 90-1234-5678）。',
   phone_has_trunk_prefix_after_country_code: '+81 のあとの最初の 0 は外してください（例：+81 90-1234-5678）。',
-  select_one_contact: '連絡先から相手を選んでください。', contact_phone_required: 'この相手には電話番号がありません。',
+  select_one_contact: '当てはまる相手が複数います。電話番号を書くか、「だれに」で相手を選んでください。', contact_phone_required: 'この相手には電話番号がありません。',
   product_facts_require_review: '内容を確かめたことにチェックを入れてください。',
   unknown_practice_brain: 'このAIは、いまの起動では使えません。', unknown_practice_record: 'この記録は見つかりません。', unknown_practice: 'この練習は見つかりません。',
   invalid_inbound_hours: '受ける時間は「09:00」のように、始まりと終わりを違う時刻で入れてください。',
@@ -411,6 +416,19 @@ async function home() {
   const page = el('div', { class: 'page home-page' },
     el('div', { class: 'page-h' }, el('div', {}, el('h1', { text: 'ホーム' }), el('p', { class: 'page-intro', text: '依頼の状況と、相手の言葉から確かめられたこと。' })), el('time', { class: 'sub', text: new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' }) })));
   if (need.length) page.append(el('div', { class: 'attention', role: 'status' }, el('span', { class: 'dot' }), el('span', { text: `あなたの確認が必要な依頼が ${need.length} 件あります` }), el('a', { class: 'btn', href: '#/requests', text: '確認する' })));
+  // Asking in plain words: the text goes to 電話を頼む, which finds who to call and shows it all before any approval.
+  const promptText = el('textarea', { id: 'home-prompt', maxlength: '2000', 'aria-describedby': 'home-prompt-note', placeholder: '例：佐藤さんに、来週の打ち合わせの候補日を聞いてください。' });
+  const promptErr = el('p', { class: 'errbox', role: 'alert', hidden: true });
+  promptText.addEventListener('input', () => { promptErr.hidden = true; });
+  page.append(el('form', { class: 'card home-prompt', 'aria-label': '電話を頼む', onsubmit: e => {
+    e.preventDefault(); const t = promptText.value.trim();
+    if (!t) { promptErr.textContent = '電話の内容を書いてください。相手の名前や電話番号も、この文に書けます。'; promptErr.hidden = false; promptText.focus(); return; }
+    app.promptDraft = t; location.hash = '#/new?prompt=1';
+  } },
+    el('label', { class: 'home-prompt-h', for: 'home-prompt', text: '電話の内容を書くだけで頼めます' }),
+    promptText, promptErr,
+    el('div', { class: 'home-prompt-foot' }, el('p', { class: 'note', id: 'home-prompt-note' }, el('b', { text: '入力だけでは電話しません。' }), '相手・内容・費用を確かめて、あなたが承認したときだけかけます。'),
+      el('button', { class: 'btn primary', type: 'submit', text: '内容を確かめる' }))));
   const credit = b.credits?.enabled
     ? el('div', { class: 'card' }, el('div', { class: 'metric-k' }, el('span', { text: 'クレジット残高' })), el('div', { class: 'metric-v', text: Number.isFinite(b.credits.available) ? String(b.credits.available) : '取得できません' }),
       el('p', { class: 'note', text: b.credits.held ? `確保中 ${b.credits.held}` : '本番の電話1回ごとに、承認のときに確保して終わったら精算します。' }), el('a', { class: 'btn', href: '#/settings/cost', text: 'クレジットと費用' }))
@@ -530,19 +548,24 @@ function withScope(body, ok, hold) {
 
 async function ask() {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  // The person's own presets (null when they could not be read; the built-in kinds still work). Read alongside the rest.
+  const presetsRead = api('/presets').catch(e => (e.stale ? [] : null));
   // Fresh state: a call that just ended or was confirmed must not keep blocking the next one.
   await loadAll();
   if (!app.status) [app.status, app.templates] = await Promise.all([api('/phone/status'), api('/phone/templates')]);
   const st = app.status, b = app.boot, contacts = b.contacts.filter(c => c.phone);
+  let presets = await presetsRead;
+  // Written on ホーム: the words come over once, and are reviewed like any other request.
+  const prompt = params.has('prompt') ? app.promptDraft ?? '' : ''; app.promptDraft = null;
   const from = app.history.find(r => r.id === (params.get('again') || params.get('draft')));
   const pre = from?.request ?? {}, preContact = params.get('contact') ? b.contacts.find(c => c.id === params.get('contact')) : null;
-  const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: pre.instruction ?? '', mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '', voiceName: pre.voice ?? '', engine: pre.engine ?? '',
+  const form = { phone: pre.phone ?? preContact?.phone ?? '', name: pre.name ?? preContact?.name ?? preContact?.company ?? '', instruction: prompt || (pre.instruction ?? ''), presetId: null, mode: pre.conversationMode ?? '', preset: pre.voicePreset ?? '', voiceName: pre.voice ?? '', engine: pre.engine ?? '',
     purpose: from?.sales ? from.goal : pre.conversationMode === 'chat' ? 'chat' : '', contactId: preContact?.id ?? (from ? b.contacts.find(c => c.phone === pre.phone)?.id : undefined) ?? null, productId: from?.product?.id ?? b.products[0]?.id ?? '' };
   const scoped = splitScope(form.instruction); form.instruction = scoped.body.replace(/\n確かめる条件：[^\n]*$/, ''); form.ok = scoped.ok; form.hold = scoped.hold;
   let review = null, suggested = !form.instruction;
-  // Purposes: a request in plain words, a chat, or one of the sales goals (a registered contact and a reviewed product).
+  // Purposes: a request in plain words, a chat, or one of the sales goals (a product and a saved contact are optional).
   // What kind of call: grouped the way people think of them. A template kind brings fields for its {{…}} blanks;
-  // the sales kinds need a contact and a product; 自由に書く is a request in plain words.
+  // the sales kinds may name a product; 自由に書く is a request in plain words.
   const GROUPS = [['shop', 'お店・窓口', ['reserve', 'availability', 'opening-hours', 'stock', 'delivery', 'lost-property', 'change-policy', 'business-contact']],
     ['people', '知り合い', ['friend-check-in', 'meetup', 'late', 'callback', 'thanks', 'chat', 'ai-news']],
     ['care', '見守り・介護', ['wellbeing-check', 'medication-reminder', 'visit-notice']], ['trade', '取引先への確認', ['delivery-date', 'quote-request']], ['work', '仕事（営業）', ['meeting', 'materials', 'introduce']], ['free', '自由に書く', ['']]];
@@ -558,7 +581,7 @@ async function ask() {
   const isSales = () => Boolean(SALES_TEXT[form.purpose]);
   if (tpl()) { form.mode = tpl().conversationMode ?? ''; if (form.kind === 'chat') form.purpose = 'chat'; }
   if (SALES_TEXT[form.kind]) form.purpose = form.kind;
-  const setKind = k => { form.kind = k; form.purpose = SALES_TEXT[k] ? k : k === 'chat' ? 'chat' : ''; form.mode = tpl()?.conversationMode ?? ''; form.fill = {}; form.pace = tpl()?.pace === 'gentle'; gentle.checked = form.pace; suggested = true; drawKind(); syncEngine(); suggest(); changed(); };
+  const setKind = k => { form.kind = k; form.presetId = null; form.purpose = SALES_TEXT[k] ? k : k === 'chat' ? 'chat' : ''; form.mode = tpl()?.conversationMode ?? ''; form.fill = {}; form.pace = tpl()?.pace === 'gentle'; gentle.checked = form.pace; suggested = true; drawKind(); syncEngine(); suggest(); changed(); };
   // 音声AI: which engine speaks, shown with its model (gpt-live-1, gemini-3.8-live). The acting voice is the slow one.
   const engineName = e => e.id === 'character-tts' ? '演技する声（Gemini TTS）' : e.label.replace(/\s*\((.+)\)$/, '（$1）');
   const engineNote = e => !e.ready ? '（このサーバーでは使えません）' : e.id === 'character-tts' ? ' · 返事まで2〜3秒' : ' · すぐ返事';
@@ -568,8 +591,8 @@ async function ask() {
   const engineFor = () => engineSel.value;
   const engineLabel = id => { const e = (st.engines ?? []).find(x => x.id === id); return e ? engineName(e) : id; };
 
-  const phone = el('input', { type: 'tel', id: 'ask-phone', value: displayPhone(form.phone), autocomplete: 'off', placeholder: '090-1234-5678' });
-  const name = el('input', { type: 'text', id: 'ask-name', value: form.name, placeholder: '相手の名前' });
+  const phone = el('input', { type: 'tel', id: 'ask-phone', value: displayPhone(form.phone), autocomplete: 'off', placeholder: '090-1234-5678（任意）', 'aria-describedby': 'ask-who-note' });
+  const name = el('input', { type: 'text', id: 'ask-name', value: form.name, placeholder: '相手の名前（任意）', 'aria-describedby': 'ask-who-note' });
   const instruction = el('textarea', { id: 'ask-instruction', 'aria-labelledby': 'ask-instruction-label', placeholder: '例：10月3日（土）の夜に2名で予約を取ってほしい。できれば19時。名前は田中。' }); instruction.value = form.instruction;
 
   const gentle = el('input', { type: 'checkbox', id: 'ask-gentle', checked: form.pace, 'aria-describedby': 'ask-gentle-note', onchange: () => { form.pace = gentle.checked; changed(); } });
@@ -635,14 +658,80 @@ async function ask() {
       const input = el('input', { type: 'text', value: v, 'data-blank': label, 'aria-label': label });
       input.addEventListener('input', () => { form.fill[label] = input.value; suggest(); changed(); });
       return el('div', {}, el('label', { class: 'lbl', text: label }), input); }));
-    blankBox.hidden = !blanks().length;
+    // A preset brings its own words: the kind's blanks would only repeat them.
+    blankBox.hidden = !blanks().length || Boolean(form.presetId);
   }
-  const purposeChips = el('div', {}, groupChips, el('div', { class: 'gap' }), kindCards, el('div', { class: 'gap' }), blankBox);
-  const product = el('select', { id: 'ask-product', 'aria-label': '紹介する商品' }, ...(b.products.length ? b.products.map(x => el('option', { value: x.id, text: x.name })) : [el('option', { value: '', text: '（商品がまだありません）' })]));
+  // あなたのプリセット: the person's own requests, one press away. Pressing one only fills the form; nothing is sent.
+  const presetBox = el('div', { class: 'presets' }), presetMsg = el('p', { class: 'note preset-msg', role: 'status' });
+  let presetDelete = null;
+  function drawPresets() {
+    const head = el('span', { class: 'lbl', id: 'ask-presets-label', text: presets?.length ? `あなたのプリセット（${presets.length}）` : 'あなたのプリセット' });
+    if (presets === null) return presetBox.replaceChildren(head, el('p', { class: 'note nomargin', text: '読み込めませんでした。下の種類から選ぶか、そのまま書いてください。' }));
+    if (!presets.length) return presetBox.replaceChildren(head, el('p', { class: 'note nomargin', text: 'まだありません。書いた内容を「この内容をプリセットに保存」で残すと、ここから使えます。' }), presetMsg);
+    const asked = presets.find(x => x.id === presetDelete), more = el('p', { class: 'note nomargin preset-more', hidden: true, text: 'この欄の中でスクロールすると、ほかのプリセットも選べます。' });
+    // Many presets: the row keeps to three lines and scrolls; say so when some are out of sight.
+    requestAnimationFrame(() => { const row = presetBox.querySelector('.preset-chips'); if (!row) return; more.hidden = row.scrollHeight <= row.clientHeight + 1; row.classList.toggle('scrolls', !more.hidden);
+      // The preset in use stays in sight inside the row.
+      const on = row.querySelector('[aria-pressed="true"]'), r = row.getBoundingClientRect(), o = on?.getBoundingClientRect();
+      if (o && (o.top < r.top || o.bottom > r.bottom)) row.scrollTop += o.top - r.top - 2; });
+    presetBox.replaceChildren(head,
+      el('div', { class: 'chips preset-chips', role: 'group', 'aria-labelledby': 'ask-presets-label' }, ...presets.map(x => el('span', { class: 'preset' },
+        el('button', { type: 'button', class: 'chip', 'aria-pressed': String(form.presetId === x.id), 'data-preset': x.id, text: x.title, title: x.instruction.slice(0, 120), onclick: () => usePreset(x) }),
+        el('button', { type: 'button', class: 'preset-x', 'aria-label': `「${x.title}」を削除`, text: '×', onclick: () => { presetDelete = x.id; presetMsg.textContent = ''; drawPresets(); presetBox.querySelector('.preset-confirm .btn')?.focus(); } })))),
+      ...(!asked ? [] : [el('div', { class: 'preset-confirm', role: 'group', 'aria-label': 'プリセットの削除' }, el('span', { text: `「${asked.title}」を削除しますか？依頼や報告は消えません。` }),
+        el('div', { class: 'preset-confirm-actions' }, el('button', { type: 'button', class: 'btn small danger', text: '削除する', onclick: () => removePreset(asked) }),
+          el('button', { type: 'button', class: 'btn small', text: 'やめる', onclick: () => { presetDelete = null; drawPresets(); } })))]),
+      more, presetMsg);
+  }
+  function usePreset(x) {
+    form.presetId = x.id; presetDelete = null; presetMsg.textContent = '';
+    form.kind = x.task === 'reservation' ? 'reserve' : x.conversationMode === 'chat' ? 'chat' : '';
+    group = GROUPS.find(g => g[2].includes(form.kind))[0];
+    form.purpose = form.kind === 'chat' ? 'chat' : ''; form.mode = x.conversationMode ?? ''; form.fill = {};
+    form.pace = x.pace === 'gentle'; gentle.checked = form.pace;
+    instruction.value = x.instruction; suggested = false;
+    drawKind(); syncEngine(); drawPresets(); changed(); fitText();
+    presetNote.classList.remove('warn'); presetNote.textContent = `「${x.title}」の内容を入れました。そのまま書き換えられます。`;
+  }
+  async function removePreset(x) {
+    try {
+      await api(`/presets/${x.id}`, { method: 'DELETE' });
+      presets = presets.filter(p => p.id !== x.id); if (form.presetId === x.id) form.presetId = null; presetDelete = null;
+      drawPresets(); presetMsg.textContent = `「${x.title}」を削除しました。`;
+    } catch (e) { presetMsg.textContent = e.message; }
+  }
+  // Saving: a short name, asked for in place. The same name again replaces that preset.
+  const presetName = el('input', { type: 'text', id: 'ask-preset-name', maxlength: '40', autocomplete: 'off', placeholder: '例：月末の納期確認',
+    onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); savePreset(); } else if (e.key === 'Escape') closeSave(); } });
+  const presetNote = el('p', { class: 'note preset-note', role: 'status' });
+  const presetOpen = el('button', { type: 'button', class: 'link preset-open', text: '＋ この内容をプリセットに保存', onclick: () => {
+    presetNote.classList.remove('warn'); presetNote.textContent = '';
+    if (!instruction.value.trim()) { presetNote.classList.add('warn'); presetNote.textContent = ERRORS.preset_instruction_required; instruction.focus(); return; }
+    presetName.value = presets?.find(x => x.id === form.presetId)?.title ?? ''; presetSave.hidden = false; presetOpen.hidden = true; presetName.focus();
+  } });
+  const closeSave = () => { presetSave.hidden = true; presetOpen.hidden = false; presetOpen.focus(); };
+  const presetSave = el('div', { class: 'preset-save', hidden: true },
+    el('label', { class: 'lbl', for: 'ask-preset-name', text: 'プリセットの名前（40文字まで。同じ名前で保存すると上書きします）' }),
+    el('div', { class: 'play-row' }, presetName, el('button', { type: 'button', class: 'btn', text: '保存する', onclick: () => savePreset() }), el('button', { type: 'button', class: 'btn', text: 'やめる', onclick: closeSave })));
+  async function savePreset() {
+    const title = presetName.value.trim(), same = (presets ?? []).find(x => x.title === title);
+    presetNote.classList.remove('warn');
+    try {
+      if (!title) throw new Error(ERRORS.preset_title_required);
+      const saved = await api('/presets', { method: 'POST', body: { ...(same ? { id: same.id } : {}), title, instruction: instruction.value.trim(),
+        ...(form.pace ? { pace: 'gentle' } : {}), ...(form.mode === 'chat' ? { conversationMode: 'chat' } : {}), ...(form.kind === 'reserve' ? { task: 'reservation' } : {}) } });
+      presets = [saved, ...(presets ?? []).filter(x => x.id !== saved.id)]; form.presetId = saved.id; presetDelete = null;
+      presetSave.hidden = true; presetOpen.hidden = false; drawPresets();
+      presetNote.textContent = same ? `「${title}」を上書きしました。` : `「${title}」をプリセットに保存しました。上の「あなたのプリセット」から使えます。`;
+    } catch (e) { presetNote.classList.add('warn'); presetNote.textContent = e.message; presetName.focus(); }
+  }
+  const purposeChips = el('div', {}, presetBox, el('div', { class: 'gap' }), el('span', { class: 'lbl', text: '種類から選ぶ' }), groupChips, el('div', { class: 'gap' }), kindCards, el('div', { class: 'gap' }), blankBox);
+  // A product is optional: without one the AI speaks only from the request and takes anything else back.
+  const product = el('select', { id: 'ask-product', 'aria-label': '紹介する商品' }, el('option', { value: '', text: '指定しない（依頼文の内容で話します）' }), ...b.products.map(x => el('option', { value: x.id, text: x.name })));
   product.value = form.productId;
   product.addEventListener('change', () => { form.productId = product.value; changed(); });
-  const productRow = el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-product', text: '紹介する商品' }), product),
-    el('p', { class: 'note' }, b.products.length ? '商品の説明は、確認済みの内容だけを使います。' : '営業の電話には、確認済みの商品が必要です。', el('a', { href: '#/settings/products', text: ' 設定で商品を登録' })));
+  const productRow = el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-product', text: '紹介する商品（任意）' }), product),
+    el('p', { class: 'note' }, b.products.length ? '選んだ商品は、確認済みの説明だけを使います。指定しないと、依頼文に書いたことだけを話します。' : '商品を登録しなくてもかけられます。AIは依頼文に書いたことだけを話し、それ以外は持ち帰ります。', el('a', { href: '#/settings/products', text: ' 設定で商品を登録' })));
   const scopeBox = el('div', { class: 'scopes' });
   // Deciding on the spot matters for a request in plain words and for a booking.
   const usesScope = () => form.kind === '' || form.kind === 'reserve';
@@ -712,6 +801,8 @@ async function ask() {
     review = null; err.hidden = true; consentBox.checked = false; rep.on = false; rep.key = null; repOn.checked = false; repAck.checked = false; repGo.disabled = true;
     for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.id === form.contactId));
     for (const c of kindCards.children) c.setAttribute('aria-pressed', String(c.dataset.kind === form.kind));
+    for (const c of presetBox.querySelectorAll('[data-preset]')) c.setAttribute('aria-pressed', String(c.dataset.preset === form.presetId));
+    if (isSales()) presetSave.hidden = true; presetOpen.hidden = isSales() || !presetSave.hidden;
     fitText(); productRow.hidden = !isSales(); voiceField.hidden = isSales(); paceField.hidden = isSales(); scopeField.hidden = !usesScope(); termsField.hidden = !usesTerms();
     renderSide();
   }
@@ -726,6 +817,8 @@ async function ask() {
   consentBox.addEventListener('change', () => { go.disabled = !review || !consentBox.checked || isPaused(b.configuration); });
   // 定期の電話: the reviewed request, repeated at set times until an end date. Offered for a phone request to a saved
   // contact only (never a sales call or a booking); the server checks the same and each call again when it is due.
+  // The saved contact the reviewed call goes to: the one chosen, or the one the server found from the words.
+  const reviewedContact = () => form.contactId ?? (review?.mission?.target ? contacts.find(c => c.phone === review.mission.target.phone)?.id : null) ?? null;
   const tokyoDay = (offset = 0) => new Date(Date.now() + 9 * 3600e3 + offset * 86400e3).toISOString().slice(0, 10);
   const rep = { on: false, key: null };
   const repOn = el('input', { type: 'checkbox', id: 'rep-on', onchange: () => { rep.on = repOn.checked; rep.key = null; repAck.checked = false; repChanged(); renderSide(); (rep.on ? repTimes.querySelector('input') : repOn)?.focus(); } });
@@ -767,7 +860,7 @@ async function ask() {
     repHours.textContent = late.length ? `${late.join('、')} は登録できません。かけられる時刻は ${hours.from}〜${hours.to} です。` : `かけられる時刻は ${hours.from}〜${hours.to} です（夜間は登録できません）。`;
     repHours.classList.toggle('warn', late.length > 0);
     repSum.replaceChildren(
-      el('dt', { text: '相手' }), el('dd', {}, name.value.trim(), ' ', el('span', { class: 'num', text: displayPhone(phone.value.trim()) })),
+      el('dt', { text: '相手' }), el('dd', {}, review?.mission?.target?.name ?? name.value.trim(), ' ', el('span', { class: 'num', text: displayPhone(review?.mission?.target?.phone ?? phone.value.trim()) })),
       el('dt', { text: 'かける時刻' }), el('dd', { class: 'num', text: v.times.length ? [...v.times].sort().join('、') : '未入力' }),
       el('dt', { text: '曜日' }), el('dd', { text: v.weekdays.length === 7 ? '毎日' : v.weekdays.length ? `毎週 ${v.weekdays.map(d => WEEK[d]).join('・')}` : '未選択' }),
       el('dt', { text: 'いつまで' }), el('dd', { text: v.until ? `${fmtDate(v.until)}まで` : '未入力' }),
@@ -815,11 +908,21 @@ async function ask() {
   function renderSide() {
     const at = review ? 2 : 1;
     steps.replaceChildren(...['内容', '確認して発信', '報告'].map((l, i) => el('li', { class: i + 1 === at ? 'on' : i + 1 < at ? 'done' : '', 'aria-current': i + 1 === at ? 'step' : null, text: `${'①②③'[i]} ${l}` })));
-    const v = values();
+    const v = values(), target = review?.mission?.target;
+    // After 内容を確かめる the person sees who the server will call, and how it was found, before approving.
+    const saved = target && contacts.some(c => c.phone === target.phone);
+    const written = target && /^\+81\d+$/.test(target.phone) && v.body.normalize('NFKC').replace(/\D/g, '').includes(`0${target.phone.slice(3)}`);
+    const found = !target ? '' : form.contactId ? '「だれに」で選んだ連絡先です。' : v.phone ? '入力した番号です。'
+      : written ? `依頼文の電話番号から見つけました${saved ? '（連絡先にある番号です）' : ''}。` : saved ? '依頼文の名前から、連絡先で見つけました。' : '依頼文から見つけました。';
     const brief = el('div', { class: 'brief' },
-      el('p', { class: 'nomargin' }, el('b', { text: v.name || '（相手）' }), v.phone ? el('span', { class: 'num', text: `（${displayPhone(v.phone)}）` }) : '', ' に電話して、次のことを頼みます。'),
+      target ? el('div', { class: 'target-found' }, el('span', { class: 'target-k', text: '相手' }),
+        el('p', { class: 'target-who' }, el('b', { text: target.name }), el('span', { class: 'num', text: `（${displayPhone(target.phone)}）` })),
+        el('p', { class: 'target-how' }, found, !form.contactId && !v.phone ? ' 違う相手なら、「だれに」で選び直してください。' : ''))
+        : !v.phone && !v.name ? el('p', { class: 'nomargin' }, el('b', { text: '相手は、内容を確かめるときに探します' }), '（依頼文の電話番号か、連絡先にある名前から）。') : null,
+      target ? el('p', { class: 'nomargin', text: 'この相手に電話して、次のことを頼みます。' })
+        : v.phone || v.name ? el('p', { class: 'nomargin' }, el('b', { text: v.name || '（相手）' }), v.phone ? el('span', { class: 'num', text: `（${displayPhone(v.phone)}）` }) : '', ' に電話して、次のことを頼みます。') : null,
       ...(form.kind === 'reserve' ? [el('p', { class: 'nomargin' }, el('mark', { text: 'AIが予約を取ります。' }), '日時・人数・名前を復唱し、相手がはっきり了承したときだけ成立とします。支払い・カード番号は伝えません。')] : []),
-      ...(isSales() ? [el('p', { text: `紹介する商品：${b.products.find(x => x.id === form.productId)?.name ?? '（未選択）'}。確認済みの説明だけを使い、値引き・契約・支払いは約束しません。` })] : []),
+      ...(isSales() ? [el('p', { text: form.productId ? `紹介する商品：${b.products.find(x => x.id === form.productId)?.name ?? '（未選択）'}。確認済みの説明だけを使い、値引き・契約・支払いは約束しません。` : '紹介する商品：指定なし。依頼文に書いたことだけを話し、それ以外は持ち帰ります。値引き・契約・支払いは約束しません。' })] : []),
       el('blockquote', { text: v.body || '入力した用件がここに表示されます。' }),
       ...(terms().text ? [el('p', { class: 'nomargin' }, '相手の言葉で確かめる条件：', el('mark', { text: terms().text }))] : []),
       ...(usesScope() && form.ok.length ? [el('p', { class: 'nomargin' }, 'その場で決めてよいこと：', el('mark', { text: form.ok.join('、') }))] : []),
@@ -831,6 +934,7 @@ async function ask() {
       ...(v.engine && v.engine !== st.defaultEngine ? [el('dt', { text: '音声AI' }), el('dd', { text: engineLabel(v.engine).replace(/（[^）]*）$/, '') })] : []),
       ...(form.pace && !v.preset && !isSales() ? [] : [el('dt', { text: '話し方' }), el('dd', { text: v.preset ? (v.voiceName ? (st.voicePresets[v.preset] ?? v.preset).replace(/・(女性|男性)声$/, '（口調のみ）') : (st.voicePresets[v.preset] ?? v.preset)) : '標準' })]),
       el('dt', { text: '声' }), el('dd', { class: 'num', text: v.voiceName || 'おまかせ' }),
+      ...(b.account?.profile ? [el('dt', { text: '覚えておくこと' }), el('dd', {}, '設定の内容をAIに渡します（必要なときだけ使います）。', el('a', { href: '#/settings/out', text: ' 確かめる' }))] : []),
       ...(form.pace && !isSales() ? [el('dt', { text: '話す速さ' }), el('dd', { text: 'ゆっくり・やさしく話す' })] : []),
       ...(terms().text ? [el('dt', { text: '確かめる条件' }), el('dd', { text: `${terms().text}。相手がこのとおりに答えたときだけ「決まりました」になります。` })] : []));
     const warns = [];
@@ -864,22 +968,39 @@ async function ask() {
       // Repeating it: only a reviewed phone request (review.request), never a sales call.
       ...(review?.request ? [el('div', { class: 'rep' },
         form.kind === 'reserve' ? el('p', { class: 'note', text: '予約を取る電話は、定期の電話にできません。' })
-          : !form.contactId ? el('p', { class: 'note' }, '定期の電話（決めた時刻に繰り返す）にできるのは、連絡先に保存した相手だけです。', el('a', { href: '#/contacts', text: ' 連絡先へ' }))
-          : !b.contacts.find(x => x.id === form.contactId)?.basis?.trim() ? el('p', { class: 'note' }, '定期の電話にするには、この相手の連絡先に「電話してよい根拠」（本人や家族の同意など）を書いてください。', el('a', { href: `#/contacts/${form.contactId}`, text: ' 連絡先を開く' }))
+          : !reviewedContact() ? el('p', { class: 'note' }, '定期の電話（決めた時刻に繰り返す）にできるのは、連絡先に保存した相手だけです。', el('a', { href: '#/contacts', text: ' 連絡先へ' }))
+          : !b.contacts.find(x => x.id === reviewedContact())?.basis?.trim() ? el('p', { class: 'note' }, '定期の電話にするには、この相手の連絡先に「電話してよい根拠」（本人や家族の同意など）を書いてください。', el('a', { href: `#/contacts/${reviewedContact()}`, text: ' 連絡先を開く' }))
           : form.pace && !b.alertsConfigured ? el('p', { class: 'note', text: 'ゆっくり・やさしく話す電話を定期にするには、要確認の知らせを受け取る通知先が必要です。このサーバーにはまだ設定がありません。管理者に設定を頼んでください。' })
           : el('label', { class: 'check' }, repOn, el('span', {}, el('b', { text: '定期の電話にする' }), el('span', { class: 'note rep-help', text: '1回だけではなく、決めた時刻に繰り返しかけます。' }))),
         ...(rep.on ? [repPanel] : []))] : []));
   }
+  // Who to call: the chosen contact, a typed number and name, a typed name that is one saved contact, or, left empty,
+  // whoever the words name (the server finds a number in the text or the one contact named, and never guesses).
+  function whoFor(v) {
+    const chosen = form.contactId && contacts.find(c => c.id === form.contactId);
+    if (chosen) return { contactId: chosen.id, phone: chosen.phone, name: v.name || chosen.name || chosen.company };
+    if (v.phone) { if (!v.name) throw new Error('この番号の相手の名前を入れてください。AIが電話口で相手を確かめるのに使います。'); return { phone: v.phone, name: v.name }; }
+    if (v.name) {
+      const same = contacts.filter(c => c.name === v.name || c.company === v.name);
+      if (same.length > 1) throw new Error(ERRORS.select_one_contact);
+      if (!same.length) throw new Error(`「${v.name}」は連絡先にありません。電話番号も入れてください。`);
+      return { contactId: same[0].id, phone: same[0].phone, name: v.name };
+    }
+    return {};
+  }
   check.addEventListener('click', async () => {
     err.hidden = true; const v = values();
     try {
+      if (!v.body) { instruction.focus(); throw new Error('何をしてほしいかを書いてください。相手の名前や電話番号も、この文の中に書けます。'); }
       if (!consented) { if (!consentAgree.checked) throw new Error('会話データの取り扱いへの同意にチェックを入れてください。'); await api('/consent', { method: 'POST', body: { version: b.configuration.consentVersion } }); b.account.consentVersion = b.configuration.consentVersion; }
       // Only an engine this server runs is sent; in practice mode none is, and the practice partner answers.
       const engine = (st.engines ?? []).find(e => e.id === v.engine)?.ready ? v.engine : '';
+      const who = whoFor(v);
       if (isSales()) {
-        if (!form.contactId) throw new Error('営業の電話は、連絡先から相手を選んでください（連絡先の画面で登録できます）。');
-        if (!form.productId) throw new Error('紹介する商品を選んでください（設定の「商品」で登録できます）。');
-        const m = await api('/missions/draft', { method: 'POST', body: { request: v.body, productId: form.productId, goal: form.purpose, contactId: form.contactId, maxSeconds: Math.min(180, b.configuration.maxSeconds) } });
+        // A product and a saved contact are optional; do-not-call, calling hours and the approval still apply.
+        const to = who.contactId ? { contactId: who.contactId } : who.phone ? { phone: who.phone, name: who.name } : {};
+        const m = await api('/missions/draft', { method: 'POST', body: { request: v.body, ...(form.productId ? { productId: form.productId } : {}), goal: form.purpose, ...to, maxSeconds: Math.min(180, b.configuration.maxSeconds) } })
+          .catch(e => { if (e.code === 'select_one_contact' && !who.phone && !contacts.some(c => [c.name, c.company].some(l => l && v.body.includes(l)))) e.message = ERRORS.phone_target_not_found; throw e; });
         review = { ...(await api(`/missions/${m.id}/review`, { method: 'POST', body: {} })), readiness: st }; review.expiresAt = Date.now() + (review.expiresInSeconds ?? 300) * 1000;
       } else {
         const left = blanks().filter(k => v.body.includes(`（${k}）`));
@@ -888,10 +1009,11 @@ async function ask() {
         if (tpl() && form.kind !== 'chat' && suggested && empty.length) throw new Error(`「${empty.join('」「')}」を入れてください。`);
         const cond = terms(); if (cond.error) throw new Error(cond.error);
         const asks = cond.success ? `\n確かめる条件：${cond.text}。相手が違う数量や日を答えたら、決めずに、聞いた内容を持ち帰ってください。` : '';
-        const requestBody = { phone: v.phone, name: v.name, instruction: (v.instruction + asks).slice(0, 2000), ...(cond.success ? { success: cond.success } : {}), ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
+        const requestBody = { ...(who.phone ? { phone: who.phone, name: who.name } : {}), instruction: (v.instruction + asks).slice(0, 2000), ...(cond.success ? { success: cond.success } : {}), ...(form.kind === 'reserve' ? { task: 'reservation' } : {}),
         ...(form.mode ? { conversationMode: form.mode } : {}), ...(callerFor() ? { callerName: callerFor() } : {}), ...(v.preset ? { voicePreset: v.preset } : {}), ...(engine ? { engine } : {}), ...(engine && v.voiceName ? { voice: v.voiceName } : {}), ...(form.pace ? { pace: 'gentle' } : {}) };
         review = await api('/phone/draft', { method: 'POST', body: requestBody }); review.madeHere = true; review.expiresAt = Date.now() + (review.expiresInSeconds ?? 300) * 1000;
-        review.request = requestBody;
+        // A standing request repeats the call to the one the confirmation showed.
+        review.request = { ...requestBody, phone: review.mission.target.phone, name: review.mission.target.name };
       }
       review.key = crypto.randomUUID();
       renderSide(); consentBox.focus();
@@ -915,10 +1037,11 @@ async function ask() {
   const view = el('div', { class: 'ask' },
     el('section', { class: 'ask-form' },
       el('div', { class: 'crumb' }, el('a', { href: '#/requests', text: '依頼' }), ' ›'), el('div', { class: 'ask-h' }, el('h1', { text: '電話を頼む' }), steps),
-      field('だれに', contacts.length ? '連絡先から選ぶか、番号を入れます' : '番号と名前を入れます', contacts.length ? chips : null,
-        el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-phone', text: '電話番号' }), phone), el('div', {}, el('label', { class: 'lbl', for: 'ask-name', text: '相手の名前' }), name))),
-      field('何の電話か', '種類を選ぶと、必要なことを聞きます', purposeChips),
-      field('何をしてほしいか', 'ふだんの言葉で。種類から作った文も書き換えられます', instruction, productRow),
+      field('だれに', '任意。空けておくと、文中の番号か連絡先の名前から探します', contacts.length ? chips : null,
+        el('div', { class: 'two' }, el('div', {}, el('label', { class: 'lbl', for: 'ask-phone', text: '電話番号' }), phone), el('div', {}, el('label', { class: 'lbl', for: 'ask-name', text: '相手の名前' }), name)),
+        el('p', { class: 'note', id: 'ask-who-note', text: '連絡先にある相手なら、名前だけでかまいません。番号を入れるときは名前も入れてください。見つけた相手は、承認の前に名前と番号で確かめられます。' })),
+      field('何の電話か', 'プリセットか種類を選ぶと、文を作ります。選ばずに書いても頼めます', purposeChips),
+      field('何をしてほしいか', 'ふだんの言葉で。相手の名前や番号も、この文に書けます', instruction, presetOpen, presetSave, presetNote, productRow),
       scopeField = field('任せる範囲', '相手に別の案を出されたときの、AIの動き方', scopeBox),
       termsField = field('相手の言葉で確かめる条件', '任意。入れると、相手がそのとおりに答えたかで結果を判定します', el('div', { class: 'terms' },
         el('div', {}, el('label', { class: 'lbl', for: 'ask-qty', text: '数量' }), el('div', { class: 'play-row' }, qtyAmount, qtyUnit)),
@@ -932,10 +1055,12 @@ async function ask() {
         el('label', { class: 'lbl', for: 'ask-voice-name', text: '声' }), el('div', { class: 'play-row' }, voiceName, voiceSample), voiceNote),
         el('p', { class: 'note', text: b.account?.callerName ? `AIは「${b.account.callerName}の代わり」と名乗ります。` : 'AIが名乗る名前は、設定の「かける設定」で決められます。' })))),
     side);
-  drawKind();
+  drawKind(); drawPresets();
   if ((form.purpose || tpl()) && !form.instruction) suggest();
   changed();
   requestAnimationFrame(fitText);
+  // From ホーム: the same review runs at once when it can; approving is still a separate, explicit step.
+  if (prompt) requestAnimationFrame(() => { if (!view.isConnected) return; if (consented && !check.disabled) check.click(); else instruction.focus(); });
   return view;
 }
 
@@ -1256,9 +1381,10 @@ async function listNew() {
   if (!picked.length) return el('div', { class: 'page' }, el('div', { class: 'page-h' }, el('h1', { text: '名簿にまとめて電話' })),
     el('p', { class: 'about', text: '先に、連絡先の画面で「名簿にまとめて電話」を押して、相手を選んでください。' }), el('div', { class: 'actions' }, el('a', { class: 'btn primary', href: '#/contacts', text: '連絡先で相手を選ぶ' })));
   const form = { kind: 'request', key: null }, live = b.configuration.mode === 'live', consented = b.account?.consentVersion === b.configuration.consentVersion;
-  const kindPick = el('div', { class: 'two', role: 'radiogroup', 'aria-label': '何の電話か' }, ...[['request', 'ふつうの依頼', '同じ用件を、ひとりずつに頼みます（納期の確認など）'], ['sales', '営業の電話', b.products.length ? '確認済みの商品を1つ紹介します' : '先に、設定で商品を登録してください']].map(([v, l, d]) =>
-    el('label', { class: 'option' }, el('input', { type: 'radio', name: 'list-kind', value: v, checked: v === form.kind, disabled: v === 'sales' && !b.products.length, onchange: () => { form.kind = v; changed(); } }), el('span', {}, el('b', { text: l }), el('span', { class: 'muted small', text: d })))));
-  const product = el('select', { id: 'list-product' }, ...b.products.map(x => el('option', { value: x.id, text: x.name })));
+  const kindPick = el('div', { class: 'two', role: 'radiogroup', 'aria-label': '何の電話か' }, ...[['request', 'ふつうの依頼', '同じ用件を、ひとりずつに頼みます（納期の確認など）'], ['sales', '営業の電話', b.products.length ? '商品を選ぶか、頼むことの文だけで話します' : '頼むことの文だけで話します（商品は任意）']].map(([v, l, d]) =>
+    el('label', { class: 'option' }, el('input', { type: 'radio', name: 'list-kind', value: v, checked: v === form.kind, onchange: () => { form.kind = v; changed(); } }), el('span', {}, el('b', { text: l }), el('span', { class: 'muted small', text: d })))));
+  const product = el('select', { id: 'list-product' }, el('option', { value: '', text: '指定しない（頼むことの文で話します）' }), ...b.products.map(x => el('option', { value: x.id, text: x.name })));
+  product.value = b.products[0]?.id ?? '';
   const goal = el('select', { id: 'list-goal' }, ...Object.entries(LIST_GOAL).map(([v, [l]]) => el('option', { value: v, text: l })));
   const salesText = el('textarea', { id: 'list-sales-text', maxlength: '2000' }); salesText.value = LIST_GOAL.materials[1];
   let salesEdited = false; salesText.addEventListener('input', () => { salesEdited = true; });
@@ -1268,8 +1394,8 @@ async function listNew() {
   const count = el('select', { id: 'list-retry' }, ...[['0', 'かけ直さない'], ['1', '1回かけ直す'], ['2', '2回までかけ直す']].map(([v, l]) => el('option', { value: v, text: l })));
   const gap = el('select', { id: 'list-gap', 'aria-label': 'かけ直すまでの間隔' }, ...[[30, '30分後に'], [60, '1時間後に'], [120, '2時間後に'], [240, '4時間後に'], [1440, '翌日に']].map(([v, l]) => el('option', { value: String(v), text: l })));
   gap.value = '60';
-  const salesBox = el('div', { class: 'stack tight' }, el('label', { class: 'lbl', for: 'list-product', text: '紹介する商品' }), product, el('label', { class: 'lbl', for: 'list-goal', text: '電話の目的' }), goal,
-    el('label', { class: 'lbl', for: 'list-sales-text', text: 'AIに頼むこと' }), salesText, el('p', { class: 'note', text: '商品の説明は、確認済みの内容だけを使います。値引き・契約・支払いは約束しません。' }));
+  const salesBox = el('div', { class: 'stack tight' }, el('label', { class: 'lbl', for: 'list-product', text: '紹介する商品（任意）' }), product, el('label', { class: 'lbl', for: 'list-goal', text: '電話の目的' }), goal,
+    el('label', { class: 'lbl', for: 'list-sales-text', text: 'AIに頼むこと' }), salesText, el('p', { class: 'note', text: '商品を選ぶと、確認済みの説明だけを使います。指定しないと、頼むことの文だけを話します。値引き・契約・支払いは約束しません。' }));
   const requestBox = el('div', { class: 'stack tight' }, el('label', { class: 'lbl', for: 'list-text', text: '頼むこと（全員に同じ内容。相手の名前は、ひとりずつ入ります）' }), text,
     el('label', { class: 'check' }, gentle, 'ゆっくり・やさしく話す'), el('p', { class: 'note', text: '高齢の方や、耳の遠い方に。ゆっくり、やさしい言葉で話し、返事を長めに待ちます。予約を取る電話は、名簿ではかけられません。' }));
   const side = el('aside', { class: 'ask-side rep-open', 'aria-label': '名簿の確認' });
@@ -1305,7 +1431,7 @@ async function listNew() {
       ...(no.length ? [el('h2', { class: 'section-h list-h', text: `かけない相手　${no.length}人` }),
         el('ul', { class: 'list-who no' }, ...no.map(i => el('li', {}, el('b', { text: i.name }), el('span', { text: SKIP_WHY[i.reason] ?? '対象外です' })))),
         el('p', { class: 'note', text: '連絡先を直すと、次の名簿からかけられます。登録するときに、もう一度確かめます。' })] : []),
-      el('dl', { class: 'defs left' }, el('dt', { text: '内容' }), el('dd', { text: form.kind === 'sales' ? `営業の電話（${b.products.find(x => x.id === product.value)?.name ?? '商品'}・${LIST_GOAL[goal.value][0]}）` : `ふつうの依頼${gentle.checked ? '（ゆっくり・やさしく話す）' : ''}` }),
+      el('dl', { class: 'defs left' }, el('dt', { text: '内容' }), el('dd', { text: form.kind === 'sales' ? `営業の電話（${b.products.find(x => x.id === product.value)?.name ?? '商品の指定なし'}・${LIST_GOAL[goal.value][0]}）` : `ふつうの依頼${gentle.checked ? '（ゆっくり・やさしく話す）' : ''}` }),
         el('dt', { text: '電話の回数' }), el('dd', { text: `最大 ${yes.length * tries} 回（かける${yes.length}人${tries > 1 ? ` × かけ直しを含め${tries}回` : ' × 1回'}）` }),
         el('dt', { text: 'いつから' }), el('dd', { text: pv.hours ? `承認するとすぐ、${pv.hours.from}〜${pv.hours.to} の間に順にかけ始めます` : '承認するとすぐ、順にかけ始めます' }),
         el('dt', { text: '出ないとき' }), el('dd', { text: retry }), el('dt', { text: '期限' }), el('dd', { text: `${japanTime(new Date(Date.now() + 7 * 86400e3).toISOString())} まで（登録から7日）` })),
@@ -1326,7 +1452,7 @@ async function listNew() {
     go.disabled = true; form.key ??= crypto.randomUUID();
     try {
       await api('/batches', { method: 'POST', headers: { 'Idempotency-Key': form.key }, body: { kind: form.kind, contactIds: picked.map(c => c.id),
-        ...(form.kind === 'sales' ? { sales: { productId: product.value, request: body, goal: goal.value } } : { request: { instruction: body, ...(gentle.checked ? { pace: 'gentle' } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}) } }),
+        ...(form.kind === 'sales' ? { sales: { ...(product.value ? { productId: product.value } : {}), request: body, goal: goal.value } } : { request: { instruction: body, ...(gentle.checked ? { pace: 'gentle' } : {}), ...(b.account?.callerName ? { callerName: b.account.callerName } : {}) } }),
         retry: { count: Number(count.value), minutes: Number(gap.value) }, acknowledged: true } });
       app.listPick = null; app.boot = null; toast('名簿を登録しました。順に電話をかけます。'); location.hash = '#/lists';
     } catch (e) { if (e.status) form.key = null; err.textContent = e.message; err.hidden = false; sync(); }
@@ -1806,8 +1932,8 @@ async function contacts(id) {
     el('label', { class: 'lbl', for: 'contact-name', text: '名前' }), el('input', { type: 'text', id: 'contact-name', name: 'name' }),
     el('label', { class: 'lbl', for: 'contact-company', text: '会社・お店（任意）' }), el('input', { type: 'text', id: 'contact-company', name: 'company' }),
     el('label', { class: 'lbl', for: 'contact-phone', text: '電話番号（任意）' }), el('input', { type: 'tel', id: 'contact-phone', name: 'phone' }),
-    el('label', { class: 'lbl', for: 'contact-relationship', text: 'この相手との関係（営業の電話に必要）' }), el('select', { id: 'contact-relationship', name: 'relationship' }, el('option', { value: '', text: '指定しない' }), el('option', { value: 'inquiry', text: '問い合わせをもらった' }), el('option', { value: 'customer', text: '既存のお客さま' }), el('option', { value: 'consented', text: '電話の同意をもらった' })),
-    el('label', { class: 'lbl', for: 'contact-basis', text: '電話してよい根拠（営業の電話に必要）' }), el('input', { type: 'text', id: 'contact-basis', name: 'basis', placeholder: '例：9/20 に資料請求フォームから問い合わせ' }),
+    el('label', { class: 'lbl', for: 'contact-relationship', text: 'この相手との関係（任意）' }), el('select', { id: 'contact-relationship', name: 'relationship' }, el('option', { value: '', text: '指定しない' }), el('option', { value: 'inquiry', text: '問い合わせをもらった' }), el('option', { value: 'customer', text: '既存のお客さま' }), el('option', { value: 'consented', text: '電話の同意をもらった' })),
+    el('label', { class: 'lbl', for: 'contact-basis', text: '電話してよい根拠（任意。定期の電話にするときは必要）' }), el('input', { type: 'text', id: 'contact-basis', name: 'basis', placeholder: '例：9/20 に資料請求フォームから問い合わせ' }),
     el('label', { class: 'lbl', for: 'contact-notes', text: 'メモ（任意・AIには渡しません）' }), el('textarea', { id: 'contact-notes', name: 'notes' }),
     el('div', { class: 'actions' }, el('button', { class: 'btn', type: 'button', text: 'やめる', onclick: () => { if (keepEdits()) closeForm(); } }), el('button', { class: 'btn primary', type: 'submit', text: '保存する' })));
   const closeForm = () => { addForm.hidden = true; dirty = false; if (detail) detail.hidden = false; };
@@ -1904,7 +2030,7 @@ async function contacts(id) {
     stopped,
     sel && !sel.suppressed && app.released === sel.id ? el('p', { class: 'caveat released', role: 'status', text: '連絡停止を解除しました。解除した理由は記録されました。この相手に、また電話を頼めます。' }) : null,
     el('dl', { class: 'defs left' }, el('dt', { text: '電話番号' }), el('dd', { class: 'num', text: displayPhone(sel.phone) || '—' }), el('dt', { text: 'メール' }), el('dd', { text: sel.email || '—' }), el('dt', { text: 'メモ' }), el('dd', { text: sel.notes || '—' }),
-      el('dt', { text: '関係' }), el('dd', { text: { inquiry: '問い合わせをもらった', customer: '既存のお客さま', consented: '電話の同意をもらった' }[sel.relationship] ?? '—（営業の電話には必要）' }), el('dt', { text: '根拠' }), el('dd', { text: sel.basis || '—' })),
+      el('dt', { text: '関係' }), el('dd', { text: { inquiry: '問い合わせをもらった', customer: '既存のお客さま', consented: '電話の同意をもらった' }[sel.relationship] ?? '—' }), el('dt', { text: '根拠' }), el('dd', { text: sel.basis || '—' })),
     past,
     otherH, otherNote, otherRows)
     : el('div', { class: 'card' }, el('p', { class: 'muted', text: '連絡先を追加すると、ここに出ます。' }));
@@ -1924,12 +2050,24 @@ async function settings(tab) {
   let body;
   if (app.settingsTab === 'out') {
     const nameInput = el('input', { type: 'text', value: b.account?.callerName ?? '', 'aria-label': '名乗る名前', maxlength: '40' });
+    // 覚えておくこと: what goes with every call, as facts the AI may use when asked or when the call needs them.
+    const profileInput = el('textarea', { id: 'set-profile', maxlength: '2000', 'aria-describedby': 'set-profile-count set-profile-note', placeholder: '例：株式会社リングゼロ 営業部の堀尾です。業務用の電話代行サービスを扱っています。折り返しは 03-1234-5678（平日10〜18時）。' });
+    profileInput.value = b.account?.profile ?? '';
+    const profileCount = el('span', { class: 'note num profile-count', id: 'set-profile-count' }), profileMsg = el('p', { class: 'note', role: 'status' });
+    const countProfile = () => { profileCount.textContent = `${profileInput.value.length} / 2000`; profileCount.classList.toggle('warn', profileInput.value.length > 1900); };
+    profileInput.addEventListener('input', () => { countProfile(); profileMsg.textContent = ''; }); countProfile();
     body = [el('h2', { text: 'かける設定' }), el('p', { class: 'note', text: 'AIがあなたの代わりに電話をかけるときの決まりです。' }),
       row('本番の電話', '接続を確かめてから発信します', el('b', { text: isPaused(cfg) ? '受付停止中' : cfg.mode === 'live' ? (cfg.liveReady && st.ready ? '発信できます' : '設定が終わっていません') : '練習モード（電話はかかりません）' }), ...(st.issues?.length ? [el('details', { class: 'connection-details' }, el('summary', { text: '接続の詳細を確認' }), ...st.issues.map(i => el('p', { class: 'note', text: i })))] : [])),
       row('発信元の番号', '相手の画面に表示される番号', el('span', { class: 'num', text: cfg.mode === 'live' ? displayPhone(cfg.callerId) : '練習用' })),
       row('名乗り方', '最初に必ず伝えます', el('div', { class: 'two' }, nameInput, el('button', { class: 'btn', type: 'button', text: '保存する', onclick: async () => {
         try { await api('/account/caller-name', { method: 'POST', body: { callerName: nameInput.value } }); app.boot = null; await loadAll(); toast('名乗る名前を保存しました。'); } catch (e) { toast(e.message); }
       } })), el('p', { class: 'note', text: `「${nameInput.value || '〇〇'}の代わりにお電話している、AIアシスタントです。この通話は記録しています。」` })),
+      row('覚えておくこと', '会社名、担当者名、業種、折り返しの番号、よく使う説明など。電話のたびにAIに渡し、聞かれたときや必要なときだけ使います。',
+        el('div', { class: 'profile' }, profileInput,
+          el('div', { class: 'profile-foot' }, profileCount, el('button', { class: 'btn', type: 'button', text: '保存する', onclick: async () => {
+            try { await api('/account/profile', { method: 'POST', body: { profile: profileInput.value } }); app.boot = null; await loadAll(); profileMsg.textContent = profileInput.value.trim() ? '覚えておくことを保存しました。次の電話から使います。' : '覚えておくことを消しました。'; } catch (e) { profileMsg.textContent = e.message; }
+          } })),
+          el('p', { class: 'note', id: 'set-profile-note', text: 'AIへの指示ではなく、事実として渡します。空にして保存すると消えます。カード番号やパスワードは書かないでください。' }), profileMsg)),
       row('1回の通話の上限', 'これを過ぎると、あいさつして切ります', el('span', { text: `${Math.round(cfg.maxSeconds / 60)}分（サーバーの設定）` })),
       row('発信前の確認', '本番は毎回、あなたの承認が必要です（外せません）', el('span', { class: 'muted', text: '常にオン' }))];
   } else if (app.settingsTab === 'in') {
@@ -1963,7 +2101,7 @@ async function settings(tab) {
       el('label', { class: 'lbl', for: 'product-source', text: '出典のURL（任意）' }), el('input', { type: 'text', id: 'product-source', name: 'source' }),
       el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'reviewed' }), '内容を確かめました。この事実だけを電話で使います。'),
       el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'submit', text: '商品を保存する' })));
-    body = [el('h2', { text: '商品（営業の電話）' }), el('p', { class: 'note', text: '「商談の日時を決める」「資料を送ってよいか聞く」「商品を説明する」で紹介する商品です。AIは、ここに書いた確認済みの事実だけを使い、値引き・契約・支払い・未確認の機能や納期は約束しません。' }),
+    body = [el('h2', { text: '商品（営業の電話）' }), el('p', { class: 'note', text: '「商談の日時を決める」「資料を送ってよいか聞く」「商品を説明する」で紹介できる商品です。登録は任意で、商品がなくても営業の電話はかけられます（そのときは依頼文に書いたことだけを話します）。選んだ商品については、ここに書いた確認済みの事実だけを使い、値引き・契約・支払い・未確認の機能や納期は約束しません。' }),
       ...(b.products.length ? b.products.map(x => row(x.name, `確認 ${new Date(x.reviewedAt).toLocaleDateString('ja-JP')}`, el('p', { class: 'note', text: x.facts.slice(0, 160) }))) : [el('p', { class: 'muted', text: 'まだ商品がありません。' })]),
       el('h2', { class: 'section-h', text: '商品を追加' }), form];
   } else if (app.settingsTab === 'cost') {

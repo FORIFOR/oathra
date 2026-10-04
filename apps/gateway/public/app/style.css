@@ -366,7 +366,7 @@ mark.proof-fill { background: linear-gradient(transparent 55%, var(--ok-line) 55
 .workspace-active .warnbox { font-size: 13px; margin: 0; }
 .workspace-active .scope { padding: 14px 12px; border-radius: 8px; }
 .workspace-active .scope-item { line-height: 1.65; }
-.workspace-active .scope-item button { min-width: 36px; min-height: 36px; flex: none; }
+.workspace-active .scope-item button { min-width: 44px; min-height: 44px; margin: -6px -8px -6px 0; flex: none; }
 .workspace-active .scope-add { min-height: 44px; line-height: 1.6; text-align: left; font-size: 13px; }
 .workspace-active .voice-options { border-top: 1px solid var(--line); }
 .workspace-active .voice-options > summary { cursor: pointer; padding: 20px 0; min-height: 44px; }
@@ -870,4 +870,47 @@ mark.proof mark.proof { text-underline-offset: 2px; }
 .credit-mini { font-size: 12px; color: var(--muted); white-space: nowrap; }
 @media (max-width: 979px) {
   .row .row-end { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 12px; margin-top: -8px; }
+}
+
+/* 2026-10-04 Calling from a prompt: ホーム's prompt box, presets in 電話を頼む, who the words found, 覚えておくこと. */
+.home-prompt { display: grid; gap: 10px; margin-bottom: 20px; }
+.home-prompt-h { font-size: 15px; font-weight: 700; }
+.home-prompt textarea { min-height: 88px; width: 100%; }
+.home-prompt .errbox { margin: 0; }
+.home-prompt-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.home-prompt-foot .note { margin: 0; }
+.home-prompt-foot .btn { flex: none; min-height: 44px; }
+.presets { display: grid; gap: 6px; }
+.presets .lbl { margin: 0; }
+.preset-chips { max-height: 152px; overflow-y: auto; padding: 2px; overscroll-behavior: contain; }
+.preset-more[hidden] { display: none; }
+.preset-chips.scrolls { padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2); }
+.preset { display: inline-flex; max-width: 100%; }
+.preset .chip { min-height: 44px; border-radius: 8px 0 0 8px; border-right: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preset-x { min-width: 40px; min-height: 44px; padding: 0 12px 0 10px; border: 1px solid var(--line-2); border-radius: 0 8px 8px 0; background: var(--panel); color: var(--muted); font-size: 15px; cursor: pointer; }
+.preset-x:hover { color: var(--coral); border-color: var(--coral-line); }
+.preset .chip[aria-pressed="true"] + .preset-x { border-color: var(--ink); }
+.preset-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--coral-line); border-radius: 10px; font-size: 13px; }
+.preset-confirm-actions { display: flex; gap: 8px; margin-left: auto; }
+.preset-msg:empty, .preset-note:empty { display: none; }
+.preset-msg, .preset-note { margin: 0; }
+.link.preset-open { display: inline-block; min-height: 44px; margin-top: 4px; }
+.preset-save { margin-top: 10px; }
+.preset-save .play-row .btn { flex: none; }
+.target-found { padding: 12px 14px; margin-bottom: 8px; background: var(--panel); border: 1px solid var(--ink); border-radius: 10px; line-height: 1.6; }
+.target-k { display: block; font-size: 12px; color: var(--muted); }
+.target-who { margin: 2px 0 0; font-size: 18px; overflow-wrap: anywhere; }
+.target-who .num { font-size: 16px; font-weight: 700; }
+.target-how { margin: 4px 0 0; font-size: 12px; color: var(--ink-2); }
+.profile { display: grid; gap: 8px; min-width: 0; }
+.profile textarea { width: 100%; min-height: 140px; }
+.profile-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.profile .note { margin: 0; }
+@media (max-width: 560px) {
+  .home-prompt-foot { flex-direction: column; align-items: stretch; }
+  .home-prompt-foot .btn { width: 100%; }
+  .preset .chip { max-width: 220px; }
+  .preset-save .play-row { flex-wrap: wrap; }
+  .preset-save .play-row input { flex-basis: 100%; }
+  .preset-confirm-actions { margin-left: 0; }
 }
