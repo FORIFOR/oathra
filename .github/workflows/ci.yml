@@ -33,6 +33,15 @@ jobs:
           node scripts/ui/email-login.mjs
       - name: Local app (oathra demo) in a real browser — no sign-in here, sign-in link elsewhere, practice records
         run: pnpm test:local-app
+      - name: Synthetic intake callback workflow in a real browser (no phone or external API)
+        run: node scripts/ui/intake-pilot.mjs
+      - name: Keep synthetic intake browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intake-pilot-ui
+          path: artifacts/ui/intake-pilot/
+          if-no-files-found: ignore
       - name: Keep UI failure evidence
         if: failure()
         uses: actions/upload-artifact@v4

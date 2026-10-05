@@ -1,5 +1,6 @@
 import { phonePage } from './lib/phone-ui.mjs';
 import { grantPhone, phoneGrantDefaults, connectPhoneAgent, agentPhoneConnection, revokePhoneGrant, dispatchPhone, readAgentPhone, cancelAgentPhone } from './lib/agent-phone.mjs';
+import { IntakePilot } from './lib/intake-pilot.mjs';
 import { practiceList, practiceRun, practicePlayStart, practicePlayState, practicePlayReply, practicePlayHangup, practiceBrains, practiceRecords, practiceRecord, configurePractice } from './lib/practice.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, carrierChargeTotals, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
@@ -102,6 +103,8 @@ assets.set('/connect/connect.js',['connect/connect.js','text/javascript; charset
 assets.set('/connect/connect.css',['connect/connect.css','text/css; charset=utf-8']);
 assets.set('/phone/public-service.js',['phone/public-service.js','text/javascript; charset=utf-8']);
 assets.set('/phone/public-service.css',['phone/public-service.css','text/css; charset=utf-8']);
+assets.set('/intake-pilot', ['intake-pilot/index.html', 'text/html; charset=utf-8']);
+for (const [name, type] of [['app.js','text/javascript'], ['style.css','text/css']]) assets.set(`/intake-pilot/${name}`, [`intake-pilot/${name}`, `${type}; charset=utf-8`]);
 // One short recorded sample per voice, from the fixed voice list only; never a path taken from the request.
 // Only recorded samples are served; a voice without one (the 9 added 2026-09-29) has no route.
 for (const voice of PHONE_VOICES) if (existsSync(repoUrl(`apps/gateway/public/phone/voices/${voice}.wav`))) assets.set(`/phone/voices/${voice}.wav`,[`phone/voices/${voice}.wav`,'audio/wav']);
@@ -157,6 +160,7 @@ export async function createGateway(config,options={}){
   const publicAccounts=new PublicAccounts(service,env),purchases=new Purchases(service,env);
   const mcpOAuth=new McpOAuth(service,env);
   const sessions=new BrowserSessions(service);
+  const intakePilot=new IntakePilot(service);
   // The local app passes its practice AIs and records folder; a deployed gateway has neither (lib/practice.mjs).
   configurePractice(options.practice??{});
   const phone=options.phone??new Phone(service,env);
@@ -355,6 +359,11 @@ export async function createGateway(config,options={}){
         }
         throw new Fault(404,'not_found');
       }
+      // Fixed synthetic examples only; never wired to phone, AI, contacts, or jobs.
+      if(path==='/v1/intake-pilot'&&method==='GET')return send(res,200,intakePilot.list(u));
+      if(path==='/v1/intake-pilot'&&method==='POST')return send(res,201,intakePilot.create(u,data));
+      const intakeCase=/^\/v1\/intake-pilot\/([a-f0-9-]{36})$/.exec(path);
+      if(intakeCase&&method==='POST')return send(res,200,intakePilot.change(u,intakeCase[1],data));
       // A signed-in person sets up (or resets) email login for their own account: the code opens the setup form.
       if(path==='/v1/account/password-link'&&method==='POST'){service.write(u);const link=service.passwords.issue(u.id,{reset:service.passwords.profile(u.id).passwordLogin});return send(res,200,{code:new URL(link.url).hash.slice(7),expiresInSeconds:link.expiresInSeconds});}
       if(path==='/v1/auth/password'&&method==='POST'){

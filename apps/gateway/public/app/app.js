@@ -1737,6 +1737,7 @@ async function practice(id, sub) {
   return el('div', { class: 'page' }, el('div', { class: 'split-page' },
     el('div', { class: 'stack' }, el('div', { class: 'page-h' }, el('h1', { text: '練習' })),
       el('p', { class: 'note', text: 'AIが店員役などと話します。電話はかからず、費用もかかりません。' }),
+      ...(app.boot.configuration.mode === 'simulator' ? [el('a', { class: 'btn', href: '/intake-pilot', text: '見積相談の受付・折り返しを練習する（合成例）' })] : []),
       el('div', { class: 'list' }, ...list.map(x => el('button', { class: 'item', type: 'button', 'aria-current': String(x.id === sel?.id), onclick: () => { location.hash = `#/practice/${x.id}`; } },
         el('span', { class: 'grow' }, el('b', { text: x.title }), el('span', { text: x.brief.slice(0, 40) })), el('span', { class: 'muted small', text: x.difficulty })))),
       ...(records.length ? [el('h2', { class: 'section-h', text: '記録' }), el('p', { class: 'note', text: 'このパソコンに保存した練習です（ターミナルの oathra play も含みます）。' }),

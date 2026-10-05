@@ -1,0 +1,61 @@
+/* Extends the existing Ring Zero app tokens. No new brand or external assets. */
+.pilot-header { height: 64px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: var(--panel); gap: 16px; }
+.pilot-header .brand { text-decoration: none; font-size: 22px; font-weight: 700; }
+.pilot-header .brand span { margin-left: 16px; font-size: 12px; color: var(--muted); font-weight: 400; }
+.pilot-label { font-size: 12px; color: var(--amber); font-weight: 700; }
+.pilot { padding: 22px 28px 24px; max-width: 1600px; margin: auto; }
+.pilot-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.eyebrow { margin: 0 0 4px; font-size: 12px; color: var(--muted); }
+.pilot h1 { margin: 0; font-size: 26px; }
+.pilot h2 { margin: 0 0 12px; font-size: 16px; }
+.pilot h3 { margin: 0 0 8px; font-size: 14px; }
+.pilot .btn { min-height: 44px; white-space: normal; }
+.pilot-notice { font-size: 12px; color: var(--muted); line-height: 1.7; margin: 10px 0 0; }
+.feedback { font-size: 13px; min-height: 22px; margin: 8px 0 10px; color: var(--ink-2); }
+.feedback.error { color: var(--coral); font-weight: 600; }
+.pilot-board { display: grid; grid-template-columns: 280px minmax(0, 1fr); border: 1px solid var(--line-2); border-radius: 14px; background: var(--panel); height: calc(100dvh - 232px); min-height: 470px; overflow: hidden; }
+.pilot-board[hidden] { display: none; }
+.queue-pane { padding: 20px; border-right: 1px solid var(--line); overflow: auto; }
+#case-count { color: var(--muted); font-size: 12px; font-weight: 400; }
+.case-list { display: grid; gap: 8px; margin: 12px 0 24px; }
+.case-button { width: 100%; text-align: left; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); cursor: pointer; overflow-wrap: anywhere; }
+.case-button[aria-pressed=true] { border: 2px solid var(--ink); padding: 11px; background: var(--bg); }
+.case-button b { display: block; font-size: 13px; }
+.case-button span { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.case-button .overdue, .overdue { color: var(--coral); font-weight: 700; }
+.fixture-picker { padding-top: 16px; border-top: 1px solid var(--line); }
+.fixture-picker .btn { width: 100%; margin-top: 10px; }
+.detail-pane { padding: 20px 24px; overflow: auto; min-width: 0; }
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.detail-head h2 { margin: 4px 0 0; font-size: 20px; }
+.state { font-size: 12px; font-weight: 700; padding: 5px 8px; border: 1px solid var(--line-2); border-radius: 6px; display: inline-block; }
+.state.needs-review { color: var(--amber); border-color: var(--amber-line); background: var(--amber-bg); }
+.detail-columns { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; }
+.field-list { margin: 0; }
+.field-list div { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.field-list dt { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.field-list dd { margin: 0; font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.field-list .missing { color: var(--amber); font-weight: 700; }
+.evidence-ref { font-size: 11px; display: block; color: var(--muted); }
+.pilot-turns { margin: 0; padding: 0; list-style: none; }
+.pilot-turns li { border-left: 2px solid var(--line); padding-left: 12px; margin: 0 0 14px; }
+.pilot-turns li.customer { border-color: var(--ink-2); }
+.pilot-turns li p { margin: 4px 0 0; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.pilot-turns li b { font-size: 11px; color: var(--muted); }
+.pilot-turns li:not(.customer) p { color: var(--muted); }
+.work-section { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 18px; }
+.assignment { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto; gap: 10px; align-items: end; }
+.assignment label, .resolution label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.assignment input { min-width: 0; min-height: 44px; border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px; background: var(--panel); }
+.resolution { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-top: 14px; }
+.pilot details { margin-top: 16px; }
+.pilot summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+.history { font-size: 12px; color: var(--muted); line-height: 1.9; padding-left: 20px; }
+.pilot [hidden] { display: none; }
+/* Candidate stacked comparison, awaiting browser QA. Default intends to keep
+   the queue in view at laptop widths; this is not a claim of visual validation. */
+.pilot-board.stacked { grid-template-columns: 1fr; height: auto; }
+.pilot-board.stacked .queue-pane { border-right: 0; border-bottom: 1px solid var(--line); }
+.pilot-board.stacked .case-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1000px) { .pilot-board { grid-template-columns: 240px minmax(0, 1fr); }.detail-columns { grid-template-columns: 1fr; }.assignment { grid-template-columns: 1fr 1fr; }.assignment .btn { grid-column: 1 / -1; }.resolution { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .pilot-header { padding: 12px 16px; height: auto; flex-wrap: wrap; gap: 8px; }.pilot { padding: 18px 16px; }.pilot-heading { align-items: flex-start; flex-direction: column; gap: 10px; }.pilot h1 { font-size: 24px; }.pilot-board { display: block; height: auto; min-height: 0; }.queue-pane { border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }.detail-pane { padding: 20px 16px; }.detail-head { flex-direction: column; }.assignment { grid-template-columns: 1fr; }.pilot-board.stacked .case-list { grid-template-columns: 1fr; } }
