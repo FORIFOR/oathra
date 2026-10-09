@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-01T17:54:42.137Z",
+  "revision": "db56271fd4b6a01ae51f577ed2692c7f89b3b7a2",
+  "sourceHashes": {
+    "apps/gateway/public/app/app.js": "26d35d59a2db7a81a7595ccdd319c1e7347c5e404648a315f1808b955736afc9",
+    "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129",
+    "apps/gateway/public/app/style.css": "96250c59d828c2a3495e77a6a2f9b45dca43b2fc058cb7ebb9789a73035ed01f",
+    "apps/gateway/public/phone/account.js": "51388fc020bc6e106a8eb77c07030bdd4156f83ccb7417e3a59921128a88a2cd",
+    "apps/gateway/public/phone/main.js": "88ab8788cbfc2906e4934f10d9d771c80ba0f65483f8f67fd1a2ec35bdca09f4",
+    "apps/gateway/public/phone/messages.js": "0be13d60f75397b06913d14f32b26148a00ff66020bb2b2fb0aee2021421855e",
+    "apps/gateway/public/phone/receipt.js": "e19dcf8fe8c79557aa521e789297613c9dbf51cdc726c23a45f5861e7ef7ecb1",
+    "apps/gateway/lib/phone-ui.mjs": "e5dadf82d792e9a34fa6ef12a306ea3fe8491b91994c04f45dcba10e2cf4fc56",
+    "apps/gateway/public/managed-phone.css": "28f153f326f8e3a543e040a2e13d883d27c3e81de37c8f7c2154672dd2cc5ea6"
+  }
+}

@@ -1,8 +1,9 @@
-import { phoneMemory } from '../../../packages/core/dist/index.js';
-import { PhoneRequestSchema, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
+import { phoneMemory, checkInNote } from '../../../packages/core/dist/index.js';
+import { PhoneRequestSchema, normalizePhoneNumber, extractPhoneNumber, PHONE_PURPOSE_TEMPLATES, PHONE_VOICES, DEFAULT_PHONE_VOICE, GEMINI_VOICES, DEFAULT_GEMINI_VOICE, GEMINI_VOICE_TRAITS, PRESET_VOICES, VOICE_PRESET_LABELS, ENGINE_DEFAULT_VOICE } from '../../../packages/contract/dist/index.js';
 import { assert } from './security.mjs';
 import { readFileSync } from 'node:fs';
 import { repoUrl } from './paths.mjs';
+import { prereleaseCallsAvailable } from './prerelease.mjs';
 
 /**
  * What was measured about each voice (scripts/voice-samples.mjs): median pitch and how long the same sentence
@@ -39,8 +40,11 @@ function recommend(details) {
 const VOICE_DETAILS=voiceDetails();
 
 export function phoneReadiness(service,config,user) {
- const ready=config.mode==='live'&&config.liveReady;
+ const paused=config.prerelease?.enabled&&config.prerelease.paused;
+ const ready=config.mode==='live'&&config.liveReady&&prereleaseCallsAvailable(config);
  const issues=ready?[]:[config.mode==='simulator'?'確認用の環境です。実発信はできません。':'サービスの電話接続を準備中です。管理者へお問い合わせください。'];
+ if(paused)issues.splice(0,issues.length,'事前プレリリースの新規受付を一時停止しています。残高と履歴は確認できます。');
+ else if(!prereleaseCallsAvailable(config))issues.splice(0,issues.length,'事前プレリリースの発信枠を準備中です。残高と履歴は確認できます。');
  if(!ready&&user?.role==='admin') {
   const labels={TWILIO_ACCOUNT_SID:'電話会社のアカウント',TWILIO_AUTH_TOKEN:'電話会社の認証',TWILIO_PHONE_NUMBER:'発信元の番号',OPENAI_API_KEY:'音声AIの認証',OATHRA_VOICE_MODEL:'音声モデル',OATHRA_BUSINESS_NAME:'相手に名乗る運営者名',OATHRA_RATE_CEILING_USD:'通信費の上限単価',OATHRA_LIVE_POLICY_REVIEWED:'運営方針の確認'};
   if(!config.publicUrl.startsWith('https:'))issues.push('公開HTTPS接続の設定が必要です。');
@@ -63,12 +67,20 @@ export function phoneRecord(service,m) {
  const voiceSetting=service.store.events(m.id,m.owner).find(e=>e.type==='voice.setting')?.setting??null;
  return {id:m.id,direction:m.direction==='inbound'?'inbound':'outbound',request:m.phoneRequest,voiceSetting,memory:m.memory?.turnCount===transcript.length&&m.memory?.lastTurnId===(transcript.at(-1)?.id??null)?m.memory:phoneMemory(m.inbound?.reception?{...m.phoneRequest,conversationMode:'chat'}:m.phoneRequest,transcript,m.approvedAt??m.createdAt),state:map[m.status]??'unknown',createdAt:new Date(m.createdAt).toISOString(),updatedAt:new Date(m.finishedAt??m.approvedAt??m.createdAt).toISOString(),creditState:service.credits.status(m),creditQuote:m.creditQuote,creditUsage:service.credits.usage(m),
   billing:m.billing?{state:m.billing.state,durationSeconds:m.billing.carrier?.durationSeconds,cost:m.billing.cost}:undefined,
+  carrierCharge:m.mode==='live'?(m.carrierCharge??(m.carrierSid?{pending:true}:null)):null,
   news:service.store.events(m.id,m.owner).filter(e=>e.type==='news.lookup').map(e=>e.result),
   // What the AI says it decided within 任せる範囲: its own account, shown as such; never evidence.
   decisions:service.store.events(m.id,m.owner).filter(e=>e.type==='decision.made').map(e=>({decision:e.decision,...(e.within?{within:e.within}:{}),...(typeof e.t==='number'?{t:e.t}:{})})),
   // What the desk wrote down on this call (the ledger's own record, not something read out of the transcript).
   ...(m.inbound?.reception?{booking:(b=>b?(({phone,owner,team,...rest})=>rest)(b):null)(service.store.all('table-booking',m.owner).find(b=>b.callId===m.id))}:{}),
-  spending:m.billing?.spending,error:m.stopReason==='credit_limit'?'credit_limit_reached':reachedTimeLimit?'call_time_limit_reached':m.error,summary:m.stopReason==='credit_limit'&&!m.stopNeedsReconciliation&&['CANCELLED','INCOMPLETE','FAILED'].includes(m.status)?'利用クレジットの上限に達したため通話を終了しました。':reachedTimeLimit?`通話時間の上限（${m.maxSeconds}秒）に達しました。`:m.result?.caveat,transcript,persistence:'saved'};
+  spending:m.billing?.spending,error:m.stopReason==='credit_limit'?'credit_limit_reached':reachedTimeLimit?'call_time_limit_reached':m.error,summary:m.stopReason==='credit_limit'&&!m.stopNeedsReconciliation&&['CANCELLED','INCOMPLETE','FAILED'].includes(m.status)?'利用クレジットの上限に達したため通話を終了しました。':reachedTimeLimit?`通話時間の上限（${m.maxSeconds}秒）に達しました。`:m.result?.caveat,transcript,persistence:'saved',
+  // Lines a person should read (core detectDistress) and what a wellbeing call heard, with the person's own words.
+  attention:m.attention??null,checkIn:m.result?.checkIn??null,answered:typeof m.answered==='boolean'?m.answered:null,scheduled:!!m.schedule,
+  // Which try of a standing request this was (1-based) and whether more would follow.
+  ...(m.schedule?{attempt:{number:(m.schedule.attempt??0)+1,last:m.schedule.final!==false}}:{}),
+  // A note a staff member may read out or send to a relative. It is never sent by the service itself.
+  ...(m.result?.checkIn&&m.direction!=='inbound'?{familyNote:checkInNote(m.result.checkIn,{name:m.target.name,from:m.phoneRequest?.callerName||service.config.businessName||'担当',
+    when:new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'long',day:'numeric',hour:'numeric'}).format(m.approvedAt??m.createdAt)+'ごろ'})}:{})};
 }
 /**
  * A calendar entry from the call memo, for the caller's own calendar. It records what was said on the
@@ -92,19 +104,61 @@ export function phoneCalendar(service,m,now=service.store.now()) {
   'BEGIN:VEVENT','UID:'+m.id+'@oathra','DTSTAMP:'+stamp,'DTSTART;TZID=Asia/Tokyo:'+local(day,clock),'DTEND;TZID=Asia/Tokyo:'+local(endDay,String(end.getUTCHours()).padStart(2,'0')+':'+String(end.getUTCMinutes()).padStart(2,'0')),
   'SUMMARY:'+text(`${settled?'【電話で確認】':'【未確定】'}${m.target.name}`),'DESCRIPTION:'+text(lines.join('\n')),'STATUS:'+(settled?'CONFIRMED':'TENTATIVE'),'TRANSP:'+(settled?'OPAQUE':'TRANSPARENT'),'END:VEVENT','END:VCALENDAR',''].join('\r\n');
 }
-export function prepareManagedPhone(service,u,input) {
- service.write(u);const request=PhoneRequestSchema.parse({...input,schemaVersion:1,kind:'oathra.phone-request'});
+/** Who a request written in plain words is for: a number in the text, or the one contact it names. Never a guess. */
+export function resolvePhoneTarget(service,u,instruction,given={}) {
+ const text=String(instruction??''),contacts=service.store.list('contact',u.id).filter(c=>c.phone);
+ if(given.phone)return {phone:given.phone,name:given.name||contacts.find(c=>c.phone===normalizePhoneNumber(String(given.phone)))?.name||contacts.find(c=>c.phone===normalizePhoneNumber(String(given.phone)))?.company||''};
+ let spoken=null;try{const x=extractPhoneNumber(text);spoken=x?normalizePhoneNumber(x):null;}catch{assert(false,'phone_target_unclear',400);}
+ const named=contacts.filter(c=>[c.name,c.company].some(label=>label&&label.length>=2&&text.includes(label)));
+ if(spoken){const known=contacts.find(c=>c.phone===spoken);return {phone:spoken,name:given.name||known?.name||known?.company||named.find(c=>c.phone===spoken)?.name||'相手'};}
+ assert(named.length,'phone_target_not_found',400);
+ // Several contacts named: the longest name that contains the others wins (「田中商事」 over 「田中」); otherwise ask.
+ const best=named.filter(c=>!named.some(o=>o!==c&&(o.name||o.company).length>(c.name||c.company).length&&(o.name||o.company).includes(c.name||c.company)));
+ assert(best.length===1,'select_one_contact',409);
+ return {phone:best[0].phone,name:given.name||best[0].name||best[0].company};
+}
+export function prepareManagedPhone(service,u,input,limits={}) {
+ service.write(u);
+ // Written in plain words: the target comes from the text, and what the person asked us to remember goes with it.
+ const account=service.account(u);
+ if(!input.phone||!input.name){const t=resolvePhoneTarget(service,u,input.instruction,{phone:input.phone,name:input.name});input={...input,phone:t.phone,name:t.name};}
+ if(input.callerName===undefined&&account.callerName)input={...input,callerName:account.callerName};
+ if(input.callerProfile===undefined&&account.profile)input={...input,callerProfile:account.profile};
+ const request=PhoneRequestSchema.parse({...input,schemaVersion:1,kind:'oathra.phone-request'});
  const config=service.config;
  // An engine this deployment cannot run is refused at the draft, not discovered at dial time.
  if(request.engine)assert((config.voiceEngines??[]).some(e=>e.id===request.engine&&e.ready),'voice_engine_unavailable',400);
  const balanceLimited=service.credits.enabled&&config.mode==='live'&&config.billing?.settlement==='usage-rate-v1';
- const maxSeconds=balanceLimited?config.maxSeconds:Math.min(180,config.maxSeconds);
+ const maxSeconds=Math.min(config.maxSeconds,limits.maxSeconds??(balanceLimited?config.maxSeconds:180));
+ const maxUsd=Math.min(config.maxCallUsd,limits.maxUsd??config.maxCallUsd);
+ const currentQuote=service.credits.quote(config.mode,request.phone);
+ const spendingAmount=balanceLimited?Math.min(service.credits.balance(u.id).available,limits.maxUsd===undefined?Infinity:Math.floor(maxUsd/currentQuote.creditUsd)):undefined;
  const m={id:crypto.randomUUID(),owner:u.id,team:u.team,revision:1,status:'DRAFT',kind:'phone-request',phoneRequest:request,
   target:{name:request.name,phone:request.phone},request:request.instruction,goal:'phone.message',product:null,candidateSlots:[],testOnMe:false,mode:config.mode,
-  maxSeconds,maxUsd:config.maxCallUsd,estimatedMaximumUsd:config.mode==='live'?Math.ceil((maxSeconds+30)/60)*config.rateCeilingUsd*2+config.setupFeeUsd:0,
-  creditQuote:service.credits.quote(config.mode,request.phone,balanceLimited?service.credits.balance(u.id).available:undefined),callerId:config.callerId??'simulator',callPluginIdentity:config.callPluginIdentity??null,createdAt:service.store.now(),origin:null,result:null};
+  maxSeconds,maxUsd,estimatedMaximumUsd:config.mode==='live'?Math.ceil((maxSeconds+30)/60)*config.rateCeilingUsd*2+config.setupFeeUsd:0,
+  creditQuote:service.credits.quote(config.mode,request.phone,spendingAmount),callerId:config.callerId??'simulator',callPluginIdentity:config.callPluginIdentity??null,createdAt:service.store.now(),origin:null,result:null};
  // Balance-limited calls stop at their held budget; the full time ceiling is not prepaid.
  if(balanceLimited)m.estimatedMaximumUsd=Math.min(m.estimatedMaximumUsd,m.maxUsd,m.creditQuote.amount*m.creditQuote.creditUsd);
  assert(m.estimatedMaximumUsd<=m.maxUsd,'estimated_cost_exceeds_budget');service.store.put('mission',m);return m;
 }
 export { PHONE_PURPOSE_TEMPLATES, PHONE_VOICES };
+
+/** What real calls cost at the carrier, today and this month (Japan time), per currency. AI voice usage is not included. */
+export function carrierChargeTotals(store, owner, now = store.now()) {
+  const jst = t => new Date(t + 9 * 3600_000).toISOString(), today = jst(now).slice(0, 10), month = today.slice(0, 7);
+  const sum = () => ({ calls: 0, seconds: 0, amounts: {} }), out = { today: sum(), month: sum(), pending: 0 };
+  for (const m of store.all('mission', owner)) {
+    if (m.mode !== 'live' || !m.carrierSid) continue;
+    const day = jst(m.finishedAt ?? m.approvedAt ?? m.createdAt).slice(0, 10);
+    if (!day.startsWith(month)) continue;
+    if (!m.carrierCharge) { out.pending++; continue; }
+    for (const [key, bucket] of [['month', out.month], ...(day === today ? [['today', out.today]] : [])]) {
+      bucket.calls++; bucket.seconds += m.carrierCharge.durationSeconds;
+      bucket.amounts[m.carrierCharge.currency] = Math.round(((bucket.amounts[m.carrierCharge.currency] ?? 0) + m.carrierCharge.amount) * 100000) / 100000;
+    }
+  }
+  return out;
+}
+
+/** A wellbeing call: gentle pace, and not a free chat. Choosing ゆっくり for a chat does not make it a check-in. */
+export const isCareRequest = r => r?.pace === 'gentle' && r?.conversationMode !== 'chat';

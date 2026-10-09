@@ -2,6 +2,7 @@
  * Typed parsers: text -> value. These are deliberately NOT delegated to an
  * LLM. They are deterministic, testable, and language-aware.
  */
+import { formatQuantity, type QuantityUnit } from "@oathra/contract";
 import type { Language } from "./types.js";
 
 const KANJI_DIGITS: Record<string, number> = {
@@ -180,7 +181,7 @@ export function parseDates(text: string, now: Date, lang: Language = "ja"): Date
 
   // Day-only ("14日"): the next occurrence of that day-of-month. Durations
   // ("3日間", "2日後") and counters are excluded.
-  for (const m of s.matchAll(/(?<![\d月])(\d{1,2})日(?![間後前以\d]|ほど|程|くらい|ぐらい|位)/g)) {
+  for (const m of s.matchAll(/(?<![\d月])(\d{1,2})日(?![間後前以]|\d(?!\d?(?:時|[:：]\d))|ほど|程|くらい|ぐらい|位)/g)) {
     const day = Number(m[1]);
     if (day < 1 || day > 31) continue;
     if (out.some((o) => (m.index ?? 0) >= o.index && (m.index ?? 0) < o.index + o.span.length)) continue;
@@ -194,6 +195,15 @@ export function parseDates(text: string, now: Date, lang: Language = "ja"): Date
       }
     }
     out.push({ value: `${year}-${pad2(month)}-${pad2(day)}`, span: m[0], index: m.index ?? 0 });
+  }
+
+  // 「来週火曜日」「再来週の金曜」「今週木曜日」: a weekday in a named week (weeks run Monday to Sunday), anchored on `now`.
+  // A bare weekday (「火曜」) is not a date on its own; the engine only checks it against the date on the table.
+  for (const m of s.matchAll(/(今週|来週|再来週)の?([月火水木金土日])曜日?/g)) {
+    const weeks = m[1] === "今週" ? 0 : m[1] === "来週" ? 1 : 2;
+    const target = "月火水木金土日".indexOf(m[2]!); // 0 = Monday
+    const today = (now.getDay() + 6) % 7;
+    out.push({ value: isoDate(addDays(now, weeks * 7 + target - today)), span: m[0], index: m.index ?? 0 });
   }
 
   const relative: Array<[RegExp, number]> = [
@@ -299,6 +309,98 @@ export function parsePrices(text: string): PriceMatch[] {
     if (!raw) continue;
     const cents = m[2] ? Number(m[2]) / 100 : 0;
     out.push({ value: Number(raw) + cents, currency: "USD", span: m[0], index: m.index ?? 0 });
+  }
+  return dedupeByIndex(out);
+}
+
+// ---------------------------------------------------------------------------
+// Quantity (a number and a counting unit)
+// ---------------------------------------------------------------------------
+
+/** `value` is the canonical text ("50ケース"): amount and unit together, so equality is plain `===`. */
+export type QuantityMatch = { value: string; amount: number; unit: QuantityUnit; span: string; index: number };
+
+const ASCII_END = "(?![A-Za-z0-9])";
+/**
+ * [canonical unit, spellings (regex source, longest first), what must not follow].
+ * People (名/人), money (円), dates and times (日/時/分/週間), ordinals (番/階/回/第) and the generic counter
+ * つ are deliberately absent: 「1つ」 carries no unit, so it is never a quantity.
+ */
+const QUANTITY_UNIT_TABLE: Array<[QuantityUnit, string, string?]> = [
+  ["kg", `キログラム|キロ(?!メートル|バイト|ワット|ヘルツ|カロリー|リットル|先|圏)|[kK][gG]${ASCII_END}`],
+  ["g", `グラム|g${ASCII_END}`],
+  ["t", `トン(?!ネル)|t${ASCII_END}(?!トラック|車)`],
+  ["L", `リットル|リッター|[Ll]${ASCII_END}`],
+  ["m", `メートル|メーター|m${ASCII_END}`],
+  ["ケース", "ケース"],
+  ["セット", "セット"],
+  ["ダース", "ダース"],
+  ["パック", "パック"],
+  ["ロット", "ロット"],
+  ["梱包", "梱包|梱"],
+  ["個", "個", "人|室|別|所|々|性"],
+  ["箱", "箱", "根"],
+  ["台", "台", "風|所|湾|本|帳|詞"],
+  ["本", "本", "日|当|人|社|店|部|体|来|件|化|気|格|番|名|物|業|館|線|題|文|質|州|屋|棚|年|月|書|命|職|決|契|予"],
+  ["枚", "枚"],
+  ["袋", "袋"],
+  ["缶", "缶", "詰"],
+  ["束", "束", "ね"],
+  // 「2点確認させてください」「1点ございます」 count topics, not goods.
+  ["点", "点", "満|検|灯|呼|火|滴|字|線|あり|ござい|(?:ほど|だけ|ばかり)?(?:ご|お)?(?:確認|質問|伺|聞|尋|相談|連絡|報告|知らせ)"],
+  ["冊", "冊", "子"],
+  ["着", "着", "信|払|工|手|用|席|陸|任"],
+  ["足", "足", "り|す|し|元|ら"],
+  ["脚", "脚", "本|注"],
+  ["基", "基", "本|準|地|礎|づ|盤|金"],
+  ["式", "式", "場|典|次|辞"],
+  ["反", "反", "対|応|映|省|面|則|発|論|射|転|復"],
+  ["俵", "俵"],
+  ["pieces", "\\s?(?:pieces?|pcs)\\b"],
+  ["units", "\\s?units?\\b"],
+  ["cases", "\\s?cases?\\b"],
+  ["boxes", "\\s?box(?:es)?\\b"],
+  ["cartons", "\\s?cartons?\\b"],
+  ["pallets", "\\s?pallets?\\b"],
+];
+const KANJI_NUM = "〇一二三四五六七八九十百千万";
+// Not the tail of a code, a model number, a longer number, a clock time or a price sign ("A-100", "ABC123", "19:30", "¥500").
+const QUANTITY_HEAD = `(?<![\\dA-Za-z#№第:$¥\\-‐−${KANJI_NUM}])(?<!\\d[.,])`;
+const QUANTITY_NUMBER = `(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+\\.\\d+|[\\d${KANJI_NUM}]+)`;
+// 「2本目」 is an ordinal, 「台数」 a noun, 「24本入り」 a pack size, 「1個2,000円」「1ケースあたり」 a unit price.
+const QUANTITY_TAIL = `(?!目|数|入り|あたり|当たり|当り|につき|ずつ|ごと|毎|単位|\\s*(?:¥|[\\d${KANJI_NUM},]+\\s*円))`;
+const QUANTITY_RES: Array<[QuantityUnit, RegExp]> = QUANTITY_UNIT_TABLE.map(([unit, spellings, not]) =>
+  [unit, new RegExp(`${QUANTITY_HEAD}${QUANTITY_NUMBER}\\s?(?:${spellings})${not ? `(?!${not})` : ""}${QUANTITY_TAIL}`, "g")]);
+
+/** "50" / "1,200" / "1.5" / "五十" / "2万5千" -> number. Kanji forms go through `kanjiToNumber`. */
+function quantityAmount(raw: string): number | undefined {
+  const plain = raw.replace(/,/g, "");
+  if (/^\d+(?:\.\d+)?$/.test(plain)) return Number(plain);
+  if (raw.includes(",")) return undefined;
+  const parts = raw.split("万");
+  if (parts.length > 2) return undefined;
+  if (parts.length === 2) {
+    const man = kanjiToNumber(parts[0]!);
+    const rest = parts[1] ? kanjiToNumber(parts[1]) : 0;
+    return man === undefined || rest === undefined ? undefined : man * 10000 + rest;
+  }
+  return kanjiToNumber(raw);
+}
+
+/**
+ * Extract quantities: a number directly followed by a counting unit. A bare number is never a quantity, and
+ * no unit is converted into another (1ダース is not 12個; 50ケース is not 50箱).
+ */
+export function parseQuantities(text: string): QuantityMatch[] {
+  // NFKC folds full-width digits and letters, half-width katakana (ｹｰｽ) and unit glyphs (㎏) into one spelling.
+  const s = text.normalize("NFKC");
+  const out: QuantityMatch[] = [];
+  for (const [unit, re] of QUANTITY_RES) {
+    for (const m of s.matchAll(re)) {
+      const amount = quantityAmount(m[1]!);
+      if (amount === undefined || !(amount > 0)) continue;
+      out.push({ value: formatQuantity(amount, unit), amount, unit, span: m[0].trim(), index: m.index ?? 0 });
+    }
   }
   return dedupeByIndex(out);
 }

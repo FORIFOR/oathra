@@ -15,7 +15,7 @@ import type { Action, CallContract } from "@oathra/contract";
 import { DEFAULT_GEMINI_VOICE, GEMINI_VOICES, requiredFields } from "@oathra/contract";
 import { bytesToInt16, int16ToBytes, mulawDecode, mulawEncode, StreamResampler } from "@oathra/audio-kit";
 import type { MissionView, SessionEvent } from "@oathra/core";
-import { callInstructions, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
+import { callInstructions, CONCERN_TOOL, concernEvent, concernInstruction, type ConcernEvent, DECISION_TOOL, decisionEvent, DESK_TOOLS, deskTool, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, recordsDecisions, type DecisionEvent, type DeskEvent, type ReservationDesk } from "@oathra/voice-kit";
 import type { AgentBridge } from "./index.js";
 
 export const DEFAULT_GEMINI_LIVE_MODEL = "gemini-3.8-live";
@@ -43,6 +43,8 @@ export type GeminiLiveAgentOptions = {
   onDesk?: (event: DeskEvent) => void;
   /** A decision the model made within 任せる範囲 (its own account; never evidence). */
   onDecision?: (event: DecisionEvent) => void;
+  /** The model's own report that a line should be checked by a person (see voice-kit concern.ts). Offered only when set. */
+  onConcern?: (event: ConcernEvent) => void;
   /** The clock used to read dates back ("あさって"); defaults to the wall clock. */
   today?: () => Date;
 };
@@ -67,7 +69,10 @@ function hasAudiblePcm(pcm: Int16Array, threshold = 256): boolean {
  * sessionResumption asks for handles so a goAway (or a dropped socket) can resume the same conversation;
  * contextWindowCompression keeps a long call inside the context window.
  */
-export function liveSetup(opts: { model: string; voice: string; instructions: string; tools: Json[]; handle?: string }): Json {
+/** A gentle call (contract.input.pace) waits this long for the end of a turn, and this long before an idle hang-up. */
+export const GENTLE_SILENCE_MS = 1400, GENTLE_INACTIVITY_MS = 60000;
+
+export function liveSetup(opts: { model: string; voice: string; instructions: string; tools: Json[]; handle?: string; gentle?: boolean }): Json {
   return {
     model: `models/${opts.model}`,
     generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: opts.voice } } } },
@@ -77,7 +82,8 @@ export function liveSetup(opts: { model: string; voice: string; instructions: st
     outputAudioTranscription: {},
     realtimeInputConfig: {
       activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
-      automaticActivityDetection: { disabled: false, prefixPaddingMs: 200, silenceDurationMs: 650, endOfSpeechSensitivity: "END_SENSITIVITY_LOW" },
+      // A gentle call waits longer before deciding the other person has finished: a slow speaker pauses mid-sentence.
+      automaticActivityDetection: { disabled: false, prefixPaddingMs: 200, silenceDurationMs: opts.gentle ? GENTLE_SILENCE_MS : 650, endOfSpeechSensitivity: "END_SENSITIVITY_LOW" },
     },
     sessionResumption: opts.handle ? { handle: opts.handle } : {},
     contextWindowCompression: { slidingWindow: {} },
@@ -165,8 +171,10 @@ export class GeminiLiveAgent {
     if (this.desk) tools.push(...(DESK_TOOLS as unknown as Json[]).map((tool) => ({ ...functionDeclaration(tool), behavior: "BLOCKING" })));
     // Recording a decision must not hold the conversation: the model keeps talking and the answer is silent.
     if (recordsDecisions(this.opts.contract)) tools.push({ ...functionDeclaration(DECISION_TOOL as unknown as Json), behavior: "NON_BLOCKING" });
+    // Reporting a worrying line must not hold the conversation either.
+    if (this.opts.onConcern) tools.push({ ...functionDeclaration(CONCERN_TOOL as unknown as Json), behavior: "NON_BLOCKING" });
     this.tools = tools;
-    this.send({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools }) });
+    this.send({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools, gentle: this.opts.contract.input.pace === "gentle" }) });
     await new Promise<void>((res, rej) => {
       const timer = setTimeout(() => rej(new Error("Gemini Live: setupComplete not received")), 15000);
       const check = setInterval(() => {
@@ -212,7 +220,7 @@ export class GeminiLiveAgent {
     try {
       const next = await this.openSocket();
       this.pending = next;
-      next.send(JSON.stringify({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools: this.tools, handle: this.resumeHandle }) }));
+      next.send(JSON.stringify({ setup: liveSetup({ model: this.model, voice: this.voice, instructions: this.instructions(), tools: this.tools, handle: this.resumeHandle, gentle: this.opts.contract.input.pace === "gentle" }) }));
       setTimeout(() => { if (this.pending === next) { this.pending = undefined; try { next.close(); } catch { /* gone */ } this.giveUp(); } }, 10000).unref?.();
     } catch { this.giveUp(); }
   }
@@ -239,6 +247,7 @@ export class GeminiLiveAgent {
       "",
       "## Tools",
       "- end_call: call it right after a goodbye, when the other person says goodbye or asks you to hang up, on voicemail, or when the conversation is over. Never leave the line open.",
+      ...(this.opts.onConcern ? [`- report_concern: ${concernInstruction(c.language)}`] : []),
       ...(this.desk ? ["- check_table / book_table: the reservation desk. Availability and bookings come only from these; a booking exists only when book_table returns status=booked."] : []),
       ...(c.goal.startsWith("chat.") ? [] : ["- request_action: required before any action outside the permitted list."]),
       "You cannot search the web or look anything up; if asked, say so honestly.",
@@ -325,7 +334,7 @@ export class GeminiLiveAgent {
   private touch(): void {
     if (!this.carrierActive) return;
     if (this.watchdog) clearTimeout(this.watchdog);
-    const limit = this.opts.inactivityMs ?? 25000;
+    const limit = this.opts.inactivityMs ?? (this.opts.contract.input.pace === "gentle" ? GENTLE_INACTIVITY_MS : 25000);
     this.watchdog = setTimeout(() => { if (!this.closed) this.bridge?.emit({ type: "hangup", reason: "inactivity" }); }, limit);
     this.watchdog.unref?.();
   }
@@ -411,6 +420,12 @@ export class GeminiLiveAgent {
   private onToolCall(id: string, name: string, args: Json): void {
     const b = this.bridge;
     if (!b || !id) return;
+    if (name === "report_concern") {
+      const event = concernEvent(args);
+      if (event) { try { this.opts.onConcern?.(event); } catch { /* observers never break the call */ } }
+      this.send({ toolResponse: { functionResponses: [{ id, name, response: { ok: Boolean(event), scheduling: "SILENT" } }] } });
+      return;
+    }
     if (name === "record_decision") {
       const event = decisionEvent(args);
       if (event) { try { this.opts.onDecision?.(event); } catch { /* observers never break the call */ } }

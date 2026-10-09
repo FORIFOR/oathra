@@ -44,6 +44,11 @@ export interface CarrierTransport {
   readonly providerId: string;
   /** e.g. "direct" (Twilio Media Streams) or "sip" (via a SipGateway). */
   readonly path: "direct" | "sip" | "webrtc" | "simulator";
+  /**
+   * The carrier says the recording / transcript notice itself (Twilio direct plays it before the media stream).
+   * When unset, the bridge has it said on the line, so a carrier that forgets this is heard twice rather than not at all.
+   */
+  readonly playsNotice?: boolean;
   dial(opts: DialOptions): Promise<CarrierMediaSession>;
   /** Free-form readiness (no network). */
   describe(): string;

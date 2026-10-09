@@ -1,6 +1,6 @@
 # LiveKit `show-and-tell` draft
 
-Prepared 2026-09-14 for one substantive post in the LiveKit Developer Community, only after account access and the current channel rules are checked again. This is a draft, not a published post.
+Prepared 2026-09-14; destination rechecked 2026-10-01. This is an unpublished draft for a promotion-specific LiveKit community channel whose existence, rules and account access still need confirmation. The public Developer Community category list does not show `show-and-tell`; do not assume the forum has the Slack channel mentioned in its general guidelines. `Announcements` is for the LiveKit team.
 
 ## Title
 
@@ -18,12 +18,13 @@ The v0.1.19 release includes ActionProof, a 48-second Arena recording and a runn
 
 The same contract can optionally ask for a small amount of follow-up information after the required booking details settle. Oathra asks consent once, asks one contract-declared field per turn, stops on decline, hold or ambiguity, and saves only explicit answers to `intake.json` and `summary.md`. It does not infer a callee profile or collect undeclared or sensitive attributes.
 
-For teams already building LiveKit or other phone agents: would an utterance-linked post-call verifier for reservations and consented follow-up be useful? Which event or trace format would make it easiest to add without moving your carrier or model? Redacted or synthetic traces are enough; please do not share keys, private URLs or customer data.
+For teams already building LiveKit or other phone agents: would an utterance-linked post-call verifier for reservations and consented follow-up be useful? Which event or trace format would make it easiest to add without moving your carrier or model? Please describe an actual failure with identifying details removed; do not share keys, private URLs or customer data.
 
 This is a local simulator and evidence-engine demonstration. It is not a claim of LiveKit endorsement or of measured PSTN success rates; the LiveKit gateway path remains unverified.
 
 ## Posting checklist
 
-- Re-read https://community.livekit.io/guidelines and confirm the target is a promotion-specific channel such as `show-and-tell`.
+- The general guidelines at https://community.livekit.io/guidelines were readable on 2026-10-01 and restrict unsolicited promotion to designated channels. Confirm an actual permitted channel and its current rules; https://community.livekit.io/categories did not list `show-and-tell`. Do not post this announcement in a general support category or in the team-only `Announcements` category.
+- The official Slack entry is https://livekit.io/join-slack; its workspace access and channel-specific rules remain unverified. The invite page alone is not posting eligibility.
 - Confirm the account is logged in and the post is still relevant to the current discussion.
 - Publish once, without unsolicited DMs or staff mentions, then record the public URL, time and replies in `docs/launch/posts.md`.

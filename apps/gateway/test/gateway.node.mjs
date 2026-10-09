@@ -127,14 +127,14 @@ test('phone input selects a registered contact and refuses conflicting or repeat
   assert.throws(()=>f.service.prepare(f.u,{request:`${f.contact.name}に案内`,phone:f.service.account(f.u).verifiedPhone}),/phone_target_conflict/);
   assert.throws(()=>f.service.prepare(f.u,{request:`${f.contact.phone}と${f.contact.phone}に案内`}),/multiple_phone_numbers/);
 }));
-test('unregistered phone draft never creates a consented contact or a start grant',withFixture(f=>{
+test('an unregistered number can be drafted and reviewed (2026-10-04): no consent is invented and nothing is saved at draft',withFixture(f=>{
   const count=f.store.list('contact',f.u.id).length;
-  const m=f.service.prepare(f.u,{request:'資料を案内',phone:f.service.account(f.u).verifiedPhone});
-  assert.equal(m.target.registrationRequired,true);assert.equal(f.store.list('contact',f.u.id).length,count);
-  assert.throws(()=>f.service.review(f.u,m.id),/contact_registration_required/);
-  assert.throws(()=>f.service.checkPolicy(f.u,m),/contact_registration_required/);
+  const m=f.service.prepare(f.u,{request:'資料を案内',phone:'+81312340099',name:'山田商店'});
+  assert.equal(m.target.registrationRequired,undefined);assert.equal(m.target.id,null);assert.equal(m.target.name,'山田商店');assert.equal(f.store.list('contact',f.u.id).length,count);
+  assert.ok(f.service.review(f.u,m.id).approvalToken,'a review can be granted');
   assert.equal(f.service.edit(f.u,m.id,{request:'商品を案内'}).target.phone,m.target.phone);
   assert.equal(f.store.list('mission',undefined,'QUEUED').length,0);
+  assert.ok(!f.store.list('contact',f.u.id).some(c=>c.relationship==='consented'&&c.phone==='+81312340099'),'no consent is ever recorded on its own');
 }));
 for(const kind of ['line','slack'])test(`${kind} accepts a phone request without a product and cannot approve a call`,withFixture(async f=>{
   f.store.db.prepare("DELETE FROM records WHERE kind='product'").run();
@@ -173,14 +173,12 @@ test('general contacts retain company and call notes without a phone or permissi
   assert.equal(company.name,'');assert.equal(company.company,f.product.name);
   assert.throws(()=>f.service.prepare(f.u,{request:f.product.name,productId:f.product.id}),/contact_phone_required/);
 }));
-test('general contact permissions are required at review and rechecked before execution',withFixture(f=>{
+test('a contact without a relationship or basis can be called (2026-10-04); a contact changed after the review is rechecked',withFixture(f=>{
   f.service.contact(f.u,{...f.contact,relationship:'',basis:''});
-  const m=f.draft();assert.throws(()=>f.service.review(f.u,m.id),/contact_relationship_required/);
-  f.service.contact(f.u,{...f.contact,basis:''});
-  assert.throws(()=>f.service.review(f.u,f.draft().id),/contact_basis_required/);
+  assert.ok(f.service.review(f.u,f.draft().id).approvalToken,'no relationship or basis needed');
   f.service.contact(f.u,f.contact);const valid=f.draft(),r=f.service.review(f.u,valid.id);
   f.service.contact(f.u,{...f.contact,basis:''});
-  assert.throws(()=>f.service.start(f.u,r.approvalToken,'one',true),/contact_basis_required/);
+  assert.throws(()=>f.service.start(f.u,r.approvalToken,'one',true),/contact_changed_review_again/);
   assert.equal(f.store.list('mission',undefined,'QUEUED').length,0);
 }));
 test('LINE refuses a registered name without a phone and returns an actionable message',withFixture(async f=>{

@@ -16,13 +16,13 @@ import {configuration} from '../server.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const account='AC'+'a'.repeat(32),secret='twilio-secret',publicUrl='https://gateway.test';
 const prices=inbound=>JSON.stringify({version:'inbound-boundary',carrier:[{prefix:'+81',currency:'USD',perMinute:'0.1',incrementSeconds:60,source:'bounded test rate'}],...(inbound?{inbound:{currency:'USD',perMinute:'0.02',incrementSeconds:60,source:'bounded test rate'}}:{}),mediaPerMinute:'0.0044',search:{model:'gpt-5.4-mini',perCall:'0.01',input:'0.75',cached:'0.075',output:'4.5'}});
-function setup({inbound=true,price=true,credits=100}={}){
+function setup({inbound=true,price=true,credits=100,extra={}}={}){
  const dir=mkdtempSync(join(tmpdir(),'inbound-')),key=randomBytes(32).toString('hex');
  const users=[{id:'owner',team:'home',role:'admin',tokenHash:hash(randomUUID())},{id:'colleague',team:'work',role:'operator',tokenHash:hash(randomUUID())}];
  const env={OATHRA_USERS_JSON:JSON.stringify(users),OATHRA_DATA_KEY:key,OATHRA_DB:join(dir,'db.sqlite'),OATHRA_DEPLOYMENT:'managed',OATHRA_MODE:'live',OATHRA_PUBLIC_URL:publicUrl,
   TWILIO_ACCOUNT_SID:account,TWILIO_AUTH_TOKEN:secret,TWILIO_PHONE_NUMBER:'+815000000000',OPENAI_API_KEY:'local-unused',OATHRA_VOICE_MODEL:'gpt-live-1',OATHRA_BUSINESS_NAME:'Oathra',OATHRA_RATE_CEILING_USD:'1',OATHRA_LIVE_POLICY_REVIEWED:'true',
   OATHRA_CREDIT_POLICY:METERED,OATHRA_CREDIT_USD:'0.01',OATHRA_LIVE_PRICES_JSON:JSON.stringify({model:'gpt-live-1',version:'inbound-boundary',perMinute:'0.05'}),OATHRA_SETTLEMENT_MODE:USAGE_RATE,OATHRA_USAGE_PRICES_JSON:prices(price),
-  ...(inbound?{OATHRA_INBOUND_OWNER:'owner',OATHRA_INBOUND_NAME:'堀尾',OATHRA_INBOUND_PER_CALLER_PER_HOUR:'2'}:{})};
+  ...(inbound?{OATHRA_INBOUND_OWNER:'owner',OATHRA_INBOUND_NAME:'堀尾',OATHRA_INBOUND_PER_CALLER_PER_HOUR:'2'}:{}),...extra};
  const config=configuration(env);config.liveReady=true;
  const store=new Store(config.dbPath,key),service=new Service(store,config),phone=new Phone(service,env);
  for(const u of users)service.saveConsent(u,config.consentVersion);
@@ -69,7 +69,7 @@ test('an inbound session accepts the waiting stream and dials nothing',using(asy
 
 test('someone returning a call reaches the person who asked for it, and the agent knows why they were called',using(f=>{
  f.service.credits.grant(f.users[0],'colleague',100,randomUUID(),'bounded inbound verification');
- f.store.put('mission',{id:randomUUID(),owner:'colleague',team:'work',kind:'phone-request',status:'INCOMPLETE',approvedAt:Date.now()-3600_000,createdAt:Date.now()-3600_000,target:{phone:'+819033334444',name:'山田商店'},request:'営業時間を確認してください。',phoneRequest:{phone:'+819033334444',name:'山田商店',instruction:'営業時間を確認してください。',callerName:'佐藤'}});
+ f.store.put('mission',{id:randomUUID(),owner:'colleague',team:'work',kind:'phone-request',status:'INCOMPLETE',carrierSid:'CA'+'c'.repeat(32),approvedAt:Date.now()-3600_000,createdAt:Date.now()-3600_000,target:{phone:'+819033334444',name:'山田商店'},request:'営業時間を確認してください。',phoneRequest:{phone:'+819033334444',name:'山田商店',instruction:'営業時間を確認してください。',callerName:'佐藤'}});
  const {twiml}=f.ring('+819033334444');assert.ok(answered(twiml));
  const m=f.store.list('mission').find(x=>x.direction==='inbound');
  assert.equal(m.owner,'colleague');assert.equal(m.inbound.ownerName,'佐藤');assert.equal(m.target.name,'山田商店');assert.match(m.inbound.context,/営業時間を確認してください/);
@@ -154,3 +154,98 @@ test('forwarding, where it is available: the caller is put through to the verifi
  assert.ok(!answered(r.twiml)&&!/この通話は録音/.test(r.twiml));
  assert.equal(f.store.list('mission','owner').filter(m=>m.direction==='inbound').length,0,'no AI call was queued');
 }));
+
+// Hours are Japan time; the windows below are built around the moment the test runs.
+const hhmm=offsetMinutes=>{const t=new Date(Date.now()+9*3600_000+offsetMinutes*60_000);return String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0')};
+const open=`${hhmm(-60)}-${hhmm(60)}`,closed=`${hhmm(120)}-${hhmm(180)}`;
+const desk=JSON.stringify({name:'ビストロ灯',slots:{'18:00':2,'19:00':2},maxParty:6});
+test('outside the line’s hours nobody is connected, and a shop’s line says so as the shop',async()=>{
+ await using(f=>{const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/ビストロ灯です。ただいまの時間は、お電話の受付時間外です。/);assert.doesNotMatch(twiml,/発信用の番号/);
+  assert.equal(f.store.list('mission').length,0);},{extra:{OATHRA_INBOUND_HOURS:closed,OATHRA_RESTAURANT_JSON:desk}})();
+ await using(f=>{const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/発信用の番号です/);},{extra:{OATHRA_INBOUND_HOURS:closed}})();
+ await using(f=>{assert.ok(answered(f.ring('+819011112222').twiml));},{extra:{OATHRA_INBOUND_HOURS:open,OATHRA_RESTAURANT_JSON:desk}})();
+});
+test('a shop’s line that cannot answer never calls itself a number for outgoing calls',using(f=>{
+ f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
+ const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/ビストロ灯です。ただいま、電話が混み合っております。おそれいりますが、時間をおいて、おかけ直しください。/);assert.doesNotMatch(twiml,/発信用の番号/);
+},{extra:{OATHRA_RESTAURANT_JSON:desk}}));
+test('hours are HH:MM-HH:MM or off, and anything else stops the service from starting',()=>{
+ const base=extra=>{const f=setup({extra});const c=f.config;f.close();return c;};
+ assert.deepEqual(base({}).callHours,{sales:{from:'09:00',to:'20:00'},request:null});assert.equal(base({}).inbound.hours,null);
+ const set=base({OATHRA_SALES_CALL_HOURS:'off',OATHRA_REQUEST_CALL_HOURS:'08:00-21:00',OATHRA_INBOUND_HOURS:'22:00-06:00'});
+ assert.deepEqual([set.callHours,set.inbound.hours],[{sales:null,request:{from:'08:00',to:'21:00'}},{from:'22:00',to:'06:00'}]);
+ for(const bad of ['9-20','09:00-09:00','25:00-26:00','09:00~20:00'])assert.throws(()=>setup({extra:{OATHRA_SALES_CALL_HOURS:bad}}),/invalid_OATHRA_SALES_CALL_HOURS/,bad);
+});
+test('a real sales call outside the calling hours is refused; a call to your own phone and a practice call are not',using(f=>{
+ const u=f.users[0],mission={mode:'live',kind:'sales',target:{phone:'+819011112222'}};
+ f.config.callHours={sales:{from:closed.slice(0,5),to:closed.slice(6)},request:null};
+ assert.throws(()=>f.service.checkPolicy(u,mission),/outside_calling_hours/);
+ for(const allowed of [{...mission,testOnMe:true},{...mission,mode:'simulator'},{...mission,kind:'phone-request'},{...mission,direction:'inbound'}])
+  assert.throws(()=>f.service.checkPolicy(u,allowed),e=>e.code!=='outside_calling_hours');
+ f.config.callHours={sales:{from:open.slice(0,5),to:open.slice(6)},request:{from:closed.slice(0,5),to:closed.slice(6)}};
+ assert.throws(()=>f.service.checkPolicy(u,mission),e=>e.code!=='outside_calling_hours');
+ assert.throws(()=>f.service.checkPolicy(u,{...mission,kind:'phone-request'}),/outside_calling_hours/);
+}));
+
+test('a business line answers as the business, carries only its own answers, and never calls itself a number for outgoing calls',async()=>{
+ const guidance=JSON.stringify([{q:'営業時間',a:'平日の9時から18時です。'}]),extra={OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_GUIDANCE_JSON:guidance};
+ await using(f=>{
+  assert.deepEqual([f.config.inbound.business,f.config.inbound.guidance],[true,[{q:'営業時間',a:'平日の9時から18時です。'}]]);
+  const {twiml}=f.ring('+819011112222');assert.ok(answered(twiml));
+  const m=f.store.list('mission').find(x=>x.direction==='inbound');assert.deepEqual([m.inbound.ownerName,m.inbound.business],['丸山商事',true]);
+ },{extra})();
+ await using(f=>{const {twiml}=f.ring('+819011112222');assert.equal(answered(twiml),false);assert.match(twiml,/丸山商事です。ただいまの時間は、お電話の受付時間外です。/);assert.doesNotMatch(twiml,/発信用の番号/);},{extra:{...extra,OATHRA_INBOUND_HOURS:closed}})();
+ for(const bad of ['{','[{"q":"a"}]','[{"q":"","a":"x"}]',JSON.stringify(Array(31).fill({q:'q',a:'a'})),'[{"q":"q","a":"a","run":"x"}]'])
+  assert.throws(()=>setup({extra:{...extra,OATHRA_INBOUND_GUIDANCE_JSON:bad}}),/configure_inbound_guidance_json/,bad);
+});
+test('a caller who cannot get through on a business line can ask to be called back; it is recorded once and promises nothing',using(f=>{
+ f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
+ const {twiml}=f.ring('+819011112222');
+ assert.equal(answered(twiml),false);assert.match(twiml,/丸山商事です。ただいま、電話が混み合っております。/);assert.match(twiml,/折り返しのお電話をご希望の場合は、数字の1を押してください。/);
+ const reply=f.press(twiml,'1');assert.match(reply,/折り返しのご希望を、担当者に伝えます。/);assert.doesNotMatch(reply,/必ず|いたします。<\/Say>.*折り返します/);
+ const requests=f.store.all('callback-request','owner');
+ assert.deepEqual(requests.map(r=>[r.status,r.phone,r.reason,r.team]),[['OPEN','+819011112222','busy','home']]);
+ f.press(f.ring('+819011112222').twiml,'1');assert.equal(f.store.all('callback-request','owner').length,1);
+ assert.equal(f.store.suppressed('home','+819011112222'),false,'asking for a call back is not a request to stop');
+ assert.match(f.press(f.ring('+819022223333').twiml,'9'),/<Hangup\/>/);assert.equal(f.store.all('callback-request','owner').length,1);
+},{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true'}}));
+test('a personal line that cannot answer offers no call back',using(f=>{
+ f.store.put('mission',{id:randomUUID(),owner:'owner',team:'home',kind:'phone-request',status:'ACTIVE',target:{phone:'+819099998888',name:'x'}});
+ assert.doesNotMatch(f.ring('+819011112222').twiml,/数字の1/);
+}));
+
+test('two businesses on one gateway: the number that was rung decides who answers, as whom, for whom, with whose answers',async()=>{
+ const lines=JSON.stringify([{number:'+815011110000',owner:'colleague',name:'ひかり苑',guidance:[{q:'面会時間',a:'10時から16時です。'}],transferTo:'+81312345678'}]);
+ await using(f=>{
+  f.service.credits.grant(f.users[0],'colleague',100,randomUUID(),'bounded inbound verification');
+  assert.ok(answered(f.ring('+819011112222',{To:'+815011110000'}).twiml));
+  const care=f.store.list('mission').find(x=>x.direction==='inbound');
+  assert.deepEqual([care.owner,care.team,care.inbound.ownerName,care.inbound.business,care.inbound.to],['colleague','work','ひかり苑',true,'+815011110000']);
+  f.store.put('mission',{...care,status:'INCOMPLETE'});
+  assert.ok(answered(f.ring('+819022223333').twiml));
+  const main=f.store.list('mission').find(x=>x.direction==='inbound'&&x.id!==care.id);
+  assert.deepEqual([main.owner,main.inbound.ownerName,main.inbound.to],['owner','丸山商事',undefined]);
+  assert.equal(f.config.inboundLines['+815011110000'].transferTo,'+81312345678');assert.equal(f.config.inbound.transferTo,null);
+ },{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_LINES_JSON:lines}})();
+ for(const bad of ['{','[]','[{"number":"+815011110000","owner":"nobody","name":"x"}]','[{"number":"0501111","owner":"owner","name":"x"}]','[{"number":"+815000000000","owner":"owner","name":"x"}]',
+  '[{"number":"+815011110000","owner":"owner","name":"x"},{"number":"+815011110000","owner":"owner","name":"y"}]','[{"number":"+815011110000","owner":"owner","name":"x","admin":true}]'])
+  assert.throws(()=>setup({extra:{OATHRA_INBOUND_LINES_JSON:bad}}),/configure_inbound_lines_json/,bad);
+});
+
+test('with several lines, a call to a number that is none of them is not answered as the main line; odd To values are not lines',async()=>{
+ const lines=JSON.stringify([{number:'+815011110000',owner:'colleague',name:'ひかり苑'}]);
+ await using(f=>{
+  for(const To of ['+815099999999','constructor','__proto__',''])assert.equal(answered(f.ring('+819011112222',{To}).twiml),false,To);
+  assert.equal(f.store.list('mission').length,0);
+  assert.ok(answered(f.ring('+819011112222').twiml),'the main number still answers');
+ },{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_LINES_JSON:lines}})();
+});
+test('a caller who asks two businesses for a call back leaves one request with each; a flood is capped',async()=>{
+ const lines=JSON.stringify([{number:'+815011110000',owner:'colleague',name:'ひかり苑',hours:closed}]);
+ await using(f=>{
+  f.press(f.ring('+819011112222').twiml,'1');f.press(f.ring('+819011112222',{To:'+815011110000'}).twiml,'1');
+  assert.deepEqual([f.store.all('callback-request','owner').length,f.store.all('callback-request','colleague').length],[1,1]);
+  for(let i=0;i<40;i++)f.press(f.ring('+8190'+String(20000000+i)).twiml,'1');
+  assert.equal(f.store.all('callback-request','owner').length,30,'thirty an hour per owner');
+ },{extra:{OATHRA_INBOUND_NAME:'丸山商事',OATHRA_INBOUND_BUSINESS:'true',OATHRA_INBOUND_HOURS:closed,OATHRA_INBOUND_LINES_JSON:lines}})();
+});

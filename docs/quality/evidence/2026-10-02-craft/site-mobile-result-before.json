@@ -1,0 +1,73 @@
+{
+  "at": "2026-10-01T17:34:40.998Z",
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+  "method": "Actual public recording and trusted pointer click at a submit button 80px above viewport bottom; no result scrolling after submit.",
+  "observed": [
+    {
+      "language": "ja",
+      "before": {
+        "button": {
+          "x": 41,
+          "y": 718.59375,
+          "width": 127,
+          "height": 45.390625,
+          "top": 718.59375,
+          "right": 168,
+          "bottom": 763.984375,
+          "left": 41
+        },
+        "scrollY": 194,
+        "innerHeight": 844
+      },
+      "after": {
+        "summary": {
+          "x": 41,
+          "y": 957.140625,
+          "width": 308,
+          "height": 94.78125,
+          "top": 957.140625,
+          "right": 349,
+          "bottom": 1051.921875,
+          "left": 41
+        },
+        "scrollY": 194,
+        "innerHeight": 844,
+        "complete": true
+      },
+      "summaryVisible": false
+    },
+    {
+      "language": "en",
+      "before": {
+        "button": {
+          "x": 41,
+          "y": 718.59375,
+          "width": 165.765625,
+          "height": 45.390625,
+          "top": 718.59375,
+          "right": 206.765625,
+          "bottom": 763.984375,
+          "left": 41
+        },
+        "scrollY": 194,
+        "innerHeight": 844
+      },
+      "after": {
+        "summary": {
+          "x": 41,
+          "y": 957.140625,
+          "width": 308,
+          "height": 121.96875,
+          "top": 957.140625,
+          "right": 349,
+          "bottom": 1079.109375,
+          "left": 41
+        },
+        "scrollY": 194,
+        "innerHeight": 844,
+        "complete": true
+      },
+      "summaryVisible": false
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "at": "2026-10-01T17:36:10.807Z",
+  "status": "PASS",
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+  "method": "Actual public recording and trusted pointer click at a submit button 80px above viewport bottom; no verification-script scrolling after submit.",
+  "observed": [
+    {
+      "language": "ja",
+      "before": {
+        "button": {
+          "x": 41,
+          "y": 718.59375,
+          "width": 127,
+          "height": 45.390625,
+          "top": 718.59375,
+          "right": 168,
+          "bottom": 763.984375,
+          "left": 41
+        },
+        "scrollY": 194,
+        "innerHeight": 844
+      },
+      "after": {
+        "summary": {
+          "x": 41,
+          "y": 95.140625,
+          "width": 308,
+          "height": 94.78125,
+          "top": 95.140625,
+          "right": 349,
+          "bottom": 189.921875,
+          "left": 41
+        },
+        "scrollY": 1056,
+        "innerHeight": 844,
+        "complete": true
+      },
+      "summaryVisible": true
+    },
+    {
+      "language": "en",
+      "before": {
+        "button": {
+          "x": 41,
+          "y": 718.59375,
+          "width": 165.765625,
+          "height": 45.390625,
+          "top": 718.59375,
+          "right": 206.765625,
+          "bottom": 763.984375,
+          "left": 41
+        },
+        "scrollY": 194,
+        "innerHeight": 844
+      },
+      "after": {
+        "summary": {
+          "x": 41,
+          "y": 95.140625,
+          "width": 308,
+          "height": 121.96875,
+          "top": 95.140625,
+          "right": 349,
+          "bottom": 217.109375,
+          "left": 41
+        },
+        "scrollY": 1056,
+        "innerHeight": 844,
+        "complete": true
+      },
+      "summaryVisible": true
+    }
+  ],
+  "sourceHashes": {
+    "site/src/check.ts": "b12b2c71f0be0fe6dc6cef025ad944668d51f4f557efca4a5ae4e304b4a92717",
+    "site/check.js": "f36e7255c521f88d2f7b1eb25a9bbc67a86e0229f1d6efaa916fdce324394c1c",
+    "site/check.css": "a573f151d3bfab5e4c7420ac649c0a1dfe93344461c47f05268ae17629d703d3",
+    "site/check.html": "1d3032e71a19de8f51712ea007f2c88ed60b82dbb276da01c718cf3e1eef1bc2",
+    "site/en/check.html": "42b34b7096bff20493e6333407d4d83cea7a4450caac2ba0d8b5afa74ad926c1"
+  }
+}

@@ -158,6 +158,32 @@ describe("pipelineEngine", () => {
     await session.close();
   });
 
+  it("speech recognition closing mid-call is fatal, once, with a code the runtime ends the call on", async () => {
+    const { stt, start } = setup();
+    const session = await start();
+    stt.fire({ type: "error", message: "Deepgram websocket error" });
+    stt.fire({ type: "close", code: 1006, reason: "" });
+    stt.fire({ type: "close", code: 1006, reason: "" });
+    const errors = (await drain(session, 50)).flatMap((o) => (o.type === "event" && o.event.type === "error" ? [o.event] : []));
+    expect(errors).toHaveLength(2);
+    expect(errors[0]).toMatchObject({ fatal: false });
+    expect(errors[1]).toMatchObject({ fatal: true, code: "stt_closed" });
+    expect(errors[1]!.message).toContain("1006");
+    await session.close();
+  });
+
+  it("the close that follows our own shutdown is not an error", async () => {
+    const stt = new FakeStt();
+    // Like the real session: closing the socket reports `close` back to its listeners.
+    stt.close = () => { stt.closed = true; stt.fire({ type: "close", code: 1000, reason: "" }); };
+    const { start } = setup(stt);
+    const session = await start();
+    const drained = drain(session, 50);
+    await session.close();
+    stt.fire({ type: "close", code: 1000, reason: "" });
+    expect((await drained).some((o) => o.type === "event" && o.event.type === "error")).toBe(false);
+  });
+
   it("isBargeIn policy", () => {
     expect(isBargeIn("うん", "ja")).toBe(false);
     expect(isBargeIn("19時は満席です", "ja")).toBe(true);

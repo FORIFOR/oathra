@@ -1,0 +1,1604 @@
+{
+  "observedAt": "2026-10-01T18:05:54.953Z",
+  "origin": "http://127.0.0.1:61758",
+  "label": "round-a",
+  "method": "Existing operator and existing business records; no form save, playback, phone, email or payment action",
+  "sourceHashes": {
+    "apps/gateway/public/app/app.js": "5c02f4255533693c2c732e3c8e249b1d99d4bfda219e55c6bb16716510fa21e8",
+    "apps/gateway/public/app/style.css": "cfc0838880654d6594ebdbc1a22b55abf2a6b6e954b3e8c344b85077f8981132",
+    "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129",
+    "apps/gateway/public/phone/public-service.js": "c242e6fe64f59c0af097aeeb06802dcc4a7d535cbcb8f3c57595c9720ed3a6c8",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3"
+  },
+  "views": [
+    {
+      "name": "home",
+      "width": 1440,
+      "screenshot": "round-a-home-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 33,
+        "applied": true
+      },
+      "h1": [
+        "ホーム"
+      ],
+      "h2": [
+        "最新の報告",
+        "最近の依頼",
+        "発信の状態",
+        "今月の依頼",
+        "下書きをAIと作る"
+      ],
+      "emptyError": false,
+      "itemCount": 5,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "width": 390,
+      "screenshot": "round-a-home-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 33,
+        "applied": true
+      },
+      "h1": [
+        "ホーム"
+      ],
+      "h2": [
+        "最新の報告",
+        "最近の依頼",
+        "発信の状態",
+        "今月の依頼",
+        "下書きをAIと作る"
+      ],
+      "emptyError": false,
+      "itemCount": 5,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "new",
+      "width": 1440,
+      "screenshot": "round-a-new-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 76,
+        "applied": true
+      },
+      "h1": [
+        "電話を頼む"
+      ],
+      "h2": [],
+      "emptyError": true,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "tel",
+          "id": "ask-phone",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "ask-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "textarea",
+          "id": "ask-instruction",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-product",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-engine",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-voice",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-voice-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "new",
+      "width": 390,
+      "screenshot": "round-a-new-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 76,
+        "applied": true
+      },
+      "h1": [
+        "電話を頼む"
+      ],
+      "h2": [],
+      "emptyError": true,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "tel",
+          "id": "ask-phone",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "ask-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "textarea",
+          "id": "ask-instruction",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-product",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-engine",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-voice",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "ask-voice-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "requests",
+      "width": 1440,
+      "screenshot": "round-a-requests-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 95,
+        "applied": true
+      },
+      "h1": [
+        "依頼"
+      ],
+      "h2": [
+        "あなたの確認が必要",
+        "終了した電話"
+      ],
+      "emptyError": false,
+      "itemCount": 21,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "requests",
+      "width": 390,
+      "screenshot": "round-a-requests-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 95,
+        "applied": true
+      },
+      "h1": [
+        "依頼"
+      ],
+      "h2": [
+        "あなたの確認が必要",
+        "終了した電話"
+      ],
+      "emptyError": false,
+      "itemCount": 21,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "report",
+      "width": 1440,
+      "screenshot": "round-a-report-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 16,
+        "applied": true
+      },
+      "h1": [
+        "話しました"
+      ],
+      "h2": [
+        "この電話について"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 2,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "report",
+      "width": 390,
+      "screenshot": "round-a-report-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 16,
+        "applied": true
+      },
+      "h1": [
+        "話しました"
+      ],
+      "h2": [
+        "この電話について"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 2,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "schedule",
+      "width": 1440,
+      "screenshot": "round-a-schedule-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 63,
+        "applied": true
+      },
+      "h1": [
+        "予定"
+      ],
+      "h2": [
+        "カレンダーに入れる",
+        "これからの予定",
+        "これまで"
+      ],
+      "emptyError": false,
+      "itemCount": 5,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "schedule",
+      "width": 390,
+      "screenshot": "round-a-schedule-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 63,
+        "applied": true
+      },
+      "h1": [
+        "予定"
+      ],
+      "h2": [
+        "カレンダーに入れる",
+        "これからの予定",
+        "これまで"
+      ],
+      "emptyError": false,
+      "itemCount": 5,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "practice",
+      "width": 1440,
+      "screenshot": "round-a-practice-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 31,
+        "applied": true
+      },
+      "h1": [
+        "練習",
+        "[private heading]"
+      ],
+      "h2": [
+        "確かめること",
+        "やり方"
+      ],
+      "emptyError": false,
+      "itemCount": 7,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "practice",
+      "width": 390,
+      "screenshot": "round-a-practice-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 31,
+        "applied": true
+      },
+      "h1": [
+        "練習",
+        "[private heading]"
+      ],
+      "h2": [
+        "確かめること",
+        "やり方"
+      ],
+      "emptyError": false,
+      "itemCount": 7,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "contacts",
+      "width": 1440,
+      "screenshot": "round-a-contacts-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 1,
+        "applied": true
+      },
+      "h1": [
+        "連絡先"
+      ],
+      "h2": [
+        "連絡先を追加"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "search",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "contact-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "contact-company",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "tel",
+          "id": "contact-phone",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "contact-relationship",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "contact-basis",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "textarea",
+          "id": "contact-notes",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "contacts",
+      "width": 390,
+      "screenshot": "round-a-contacts-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 1,
+        "applied": true
+      },
+      "h1": [
+        "連絡先"
+      ],
+      "h2": [
+        "連絡先を追加"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "search",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "contact-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "contact-company",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "tel",
+          "id": "contact-phone",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "select-one",
+          "id": "contact-relationship",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "contact-basis",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "textarea",
+          "id": "contact-notes",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-out",
+      "width": 1440,
+      "screenshot": "round-a-settings-out-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 17,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "かける設定"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-out",
+      "width": 390,
+      "screenshot": "round-a-settings-out-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 17,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "かける設定"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-in",
+      "width": 1440,
+      "screenshot": "round-a-settings-in-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 14,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "かけられた時の設定"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": true,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "checkbox",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-in",
+      "width": 390,
+      "screenshot": "round-a-settings-in-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 14,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "かけられた時の設定"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": true,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "radio",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "checkbox",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-products",
+      "width": 1440,
+      "screenshot": "round-a-settings-products-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 1,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "商品（営業の電話）",
+        "商品を追加"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "text",
+          "id": "product-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "textarea",
+          "id": "product-facts",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "product-source",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "checkbox",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-products",
+      "width": 390,
+      "screenshot": "round-a-settings-products-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 1,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "商品（営業の電話）",
+        "商品を追加"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "text",
+          "id": "product-name",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "textarea",
+          "id": "product-facts",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "text",
+          "id": "product-source",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        },
+        {
+          "type": "checkbox",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-cost",
+      "width": 1440,
+      "screenshot": "round-a-settings-cost-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 103,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "費用とクレジット",
+        "履歴"
+      ],
+      "emptyError": false,
+      "itemCount": 30,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-cost",
+      "width": 390,
+      "screenshot": "round-a-settings-cost-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 103,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "費用とクレジット",
+        "履歴"
+      ],
+      "emptyError": false,
+      "itemCount": 30,
+      "transcriptLines": 0,
+      "inputs": [
+        {
+          "type": "text",
+          "id": "",
+          "disabled": false,
+          "hasAccessibleLabel": true
+        }
+      ],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-voice",
+      "width": 1440,
+      "screenshot": "round-a-settings-voice-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 45,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "声とAI",
+        "GPT-Live の声を聞く"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-voice",
+      "width": 390,
+      "screenshot": "round-a-settings-voice-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 45,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "声とAI",
+        "GPT-Live の声を聞く"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-view",
+      "width": 1440,
+      "screenshot": "round-a-settings-view-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 12,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "記録と表示"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    },
+    {
+      "name": "settings-view",
+      "width": 390,
+      "screenshot": "round-a-settings-view-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "count": 12,
+        "applied": true
+      },
+      "h1": [
+        "設定"
+      ],
+      "h2": [
+        "記録と表示"
+      ],
+      "emptyError": false,
+      "itemCount": 0,
+      "transcriptLines": 0,
+      "inputs": [],
+      "topNavVisible": [
+        {
+          "tab": "home",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "requests",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "schedule",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "practice",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "contacts",
+          "fullyInViewport": true
+        },
+        {
+          "tab": "settings",
+          "fullyInViewport": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Private record text and nonempty field values hidden with verified CSSOM masking; content layout preserved, some generic text also hidden.",
+    "Successful new request, business approval, live calling, payment, email and persistence are not exercised."
+  ],
+  "runtimeExceptions": 0,
+  "sourceUnchanged": true,
+  "measurementCorrection": {
+    "note": "The original horizontalOverflow compared document scrollWidth to innerWidth, which can expand on mobile and miss overflow. Follow-up actual unmasked clientWidth/requestedWidth measurements found practice 390 -> scrollWidth 509. Original values retained as historical observations; do not treat all zero flags as PASS.",
+    "evidence": "mobile-layout-width.json",
+    "recordedAt": "2026-10-01T18:13:15.187Z"
+  }
+}

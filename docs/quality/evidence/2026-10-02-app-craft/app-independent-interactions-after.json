@@ -1,0 +1,63 @@
+{
+  "observedAt": "2026-10-01T18:16:40.046Z",
+  "method": "Real Chrome pointer navigation, actual Network.emulateNetworkConditions offline and online; existing operator session only. No response interception, no fabricated records.",
+  "sourceBefore": {
+    "apps/gateway/public/app/app.js": "f0c9fa173d70a18fd7c89ccf020689d703995a063f5d1b416e3e5ae97eda446e",
+    "apps/gateway/public/app.js": "770619fbb70ea840c33b6f8cb513f57065d20a3f13d152d204f92ebc9fa2ad14",
+    "apps/gateway/public/index.html": "381788cbf6441a09890d03a989b60788dbf1be29c72e96d48971534c366c998d"
+  },
+  "checks": [
+    {
+      "id": "offline_route_failure_has_recovery_action",
+      "expected": "Readable network failure and direct retry control",
+      "observed": {
+        "visible": true,
+        "message": "接続を確認できませんでした。通信を確認して、もう一度お試しください。",
+        "actionCount": 1,
+        "retryExists": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "online_navigation_recovers",
+      "expected": "Existing session can return to request form after network reconnect",
+      "observed": {
+        "formVisible": true,
+        "usedDirectRetry": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "workspace_existing_cookie",
+      "expected": "Existing app session opens workspace without token re-entry",
+      "observed": {
+        "loginHidden": true,
+        "workspaceVisible": true,
+        "logoutVisible": true
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "workspace_back_actual_settings",
+      "expected": "Back link renders authenticated 記録と表示 panel",
+      "observed": {
+        "route": "#settings/view",
+        "actualSettingsContent": true,
+        "loginAbsent": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "runtimeExceptionCount": 0,
+  "sourceAfter": {
+    "apps/gateway/public/app/app.js": "f0c9fa173d70a18fd7c89ccf020689d703995a063f5d1b416e3e5ae97eda446e",
+    "apps/gateway/public/app.js": "770619fbb70ea840c33b6f8cb513f57065d20a3f13d152d204f92ebc9fa2ad14",
+    "apps/gateway/public/index.html": "381788cbf6441a09890d03a989b60788dbf1be29c72e96d48971534c366c998d"
+  },
+  "sourceUnchanged": true,
+  "limitations": [
+    "Offline applies to browser transport only; no provider failure is simulated.",
+    "No business, customer, product, mission, payment or email records created.",
+    "No mobile hardware or screen-reader test."
+  ]
+}

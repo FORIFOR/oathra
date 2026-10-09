@@ -1,0 +1,392 @@
+{
+  "capturedAt": "2026-10-01T17:20:44.896Z",
+  "origin": "http://127.0.0.1:59140",
+  "method": "Real Chrome CDP pointer/key input, native clipboard and browser offline mode; no application data fixtures",
+  "sourceHashes": {
+    "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129",
+    "apps/gateway/public/app/app.js": "26d35d59a2db7a81a7595ccdd319c1e7347c5e404648a315f1808b955736afc9",
+    "apps/gateway/public/app/style.css": "96250c59d828c2a3495e77a6a2f9b45dca43b2fc058cb7ebb9789a73035ed01f",
+    "apps/gateway/public/phone/public-service.js": "6c2854abfe25368bc9aa88f60d1020871b011f47be5226ff6451c0bfff54d7b4",
+    "apps/gateway/public/phone/public-service.css": "4ed751c07886f71cdba62c2c6f6e3fdff3d7381d29d4ce563226881db87296b6",
+    "apps/gateway/public/managed-phone.css": "28f153f326f8e3a543e040a2e13d883d27c3e81de37c8f7c2154672dd2cc5ea6",
+    "apps/gateway/lib/phone-ui.mjs": "e5dadf82d792e9a34fa6ef12a306ea3fe8491b91994c04f45dcba10e2cf4fc56",
+    "apps/gateway/public/connect/index.html": "b910aa39d83604bb8520095c023e76f4d4347af99dea8340f0296a29caf0bc49",
+    "apps/gateway/public/connect/connect.js": "ff34baa643735011a531f4fd279723156121d33b64d167180b9a7e049b8eb897",
+    "apps/gateway/public/connect/connect.css": "e74d0631f7f00bba63c39fdd7d5fcee8e88969bbe734b567d764d43c039bbf30"
+  },
+  "checks": [
+    {
+      "id": "initial_focus_managed-root",
+      "status": "PASS",
+      "observed": {
+        "focus": "BODY"
+      }
+    },
+    {
+      "id": "details_keyboard_open_managed-root",
+      "status": "PASS"
+    },
+    {
+      "id": "details_keyboard_close_managed-root",
+      "status": "PASS"
+    },
+    {
+      "id": "native_empty_validation_managed-root",
+      "status": "PASS",
+      "observed": {
+        "missing": true,
+        "focused": true,
+        "requests": 0
+      }
+    },
+    {
+      "id": "keyboard_visible_focus_managed-root",
+      "status": "PASS",
+      "observed": [
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "ログ検証を試す公開ページ · ログイン不",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "AIとの接続を設定するClaude Co",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "SUMMARY",
+          "text": "利用上限・着信について",
+          "outline": true
+        },
+        {
+          "id": "managed-email",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "managed-password",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "managed-login-submit",
+          "tag": "BUTTON",
+          "text": "ログイン",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "BODY",
+          "text": "本文へ移動\n\n  \n    ← 戻る\n ",
+          "outline": false
+        }
+      ]
+    },
+    {
+      "id": "reflow_720_managed-root",
+      "status": "PASS",
+      "observed": {
+        "condition": "720 CSS px: layout equivalent of 1440px at 200%, not physical browser zoom"
+      }
+    },
+    {
+      "id": "css_zoom_200_managed-root",
+      "status": "PASS",
+      "observed": {
+        "condition": "CSS zoom 2; does not trigger browser media-query zoom behavior"
+      }
+    },
+    {
+      "id": "initial_focus_app",
+      "status": "PASS",
+      "observed": {
+        "focus": "BODY"
+      }
+    },
+    {
+      "id": "details_keyboard_open_app",
+      "status": "PASS"
+    },
+    {
+      "id": "details_keyboard_close_app",
+      "status": "PASS"
+    },
+    {
+      "id": "native_empty_validation_app",
+      "status": "PASS",
+      "observed": {
+        "missing": true,
+        "focused": true,
+        "requests": 0
+      }
+    },
+    {
+      "id": "keyboard_visible_focus_app",
+      "status": "PASS",
+      "observed": [
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Oathra",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "ログ検証を試す公開ページ · ログイン不",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "AIとの接続を設定するClaude Co",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "SUMMARY",
+          "text": "利用上限・着信について",
+          "outline": true
+        },
+        {
+          "id": "public-email",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "public-password",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "public-login-submit",
+          "tag": "BUTTON",
+          "text": "ログイン",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "reflow_720_app",
+      "status": "PASS",
+      "observed": {
+        "condition": "720 CSS px: layout equivalent of 1440px at 200%, not physical browser zoom"
+      }
+    },
+    {
+      "id": "css_zoom_200_app",
+      "status": "PASS",
+      "observed": {
+        "condition": "CSS zoom 2; does not trigger browser media-query zoom behavior"
+      }
+    },
+    {
+      "id": "initial_focus_connect",
+      "status": "PASS",
+      "observed": {
+        "focus": "BODY"
+      }
+    },
+    {
+      "id": "details_keyboard_open_connect",
+      "status": "PASS"
+    },
+    {
+      "id": "details_keyboard_close_connect",
+      "status": "PASS"
+    },
+    {
+      "id": "native_empty_validation_connect",
+      "status": "PASS",
+      "observed": {
+        "missing": true,
+        "focused": true,
+        "requests": 0
+      }
+    },
+    {
+      "id": "keyboard_visible_focus_connect",
+      "status": "PASS",
+      "observed": [
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Oathra",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "アプリへ戻る",
+          "outline": true
+        },
+        {
+          "id": "client-claude",
+          "tag": "BUTTON",
+          "text": "Claude Code",
+          "outline": true
+        },
+        {
+          "id": "claude-panel",
+          "tag": "DIV",
+          "text": "コマンドをコピーして追加\n       ",
+          "outline": true
+        },
+        {
+          "id": "claude-command",
+          "tag": "TEXTAREA",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "copy-command",
+          "tag": "BUTTON",
+          "text": "コマンドをコピー",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Claude Codeの公式手順",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "reflow_720_connect",
+      "status": "PASS",
+      "observed": {
+        "condition": "720 CSS px: layout equivalent of 1440px at 200%, not physical browser zoom"
+      }
+    },
+    {
+      "id": "css_zoom_200_connect",
+      "status": "PASS",
+      "observed": {
+        "condition": "CSS zoom 2; does not trigger browser media-query zoom behavior"
+      }
+    },
+    {
+      "id": "chatgpt_selected",
+      "status": "PASS"
+    },
+    {
+      "id": "local_chatgpt_copy_blocked",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_key_ArrowLeft_client-claude",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_key_End_client-chatgpt",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_key_Home_client-claude",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_key_ArrowLeft_client-chatgpt",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_key_ArrowRight_client-claude",
+      "status": "PASS"
+    },
+    {
+      "id": "command_copied_to_native_clipboard",
+      "status": "PASS",
+      "observed": {
+        "copiedValueStored": false
+      }
+    },
+    {
+      "id": "reduced_motion",
+      "status": "PASS",
+      "observed": {
+        "matches": true,
+        "duration": "0s"
+      }
+    },
+    {
+      "id": "connect_dark_theme",
+      "status": "PASS"
+    },
+    {
+      "id": "real_offline_connection_refresh",
+      "status": "PASS",
+      "observed": {
+        "error": "接続を確認できませんでした。通信状態を確認して、状況を更新してください。",
+        "privateTextSaved": false
+      }
+    },
+    {
+      "id": "real_online_refresh_recovery",
+      "status": "PASS"
+    },
+    {
+      "id": "malformed_oauth_query",
+      "status": "PASS",
+      "observed": {
+        "error": "接続の確認情報が正しくありません。接続するツールから認証をやり直してください。"
+      }
+    },
+    {
+      "id": "invalid_mission",
+      "status": "PASS",
+      "observed": {
+        "error": "下書きのURLを確認してください。"
+      }
+    },
+    {
+      "id": "authenticated_paused_state",
+      "status": "PASS",
+      "observed": {
+        "paused": true,
+        "liveReadyClaim": false,
+        "practiceMode": true
+      }
+    },
+    {
+      "id": "no_runtime_exceptions",
+      "status": "PASS"
+    },
+    {
+      "id": "source_unchanged",
+      "status": "PASS"
+    }
+  ],
+  "limitations": [
+    "No physical phone, actual Safari, real user study, public deployment, paid call, email or payment exercised.",
+    "No suitable existing sales mission: draft creation, mission visual review and call completion remain BLOCKED.",
+    "CSS zoom and 720px reflow do not establish WCAG conformance or native browser zoom behavior."
+  ],
+  "runtimeExceptions": 0,
+  "sourceUnchanged": true
+}

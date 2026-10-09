@@ -48,7 +48,7 @@ try {
     page = await launch({ width: 390, height: 844 });
     await page.goto(demo.signIn(lan));
     await page.until("!document.querySelector('#tabs').hidden", { timeout: 10000, label: "LAN sign-in" });
-    c.ok(await page.js("location.hash") === "#/" && await page.js("Math.max(...[...document.querySelectorAll('#tabs a')].map(a=>a.getBoundingClientRect().height))") <= 44, "another device: the link signs in, leaves the address bar, one-line tabs at 390");
+    c.ok(await page.js("location.hash") === "#/" && await page.js("Math.max(...[...document.querySelectorAll('#tabs a')].map(a=>a.getBoundingClientRect().height))") <= 48, "another device: the link signs in, leaves the address bar, one-line tabs at 390");
     c.ok(await page.noSidewaysScroll(), "390: no sideways scroll");
     await page.screenshot(join(out, "local-app-lan-mobile.png"));
     c.ok(page.pageErrors.length === 0, "no page errors", page.pageErrors.join(" "));

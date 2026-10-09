@@ -2,6 +2,47 @@
 
 Release notes live in `docs/launch/release-notes-<version>.md`; this file lists them. Assets are attached to the matching [GitHub Release](https://github.com/FORIFOR/oathra/releases).
 
+## Unreleased — front-line use: care, sales lists, a business line
+
+- **Safety on every call.** No diagnosis or medicine advice, 119/110 and nearby people named, and never a claim that help was summoned. Words that mean someone may need help are detected from what the other person said; staff are alerted during the call (signed webhook, no speech in it unless opted in) and the call is not cut.
+- **Care calls.** `pace: "gentle"` (slow, plain, patient; longer waits before a turn or the line is treated as silent), wellbeing and medication templates, a check-in report of what the person said about condition, meals, medicine, sleep and worries with their own words beside it (hedged or contradicted answers are "unclear"; 10,000 seeded dialogues, 0 false yes), standing requests that repeat on a schedule with retries, and an alert when nobody answers. A voicemail greeting is not an answer.
+- **Sales and trade.** Calling hours for real sales calls (default 09:00–20:00 JST), list calling with one approval for up to 100 saved contacts, contact CSV import, CSV export, the required opening of a sales call, delivery-date and quote templates. A refusal in an ordinary request no longer suppresses the number; a mistaken suppression can be released with a recorded reason.
+- **A business line.** Answers as the business, only from the operator's own short answers, within set hours, puts a caller through to a person on request, tells the staff a call was taken, and can carry several calls at once (`OATHRA_MAX_CONCURRENT_CALLS`, default 1).
+- **Teams and operations.** A `manager` role that sees its own team's calls (no numbers or speech in the list), a team summary with the answer rate, a deploy that waits for the call in progress, a restore command, one opening notice on every carrier path, and a call that ends when speech recognition dies.
+- 176 tests for modules that had none (accounts, purchases, prerelease limits, delegation, MCP, backup) and six fixes they found. **None of this has been verified on real calls**: how the gentle pace sounds, whether the model keeps to the business's answers, transfer, and concurrent lines are all unverified. [Guide](docs/FRONTLINE.ja.md) · [Record](docs/quality/frontline.md).
+
+## Unreleased — application flow and account clarity
+
+- Reorganized the signed-in home around reports, improved narrow-screen navigation and forms, and made paused calling and incomplete outcomes explicit. Late asynchronous navigation can no longer replace the screen the user just selected.
+- Separated available and reserved credits, purchase history and usage history; kept dialog closing and recovery from network failures within reach. Detailed settings inherit the app's browser session, with account-bound requests to prevent stale forms from crossing accounts.
+- Preserved call approval, purchase reconciliation and prerelease limits. Actual paid-call and production-payment acceptance remain separate from this interface work. [Application quality record](docs/quality/app-craft.md).
+
+## Unreleased — evidence-led website and clearer service entry
+
+- Reworked the Japanese and English entry pages around the saved negotiation's utterances and real completion checks. The transcript checker shows the source evidence beside current values; the existing interactive lab and recording remain reachable.
+- Unified the Gateway sign-in entry and moved AI connection setup ahead of login. Client-specific instructions, keyboard navigation, clear pause notices and review-focused consent screens preserve the existing call approval and billing boundaries.
+- Reviewed actual desktop and narrow-screen behavior in isolated browsers. These changes do not launch the hosted phone service or certify an award outcome. [Quality record](docs/quality/award-craft.md).
+
+## Unreleased — sales drafts through Claude Code and ChatGPT
+
+- Added an opt-in HTTP MCP endpoint with browser OAuth consent, scoped read/draft access, expiring tokens and connection revocation. AI can read owned facts, prepare an idempotent sales draft, and retrieve evidence; the human reviews and approves paid calls on Oathra.
+- Added `/connect` with client setup instructions, connection management and draft review. Existing call consent, credit checks and prerelease limits remain required. Public hosting, official-client interoperability and the real sales-call flow are not yet verified. [Setup](docs/integrations/claude-chatgpt.md) · [Evidence](docs/quality/sales-mcp.md).
+
+## Unreleased — public service setup
+
+- Added email-verified registration and recovery, persistent customer identities, shared sign-in/purchase screens, and Stripe Checkout with payment reconciliation and idempotent credit grants.
+- Added restricted prerelease enrollment, per-account/shared rolling call budgets, maximum duration and admission pause; inbound answering is disabled during prerelease. Checkout reconfirms credit quantity, ambiguous callbacks cannot select another customer, and monthly approval totals survive call deletion.
+- Added read-only launch diagnostics, worker readiness checks, and native SQLite backup with integrity verification. Existing operator login and balances remain supported.
+- Production mail, prices/payment credentials, fixed hosting, and actual signup-to-call acceptance remain unconfigured or unverified. This is not a public service launch. [Readiness and evidence](docs/quality/public-service.md).
+
+## Unreleased — delegated phone actions
+
+- Added server-owned trial defaults (10 calls, up to five minutes per call, 24-hour expiry), atomic credential/grant provisioning, private connection files, and a scoped stdio MCP phone adapter. Genie-specific interoperability remains unverified.
+
+- Added bounded, revocable phone delegation for external agents, persistent dispatch idempotency, status and cancellation APIs, and Gateway SDK methods.
+- Added optional structured `PhoneRequest.success` conditions, checked by the existing evidence engine and passed to the voice engine.
+- Added Multibot phone-bot setup and non-dialing verification using real recorded requests. Real cross-project PSTN completion remains unverified until a recipient and delegation are authorized. [Integration guide](docs/integrations/multibot.md).
+
 ## Oathra v0.1.19 — 2026-09-29
 
 v0.1.19 replaces the Arena with the Oathra app: `oathra demo` opens it in practice mode on your computer (watch the AI call, or answer it yourself), with records, sign-in links for other devices, other practice AIs and real calls behind flags.

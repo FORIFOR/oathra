@@ -1,60 +1,24 @@
 import { $, notice, element } from './dom.js';
+import { createPublicAccess, createCreditPurchase } from './public-service.js';
 /** Login, password and wallet views; authentication and accounting remain server-side. */
 export function createAccount({ api, on, enter, beginLogin, onLogout, getAccount, balance }) {
-    let setupCode = new URLSearchParams(location.hash.slice(1)).get('setup');
-    if (location.hash.startsWith('#setup='))
-        window.history.replaceState(null, '', location.pathname + location.search);
+    const publicApi = (path, options = {}) => api(path, options.method ?? 'GET', options.body, options.headers?.['Idempotency-Key']);
+    const access = createPublicAccess({ api: publicApi, onSignedIn: async () => { await enter(); if (new URLSearchParams(location.search).has('purchase')) await showCredits(); }, beforeSignIn: beginLogin, idPrefix: 'managed', showOverview: true });
+    $('#managed-access').replaceChildren(access.node);
     window.addEventListener('hashchange', () => {
-        if (location.hash.startsWith('#setup='))
-            location.reload();
-    });
-    function loginMode() {
-        $('#managed-login-title').textContent = setupCode ? 'ログイン方法を設定' : 'ログイン';
-        $('#managed-login-submit').textContent = setupCode ? '設定して始める' : 'ログイン';
-        $('#managed-password').autocomplete = setupCode ? 'new-password' : 'current-password';
-        $('#managed-password-help').hidden = !setupCode;
-        $('#managed-login-back').hidden = !setupCode;
-        $('#managed-login-help').hidden = !!setupCode;
-    }
-    on('#managed-login-back', 'click', () => {
-        setupCode = null;
-        loginMode();
-        notice('#managed-login-error', '');
-        $('#managed-password').value = '';
-        $('#managed-email').focus();
-    });
-    on('#managed-login-form', 'submit', async () => {
-        const button = $('#managed-login-submit');
-        if (button.disabled)
-            return;
-        button.disabled = true;
-        button.textContent = '確認中…';
-        notice('#managed-login-error', '');
-        beginLogin();
-        try {
-            await api(setupCode ? '/auth/setup' : '/auth/login', 'POST', {
-                email: $('#managed-email').value, password: $('#managed-password').value, ...(setupCode ? {
-                    code: setupCode
-                } : {})
-            });
-            setupCode = null;
-            loginMode();
-            await enter();
-        }
-        finally {
-            $('#managed-password').value = '';
-            button.disabled = false;
-            loginMode();
-        }
+        if (/^#(?:setup|signup|verify|reset)=/.test(location.hash)) location.reload();
     });
     on('#managed-account-button', 'click', () => {
-        $('#managed-account-email').textContent = getAccount().login.email ?? '';
+        $('#managed-account-email').textContent = getAccount().login.email ?? '管理者のトークンでログイン中';
         $('#managed-account-username').value = getAccount().login.email ?? '';
         $('#managed-password-form').hidden = !getAccount().login.passwordLogin;
+        $('#managed-password-section').hidden = !getAccount().login.passwordLogin;
+        $('#managed-password-section').open = false;
         $('#managed-account-help').hidden = !!getAccount().login.passwordLogin;
         notice('#managed-account-error', '');
         notice('#managed-account-status', '');
         $('#managed-account').showModal();
+        $('#managed-account').scrollTop = 0;
     });
     $('#managed-account').addEventListener('close', () => {
         $('#managed-password-form').reset();
@@ -86,43 +50,111 @@ export function createAccount({ api, on, enter, beginLogin, onLogout, getAccount
             button.textContent = 'パスワードを変更';
         }
     });
-    let ledgerCursor = 0;
+    let ledgerCursor = 0, ledgerBusy = false, walletVersion = 0;
     async function ledger() {
-        const data = await api('/credits/ledger?after=' + ledgerCursor);
-        const names = {
-            grant: '追加', reserve: '確保', consume: '消費', release: '返却'
-        };
-        data.entries.forEach(e => {
-            $('#managed-ledger').append(element('p', `${new Date(e.created).toLocaleString()} · ${names[e.kind]} ${e.amount}`));
-            ledgerCursor = e.seq;
-        });
-        $('#managed-more').hidden = data.entries.length < 100;
+        if (ledgerBusy) return;
+        ledgerBusy = true;
+        const version = walletVersion, more = $('#managed-more');
+        more.disabled = true;
+        notice('#managed-ledger-error', '');
+        notice('#managed-ledger-status', '利用履歴を読み込んでいます…');
+        try {
+            const data = await api('/credits/ledger?after=' + ledgerCursor);
+            if (version !== walletVersion) return;
+            const names = { grant: '追加', reserve: '一時確保', consume: '消費', release: '残高へ返却' };
+            data.entries.forEach(entry => {
+                const row = element('li'), description = element('div'), date = element('time', new Date(entry.created).toLocaleString('ja-JP'));
+                date.dateTime = new Date(entry.created).toISOString();
+                description.append(element('strong', names[entry.kind] ?? entry.kind), date);
+                const amount = element('span', `${entry.amount.toLocaleString('ja-JP')} クレジット`);
+                row.append(description, amount);
+                $('#managed-ledger').append(row);
+                ledgerCursor = entry.seq;
+            });
+            more.hidden = data.entries.length < 100;
+            more.textContent = '続きを読み込む';
+            notice('#managed-ledger-status', ledgerCursor ? '' : '利用履歴はまだありません。');
+        } catch (error) {
+            if (!error.stale && version === walletVersion) {
+                notice('#managed-ledger-status', '');
+                notice('#managed-ledger-error', error.message);
+                more.hidden = false; more.textContent = '利用履歴を読み直す';
+            }
+        } finally {
+            if (version === walletVersion) { ledgerBusy = false; more.disabled = false; }
+        }
     }
-    on('#managed-credit-button', 'click', async () => {
-        await balance();
-        $('#managed-balance').textContent = `残高 ${getAccount().credits.available} / 確保中 ${getAccount().credits.held}`;
+    let purchaseView = null;
+    async function showCredits() {
+        const version = ++walletVersion;
+        if (!$('#managed-credits').open) $('#managed-credits').showModal();
+        notice('#managed-credits-error', '');
+        $('#managed-credits-retry').hidden = true;
+        $('#managed-balance').textContent = '残高を確認しています…';
+        $('#managed-balance').setAttribute('aria-busy', 'true');
+        $('#managed-purchases').replaceChildren();
         $('#managed-ledger').replaceChildren();
-        ledgerCursor = 0;
-        await ledger();
-        $('#managed-credits').showModal();
-    });
+        $('#managed-ledger-section').open = false;
+        notice('#managed-ledger-status', '利用履歴はまだ読み込んでいません。');
+        notice('#managed-ledger-error', '');
+        $('#managed-more').hidden = true;
+        ledgerCursor = 0; ledgerBusy = false;
+        $('#managed-credits').scrollTop = 0;
+        try {
+            await balance();
+            if (version !== walletVersion) return;
+            const renderBalance = () => {
+                if (version !== walletVersion) return;
+                const credits = getAccount().credits, facts = element('dl');
+                for (const [label, value] of [['利用できる残高', credits.available], ['確保中', credits.held]]) {
+                    const fact = element('div'), amount = element('dd');
+                    amount.append(element('strong', value.toLocaleString('ja-JP')), element('span', 'クレジット'));
+                    fact.append(element('dt', label), amount); facts.append(fact);
+                }
+                $('#managed-balance').replaceChildren(facts);
+                $('#managed-balance').setAttribute('aria-busy', 'false');
+            };
+            renderBalance();
+            purchaseView = createCreditPurchase({ api: publicApi, owner: getAccount().user.id, isBlocked: () => getAccount()?.account?.purchaseBlocked === true, onBalanceChange: async () => { await balance(); renderBalance(); } });
+            $('#managed-purchases').replaceChildren(purchaseView.node);
+            await ledger();
+        } catch (e) {
+            if (!e.stale && version === walletVersion) {
+                $('#managed-balance').textContent = '残高を確認できませんでした。';
+                $('#managed-balance').setAttribute('aria-busy', 'false');
+                notice('#managed-credits-error', e.message);
+                $('#managed-credits-retry').hidden = false;
+            }
+        }
+    }
+    on('#managed-credit-button', 'click', showCredits);
+    on('#managed-credits-retry', 'click', showCredits);
     on('#managed-more', 'click', ledger);
     on('#managed-credits-close', 'click', () => $('#managed-credits').close());
+    $('#managed-credits').addEventListener('close', () => { if (!$('#managed-credits').open) { walletVersion++; ledgerBusy = false; } });
     on('#managed-logout', 'click', async () => {
-        await api('/session', 'DELETE');
-        if ($('#managed-account').open) $('#managed-account').close();
-        onLogout();
+        const button = $('#managed-logout');
+        if (button.disabled) return;
+        button.disabled = true; button.textContent = 'ログアウト中…';
+        notice('#managed-account-error', '');
+        try {
+            await api('/session', 'DELETE');
+            if ($('#managed-account').open) $('#managed-account').close();
+            onLogout();
+        } catch (error) { if (!error.stale) notice('#managed-account-error', error.message); }
+        finally { button.disabled = false; button.textContent = 'この端末からログアウト'; }
     });
     return {
-        setupPending() {
-            return !!setupCode;
-        },
-        initialize() {
-            loginMode();
+        setupPending() { return access.pending(); },
+        initialize() {},
+        async afterEnter() {
+            if (new URLSearchParams(location.search).has('purchase')) await showCredits();
         },
         reset() {
-            setupCode = null;
-            loginMode();
+            access.reset();
+            purchaseView = null;
+            $('#managed-credits').close();
+            $('#managed-purchases').replaceChildren();
             ledgerCursor = 0;
         },
     };

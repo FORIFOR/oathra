@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SipGateway } from "@oathra/phone";
+import { PhoneTransport, type CarrierEvent, type CarrierMediaSession } from "@oathra/phone";
+import { MULAW_8K, OutputQueue, type VoiceEngine, type VoiceOutput } from "@oathra/voice";
 import { createPlivoProvider, normalizeE164 } from "./index.js";
 
 type Call = { url: string; method: string; body?: unknown };
@@ -110,5 +112,43 @@ describe("plivo provider", () => {
     expect(p.pricing?.("+81312345678")?.ratePerMin).toBe(0.0385);
     const noKeys = await p.doctor({ config: {}, env: {}, gateway: gw }, {});
     expect(noKeys.ready).toBe(false);
+  });
+});
+
+/** A runtime-brain engine that records what it is asked to say. */
+function sayingEngine(): VoiceEngine & { said: string[] } {
+  const said: string[] = [];
+  const queue = new OutputQueue<VoiceOutput>();
+  return {
+    id: "fake-pipeline", label: "Fake pipeline", speaksItself: false, nativeAudio: MULAW_8K, requires: [], said,
+    start: async () => ({
+      output: queue,
+      input() {},
+      async speak(text: string) { said.push(text); return { startMs: 0, endMs: 1, interrupted: false }; },
+      interrupt() {},
+      async close() { queue.close(); },
+      now: () => 0,
+    }),
+  };
+}
+
+function quietMedia(): CarrierMediaSession {
+  const events = new OutputQueue<CarrierEvent>();
+  return { audio: MULAW_8K, events, send() {}, clear() {}, async hangup() { events.close(); }, now: () => 0 };
+}
+
+describe("plivo: the notice", () => {
+  it("Plivo does not announce the call, so the callee hears the transcript notice exactly once, from the bridge", async () => {
+    const gw = fakeGateway();
+    gw.dial = async () => quietMedia();
+    const carrier = createPlivoProvider().transport({ config: { trunkId: "ST_lk", callerId: "+815012345678" }, env, gateway: gw });
+    expect(carrier.providerId).toBe("plivo");
+    expect(carrier.playsNotice).toBeFalsy();
+    const engine = sayingEngine();
+    const session = await new PhoneTransport(carrier, engine, { recordDir: "/tmp/rec" }).connect({ phone: "+819000000000" }, { language: "ja", contract: {} as never });
+    await session.speak({ text: "もしもし。", language: "ja" });
+    await session.speak({ text: "予約をお願いします。", language: "ja" });
+    expect(engine.said).toEqual(["この通話は記録されています。もしもし。", "予約をお願いします。"]);
+    await session.hangup();
   });
 });

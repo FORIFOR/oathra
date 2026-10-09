@@ -1,6 +1,6 @@
 import { EvidenceEngine, extractClaims, type Utterance } from '@oathra/evidence';
 import type { PhoneRequest } from '@oathra/contract';
-const fields = ['date', 'time', 'partySize', 'price', 'confirmed'] as const;
+const fields = ['date', 'time', 'partySize', 'price', 'quantity', 'confirmed'] as const;
 /** Calendar-only reference date for Japanese phone requests, independent of host TZ. */
 export function phoneReferenceDate(timestamp: number): Date {
   const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(timestamp);

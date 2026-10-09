@@ -80,10 +80,10 @@ describe("audit 2026-09-26: names and farewells", () => {
   it("does not bake a fixed personal name into the prompt", () => {
     const withName = new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language: "ja", input: { callerName: "佐藤", request: "遅れると伝えてください。" } }) }).instructions();
     const without = new OpenAILiveAgent({ contract: defineCall({ goal: "phone.message", language: "ja", input: { request: "遅れると伝えてください。" } }) }).instructions();
-    expect(withName).toContain("佐藤さんにもそのようにお伝え");
+    expect(withName).toContain("佐藤さんにお伝えしますね");
     expect(withName).not.toContain("周平");
     expect(without).not.toContain("周平");
-    expect(without).toContain("依頼者にもそのようにお伝え");
+    expect(without).toContain("依頼者にお伝えしますね");
     expect(without).toContain("完了したと主張しないでください");
   });
 

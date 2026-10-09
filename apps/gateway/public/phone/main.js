@@ -1,3 +1,4 @@
+import { prereleaseNotice } from './public-service.js';
 import { createAccount } from './account.js';
 import { createClient } from './client.js';
 import { createContacts } from './contacts.js';
@@ -22,6 +23,9 @@ import { renderNews } from './news.js';
     $('#phone-instruction').placeholder = '伝えたいこと、確認したいこと';
     $('#home-practice').closest('.home-choice').hidden = true;
     $('#contacts-resume').hidden = true;
+    const prereleaseBanner = element('div');
+    prereleaseBanner.hidden = true;
+    $('#phone-readiness').before(prereleaseBanner);
     const screens = {
         login: $('#managed-login'), home: $('#screen-home'), phone: $('#screen-real'), contacts: $('#screen-contacts'), bookings: $('#screen-bookings')
     };
@@ -201,6 +205,7 @@ import { renderNews } from './news.js';
         contactEditor.reset(forgetDraft);
         bookingsView.reset();
         account = null;
+        prereleaseBanner.hidden = true;
         review = null;
         active = null;
         activeState = null;
@@ -352,33 +357,32 @@ import { renderNews } from './news.js';
         $('#phone-price-details')?.remove();
         const summary = element('p');
         summary.id = 'phone-cost-summary';
-        const yen = usd => t?.carrierFx ? `（約${Math.round(usd * t.carrierFx.unitsPerUsdNano / 1e9).toLocaleString('ja-JP')}円）` : '';
         if (t?.settlement === 'usage-rate-v1') {
             const perMinuteNano = t.carrierRate.perMinuteNanoUsd + t.mediaPerMinuteNanoUsd + t.voicePerMinuteNanoUsd;
             const tooLittle = quote.minimumAmount !== undefined && quote.amount < quote.minimumAmount;
-            const ceiling = quote.spendingLimit === 'balance-v1' && account?.credits && quote.amount >= account.credits.available ? `いまの残高 ${quote.amount} クレジット${yen(quote.amount * quote.creditUsd)}` : `1回の通話の上限 ${quote.amount} クレジット${yen(quote.amount * quote.creditUsd)}`;
-            summary.append(element('strong', `1分あたり 約${Math.ceil(perMinuteNano / t.creditNanoUsd)}クレジット${yen(perMinuteNano / 1e9)}`),
+            const ceiling = quote.spendingLimit === 'balance-v1' && account?.credits && quote.amount >= account.credits.available ? `いまの残高 ${quote.amount} クレジット` : `1回の通話の上限 ${quote.amount} クレジット`;
+            summary.append(element('strong', `1分あたり 約${Math.ceil(perMinuteNano / t.creditNanoUsd)}クレジット`),
                 element('span', tooLittle ? `いまの残高 ${quote.amount} クレジットでは、この番号への最初の1分に足りません。` : `${ceiling}を一時的に確保します。そこに達すると通話は自動で終わり、使わなかった分は通話後すぐに返却します。${chat ? 'ニュースなどを調べた場合は、1回につき数クレジットが加わります。' : ''}`));
         } else if (quote.policy === 'provider-cost-v1')
-            summary.append(element('strong', `最大 ${quote.amount} クレジット${yen(quote.amount * quote.creditUsd)}を一時的に確保`), element('span', '通話後に実際の料金で精算し、使わなかった分を返却します。'));
+            summary.append(element('strong', `最大 ${quote.amount} クレジットを一時的に確保`), element('span', '通話後に消費クレジットを精算し、使わなかった分を返却します。'));
         else
             summary.append(element('strong', `${quote.amount} クレジットを使います`));
         const prices = element('details');
         prices.id = 'phone-price-details';
         const list = element('dl');
         const rows = [];
-        if (quote.creditUsd) rows.push(['1クレジット', `$${quote.creditUsd}`]);
+        if (quote.creditUsd) rows.push(['消費量の換算基準', `$${quote.creditUsd}あたり1クレジット`]);
         if (t?.settlement === 'usage-rate-v1') {
             const carrier = t.carrierRate.currency === 'JPY' ? `${t.carrierRate.perMinute}円/分` : `$${t.carrierRate.perMinute}/分`;
             rows.push(['電話回線', `${carrier}（${t.carrierRate.incrementSeconds}秒単位）`], ['音声の中継', `$${t.mediaPerMinuteNanoUsd / 1e9}/分`], ['音声AI', `$${t.voicePerMinuteNanoUsd / 1e9}/分（1分単位・${t.model}）`]);
             if (chat) rows.push(['検索', `1回 $${t.search.perCallNanoUsd / 1e9} ＋ 検索AI（${t.search.model}）の使用量`]);
         }
-        if (t?.carrierFx) rows.push(['円とドルの換算', `1 USD = ${t.carrierFx.unitsPerUsdNano / 1e9}円（${t.carrierFx.date} 基準）`]);
+        if (t?.carrierFx) rows.push(['回線費用の換算基準', `1 USD = ${t.carrierFx.unitsPerUsdNano / 1e9}円（${t.carrierFx.date} 基準）`]);
         for (const [label, value] of rows) list.append(element('dt', label), element('dd', value));
-        prices.append(element('summary', '料金の内訳'), list);
+        prices.append(element('summary', '消費クレジットの計算基準'), element('p', '以下の単価は消費クレジットの計算に使います。クレジットの購入価格は購入画面で確認してください。'), list);
         // Nothing to unfold under the fixed per-call price.
         fields.after(summary, ...(rows.length ? [prices] : []));
-        const news = chat ? (review.readiness.newsAvailable === false ? ' この接続では最新ニュースの検索は使えません。' : ` 雑談でニュースや調べものを頼まれると、公開ニュースのカテゴリ、または「任天堂 株価」のような公開されている短い検索語をOpenAIのWeb検索へ送ります。相手やあなたの名前・電話番号・住所、会話の文そのものは送りません。ニュース・天気・イベントの確認は1通話8回まで。${t?.settlement === 'usage-rate-v1' ? '検索回数と使用トークン数を利用額に含めます。' : '検索費用は運営者負担です。'}出典は履歴に保存します。`) : '';
+        const news = chat ? (review.readiness.newsAvailable === false ? ' この接続では最新ニュースの検索は使えません。' : ` 雑談でニュースや調べものを頼まれると、公開ニュースのカテゴリ、または「任天堂 株価」のような公開されている短い検索語をOpenAIのWeb検索へ送ります。相手やあなたの名前・電話番号・住所、会話の文そのものは送りません。ニュース・天気・イベントの確認は1通話8回まで。${t?.settlement === 'usage-rate-v1' ? '検索回数と使用トークン数を消費クレジットの計算に含めます。' : '検索費用は運営者負担です。'}出典は履歴に保存します。`) : '';
         // The full disclosure stays in view before consent; one sentence per line instead of a single block.
         const points = element('ul');
         for (const sentence of (review.readiness.disclosure + news).split('。').map(x => x.trim()).filter(Boolean)) points.append(element('li', sentence + '。'));
@@ -579,6 +583,8 @@ import { renderNews } from './news.js';
     async function enter() {
         const session = generation;
         account = await api('/bootstrap');
+        prereleaseBanner.replaceChildren(prereleaseNotice(account.configuration?.prerelease));
+        prereleaseBanner.hidden = !account.configuration?.prerelease?.enabled;
         [templates] = await Promise.all([api('/phone/templates'), balance()]);
         $('#phone-template').replaceChildren(element('option', '使わない'));
         $('#phone-template').firstChild.value = '';
@@ -841,11 +847,12 @@ import { renderNews } from './news.js';
     accountView.initialize();
     show('login', false);
     if (accountView.setupPending()) {
-        $('#managed-email').focus();
+        document.querySelector('#managed-login-form input:not(:disabled)')?.focus();
         return;
     }
     try {
         await enter();
+        await accountView.afterEnter();
     }
     catch (e) {
         if (e.status !== 401)

@@ -101,7 +101,7 @@ export async function runLocalConversation(opts: LocalConversationOptions): Prom
     async hangup() { hungUp = true; },
     now,
   };
-  const carrier: CarrierTransport = { providerId: "local", path: "simulator", describe: () => "local loop (no carrier)", async dial() { setTimeout(() => events.push({ type: "connected" }), 0); return media; } };
+  const carrier: CarrierTransport = { providerId: "local", path: "simulator", playsNotice: true, describe: () => "local loop (no carrier)", async dial() { setTimeout(() => events.push({ type: "connected" }), 0); return media; } };
 
   const transcript: LocalConversationReport["transcript"] = [];
   const log: Array<{ at: number; type: string; source?: string; latencyMs?: number }> = [];

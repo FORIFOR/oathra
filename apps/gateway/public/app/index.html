@@ -7,7 +7,8 @@
   <title>Oathra — 電話を、任せる。</title>
   <link rel="icon" type="image/png" href="/app/mark.png">
   <link rel="stylesheet" href="/app/style.css">
-  <script src="/app/app.js" defer></script>
+  <link rel="stylesheet" href="/phone/public-service.css">
+  <script src="/app/app.js" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#view">本文へ移動</a>
@@ -22,7 +23,7 @@
     <a href="#/settings" data-tab="settings" class="tab-narrow">設定</a>
   </nav>
   <div class="bar-right" id="bar-right" hidden>
-    <a class="live-pill" id="live-pill" hidden><span class="dot" aria-hidden="true"></span>電話中<span id="live-pill-time"></span></a>
+    <a class="live-pill" id="live-pill" hidden><span class="dot" aria-hidden="true"></span><span id="live-pill-state">電話中</span><span id="live-pill-time"></span></a>
     <a class="plain" href="#/settings" data-tab="settings">設定</a>
     <a class="btn primary" href="#/new">＋ 電話を頼む</a>
   </div>

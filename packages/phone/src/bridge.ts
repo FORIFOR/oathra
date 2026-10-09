@@ -5,8 +5,8 @@
  */
 import type { Action, CallContract } from "@oathra/contract";
 import type { Language } from "@oathra/evidence";
-import type { CallSession, MissionView, SessionEvent, SpeakInput, SpeakResult, TransportProvider } from "@oathra/core";
-import { convert, OutputQueue, type VoiceEngine, type VoiceSession } from "@oathra/voice";
+import { transcriptNotice, type CallSession, type MissionView, type SessionEvent, type SpeakInput, type SpeakResult, type TransportProvider } from "@oathra/core";
+import { chunkDurationMs, convert, OutputQueue, type AudioChunk, type VoiceEngine, type VoiceSession } from "@oathra/voice";
 import type { CarrierMediaSession, CarrierTransport, DialOptions } from "./types.js";
 
 export type BridgeOptions = {
@@ -15,6 +15,12 @@ export type BridgeOptions = {
   contract: CallContract;
   language: Language;
   calleeName?: string;
+  /**
+   * The fixed words the callee hears first when the carrier does not say them itself (see `PhoneTransport`).
+   * With `audio` the bridge plays them when the line connects and the engine's own audio waits behind them
+   * (speech-to-speech engines cannot be handed fixed words); without, they open the first reply the runtime speaks.
+   */
+  notice?: { text: string; audio?: AudioChunk };
 };
 
 export class BridgedCallSession implements CallSession {
@@ -22,9 +28,14 @@ export class BridgedCallSession implements CallSession {
   private readonly queue = new OutputQueue<SessionEvent>();
   private voice: VoiceSession | undefined;
   private ended = false;
+  private noticeSpoken = false;
+  /** Engine audio produced before the notice has finished playing. */
+  private held: AudioChunk[] | undefined;
+  private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly opts: BridgeOptions) {
     this.events = this.queue;
+    if (opts.notice?.audio) this.held = [];
   }
 
   now(): number {
@@ -41,6 +52,20 @@ export class BridgedCallSession implements CallSession {
     void this.pumpEngine();
   }
 
+  /** The line is up: the notice goes out once, before anything the engine says. */
+  private playNotice(): void {
+    const audio = this.opts.notice?.audio;
+    if (!audio || this.noticeSpoken || this.ended) return;
+    this.noticeSpoken = true;
+    const { carrier } = this.opts;
+    carrier.send(convert(audio, carrier.audio));
+    this.noticeTimer = setTimeout(() => {
+      const held = this.held ?? [];
+      this.held = undefined;
+      if (!this.ended) for (const chunk of held) carrier.send(chunk);
+    }, chunkDurationMs(audio));
+  }
+
   private async pumpCarrier(): Promise<void> {
     const { carrier } = this.opts;
     try {
@@ -48,9 +73,11 @@ export class BridgedCallSession implements CallSession {
         if (this.ended) break;
         switch (ev.type) {
           case "connected":
+            this.playNotice();
             this.queue.push({ type: "connected", ...(this.opts.calleeName ? { callee: this.opts.calleeName } : {}) });
             break;
           case "audio":
+            this.playNotice();
             this.voice?.input(ev.chunk);
             break;
           case "hangup":
@@ -81,8 +108,15 @@ export class BridgedCallSession implements CallSession {
     try {
       for await (const out of voice.output) {
         if (this.ended) break;
-        if (out.type === "audio") carrier.send(convert(out.chunk, carrier.audio));
-        else if (out.type === "clear") carrier.clear();
+        if (out.type === "audio") {
+          const chunk = convert(out.chunk, carrier.audio);
+          if (this.held) this.held.push(chunk);
+          else carrier.send(chunk);
+        } else if (out.type === "clear") {
+          // A barge-in drops what the engine queued, never the notice itself.
+          if (this.held) this.held = [];
+          else carrier.clear();
+        }
         else this.queue.push(out.event);
         if (out.type === "event" && out.event.type === "hangup") {
           await this.close();
@@ -97,7 +131,13 @@ export class BridgedCallSession implements CallSession {
 
   async speak(input: SpeakInput): Promise<SpeakResult> {
     if (this.ended || !this.voice?.speak) return { startMs: this.now(), endMs: this.now(), interrupted: false };
-    return this.voice.speak(input.text, input.inputUntilMs !== undefined ? { inputUntilMs: input.inputUntilMs } : undefined);
+    const notice = this.opts.notice && !this.opts.notice.audio && !this.noticeSpoken ? this.opts.notice.text : undefined;
+    if (notice) this.noticeSpoken = true;
+    const text = notice ? `${notice}${input.language === "ja" ? "" : " "}${input.text}` : input.text;
+    const spoke = await this.voice.speak(text, input.inputUntilMs !== undefined ? { inputUntilMs: input.inputUntilMs } : undefined);
+    // Nothing of it was played: the notice is still owed, and opens the next reply.
+    if (notice && spoke.skipped) this.noticeSpoken = false;
+    return spoke;
   }
 
   ack(): void {
@@ -114,7 +154,8 @@ export class BridgedCallSession implements CallSession {
 
   interrupt(): void {
     this.voice?.interrupt();
-    this.opts.carrier.clear();
+    if (this.held) this.held = [];
+    else this.opts.carrier.clear();
   }
 
   async hangup(reason?: string): Promise<void> {
@@ -124,6 +165,7 @@ export class BridgedCallSession implements CallSession {
   private async close(reason?: string): Promise<void> {
     if (this.ended) return;
     this.ended = true;
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
     try {
       await this.voice?.close();
     } catch {
@@ -149,7 +191,13 @@ export class PhoneTransport implements TransportProvider {
   constructor(
     private readonly carrier: CarrierTransport,
     private readonly engine: VoiceEngine,
-    private readonly opts: { callerId?: string; recordDir?: string; transcriptNotice?: boolean } = {},
+    private readonly opts: {
+      callerId?: string;
+      recordDir?: string;
+      transcriptNotice?: boolean;
+      /** Synthesizes the notice for engines that speak for themselves; needed when the carrier does not play it. */
+      noticeAudio?: (text: string, language: Language) => Promise<AudioChunk>;
+    } = {},
   ) {
     this.name = `${carrier.providerId}:${carrier.path}+${engine.id}`;
     this.speaksItself = engine.speaksItself;
@@ -165,6 +213,17 @@ export class PhoneTransport implements TransportProvider {
       ...(this.opts.recordDir ? { recordDir: this.opts.recordDir } : {}),
       ...(this.opts.transcriptNotice ? { transcriptNotice: true } : {}),
     };
+    // Something of this call is kept, and the carrier does not say so itself (only Twilio direct does, and only it
+    // records audio): the callee hears the transcript notice on the line, exactly once. The wording is never left
+    // to a model, so a speech-to-speech engine needs the words as audio, and without them the call is not placed.
+    const kept = Boolean(this.opts.recordDir || this.opts.transcriptNotice);
+    let notice: { text: string; audio?: AudioChunk } | undefined;
+    if (kept && !this.carrier.playsNotice) {
+      const text = transcriptNotice(ctx.language);
+      if (!this.engine.speaksItself) notice = { text };
+      else if (this.opts.noticeAudio) notice = { text, audio: await this.opts.noticeAudio(text, ctx.language) };
+      else throw new Error(`${this.carrier.providerId} does not announce that the call is kept and ${this.engine.id} cannot be handed fixed words: pass noticeAudio, or keep nothing of the call`);
+    }
     const media = await this.carrier.dial(dial);
     const session = new BridgedCallSession({
       carrier: media,
@@ -172,6 +231,7 @@ export class PhoneTransport implements TransportProvider {
       contract: ctx.contract,
       language: ctx.language,
       ...(target.name ? { calleeName: target.name } : {}),
+      ...(notice ? { notice } : {}),
     });
     this.lastSession = session;
     await session.start();

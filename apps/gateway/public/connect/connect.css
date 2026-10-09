@@ -1,0 +1,130 @@
+/* Shared Ring Zero tokens. The selected tool is the first task; consent remains a separate decision. */
+[hidden] { display: none !important; }
+.connect-bar { position: relative; height: auto; min-height: 72px; flex-wrap: wrap; gap: 12px 24px; padding: 14px max(24px, calc((100vw - 1184px) / 2)); background: var(--panel); }
+.connect-bar .brand { text-decoration: none; }
+.connect-bar .plain { margin-left: auto; min-height: 44px; display: inline-flex; align-items: center; }
+.connect-bar .bar-right { min-width: 0; }
+.connect-account { max-width: 260px; overflow-wrap: anywhere; font-size: 13px; color: var(--muted); }
+.connect-page { max-width: 1240px; padding: 40px 28px 32px; }
+.connect-heading { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px 48px; margin-bottom: 28px; }
+.connect-eyebrow { margin: 0; font-size: 12px; font-weight: 650; color: var(--muted); letter-spacing: .08em; }
+.connect-heading .connect-eyebrow { grid-column: 1 / -1; }
+.connect-heading h1 { margin: 0; font-size: clamp(36px, 4vw, 50px); line-height: 1.3; letter-spacing: -.045em; font-weight: 650; text-wrap: balance; }
+#connect-intro { align-self: end; margin: 0 0 4px; max-width: 390px; color: var(--ink-2); font-size: 15px; line-height: 1.95; }
+.connect-path { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; padding: 22px 0 0; margin: 22px 0 0; border-top: 1px solid var(--line-2); }
+.connect-path li { display: grid; grid-template-columns: 32px 1fr; gap: 3px 12px; align-items: baseline; padding-right: 20px; }
+.connect-path li + li { padding-left: 24px; border-left: 1px solid var(--line-2); }
+.connect-path span { grid-row: 1 / 3; font: 12px/1.8 var(--mono); color: var(--muted); }
+.connect-path strong { font-size: 14px; font-weight: 650; }
+.connect-path small { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.connect-workbench { display: grid; grid-template-columns: minmax(0, 1.48fr) minmax(320px, 1fr); gap: 28px; align-items: start; }
+.connect-panel { min-width: 0; padding: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+.connect-panel h2, .connect-preparation h2 { margin: 0 0 12px; font-size: 21px; line-height: 1.5; letter-spacing: -.025em; }
+.connect-panel h3 { margin: 0 0 10px; font-size: 17px; line-height: 1.6; }
+.connect-panel p, .connect-panel li, #revoke-dialog p, .connect-preparation p { font-size: 14px; line-height: 1.85; }
+.connect-panel p { margin: 10px 0; }
+.connect-panel .note, .connect-preparation .note { color: var(--muted); font-size: 12px; }
+.connect-page a { text-underline-offset: .22em; }
+.connect-page :focus-visible, #revoke-dialog :focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+.connect-panel .btn, .connect-preparation .btn, .connect-bar .btn, #revoke-dialog .btn { min-height: 44px; white-space: normal; line-height: 1.5; padding-top: 10px; padding-bottom: 10px; }
+.connect-protocol { font: 11px/1.5 var(--mono); color: var(--muted); }
+.connect-setup-intro { color: var(--ink-2); }
+#service-status { margin: 18px 0; border: 0; border-left: 2px solid var(--line-2); border-radius: 0; padding: 0 0 0 14px; font-size: 12px; color: var(--ink-2); line-height: 1.85; }
+.connect-tabs { display: flex; margin-top: 24px; padding: 4px; gap: 4px; background: var(--bg); border-radius: 10px; border: 1px solid var(--line); }
+.connect-tabs button { flex: 1; min-height: 46px; padding: 10px 14px; background: transparent; color: var(--ink-2); border: 1px solid transparent; border-radius: 7px; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.connect-tabs button[aria-selected="true"] { background: var(--ink); color: var(--panel); }
+.connect-tabs button:not([aria-selected="true"]):hover { background: var(--panel); border-color: var(--line); }
+.connect-label { display: block; margin: 24px 0 8px; font-size: 12px; font-weight: 650; }
+.connect-copy { display: flex; align-items: stretch; gap: 8px; }
+.connect-copy input, .connect-command { min-width: 0; font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+.connect-copy input { flex: 1; min-height: 46px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.connect-copy .btn { flex-shrink: 0; font-size: 12px; }
+.connect-command { min-height: 94px; padding: 14px; margin-bottom: 10px; resize: vertical; overflow-wrap: anywhere; background: var(--bg); border-color: var(--line); }
+.connect-clients { margin-top: 24px; }
+.connect-clients > div { min-width: 0; }
+.connect-clients .note a { display: inline-flex; align-items: center; min-height: 44px; }
+.connect-clients .connect-label { margin-top: 18px; }
+.connect-steps { padding-left: 22px; margin: 10px 0; }
+.connect-steps li + li { margin-top: 12px; }
+.connect-aside { display: grid; min-width: 0; gap: 28px; }
+.connect-login .public-access h2 { font-size: 21px; }
+.connect-login .public-access-intro { font-size: 13px; }
+.connect-login > .note { padding-top: 18px; margin: 18px 0 0; border-top: 1px solid var(--line); }
+.connect-preparation { padding: 0 8px; }
+.connect-preparation h2 { font-size: 16px; margin-bottom: 8px; }
+.connect-preparation p { color: var(--ink-2); margin: 0; font-size: 13px; }
+.connect-preparation .connect-actions { margin-top: 14px; }
+.connect-priority { max-width: 790px; margin: 0 0 24px; border-color: var(--line-2); }
+.connect-priority .connect-eyebrow { margin-bottom: 8px; }
+.connect-boundary { background: var(--bg-2); border-left: 3px solid var(--ink); padding: 12px 16px; white-space: pre-wrap; }
+.connect-permissions { margin: 10px 0 20px; padding-left: 24px; }
+.connect-permissions li + li { margin-top: 8px; }
+.connect-facts { display: grid; grid-template-columns: 128px minmax(0, 1fr); margin: 18px 0 24px; font-size: 14px; }
+.connect-facts dt, .connect-facts dd { padding: 12px 0; border-bottom: 1px solid var(--line); margin: 0; line-height: 1.8; }
+.connect-facts dt { color: var(--muted); }
+.connect-facts dd { overflow-wrap: anywhere; white-space: pre-wrap; }
+.connect-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.connect-state { font-weight: 700; }
+.connect-section-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.connect-section-header h2 { margin: 0; }
+#connections-panel { margin-top: 32px; }
+.connect-connection { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.connect-connection:last-child { border-bottom: 0; padding-bottom: 0; }
+.connect-connection-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.connect-connection-heading h3 { margin: 0; overflow-wrap: anywhere; }
+.connect-connection-heading span { font-size: 12px; color: var(--muted); }
+.connect-connection ul { padding-left: 22px; margin: 10px 0; }
+#mission-policy { margin: 16px 0; font-size: 14px; line-height: 1.8; }
+#mission-policy > summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-weight: 650; }
+#mission-disclosure { white-space: pre-wrap; }
+#mission-approval, #mission-policy-form { display: grid; gap: 18px; margin: 20px 0; padding-top: 20px; border-top: 1px solid var(--line); }
+#mission-approval > button, #mission-policy-form > button { justify-self: start; }
+.connect-footer { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line-2); color: var(--muted); font-size: 12px; line-height: 1.8; }
+.connect-footer a { min-height: 44px; display: inline-flex; align-items: center; gap: 12px; color: var(--ink); }
+body:not([data-connect-mode="setup"]) .connect-workbench { display: block; max-width: 790px; }
+body:not([data-connect-mode="setup"]) .connect-heading { display: block; }
+body:not([data-connect-mode="setup"]) #connect-intro { margin-top: 18px; max-width: none; }
+body:not([data-connect-mode="setup"]) .connect-heading h1 { margin-top: 16px; font-size: clamp(28px, 4vw, 42px); }
+#revoke-dialog { color: var(--ink); background: var(--panel); width: min(500px, calc(100% - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 28px; border: 1px solid var(--line-2); border-radius: 16px; }
+#revoke-dialog::backdrop { background: rgba(14, 21, 18, .4); }
+#revoke-dialog h2 { margin: 0 0 14px; font-size: 22px; }
+@media (max-width: 900px) {
+  .connect-workbench { grid-template-columns: minmax(0, 1fr); }
+  .connect-aside { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); align-items: start; }
+  body:not([data-connect-mode="setup"]) .connect-aside { grid-template-columns: minmax(0, 1fr); }
+  .connect-heading { gap: 12px 24px; }
+  .connect-path li { grid-template-columns: 1fr; gap: 3px; }
+  .connect-path span { grid-row: auto; }
+}
+@media (max-width: 600px) {
+  .connect-bar { min-height: 64px; padding: 10px 20px; gap: 8px 16px; }
+  .connect-bar .bar-right { flex-basis: 100%; justify-content: space-between; }
+  .connect-page { padding: 24px 20px 28px; }
+  .connect-heading { display: block; margin-bottom: 22px; }
+  .connect-heading h1 { font-size: clamp(28px, 8.6vw, 40px); margin-top: 12px; }
+  #connect-intro { font-size: 13px; line-height: 1.8; margin-top: 12px; }
+  .connect-path { margin-top: 18px; padding-top: 12px; gap: 12px; }
+  .connect-path li, .connect-path li + li { padding: 0; border: 0; }
+  .connect-path strong { font-size: 11px; line-height: 1.7; }
+  .connect-path small { display: none; }
+  .connect-path span { font-size: 10px; }
+  .connect-panel { padding: 22px 18px; border-radius: 12px; }
+  .connect-panel h2 { font-size: 19px; }
+  .connect-setup-intro { display: none; }
+  .connect-protocol { font-size: 10px; }
+  .connect-panel p, .connect-panel li { font-size: 13px; }
+  .connect-panel .note, #service-status { font-size: 12px; }
+  .connect-copy { flex-wrap: wrap; }
+  .connect-copy input { flex-basis: 100%; }
+  .connect-copy .btn { width: 100%; }
+  .connect-tabs { margin-top: 18px; }
+  .connect-aside { grid-template-columns: minmax(0, 1fr); }
+  .connect-facts { grid-template-columns: minmax(0, 1fr); }
+  .connect-facts dt { border-bottom: 0; padding: 12px 0 0; font-size: 12px; }
+  .connect-facts dd { padding-top: 4px; }
+  .connect-actions > .btn { flex: 1 1 160px; }
+  #mission-approval > button, #mission-policy-form > button { width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .connect-tabs button { transition: background-color .14s ease, color .14s ease; }
+}

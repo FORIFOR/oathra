@@ -32,6 +32,9 @@ export {
   type PhoneEngine,
   preparePhoneRequest,
   parsePhoneRequest,
+  QUANTITY_UNITS,
+  formatQuantity,
+  type QuantityUnit,
   type PhoneInputErrorCode,
   type PhoneRequest,
   type PhoneRequestInput,
@@ -368,10 +371,12 @@ export { PHONE_PURPOSE_TEMPLATES } from "./phone-templates.js";
  * one: it answers on the owner's behalf, takes the message, and promises nothing. `context` is what the service
  * already knows (for example that this number was called earlier, and why); it is data, not an instruction.
  */
-export function definePhoneInbound(call: { ownerName: string; callerPhone: string; callerName?: string; context?: string }, budget: Partial<CallContract["budget"]> = {}): CallContract {
+export function definePhoneInbound(call: { ownerName: string; callerPhone: string; callerName?: string; context?: string; business?: boolean; guidance?: { q: string; a: string }[]; transfer?: boolean }, budget: Partial<CallContract["budget"]> = {}): CallContract {
   const ownerName = call.ownerName.trim().slice(0, 40), context = call.context?.trim().slice(0, 600);
+  // What the line may answer on its own: the operator's own short answers, never more than a page of them.
+  const guidance = (call.guidance ?? []).slice(0, 30).map((g) => ({ q: String(g.q).trim().slice(0, 80), a: String(g.a).trim().slice(0, 300) })).filter((g) => g.q && g.a);
   return defineCall({ goal: "phone.inbound", language: "ja",
-    input: { ownerName, ...(context ? { context } : {}), policy: "着信への応対。AIであることと誰の電話かを最初に伝える。用件・名前・折り返し先を聞き取り、依頼者へ伝えると約束するだけにする。予約・購入・支払い・契約・個人情報の提供・依頼者の予定や居場所の回答は行わない。相手が切りたければ終了する。" },
+    input: { ownerName, ...(context ? { context } : {}), ...(call.business ? { business: true } : {}), ...(call.transfer ? { transfer: true } : {}), ...(guidance.length ? { guidance } : {}), policy: "着信への応対。AIであることと誰の電話かを最初に伝える。用件・名前・折り返し先を聞き取り、依頼者へ伝えると約束するだけにする。予約・購入・支払い・契約・個人情報の提供・依頼者の予定や居場所の回答は行わない。相手が切りたければ終了する。" },
     permissions: { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
     target: { phone: call.callerPhone, name: call.callerName?.trim().slice(0, 100) || "着信" },
   });
@@ -394,10 +399,13 @@ export function defineRestaurantReception(call: { restaurantName: string; caller
 /** Shared ask-only policy for personal phone requests across CLI, OSS Web and managed Gateway. */
 export function definePhoneRequest(request: PhoneRequest, budget: Partial<CallContract["budget"]> = {}): CallContract {
   const parsed = parsePhoneRequest(request), reservation = parsed.task === "reservation";
+  const required = [...new Set([...(reservation ? ["date", "time", "confirmed"] : []), ...(parsed.success?.required ?? [])])];
+  const expected = parsed.success?.expected ?? {};
   return defineCall({ goal: "phone.message", language: "ja",
-    input: { request: parsed.instruction, ...(parsed.task ? { task: parsed.task } : {}), ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), ...(parsed.voicePreset ? { voicePreset: parsed.voicePreset } : {}), policy: reservation ? "AIによる代理電話であることを最初に伝える。承認された予約だけを、日付・時刻・人数・名前を復唱して相手の了承を得てから成立させる。任せる範囲の外は決めずに持ち帰る。購入・支払い・カード番号の提供・契約・別の相手への発信を行わない。相手が断ったら終了する。" : "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
+    input: { request: parsed.instruction, ...(parsed.task ? { task: parsed.task } : {}), ...(parsed.conversationMode ? { conversationMode: parsed.conversationMode } : {}), ...(parsed.callerName ? { callerName: parsed.callerName } : {}), ...(parsed.callerProfile ? { callerProfile: parsed.callerProfile } : {}), ...(parsed.voicePreset ? { voicePreset: parsed.voicePreset } : {}), ...(parsed.pace ? { pace: parsed.pace } : {}), policy: reservation ? "AIによる代理電話であることを最初に伝える。承認された予約だけを、日付・時刻・人数・名前を復唱して相手の了承を得てから成立させる。任せる範囲の外は決めずに持ち帰る。購入・支払い・カード番号の提供・契約・別の相手への発信を行わない。相手が断ったら終了する。" : "AIによる代理電話であることを最初に伝える。承認された目的で会話し、相手が断ったら終了する。予約・購入・支払い・別の相手への発信を行わない。" },
     // A reservation is complete only when the callee's own words settle the date, the time and their acceptance.
-    ...(reservation ? { require: { date: true, time: true, confirmed: true }, confirmation: "callee_acceptance" as const } : {}),
+    ...(required.length ? { require: Object.fromEntries(required.map(field => [field, true])), confirmation: "callee_acceptance" as const } : {}),
+    constraints: Object.fromEntries(Object.entries(expected).map(([field, value]) => [field, { eq: value! }])),
     permissions: reservation ? { ask: true, reserve: true, share_name: true } : { ask: true }, budget: { maxDurationMs: 180000, maxTurns: 30, maxCostUsd: 1, ...budget },
     target: { phone: parsed.phone, name: parsed.name },
   });

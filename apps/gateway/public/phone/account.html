@@ -1,22 +1,30 @@
-
    <section id="managed-login" class="screen"><div class="start-inner narrow">
-    <h2 id="managed-login-title">ログイン</h2>
-    <form id="managed-login-form">
-     <label for="managed-email">メールアドレス</label><input id="managed-email" name="username" type="email" required maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false">
-     <label for="managed-password">パスワード</label><input id="managed-password" name="password" type="password" required autocomplete="current-password" aria-describedby="managed-password-help">
-     <p id="managed-password-help" class="note" hidden>8文字以上。日本語やスペースも使えます。</p>
-     <button id="managed-login-submit" class="btn primary" type="submit">ログイン</button><p id="managed-login-error" role="alert" hidden></p>
-    </form>
-    <button id="managed-login-back" class="btn" type="button" hidden>ログインへ戻る</button>
-    <details id="managed-login-help"><summary>初めての方・パスワードを忘れた方</summary><p>管理者から設定リンクを受け取り、メールアドレスとパスワードを設定してください。</p></details>
+    <div id="managed-access"></div>
    </div></section>
-   <dialog id="managed-account" aria-labelledby="managed-account-title"><h2 id="managed-account-title">アカウント</h2>
-    <p id="managed-account-email"></p><p id="managed-account-help" hidden>管理者から初回設定リンクを受け取ってください。</p>
-    <form id="managed-password-form">
-     <input id="managed-account-username" type="text" name="username" autocomplete="username" hidden>
-     <label for="managed-current-password">現在のパスワード</label><input id="managed-current-password" type="password" name="current-password" required autocomplete="current-password">
-     <label for="managed-new-password">新しいパスワード</label><input id="managed-new-password" type="password" name="new-password" required autocomplete="new-password" aria-describedby="managed-new-password-help">
-     <p id="managed-new-password-help" class="note">8文字以上。変更すると他の端末はログアウトします。</p><button class="btn primary" type="submit">パスワードを変更</button>
-    </form><p id="managed-account-status" role="status" hidden></p><p id="managed-account-error" role="alert" hidden></p><button id="managed-logout" class="btn" type="button" hidden>ログアウト</button><button id="managed-account-close" class="btn" type="button">閉じる</button>
+   <dialog id="managed-account" class="managed-settings" aria-labelledby="managed-account-title">
+    <header class="managed-dialog-head"><h2 id="managed-account-title">アカウント</h2><button id="managed-account-close" class="btn managed-dialog-close" type="button" aria-label="アカウントを閉じる">閉じる</button></header>
+    <div class="managed-dialog-body">
+     <section class="managed-identity" aria-label="ログイン中のアカウント"><p class="managed-section-label">ログイン中</p><p id="managed-account-email"></p></section>
+     <a class="managed-integration" href="/connect"><span><strong>AIとの連携</strong><small>Claude Code・ChatGPTの接続を管理</small></span><span aria-hidden="true">→</span></a>
+     <p id="managed-account-help" class="managed-setting-note" hidden>パスワードでログインするには、管理者から初回設定リンクを受け取ってください。</p>
+     <details id="managed-password-section" class="managed-settings-section"><summary>パスワードを変更</summary>
+      <form id="managed-password-form">
+       <input id="managed-account-username" type="text" name="username" autocomplete="username" hidden>
+       <label for="managed-current-password">現在のパスワード</label><input id="managed-current-password" type="password" name="current-password" required autocomplete="current-password">
+       <label for="managed-new-password">新しいパスワード</label><input id="managed-new-password" type="password" name="new-password" required autocomplete="new-password" minlength="8" aria-describedby="managed-new-password-help">
+       <p id="managed-new-password-help" class="note">8文字以上。変更すると他の端末はログアウトします。</p><button class="btn primary" type="submit">パスワードを変更</button>
+      </form>
+     </details>
+     <p id="managed-account-status" class="public-status" role="status" hidden></p><p id="managed-account-error" class="public-error" role="alert" hidden></p>
+     <div class="managed-account-session"><button id="managed-logout" class="btn" type="button" hidden>この端末からログアウト</button></div>
+    </div>
    </dialog>
-   <dialog id="managed-credits" aria-labelledby="managed-credits-title"><h2 id="managed-credits-title">クレジット</h2><p id="managed-balance"></p><p>追加はサービス管理者へお問い合わせください。</p><div id="managed-ledger"></div><button id="managed-more" class="btn" hidden>もっと見る</button><button id="managed-credits-close" class="btn">閉じる</button></dialog>
+   <dialog id="managed-credits" class="managed-settings" aria-labelledby="managed-credits-title">
+    <header class="managed-dialog-head"><h2 id="managed-credits-title">クレジット</h2><button id="managed-credits-close" class="btn managed-dialog-close" type="button" aria-label="クレジットを閉じる">閉じる</button></header>
+    <div class="managed-dialog-body">
+     <section class="managed-wallet" aria-label="クレジット残高"><div id="managed-balance" role="status"></div><p class="managed-setting-note">確保中のクレジットは発信前に取り置きし、通話の精算後、未使用分を残高に戻します。</p></section>
+     <p id="managed-credits-error" class="public-error" role="alert" hidden></p><button id="managed-credits-retry" class="btn" type="button" hidden>残高と履歴を読み直す</button>
+     <div id="managed-purchases"></div>
+     <details id="managed-ledger-section" class="managed-settings-section"><summary>利用履歴</summary><p class="managed-setting-note">古い順に表示しています。追加・確保・消費・返却を確認できます。</p><p id="managed-ledger-status" class="managed-setting-note" role="status"></p><p id="managed-ledger-error" class="public-error" role="alert" hidden></p><ul id="managed-ledger" class="managed-ledger"></ul><button id="managed-more" class="btn" type="button" hidden>続きを読み込む</button></details>
+    </div>
+   </dialog>

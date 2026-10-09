@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { OutputQueue, type AudioChunk } from "@oathra/voice";
+import { MULAW_8K, type VoiceEngine, type VoiceOutput } from "@oathra/voice";
+import { PhoneTransport, type CarrierTransport } from "@oathra/phone";
 import { LiveKitSipGateway, type LiveKitClients } from "./index.js";
 import type { RemoteFrame, RtcRoom } from "./rtc.js";
 
@@ -183,5 +185,34 @@ describe("LiveKit live", () => {
   it.skipIf(!LIVE)("lists outbound trunks with real credentials (read-only)", async () => {
     const checks = await new LiveKitSipGateway().check();
     expect(checks.every((c) => c.ok)).toBe(true);
+  });
+});
+
+describe("LiveKit: the notice", () => {
+  it("LiveKit has no carrier announcement: a speech-to-speech call gets the notice audio once, on connect, ahead of the model's audio", async () => {
+    const f = fakeClients([{ sipTrunkId: "ST_1", name: "t", address: "a", numbers: [], authUsername: "", transport: 0 }]);
+    const room = fakeRoom();
+    const g = gw(f.clients, () => room);
+    const carrier: CarrierTransport = { providerId: "sip", path: "sip", describe: () => "LiveKit", dial: (o) => g.dial("ST_1", o) };
+    const out = new OutputQueue<VoiceOutput>();
+    const engine: VoiceEngine = {
+      id: "fake-live", label: "Fake Live", speaksItself: true, nativeAudio: MULAW_8K, requires: [],
+      start: async () => ({ output: out, input() {}, interrupt() {}, async close() { out.close(); }, now: () => 0 }),
+    };
+    const asked: string[] = [];
+    // 40 ms of μ-law = 4 LiveKit frames of 10 ms.
+    const notice: AudioChunk = { ...MULAW_8K, data: new Uint8Array(320).fill(0xff) };
+    const session = await new PhoneTransport(carrier, engine, { recordDir: "/tmp/rec", noticeAudio: async (text) => (asked.push(text), notice) }).connect({ phone: "+819000000000" }, { language: "ja", contract: {} as never });
+    expect(asked).toEqual(["この通話は記録されています。"]);
+    expect(room.captured).toHaveLength(0);
+
+    room.emitCallee();
+    room.remote.push({ data: new Int16Array(480), sampleRate: 48000, channels: 1 });
+    out.push({ type: "audio", chunk: { ...MULAW_8K, data: new Uint8Array(160).fill(0xff) } }); // 20 ms from the model
+    await new Promise((r) => setTimeout(r, 15));
+    expect(room.captured).toHaveLength(4); // the notice alone so far
+    await new Promise((r) => setTimeout(r, 80));
+    expect(room.captured).toHaveLength(6); // then the model, and no second notice
+    await session.hangup();
   });
 });

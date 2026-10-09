@@ -9,7 +9,7 @@
 import type { CallContract } from "@oathra/contract";
 import type { DeskAnswer, DeskBooked, DeskRefusal, DeskRequest } from "@oathra/core";
 import { parseDates, parsePartySize, parseTimes, type Language } from "@oathra/evidence";
-import { conversationPolicies } from "./phone-message.js";
+import { conversationPolicies, receptionDialogue } from "./phone-message.js";
 
 export type ReservationDesk = {
   check(request: DeskRequest): DeskAnswer | Promise<DeskAnswer>;
@@ -77,6 +77,7 @@ export function restaurantReceptionInstructions(contract: CallContract): string 
     "同じ電話の中で内容を変えたいと言われたら、新しい内容を復唱して「はい」をもらい、もう一度 book_table を呼んでください（前の予約は置き換わります）。",
     "料金、割引、貸切、コース内容、アレルギー対応、キャンセル料など、台帳にないことは約束しないでください。「私からはお答えできないので、店の者に申し伝えます」と答えてください。支払い情報やカード番号は聞かないでください。予約以外の用件（営業、取材など）は、お名前と用件だけ聞いて「申し伝えます」と答えてください。",
     "相手が「誰?」「AI?」と聞いたら、AIの受付であることを最優先で答えてください。",
+    receptionDialogue("ja"),
     conversationPolicies("ja"),
     "予約が済んだ、相手が切りたいと言った、無言や自動音声が続く場合は、短く挨拶してend_callで終了してください。",
     `Maximum call duration: ${Math.round(contract.budget.maxDurationMs / 1000)} seconds.`,

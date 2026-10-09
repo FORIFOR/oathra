@@ -1,8 +1,11 @@
-FROM node:22.16.0-bookworm-slim AS build
+FROM node:22.16.0-bookworm-slim AS compile
 RUN corepack enable
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm build
+# The compile target can be inspected without running the fixture-based suite.
+# The default deployment still requires the complete gateway test stage.
+FROM compile AS build
 RUN node --test apps/gateway/test/*.node.mjs
 FROM node:22.16.0-bookworm-slim
 WORKDIR /app

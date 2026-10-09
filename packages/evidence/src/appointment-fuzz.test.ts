@@ -147,6 +147,9 @@ function judge(d: Dialogue) {
   return evaluate(CONTRACT, engine, "completed");
 }
 
+// 10,000 full evaluate() runs take 10-25 s depending on the machine; the count and the zero-false-completion bar stay.
+const FUZZ_TIMEOUT_MS = 120_000;
+
 describe("appointment adversarial fuzz", () => {
   it("10,000 seeded sales dialogues: no false completion", () => {
     const RUNS = 10_000;
@@ -172,5 +175,5 @@ describe("appointment adversarial fuzz", () => {
       const k = byKind.get(kind)!;
       expect(k.completed / k.expected, kind).toBeGreaterThan(0.99);
     }
-  });
+  }, FUZZ_TIMEOUT_MS);
 });

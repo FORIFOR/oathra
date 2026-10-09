@@ -1,3 +1,4 @@
+import { prereleaseMessages } from './public-service.js';
 export const labels = {
     back: '戻る', home: 'ホーム', contacts: '連絡先', realPhone: '電話をかける', arena: '', skip: '本文へ移動', homeKicker: '連絡先と電話', homeTitle: '何をしたいですか？', homeLead: '', homePhoneTitle: '電話をかける', homePhoneText: '電話番号・相手・目的を入力します。', phoneUnavailable: '発信前に内容と利用クレジットを確認できます。', homePhoneAction: '電話をかける', homeContactsTitle: '連絡先', homeContactsText: '名前・会社名・前回の内容を保存できます。', homeContactsAction: '連絡先を開く', phoneTitle: '電話をかける', contactPick: '連絡先から選ぶ', phoneNumber: '電話番号', phoneName: '相手', phoneTemplate: 'テンプレート（任意）', phoneTemplateBlank: '使わない', phoneInstruction: '目的', phoneInputHelp: '入力のヒント', phoneHelp: '日本の番号は0から、海外の番号は+と国番号から入力してください。', phoneTemplateHint: '{{項目}}を具体的な内容に書き換えてください。予約の確定・購入・支払いは行いません。', phoneReview: '電話する', phoneClear: '入力を消去', phoneReviewTitle: '発信前の確認', phonePrivacy: '確認だけでは発信しません。', phoneConsent: '相手・目的・送信先・クレジットの消費条件・会話の保存に同意します。', phoneDial: '同意して電話する', phoneSetupAction: '接続状況を確認', phoneProgress: '電話の状況', phoneRefresh: '更新', endCall: '通話を終了', phoneResolve: '通信会社の状態を確認', phoneTranscript: '会話の文字起こし', phoneHistory: '履歴から使う', contactsReload: '更新', contactsIntro: '', contactNew: '連絡先を追加', contactSearch: '名前・会社名で検索', contactBack: '一覧に戻る', contactHint: '', contactName: '名前', contactCompany: '会社名', contactPhone: '電話番号（任意）', contactLast: '前回の電話内容', contactExtra: 'メール・メモ', contactEmail: 'メール', contactNotes: 'メモ', contactSave: '保存', contactUse: 'この相手に電話', contactUseNote: '', contactHistory: '通話履歴', contactHistoryNote: '', contactResume: '編集中に戻る'
 };
@@ -5,6 +6,8 @@ export const stateLabel = {
     draft: '下書き（未発信）', starting: '発信準備中', running: '通話中', stopping: '終了を確認中', ended: '通話終了', failed: '通話は完了しませんでした', unknown: '結果未確認'
 };
 export const errorText = {
+    ...prereleaseMessages,
+    purchase_account_blocked: '購入について運営が確認中のため、新しい発信を受け付けられません。クレジットから購入履歴を確認し、運営へお問い合わせください。',
     voice_engine_unavailable: 'この音声AIはこのサーバーでは使えません。別の音声AIを選んでください。',
     contact_name_or_company_required: '名前か会社名を入力してください。',
     execution_failed: '通話を実行できませんでした。保存された会話と状況を確認してください。',

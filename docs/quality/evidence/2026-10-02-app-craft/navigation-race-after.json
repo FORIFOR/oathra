@@ -1,0 +1,35 @@
+{
+  "observedAt": "2026-10-01T18:05:54.953Z",
+  "method": "Actual Chrome CDP Network.emulateNetworkConditions, 800ms latency; first route hash and pending Fetch completion observed; real pointer navigation; no response interception",
+  "sourceHash": "5c02f4255533693c2c732e3c8e249b1d99d4bfda219e55c6bb16716510fa21e8",
+  "cases": [
+    {
+      "id": "cost_then_home",
+      "status": "PASS",
+      "expected": "Home navigation wins after older asynchronous route work settles",
+      "observed": {
+        "routeIsHome": true,
+        "renderedTitle": "ホーム",
+        "renderedHome": true,
+        "firstRouteObserved": true,
+        "fetchesSinceFirstNavigation": 11,
+        "pendingFetches": 0
+      }
+    },
+    {
+      "id": "new_then_home",
+      "status": "PASS",
+      "expected": "Home navigation wins after older asynchronous route work settles",
+      "observed": {
+        "routeIsHome": true,
+        "renderedTitle": "ホーム",
+        "renderedHome": true,
+        "firstRouteObserved": true,
+        "fetchesSinceFirstNavigation": 8,
+        "pendingFetches": 0
+      }
+    }
+  ],
+  "sourceUnchanged": true,
+  "runtimeExceptions": 0
+}

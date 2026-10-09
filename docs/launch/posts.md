@@ -1,5 +1,14 @@
 # Launch posts and publication record
 
+## Distribution reassessment — 2026-10-01 22:37 JST
+
+- `node scripts/growth-snapshot.mjs` captured at `2026-10-01T13:37:14.797Z`: 0 stars / 0 forks; available 14-day window 25 views / 9 unique visitors and 2,159 clones / 425 unique cloners; latest traffic bucket is 2026-09-30. v0.1.19 assets have 2 downloads each. The outside issue list is empty; Zenn launch remains 1 like / 0 comments and evidence article 0 / 0. Counts are unchanged from the preceding check and include possible maintainer/automation activity, not confirmed users. Private inquiries and website conversions are not measured by this snapshot.
+- GitHub Discussion [#14](https://github.com/FORIFOR/oathra/discussions/14) was read through GraphQL: three comments by `FORIFOR`, no replies, last updated `2026-09-14T12:43:46Z`. No concrete outside feedback was found there.
+- The low-reach result after more than 72 hours justifies changing the next announcement's entry and wording. [The single active X draft](x-transcript-check.txt) now says that completion checks can be added to an existing voice AI, links directly to `/en/check.html`, and asks about an actual missed condition. It keeps the Arena simulator label and the existing video attachment. This draft has not been published; no X API retry or media upload occurred. Latest-timeline verification, the 24-hour gate and duplicate review remain mandatory.
+- Current primary-source research: the [LiveKit community guide](https://docs.livekit.io/intro/community/) lists the forum and Slack separately; [guidelines](https://community.livekit.io/guidelines) restrict unsolicited promotion to designated channels. The [public forum categories](https://community.livekit.io/categories) did not list `show-and-tell`, and `Announcements` is for LiveKit team announcements. [Welcome guidance](https://community.livekit.io/t/welcome-to-the-livekit-community/49) requires an appropriate category and at least one tag; it is not permission for a promotional post in a support category.
+- The [official Slack invitation](https://livekit.io/join-slack) redirects to Slack; current workspace access and actual promotion-channel rules could not be verified. Corrected the unpublished [LiveKit draft's destination and checklist](livekit-show-and-tell-draft.md). No join, login, post or message was made. Revisit when access/rules change, not on every hourly check.
+- Next checkpoint: verify eligibility immediately before any new X publication, record its ID/URL/time only on confirmed success, then assess actual responses after 48–72 hours. No confirmed outside users, business success, or live LiveKit integration is claimed from this work.
+
 ## Measurement checkpoint — 2026-09-24 18:21 JST
 
 - The read-only snapshot remains at 0 stars / 0 forks.
