@@ -210,6 +210,9 @@ function judge(d: Dialogue) {
 
 const show = (seed: number, d: Dialogue, fields: unknown) => `seed ${seed} [${d.kind}] want=${d.order.quantity} ${d.order.date} got=${JSON.stringify(fields)}\n  ${d.lines.map((l) => l.join(": ")).join("\n  ")}`;
 
+// 10,000 full evaluate() runs take 10-25 s depending on the machine; the count and the zero-false-completion bar stay.
+const FUZZ_TIMEOUT_MS = 120_000;
+
 describe("quantity adversarial fuzz", () => {
   it("10,000 seeded supplier dialogues where the order was not agreed: no false completion", () => {
     const RUNS = 10_000;
@@ -228,7 +231,7 @@ describe("quantity adversarial fuzz", () => {
     expect(count).toBe(0);
     // every kind of disagreement was actually exercised
     for (const kind of KINDS) expect(byKind.get(kind) ?? 0, kind).toBeGreaterThan(300);
-  });
+  }, FUZZ_TIMEOUT_MS);
 
   it("2,000 seeded clean agreements still complete, with the requested quantity and date", () => {
     const RUNS = 2_000;
