@@ -15,7 +15,7 @@ try{
  const link=app.service.passwords.issue(user.id).url;
  page=await launch({width:1280,height:900});await page.goto(link);assert.equal(await page.js('location.hash'),'');assert.equal(await page.js("document.querySelector('#managed-token')"),null);
  assert.equal(await page.text('#managed-login-title'),'ログイン方法を設定');assert.match(await page.text('#managed-password-help'),/^8文字以上/);await page.screenshot(join(out,'setup.png'));
- await submit(email,password.slice(0,7));await page.until("document.querySelector('#managed-login-error').textContent.includes('8〜128')");assert.equal(app.service.passwords.get(user.id),null);
+ await submit(email,password.slice(0,7));await page.until("document.querySelector('#managed-password').validity.tooShort || document.querySelector('#managed-login-error').textContent.includes('8文字以上')");assert.equal(app.service.passwords.get(user.id),null);
  await fill('#managed-password',password);await page.press('Enter');await page.until("!document.querySelector('#screen-real').hidden");
  assert.equal(await page.js('document.cookie'),'');assert.match(await page.text('#managed-credit-button'),/^6 /);assert.equal(app.store.list('contact',user.id)[0].id,contact.id);
  await page.goto(base);await page.until("!document.querySelector('#screen-real').hidden");await logout();
@@ -23,6 +23,7 @@ try{
  await submit(email,'wrong');await page.until("document.querySelector('#managed-login-error').textContent.includes('違います')");await page.screenshot(join(out,'invalid-login.png'));
  await fill('#managed-password',password);await page.press('Enter');await page.until("!document.querySelector('#screen-real').hidden");
  await page.click('#managed-account-button');await page.until("document.querySelector('#managed-account').open");assert.equal(await page.text('#managed-account-email'),email);assert.match(await page.text('#managed-new-password-help'),/^8文字以上/);
+ await page.click('#managed-password-section summary');await page.until("document.querySelector('#managed-password-section').open");
  await fill('#managed-current-password',password);await fill('#managed-new-password',password+'改');await page.press('Enter');await page.until("document.querySelector('#managed-account-status').textContent.includes('変更しました')");
  assert.equal(await page.js("document.querySelector('#managed-new-password').value"),'');assert.ok(await page.noSidewaysScroll());await page.screenshot(join(out,'password-changed-mobile.png'));
  await page.press('Escape');assert.equal(await page.js("document.querySelector('#managed-account').open"),false);
