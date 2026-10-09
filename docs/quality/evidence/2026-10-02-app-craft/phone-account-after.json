@@ -1,0 +1,226 @@
+{
+  "observedAt": "2026-10-01T18:02:49.034Z",
+  "origin": "http://127.0.0.1:61758",
+  "checks": [
+    {
+      "name": "actual_operator_login",
+      "pass": true
+    },
+    {
+      "name": "account_desktop_visible_close",
+      "pass": true
+    },
+    {
+      "name": "account_desktop_no_overflow",
+      "pass": true
+    },
+    {
+      "name": "account-after-desktop_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "password_desktop_labels_and_validation",
+      "pass": true
+    },
+    {
+      "name": "credits_desktop_actual_balance",
+      "pass": true
+    },
+    {
+      "name": "credits_desktop_one_pause_notice",
+      "pass": true
+    },
+    {
+      "name": "credits_desktop_no_checkout",
+      "pass": true
+    },
+    {
+      "name": "credits_desktop_no_overflow",
+      "pass": true
+    },
+    {
+      "name": "credits_desktop_close_reachable",
+      "pass": true
+    },
+    {
+      "name": "credits-after-desktop_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "ledger_desktop_semantic_rows",
+      "pass": true
+    },
+    {
+      "name": "ledger_desktop_close_stays_in_view",
+      "pass": true
+    },
+    {
+      "name": "account_mobile_visible_close",
+      "pass": true
+    },
+    {
+      "name": "account_mobile_no_overflow",
+      "pass": true
+    },
+    {
+      "name": "account-after-mobile_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "password_mobile_labels_and_validation",
+      "pass": true
+    },
+    {
+      "name": "password-after-mobile_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "credits_mobile_actual_balance",
+      "pass": true
+    },
+    {
+      "name": "credits_mobile_one_pause_notice",
+      "pass": true
+    },
+    {
+      "name": "credits_mobile_no_checkout",
+      "pass": true
+    },
+    {
+      "name": "credits_mobile_no_overflow",
+      "pass": true
+    },
+    {
+      "name": "credits_mobile_close_reachable",
+      "pass": true
+    },
+    {
+      "name": "credits-after-mobile_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "ledger_mobile_semantic_rows",
+      "pass": true
+    },
+    {
+      "name": "ledger_mobile_close_stays_in_view",
+      "pass": true
+    },
+    {
+      "name": "account_small_visible_close",
+      "pass": true
+    },
+    {
+      "name": "account_small_no_overflow",
+      "pass": true
+    },
+    {
+      "name": "password_small_labels_and_validation",
+      "pass": true
+    },
+    {
+      "name": "credits_small_actual_balance",
+      "pass": true
+    },
+    {
+      "name": "credits_small_one_pause_notice",
+      "pass": true
+    },
+    {
+      "name": "credits_small_no_checkout",
+      "pass": true
+    },
+    {
+      "name": "credits_small_no_overflow",
+      "pass": true
+    },
+    {
+      "name": "credits_small_close_reachable",
+      "pass": true
+    },
+    {
+      "name": "credits-after-small_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "ledger_small_semantic_rows",
+      "pass": true
+    },
+    {
+      "name": "ledger_small_close_stays_in_view",
+      "pass": true
+    },
+    {
+      "name": "offline_balance_not_zero",
+      "pass": true
+    },
+    {
+      "name": "credits-offline-mobile_privacy_mask",
+      "pass": true
+    },
+    {
+      "name": "balance_recovery_within_dialog",
+      "pass": true
+    },
+    {
+      "name": "purchase_error_in_dialog",
+      "pass": true
+    },
+    {
+      "name": "purchase_refresh_recovers",
+      "pass": true
+    },
+    {
+      "name": "logout_error_visible_inside_dialog",
+      "pass": true
+    },
+    {
+      "name": "keyboard_close",
+      "pass": true
+    },
+    {
+      "name": "no_runtime_exception",
+      "pass": true
+    },
+    {
+      "name": "owned_sources_unchanged_during_capture",
+      "pass": true
+    }
+  ],
+  "images": [
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-after-desktop.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-after-desktop.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-after-mobile.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-password-after-mobile.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-after-mobile.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-after-small.png",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-offline-mobile.png"
+  ],
+  "privacy": "Account email and backdrop UI hidden via CSSOM solely for screenshots, verified by computed style. No content replacement.",
+  "limits": [
+    "Stripe prices, paid/pending/blocked purchase display: source review only; no configured actual Stripe account or purchase",
+    "Password change: form/empty-submit only; existing credentials not changed",
+    "Desktop Chrome emulated viewport, not physical mobile device"
+  ],
+  "sourceBefore": {
+    "apps/gateway/public/phone/account.js": "f26144226067257b776f7d8cfe94937f00e6f360cc3636941234cb4fd20a1980",
+    "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+    "apps/gateway/public/phone/public-service.js": "051ce08100b64e72802a9465da4229aa211a6c91f87008e610d3e18c530f43f1",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310"
+  },
+  "observed": {
+    "available": 206,
+    "held": 0,
+    "passwordLogin": true,
+    "ledgerEntries": 65
+  },
+  "pageErrors": [],
+  "sourceAfter": {
+    "apps/gateway/public/phone/account.js": "f26144226067257b776f7d8cfe94937f00e6f360cc3636941234cb4fd20a1980",
+    "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+    "apps/gateway/public/phone/public-service.js": "051ce08100b64e72802a9465da4229aa211a6c91f87008e610d3e18c530f43f1",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310"
+  }
+}

@@ -10,7 +10,7 @@ import { delimiter, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { defineCall, parsePhoneRequest, PRESET_VOICES, resolvePhoneVoice, type CallContract, type PhoneRequest } from "@oathra/contract";
 import type { BrainProvider } from "@oathra/core";
-import { recordingNotice } from "@oathra/core";
+import { recordingNotice, transcriptNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { GeminiTTS } from "@oathra/gemini";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
@@ -806,10 +806,16 @@ export async function runPhoneCall(flags: PhoneCallFlags): Promise<void> {
         const cfg = config.providers[route.provider.id] ?? {};
         route.transport = route.provider.transport({ config: { ...cfg, publicWsUrl, port }, env: process.env });
       }
-      const transport = new PhoneTransport(route.transport, engine, { ...(recordDir ? { recordDir } : {}) });
+      const transport = new PhoneTransport(route.transport, engine, {
+        ...(recordDir ? { recordDir } : {}),
+        // A carrier that does not announce the call has the notice played by the bridge; a speech-to-speech engine needs it as audio.
+        noticeAudio: async (text, language) => ({ ...MULAW_8K, data: await new OpenAITTS().synthesizeMulaw8k(text, { language }) }),
+      });
       console.log(`${dim("Dialing via")} ${route.provider.label} ${dim(`(${route.transport.path})`)} ...`);
       // Only the direct Twilio path records audio; it announces that to the callee before anything else.
-      console.log(recordDir && route.transport.path === "direct" ? dim(`The call is recorded to ${recordDir}; the callee hears "${recordingNotice(contract.language)}" first. Use --no-save to neither record nor announce.\n`) : "");
+      // The other paths keep the transcript, and the callee hears that first instead.
+      console.log(recordDir && route.transport.path === "direct" ? dim(`The call is recorded to ${recordDir}; the callee hears "${recordingNotice(contract.language)}" first. Use --no-save to neither record nor announce.\n`)
+        : recordDir && !route.transport.playsNotice ? dim(`The transcript is saved to ${recordDir}; the callee hears "${transcriptNotice(contract.language)}" first. Use --no-save to neither keep nor announce.\n`) : "");
       const outcome = await runCall({
         contract,
         transport,

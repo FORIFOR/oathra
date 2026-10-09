@@ -1,0 +1,188 @@
+{
+  "reviewedAt": "2026-10-01T17:25:58.835Z",
+  "reviewer": "Independent distribution_rules agent; no production UI edits in this iteration",
+  "scope": [
+    "Managed root /",
+    "/app/",
+    "/connect"
+  ],
+  "environment": {
+    "origin": "http://127.0.0.1:59140",
+    "revision": "db56271fd4b6a01ae51f577ed2692c7f89b3b7a2",
+    "node": "v25.2.1",
+    "browser": "Real local Chrome through Chrome DevTools Protocol",
+    "workerStarted": false,
+    "providerCredentialsCopied": false,
+    "liveReady": false,
+    "prereleasePaused": true,
+    "registrationEnabled": false,
+    "mcpEnabled": true,
+    "physicalDevice": false
+  },
+  "independenceLimit": "Reviewer has prior security-review context; this is not a blinded study with a new external user.",
+  "sourceManifest": {
+    "collectedAt": "2026-10-01T17:25:58.835Z",
+    "hashAlgorithm": "sha256",
+    "hashes": {
+      "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129",
+      "apps/gateway/public/app/app.js": "26d35d59a2db7a81a7595ccdd319c1e7347c5e404648a315f1808b955736afc9",
+      "apps/gateway/public/app/style.css": "96250c59d828c2a3495e77a6a2f9b45dca43b2fc058cb7ebb9789a73035ed01f",
+      "apps/gateway/public/phone/public-service.js": "6c2854abfe25368bc9aa88f60d1020871b011f47be5226ff6451c0bfff54d7b4",
+      "apps/gateway/public/phone/public-service.css": "4ed751c07886f71cdba62c2c6f6e3fdff3d7381d29d4ce563226881db87296b6",
+      "apps/gateway/public/managed-phone.css": "28f153f326f8e3a543e040a2e13d883d27c3e81de37c8f7c2154672dd2cc5ea6",
+      "apps/gateway/lib/phone-ui.mjs": "e5dadf82d792e9a34fa6ef12a306ea3fe8491b91994c04f45dcba10e2cf4fc56",
+      "apps/gateway/public/connect/index.html": "b910aa39d83604bb8520095c023e76f4d4347af99dea8340f0296a29caf0bc49",
+      "apps/gateway/public/connect/connect.js": "ff34baa643735011a531f4fd279723156121d33b64d167180b9a7e049b8eb897",
+      "apps/gateway/public/connect/connect.css": "e74d0631f7f00bba63c39fdd7d5fcee8e88969bbe734b567d764d43c039bbf30",
+      "apps/gateway/public/phone/account.js": "51388fc020bc6e106a8eb77c07030bdd4156f83ccb7417e3a59921128a88a2cd"
+    },
+    "originalCaptureFiles": 10,
+    "currentFiles": 11,
+    "originalCaptureAndInteractionHashesMatch": true,
+    "originalFilesStillMatch": true,
+    "additionalFileNote": "phone/account.js was added to this final review manifest after observations. It was not included in the capture/interaction before-and-after hashes, so stability during those earlier runs is not inferred."
+  },
+  "evidence": {
+    "capture": "final-first-use.json",
+    "interactions": "final-interactions.json",
+    "before": "before-independent-review.json",
+    "preview": "preview.json",
+    "imagesOpenedAndVisuallyReviewed": [
+      "final-managed-root-1440.png",
+      "final-managed-root-768.png",
+      "final-managed-root-390.png",
+      "final-managed-root-360.png",
+      "final-managed-root-320.png",
+      "final-app-1440.png",
+      "final-app-768.png",
+      "final-app-390.png",
+      "final-app-360.png",
+      "final-app-320.png",
+      "final-connect-1440.png",
+      "final-connect-768.png",
+      "final-connect-390.png",
+      "final-connect-360.png",
+      "final-connect-320.png",
+      "final-720-managed-root.png",
+      "final-csszoom-managed-root.png",
+      "final-720-app.png",
+      "final-csszoom-app.png",
+      "final-720-connect.png",
+      "final-csszoom-connect.png",
+      "final-connect-dark-390.png"
+    ],
+    "imagesSha256": {
+      "final-managed-root-1440.png": "b2c15cbe04748bc0ff5ffdfc5ebc9d4cb8088a5499c6e8544c81873f003ec859",
+      "final-managed-root-768.png": "f7794a2c5637e295978d8cc47c85caad70a486e73d52e6686660164ec31ad073",
+      "final-managed-root-390.png": "6a6f8a334e679528b981698a6062676ca41babb0f173ed5d88d2cccdd3bf19bf",
+      "final-managed-root-360.png": "e8ca999d36df609b2378d8be7d423f1a37fef02e55d64fb35894dad61d78ed4c",
+      "final-managed-root-320.png": "46d2c9bea512beba96b83b2bd0a767382430653dcd02668b204987910c4a983f",
+      "final-app-1440.png": "15e6eaf001f5691647646bdb98fc3735aae9893affdc0209cae6a66cd1d1ae8e",
+      "final-app-768.png": "71d4654ae200445a500591abe62892d5029c6bde538acd1a53c3baaa3fa1514a",
+      "final-app-390.png": "d86a5d07a3d4c8587f4ab6a93ca58142c74b305f3360ee9910b3ba25bb29ced6",
+      "final-app-360.png": "c78f583de4e5ae6529525a3c72b6bdc648c9b99b8b695302ed3660f91e15a79c",
+      "final-app-320.png": "06060b4a787deaff54c691d85aeda301d8659b6390f94908496c4edf8a0f7a59",
+      "final-connect-1440.png": "0a1bbd76f36ec470826e3fb231f83b0cae0b5faf1682923cec123a6cec647206",
+      "final-connect-768.png": "ae6dd87a50b52aacb59ebdfa7489b1219442e835a625902cc733a3996fab0524",
+      "final-connect-390.png": "5b744eb79f73d830b4c7a25423beb03ceb76f0494ff37ed56587113cb0576f93",
+      "final-connect-360.png": "fcc6fe92a784db257ccd5ba52ae02024149de264d4d2483f3cb5e1a21369d49d",
+      "final-connect-320.png": "559311f642b4538af98c72de35db4c9717674588cce4a2648633c511382c5e64",
+      "final-720-managed-root.png": "675d3e56fc4154634d794de2a806f054b31752b8248f41bae26076e53f4270c3",
+      "final-csszoom-managed-root.png": "0e18dd3f001f24329f37f6db2e2da62560aa1fd38af03874b253c6df0f87512f",
+      "final-720-app.png": "4bd2ab9b564ac1e095b24503172fda1b12900e5c41e6f2fbfa57bdfc54ead579",
+      "final-csszoom-app.png": "4ebd4bc3b241ddc142e63c930634d7f0ff089334217778d5581338fa376db74b",
+      "final-720-connect.png": "b0325aa113073e9a5c7b30a1157fa86c451177a58e261921c5be3e1b3c2a4d66",
+      "final-csszoom-connect.png": "ff6889056b0d66c2f44a16745e19d93fdf2e593c2b6372f4237db33691423b7c",
+      "final-connect-dark-390.png": "59e342ce9d76afbd1f450e7076853454fadaa3c50a37d16c287bad64c96d1797"
+    }
+  },
+  "results": [
+    {
+      "id": "entry_discovery",
+      "status": "PASS",
+      "expected": "A logged-out visitor can find the transcript check and AI connection entry before the paused login form.",
+      "observed": "Both links are visibly placed after the main value statement and before login at 320, 360, 390 and 768 widths on managed root and app.",
+      "beforeIssue": "P2 new visitor reached a paused registration/login dead end."
+    },
+    {
+      "id": "connect_setup_priority",
+      "status": "PASS",
+      "expected": "Visitor sees the selected client setup before authentication/authorization detail.",
+      "observed": "Claude Code setup and copy command appear before login; ChatGPT tab shows endpoint/instructions and disables copying the local-only endpoint.",
+      "beforeIssue": "P2 setup URL/command was buried after authentication and pause notices."
+    },
+    {
+      "id": "visual_reflow",
+      "status": "PASS",
+      "expected": "All three entries remain legible without horizontal overflow across tested widths.",
+      "observed": {
+        "widths": [
+          1440,
+          768,
+          390,
+          360,
+          320
+        ],
+        "captures": 15,
+        "horizontalOverflowCount": 0,
+        "runtimeExceptions": 0
+      },
+      "beforeIssue": "Managed root now uses the shared jade mark and the duplicated padding/notice hierarchy was reduced."
+    },
+    {
+      "id": "interaction_contracts",
+      "status": "PASS",
+      "expected": "Tab selection, keyboard focus, details disclosure, clipboard, empty form validation and error recovery work without fabricated business records.",
+      "observed": {
+        "pass": 38,
+        "fail": 0,
+        "runtimeExceptions": 0
+      },
+      "evidence": "final-interactions.json"
+    },
+    {
+      "id": "paused_truth",
+      "status": "PASS",
+      "expected": "Current paused state remains visible and does not advertise ready live calls.",
+      "observed": "Pause text stays visible outside details. Existing operator home reports paused and simulator practice state, without a live-ready claim; no PII screenshot saved."
+    },
+    {
+      "id": "visual_dark_motion",
+      "status": "PASS",
+      "expected": "Connect dark theme remains readable and reduced-motion removes tab movement.",
+      "observed": "Dark 390px screenshot inspected; reduced-motion tab transition computed to 0s. Contrast ratios were not measured."
+    },
+    {
+      "id": "native_browser_zoom_200",
+      "status": "BLOCKED",
+      "expected": "Confirm native browser 200% zoom and text scaling on supported client environments.",
+      "observed": "Only CSS zoom 2 and 720 CSS-pixel reflow were exercised. CSS zoom preserves desktop media queries and produces long heading wraps; no native-zoom or WCAG-conformance claim is made."
+    },
+    {
+      "id": "sales_draft_and_mission_success",
+      "status": "BLOCKED",
+      "expected": "Inspect a real existing sales draft through review and completion.",
+      "observed": "No suitable existing sales record. No synthetic customer, product, mission or conversation was created."
+    },
+    {
+      "id": "physical_device_and_official_clients",
+      "status": "BLOCKED",
+      "expected": "Confirm actual iOS/Safari and official Claude Code/ChatGPT connection.",
+      "observed": "Local Chrome responsive emulation only; those clients/devices were not exercised."
+    },
+    {
+      "id": "award_jury_and_external_usability",
+      "status": "BLOCKED",
+      "expected": "External first-use assessment and actual award evaluation.",
+      "observed": "No external study or jury review. The isolated checks do not establish Awwwards/Webby/FWA award quality."
+    }
+  ],
+  "remainingActionableP1P2InObservedScope": [],
+  "limits": [
+    "No actual call, payment, email, registration, public deployment or new business data mutation was performed.",
+    "Native clipboard values and authenticated private content were not persisted.",
+    "Browser offline mode was exercised through the real CDP Network domain; no application response stubs were installed.",
+    "Preview uses a native backup of existing records with no worker or provider credentials; final business-record hash and cleanup are recorded in preview.json only after shutdown.",
+    "The public marketing site, all authenticated workflows, accessibility conformance, latency and Core Web Vitals are outside this report."
+  ]
+}

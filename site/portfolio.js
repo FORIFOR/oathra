@@ -2,10 +2,12 @@
  'use strict';
  const script=document.currentScript, product=script.dataset.product, language=document.documentElement.lang==='ja'?'ja':'en';
  const endpoint='https://ai-meeting-broker-pdygkns5gq-an.a.run.app/api/site/';
+ // Developer previews are never external adoption signals. This affects metrics only.
+ const localPreview=new Set(['localhost','127.0.0.1','[::1]','::1']).has(location.hostname.toLowerCase());
  const words=(ja,en)=>language==='ja'?ja:en;
  const allowed=new Set(['demo_start','demo_complete','artifact_open','artifact_download','github_outbound','quickstart_open']);
  let budget=40;
- function event(name){if(!allowed.has(name)||budget<=0||navigator.doNotTrack==='1'||navigator.globalPrivacyControl)return;budget--;void fetch(endpoint+'events',{method:'POST',headers:{'content-type':'application/json'},credentials:'omit',referrerPolicy:'no-referrer',keepalive:true,body:JSON.stringify({event:name,scenario:product,language})}).catch(()=>{});}
+ function event(name){if(localPreview||!allowed.has(name)||budget<=0||navigator.doNotTrack==='1'||navigator.globalPrivacyControl)return;budget--;void fetch(endpoint+'events',{method:'POST',headers:{'content-type':'application/json'},credentials:'omit',referrerPolicy:'no-referrer',keepalive:true,body:JSON.stringify({event:name,scenario:product,language})}).catch(()=>{});}
  window.productEvent=event;
  document.querySelectorAll('[data-copy-command]').forEach(button=>button.addEventListener('click',async()=>{const target=button.querySelector('.copy')||button;try{await navigator.clipboard.writeText(button.dataset.copyCommand);target.textContent=words('コピーしました','Copied');event('quickstart_open')}catch{target.textContent=words('コピーできませんでした。下のコマンドを選択してください','Copy failed. Select the command below.');let fallback=button.nextElementSibling;if(!fallback?.classList.contains('command-fallback')){fallback=document.createElement('pre');fallback.className='command-fallback';fallback.style.whiteSpace='pre-wrap';fallback.style.overflowWrap='anywhere';fallback.tabIndex=0;fallback.setAttribute('role','status');button.after(fallback)}fallback.textContent=button.dataset.copyCommand}}));
  document.addEventListener('click',e=>{const a=e.target.closest('a');if(!a||a.dataset.track)return;const href=a.getAttribute('href')||'';if(a.download||/\.zip(?:$|\?)/.test(href))event('artifact_download');else if(/github\.com/.test(href))event(/TESTING|README|quickstart/.test(href)?'quickstart_open':'github_outbound');else if(/#start|#quickstart/.test(href))event('quickstart_open');else if(a.dataset.artifact||/orbit\.html|kit-site/.test(href))event('artifact_open');});

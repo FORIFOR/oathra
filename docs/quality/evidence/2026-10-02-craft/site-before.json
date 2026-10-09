@@ -1,0 +1,78 @@
+{
+  "capturedAt": "2026-10-01T17:06:09.305Z",
+  "stage": "before",
+  "source": "Public saved Arena negotiation only; no invented data or real phone call.",
+  "checks": [
+    {
+      "name": "ja_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "en_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "no_browser_runtime_exceptions",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-published-ja.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-ja-check-result.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-before-en-check-result.png"
+  ],
+  "liveHeading": "AIが電話する。結果は、相手の言葉で確かめる。",
+  "ja": {
+    "heading": "AIが電話する。結果は、相手の言葉で確かめる。"
+  },
+  "en": {
+    "heading": "An AI makes the call.The verdict comes from what the other side said."
+  },
+  "runtimeExceptions": 0,
+  "sourceHashes": {
+    "site/index.html": "a07ae12e6d940f8483312332471577042cce9255d6f80640ff1ec831d961d14b",
+    "site/en/index.html": "ba5db59be79c81623dd662bf518ab76716a1e3bf76a8495cbe9ff7c29709c904",
+    "site/check.html": "ce98443cba86f06c13ea5831dd5d3658a92ead40ff8ff80e3013761b95e4dbc1",
+    "site/en/check.html": "53bb7a4815b98d4064d38ae1a04f6663b6fc754ae4aeff4bec047101425684f2",
+    "site/check.css": "f4b7728a88c32ee8b78382ebdcd57c4f366d6e8eca0e26161ba17795c669913b"
+  },
+  "status": "PASS"
+}

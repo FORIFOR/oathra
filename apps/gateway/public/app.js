@@ -3,7 +3,7 @@
 // Everything is built with textContent; the page never inserts HTML from data.
 
 const $ = id => document.getElementById(id);
-let token = '', state = null, review = null, selected = null, followup = null, polling = false, showAll = false;
+let token = '', authenticated = false, sessionOwner = null, state = null, review = null, selected = null, followup = null, polling = false, showAll = false;
 
 const STATUS = {
   DRAFT: '確認待ち', QUEUED: '発信の順番待ち', DIALING: '発信しています', ACTIVE: '通話中', VERIFYING: '結果を確かめています',
@@ -149,12 +149,24 @@ function notice(message) {
 async function api(path, method = 'GET', data, headers = {}) {
   const r = await fetch('/v1' + path, {
     method, redirect: 'error', cache: 'no-store',
-    headers: { Authorization: 'Bearer ' + token, ...(data !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
+    credentials: 'same-origin',
+    headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(sessionOwner ? { 'x-oathra-account': sessionOwner } : {}), ...(data !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
     ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
   });
   const value = await r.json();
   // A code the page has no words for still gets a sentence; the code stays for whoever is asked to help.
-  if (!r.ok) throw Error(ERRORS[value.error] ?? `うまくいきませんでした。少し待ってもう一度お試しください。（問い合わせ用コード：${value.error ?? r.status}）`);
+  if (!r.ok) {
+    // The main app and these detailed settings share one HttpOnly browser session.
+    if (authenticated && (r.status === 401 || value.error === 'session_account_changed')) {
+      authenticated = false;
+      $('workspace').hidden = true;
+      for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
+      location.replace('/app/#login');
+    }
+    const error = Error(ERRORS[value.error] ?? `うまくいきませんでした。少し待ってもう一度お試しください。（問い合わせ用コード：${value.error ?? r.status}）`);
+    error.status = r.status;
+    throw error;
+  }
   return value;
 }
 /** Wire a form or button: disable while running, show failures as a message instead of throwing. */
@@ -234,14 +246,16 @@ function renderSetup() {
 
 async function refresh() {
   state = await api('/bootstrap');
+  sessionOwner ??= state.user.id;
   const c = state.configuration;
+  const paused = c.prerelease?.enabled && c.prerelease.paused;
   $('credit-balance').hidden = !state.credits?.enabled;
   $('budget').closest('label').hidden = Boolean(state.credits?.enabled);
   $('credit-balance').textContent = `${state.credits?.available ?? 0} クレジット${state.credits?.held ? `（確保中 ${state.credits.held}）` : ''}`;
   $('mode').hidden = false;
-  $('mode').textContent = c.mode === 'simulator' ? '練習モード（電話はかかりません）' : '実電話モード';
+  $('mode').textContent = paused ? '事前プレリリース・受付停止中' : c.mode === 'simulator' ? '練習モード（電話はかかりません）' : '実電話モード';
   $('mode').className = 'badge ' + (c.mode === 'simulator' ? 'practice' : 'live');
-  $('readiness').textContent = c.mode === 'simulator'
+  $('readiness').textContent = paused ? '現在、新しい発信を停止しています。既存の記録や設定は確認できます。' : c.mode === 'simulator'
     ? 'まだ電話はかかりません。練習モードなので、承認しても実際の電話はかからず、費用もかかりません。'
     : c.liveReady ? 'まだ電話はかかりません。次の画面で相手・目的・費用を確かめて、承認したときだけ発信します。' : '実電話の設定が終わっていません（未設定：' + c.missing.join('、') + '）';
   $('goal-help').textContent = GOAL_HELP[goal()];
@@ -420,18 +434,44 @@ async function showReview(id) {
   if ($('start-call').disabled) $('review-content').append(el('p','クレジットが不足しています。残高を追加後、もう一度内容を確認してください。','hint'));
   // Practice has no scripted person to chat with (the server refuses it): say so before anyone ticks the box.
   if (chat && practice) { $('start-call').disabled = true; $('review-content').prepend(el('p', '雑談は練習モードでは試せません。実電話モードのときに使えます。', 'notice')); }
+  if (state.configuration.prerelease?.enabled && state.configuration.prerelease.paused) {
+    $('start-call').disabled = true;
+    $('review-content').prepend(el('p', '現在、新しい発信を停止しています。内容の確認だけができます。', 'notice'));
+  }
   $('call-ack').checked = false; $('review').showModal();
 }
 
 // ---------------------------------------------------------------------------------------------- wiring
 
-on('login-form', 'submit', async () => {
-  token = $('token').value.trim(); await refresh(); $('token').value = '';
+async function showWorkspace() {
+  await refresh();
+  authenticated = true;
+  $('session-check').hidden = true; $('retry-session').hidden = true;
   $('login').hidden = true; $('workspace').hidden = false; $('logout').hidden = false; $('open-settings').hidden = false; document.body.classList.add('signed-in');
   const running = state.missions.find(m => !FINISHED.includes(m.status) && m.status !== 'DRAFT');
   if (running) await openMission(running.id, false);
+}
+async function restoreSession() {
+  $('login').hidden = true; $('retry-session').hidden = true;
+  $('session-check').hidden = false; $('session-check').textContent = 'ログイン状態を確認しています…';
+  try { await showWorkspace(); }
+  catch (error) {
+    if (error.status === 401) { $('session-check').hidden = true; $('login').hidden = false; }
+    else { $('session-check').textContent = '接続を確かめられませんでした。通信を確認して再読み込みしてください。'; $('retry-session').hidden = false; }
+  }
+}
+on('retry-session', 'click', restoreSession);
+on('login-form', 'submit', async () => {
+  token = $('token').value.trim();
+  try { await api('/session', 'POST', {}); }
+  finally { token = ''; $('token').value = ''; }
+  await showWorkspace();
 });
-on('logout', 'click', () => { token = ''; state = null; selected = null; lastDetail = ''; $('detail').replaceChildren(); $('workspace').hidden = true; $('logout').hidden = true; $('open-settings').hidden = true; $('mode').hidden = true; $('credit-balance').hidden=true; $('credits').close();$('credit-ledger').replaceChildren(); $('login').hidden = false; document.body.classList.remove('signed-in'); });
+on('logout', 'click', async () => {
+  await api('/session', 'DELETE');
+  authenticated = false;
+  location.replace('/app/#login');
+});
 let creditCursor=0;
 async function loadCreditLedger() {
   const {entries}=await api('/credits/ledger?after='+creditCursor);
@@ -477,6 +517,7 @@ on('mission-form', 'submit', async () => {
   await refresh(); await openMission(m.id, false); await showReview(m.id);
 });
 on('start-call', 'click', async () => {
+  if (state.configuration.prerelease?.enabled && state.configuration.prerelease.paused) throw Error('現在、新しい発信を停止しています。');
   if (!$('call-ack').checked) throw Error('チェックを入れて、この1件の発信を承認してください。');
   const m = await api('/missions/' + review.mission.id + '/start', 'POST', { approvalToken: review.approvalToken, acknowledged: true }, { 'Idempotency-Key': review.key });
   $('review').close(); $('request').value = ''; await refresh(); await openMission(m.id);
@@ -496,6 +537,7 @@ on('followup-send', 'click', async () => {
 
 // While a call is running the page follows it; nothing to click.
 setInterval(async () => {
-  if (!token || document.hidden || polling) return; polling = true;
+  if (!authenticated || document.hidden || polling) return; polling = true;
   try { await refresh(); if (selected) renderDetail(await api('/missions/' + selected)); } catch { /* the next tick tries again */ } finally { polling = false; }
 }, 3000);
+restoreSession();

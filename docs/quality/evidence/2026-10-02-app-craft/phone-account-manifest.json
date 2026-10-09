@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-01T18:06:31.905Z",
+  "files": {
+    "apps/gateway/public/phone/account.js": "e78da7e61133c35d8385b36eed9639cd5235c3a2bef2157f6ecc70f1828e546e",
+    "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+    "apps/gateway/public/phone/public-service.js": "c242e6fe64f59c0af097aeeb06802dcc4a7d535cbcb8f3c57595c9720ed3a6c8",
+    "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+    "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-before.json": "6d268299ef957ab6afcd6bcf0558ffb95d088100766d164d32fc8cb41c7053c6",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-after.json": "125ec4946acec5640c585cbfa916aea7c2100d67f3235974a222f8426b6fb660",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-final-delta.json": "9d41f12de9635d4d7c814ec96503d054df160d64795d21b3cfc80996fb584249",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-review.md": "9396c24d80b05c1388b58d53dc09594848736c5bd1264349a753fed4c095da70"
+  },
+  "finalDelta": "After runtime delta verification, one conditional pending-order message now respects paused/blocked purchase admission. No changed checkout or grant control; no matching real order available for live UI verification.",
+  "images": {
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-before-desktop.png": "55bf4679afd9790b6dfd0bb714bdc345fb57c61f0479c35269575ba632fdea30",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-before-mobile.png": "df1a2f5414a3528035d628df33df07486f96da215097d1c03d181dc5d8739455",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-before-desktop.png": "95c1be78e848c294a75c77baa88f1f675deae1acb4514f650514715084304656",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-before-mobile.png": "11d74feb51ef52589ef9474de2da3bc3ebc061334d775abd329eae280775e2f2",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-after-desktop.png": "7b732231c4315dcd07000c4d74b0b3a065bdce36d1319348e028ee0f378cf517",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-after-desktop.png": "022c21be683598f9d6f0ffeab1a536d98b606ca1e77102106f7432b44aea82e4",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-account-after-mobile.png": "baab81acadf64a2c2c8518f836706a87735d4aca8902c0edf03c640c934e9817",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-password-after-mobile.png": "003c2131ad8df9edd5585d32a6d610241aef337d11aecac1379a2c3d61e472e7",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-after-mobile.png": "f6c346a83c23015370622657e692700abfc27bebfad40dda7707e8983e0cfaf1",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-after-small.png": "bb222877d6b92cf1f57e706b803e01d0869e908f61ed9ee0690bda2b9fb7886b",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-offline-mobile.png": "4c670a135989def6bd30636bfec5312b97ac6ff717e27b9400f65907edc0a1bd",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-final-small.png": "bfb3ed7b36c54514ec3ddeaa6bc985e04ae6d3c3c0b5c65425a69c66480facd7",
+    "docs/quality/evidence/2026-10-02-app-craft/phone-credits-final-dark.png": "f43a9f61a16c3261004fe452d6ac14f062386d3dc5de40531f1679da3054c20d"
+  },
+  "imageReview": {
+    "count": 13,
+    "allViewed": true,
+    "piiExposed": false,
+    "privacyMask": "Actual email and backdrop hidden only during screenshots using CSSOM; no replacement content."
+  }
+}

@@ -1,14 +1,22 @@
-import { phoneMemory } from '../../../packages/core/dist/index.js';
+import { phoneMemory, detectDistress, distressLevel, checkInReport, isMachineGreeting } from '../../../packages/core/dist/index.js';
+import { worse } from './alerts.mjs';
+import { isCareRequest } from './phone-service.mjs';
+import { checkPhoneDelegation } from './agent-phone.mjs';
 import { randomUUID } from 'node:crypto';
 import { assert, Fault } from './security.mjs';
-import { evaluateSales, wantsNoContact } from './sales.mjs';
-import { terminal } from './service.mjs';
+import { evaluateSales, wantsNoContact, stopContact, asksForPerson } from './sales.mjs';
+import { terminal, inboundLine } from './service.mjs';
 import { spendingProgress } from './credit-guard.mjs';
 import { METERED, applyBillingEvent, finishBilling } from './billing.mjs';
 
 /** No automatic redial. An interrupted execution is UNKNOWN, never silently requeued. */
 export class Worker {
-  constructor(service, channels, execute) { this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.holder=randomUUID(); this.active=null; this.busy=false; }
+  constructor(service, channels, execute, alerts=null, schedules=null, batches=null) { this.schedules=schedules; this.batches=batches; this.awaitAlerts=true; /* tests drive one pass at a time; the server turns this off */ this.service=service; this.store=service.store; this.channels=channels; this.execute=execute; this.alerts=alerts; this.holder=randomUUID(); this.running=new Map(); this.busy=false; }
+  /** How many calls may be in progress at once (OATHRA_MAX_CONCURRENT_CALLS; one unless the operator raised it). */
+  get limit() { return Math.max(1,this.service.config.maxConcurrentCalls??1); }
+  /** The call in progress, when there is one; with several, the earliest. `activeFor(id)` finds a particular one. */
+  get active() { return this.running.values().next().value??null; }
+  activeFor(id) { return this.running.get(id)??null; }
   start() {
     assert(this.store.lease(this.holder),'another_gateway_worker_is_active',409);
     const recovery=new Map([...this.store.list('mission'),...this.service.credits.pendingMissions()].map(m=>[m.id,m]));
@@ -27,9 +35,9 @@ export class Worker {
     }
     // Inbox and notifications can be retried; telephone attempts cannot.
     for(const f of this.store.list('followup',undefined,'EXECUTING')) { f.status='UNKNOWN'; f.error='process_interrupted_do_not_resend_without_reconciliation'; this.store.put('followup',f); }
-    for(const kind of ['inbox','outbox']) for(const j of this.store.list(kind,undefined,'processing')) { j.status='pending'; this.store.put(kind,j); }
-    this.leaseTimer=setInterval(() => { if(!this.store.lease(this.holder)) { this.active?.abort.abort(); clearInterval(this.timer); } },5000);
-    this.controlTimer=setInterval(()=>{if(this.active && this.store.get('mission',this.active.id)?.status==='CANCEL_REQUESTED')this.active.abort.abort();},200);
+    for(const kind of ['inbox','outbox','alert']) for(const j of this.store.list(kind,undefined,'processing')) { j.status='pending'; this.store.put(kind,j); }
+    this.leaseTimer=setInterval(() => { if(!this.store.lease(this.holder)) { for(const a of this.running.values())a.abort.abort(); clearInterval(this.timer); } },5000);
+    this.controlTimer=setInterval(()=>{for(const a of this.running.values())if(this.store.get('mission',a.id)?.status==='CANCEL_REQUESTED')a.abort.abort();},200);
     this.timer=setInterval(() => { void this.tick().catch(e => this.log('worker.tick_failed',e)); },300);
   }
   /** Codes only: never message text, names or numbers. */
@@ -38,7 +46,8 @@ export class Worker {
     const job=this.store.next(kind); if(!job) return;
     job.status='processing'; this.store.put(kind,job);
     try { await handler(job); job.status='done'; }
-    catch(e) { job.attempts++; job.status=job.attempts>=5?'failed':'pending'; job.available=this.store.now()+Math.min(60_000,1000*2**job.attempts); if(job.status==='failed') this.log(`${kind}.gave_up`,e,{job:job.id.slice(0,80),attempts:job.attempts}); }
+    // A staff alert is never given up on: it keeps trying, at most five minutes apart, and says so every fifth failure.
+    catch(e) { job.attempts++; job.status=job.attempts>=5&&kind!=='alert'?'failed':'pending'; job.available=this.store.now()+Math.min(kind==='alert'?300_000:60_000,1000*2**Math.min(job.attempts,20)); if(kind==='alert'&&job.attempts%5===0)this.log('alert.still_undelivered',e,{job:job.id.slice(0,80),attempts:job.attempts}); if(job.status==='failed') this.log(`${kind}.gave_up`,e,{job:job.id.slice(0,80),attempts:job.attempts}); }
     this.store.put(kind,job);
   }
   async tick() {
@@ -46,12 +55,23 @@ export class Worker {
     try {
       await this.processQueue('inbox',j=>this.channels.process(j));
       await this.processQueue('outbox',j=>this.channels.send(j));
-      if(this.active) { const m=this.store.get('mission',this.active.id); if(m?.status==='CANCEL_REQUESTED') this.active.abort.abort(); return; }
-      const m=this.claimNext();
-      if(!m)return;
-      this.service.notify(m,'発信しています。');
-      const active={ id:m.id,abort:new AbortController(),control:{} }; this.active=active;
-      active.promise=this.run(m,active).catch(error=>this.log('call.run_failed',error,{mission:m.id})).finally(()=>{ if(this.active===active) this.active=null; });
+      // Alert delivery runs beside the loop, one at a time: an endpoint that is slow or down must not delay a call being claimed.
+      if(this.alerts?.config&&!this.alerting){this.alerting=this.processQueue('alert',j=>this.alerts.send(j)).catch(e=>this.log('alert.queue_failed',e)).finally(()=>{this.alerting=null;});if(this.awaitAlerts)await this.alerting;}
+      for(const a of this.running.values()) if(this.store.get('mission',a.id)?.status==='CANCEL_REQUESTED') a.abort.abort();
+      if(this.draining||this.running.size>=this.limit)return;
+      // Standing requests place their next due call into the queue; the claim below treats it like any other.
+      // Schedules and lists are planned every few seconds, not on every 300 ms pass: the same thread carries call audio.
+      if(!this.planEveryMs||Date.now()-(this.plannedAt??0)>=this.planEveryMs){this.plannedAt=Date.now();
+        if(this.schedules){try{this.schedules.tick();}catch(e){this.log('schedule.tick_failed',e);}}
+        if(this.batches){try{this.batches.tick();}catch(e){this.log('batch.tick_failed',e);}}
+      }
+      while(this.running.size<this.limit){
+        const m=this.claimNext();
+        if(!m)return;
+        this.service.notify(m,'発信しています。');
+        const active={ id:m.id,abort:new AbortController(),control:{} }; this.running.set(m.id,active);
+        active.promise=this.run(m,active).catch(error=>this.log('call.run_failed',error,{mission:m.id})).finally(()=>{ if(this.running.get(m.id)===active) this.running.delete(m.id); });
+      }
     } finally { this.busy=false; }
   }
   /** Atomically commits an execution claim and its credits; does not contact a carrier. */
@@ -62,7 +82,7 @@ export class Worker {
         assert(!lease||lease.holder===this.holder,'worker_lease_lost',409);
         this.store.db.prepare('INSERT INTO lease VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires').run(this.holder,this.store.now()+30000);
         // A capture that cannot succeed fails this call only; left outside, it would block every call queued behind it.
-        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);this.service.credits.captureTx(m);}
+        try {const u=this.service.user(m.owner);this.service.checkPolicy(u,m);checkPhoneDelegation(this.service,m);assert(m.approvalExpiresAt>this.store.now(),'queued_approval_expired',409);this.service.credits.captureTx(m);}
         catch(e){m.status='FAILED';m.finishedAt=this.store.now();m.error=e.code??'policy_rejected';this.service.credits.releaseTx(m);this.store.put('mission',m);this.store.audit(m.owner,'call.policy_rejected',m.id,{mission:m.id,error:m.error});this.service.notify(m,'result');return null;}
         if(m.creditQuote?.policy===METERED)m.billing={state:'pending'};
         m.status='DIALING';m.executionId=randomUUID();this.store.put('mission',m);this.store.event(m,{type:'status',status:'DIALING'});
@@ -71,8 +91,29 @@ export class Worker {
       });
   }
   /** Suppress and leave a trace of why: a number that silently stops being callable is as hard to explain as one that does not. */
-  suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
+  suppress(m,source,turn) { this.store.suppress(m.team,m.target.phone,source); this.store.audit(m.owner,'contact.suppressed',m.id,{mission:m.id,target:this.store.phoneRef(m.target.phone),source,...(turn?{turn}:{})}); }
   finished(current,connected) { this.store.audit(current.owner,'call.result',current.id,{mission:current.id,status:current.status,connected,carrierSid:current.carrierSid??null,doNotContact:current.result?.doNotContact===true,verified:Object.keys(current.result?.verified??{}),error:current.error??null}); }
+  /** A wellbeing call's report: what the person said, topic by topic, and whether anyone answered at all. */
+  checkIn(current,turns,connected) {
+    if(current.direction==='inbound')return;
+    // A care call is a gentle-paced request that is not a free chat: choosing ゆっくり for a chat does not make it a wellbeing check.
+    const report=checkInReport(turns),care=isCareRequest(current.phoneRequest);
+    // Someone spoke on the other end, and it was not a recording. A voicemail greeting or a network announcement is not an answer.
+    // A recording by the word rules, or by the voice model's own report when the rules did not know the announcement.
+    // A screening assistant (「発信先が応答できるかどうか確認します」) that hands over to the person is not a recording:
+    // after the last machine line the AI spoke and the other end answered as a person.
+    const machineAt=turns.map((t,i)=>t.source==='callee'&&isMachineGreeting(t.text)?i:-1).filter(i=>i>=0),last=machineAt.at(-1)??-1;
+    const caller=turns.findIndex((t,i)=>i>last&&t.source==='caller'),person=caller>=0&&turns.some((t,i)=>i>caller&&t.source==='callee'&&String(t.text??'').trim()&&!isMachineGreeting(t.text));
+    const machine=(machineAt.length>0&&!person)||current.machineReported===true;if(machine)current.machineAnswered=true;
+    current.answered=connected&&report.answered&&!machine;
+    if(current.kind!=='phone-request')return;
+    if(care||report.items.some(i=>i.answer!=='not_asked'))current.result.checkIn=report;
+    if(!this.alerts)return;
+    // Nobody answered a call that was meant to find out how someone is: that is itself the finding.
+    // A scheduled call that will be retried is not yet a finding; its last attempt is.
+    if((care||current.schedule)&&!current.answered&&current.status!=='CANCEL_REQUESTED'){if(!current.schedule||current.schedule.final)this.alerts.raise(current,'unanswered','concern');}
+    else if(current.result.checkIn&&report.attention!=='none'&&!current.attention)this.alerts.raise(current,'checkin',report.attention,{categories:report.items.filter(i=>(i.topic==='help'&&i.answer==='yes')||(i.topic!=='help'&&i.answer==='no')).map(i=>i.topic)});
+  }
   async run(m,active) {
     const turns=[]; let connected=false;
     const watchdog=setTimeout(()=>active.abort.abort(),(m.maxSeconds+30)*1000);
@@ -105,11 +146,37 @@ export class Worker {
       if(e.type==='carrier.sid') current.carrierSid=e.sid;
       if(e.type==='callee.consent') current.calleeConsented=true;
       if(e.type==='recording.notice') current.recordingNotice={method:e.method,text:e.text};
+      // The voice model's own report of a worrying line: a second reader beside the word rules. Either one alerts.
+      if(e.type==='safety.reported') {
+        if(e.level==='machine'){current.machineReported=true;this.store.put('mission',current);this.store.event(current,{type:'safety.reported',level:'machine'});}
+        else{
+          const before=current.attention?.level,level=e.level==='emergency'?'emergency':'concern';
+          current.attention={level:before?worse(before,level):level,signals:[...(current.attention?.signals??[]),{level,category:'reported',phrase:String(e.heard).slice(0,300),source:'model'}].slice(-20)};
+          this.store.event(current,{type:'safety.reported',level});this.store.put('mission',current);
+          if(before!==current.attention.level)this.alerts?.raise(current,'distress',current.attention.level,{categories:['reported_by_ai'],quotes:[e.heard]});
+        }
+        return;
+      }
       if(e.type==='contact.opt_out') { current.optOut=true; this.suppress(m,'dtmf'); shouldAbort=true; }
       if(e.type==='transcript.final') {
         turns.push({id:e.turnId,source:e.source,text:e.text,t:e.t,...(typeof e.startMs==='number'?{startMs:e.startMs,endMs:e.endMs}:{}),...(e.interrupted?{interrupted:true}:{})});
         if(current.kind==='phone-request')current.memory=phoneMemory(current.inbound?.reception?{...current.phoneRequest,conversationMode:'chat'}:current.phoneRequest,turns,current.approvedAt??current.createdAt);
-        if(e.source==='callee' && wantsNoContact(e.text)) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
+        // Words that mean a person should read this line now. The call goes on; the agent's policy handles what to say.
+        const signals=e.source==='callee'?detectDistress(e.text):[];
+        if(signals.length){
+          const level=distressLevel(signals),before=current.attention?.level;
+          current.attention={level:before?worse(before,level):level,signals:[...(current.attention?.signals??[]),...signals.map(s=>({...s,turn:e.turnId}))].slice(-20)};
+          this.store.event(current,{type:'safety.signal',level,categories:signals.map(s=>s.category),turnId:e.turnId});this.store.put('mission',current);
+          if(before!==current.attention.level)this.alerts?.raise(current,'distress',current.attention.level,{categories:signals.map(s=>s.category),quotes:[e.text]});
+        }
+        // A caller who asks for a person gets one where the operator named a number to transfer to; otherwise the AI takes the message.
+        if(e.source==='callee'&&current.direction==='inbound'&&!current.transferAsked&&inboundLine(this.service.config,current.inbound?.to)?.transferTo&&typeof active.control.handoff==='function'&&asksForPerson(e.text)){
+          current.transferAsked=true;this.store.put('mission',current);this.store.event(current,{type:'transfer.requested',turnId:e.turnId});
+          Promise.resolve().then(()=>active.control.handoff()).catch(error=>{this.log('call.transfer_failed',error,{mission:m.id});this.store.event(this.store.get('mission',m.id)??current,{type:'transfer.failed',code:error.code??'transfer_failed'});});
+        }
+        // A sales call ends at any refusal. In an ordinary request or an answered call, 「結構です」 answers a
+        // question; only an explicit request not to be called again ends the call and suppresses the number.
+        if(e.source==='callee' && (current.kind==='phone-request'?stopContact(e.text,{gone:false}):wantsNoContact(e.text))) { this.suppress(m,'transcript',e.turnId); shouldAbort=true; }
       }
       if(['call.connected','carrier.sid','callee.consent','recording.notice','contact.opt_out','transcript.final','permission.requested','permission.decided','handoff','news.lookup','decision.made'].includes(e.type)) {
         this.store.event(current,e); this.store.put('mission',current);
@@ -119,12 +186,19 @@ export class Worker {
     };
     try {
       const outcome=await this.execute(m,{signal:active.abort.signal,onEvent,control:active.control,service:this.service});
-      if(!turns.length && outcome.transcript) turns.push(...outcome.transcript);
+      if(!turns.length && outcome.transcript) { turns.push(...outcome.transcript);
+        // A transcript that arrives only with the outcome is read for the same words as one that arrives line by line.
+        const late=turns.filter(t=>t.source==='callee').flatMap(t=>detectDistress(t.text).map(s=>({...s,turn:t.id,text:t.text})));
+        if(late.length){const current=this.store.get('mission',m.id);current.attention={level:distressLevel(late),signals:late.map(({text,...s})=>s).slice(-20)};this.store.put('mission',current);this.alerts?.raise(current,'distress',current.attention.level,{categories:late.map(s=>s.category),quotes:late.map(s=>s.text)});}
+      }
       const result=evaluateSales(turns,m,connected,this.store.now());
       if(this.store.get('mission',m.id)?.optOut) { result.status='DECLINED'; result.doNotContact=true; result.verified={}; result.evidence.push({field:'do_not_contact',source:'dtmf',value:true,quote:'電話の連絡停止操作（2）'}); }
       if(result.doNotContact && !this.store.suppressed(m.team,m.target.phone)) this.suppress(m,'verdict');
       const current=this.store.get('mission',m.id);
       current.result=result; current.transcript=turns; current.runtimeResult=outcome.result??null;
+      this.checkIn(current,turns,connected);
+      // A call that was answered for someone is only useful once they know it happened.
+      if(current.direction==='inbound'&&connected)this.alerts?.raise(current,'inbound','notice');
       current.status=result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':active.abort.signal.aborted?'INCOMPLETE':result.status;
       if(current.handoff?.status && current.handoff.status!=='COMPLETED') current.status=current.handoff.status==='UNKNOWN'?'UNKNOWN':current.handoff.status==='CONNECTED'?'HANDOFF_ACTIVE':'HANDOFF_PENDING';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
@@ -139,6 +213,8 @@ export class Worker {
       current.status=e.uncertain?'UNKNOWN':result.doNotContact?'DECLINED':current.status==='CANCEL_REQUESTED'?'CANCELLED':'FAILED';
       if(current.stopNeedsReconciliation) current.status='UNKNOWN';
       current.error=e.code??'execution_failed'; current.result=result; current.transcript=turns; current.finishedAt=this.store.now();
+      if(!e.uncertain)this.checkIn(current,turns,connected);
+      if(current.direction==='inbound'&&connected)this.alerts?.raise(current,'inbound','notice');
       this.store.put('mission',current); this.store.event(current,{type:'result',status:current.status}); this.finished(current,connected); this.service.notify(current,'result');
     } finally {
       clearTimeout(watchdog);clearInterval(creditTimer);
@@ -147,16 +223,23 @@ export class Worker {
       }});
     }
   }
+  /** Before a restart: take no new call, let the one in progress finish (up to `graceMs`), then stop. A deploy should not hang up on anyone. */
+  async drain(graceMs) {
+    this.draining=true; this.service.config.draining=true;
+    if(this.running.size) await Promise.race([Promise.all([...this.running.values()].map(a=>a.promise)),new Promise(r=>{const t=setTimeout(r,graceMs);t.unref?.();})]);
+    const cut=this.running.size>0; await this.stop(); return {cut};
+  }
   async stop() {
-    clearInterval(this.timer); clearInterval(this.leaseTimer); clearInterval(this.controlTimer); this.active?.abort.abort();
-    if(this.active?.promise) await this.active.promise;
+    clearInterval(this.timer); clearInterval(this.leaseTimer); clearInterval(this.controlTimer);
+    const running=[...this.running.values()]; for(const a of running)a.abort.abort();
+    await Promise.all(running.map(a=>a.promise));
     this.store.db.prepare('DELETE FROM lease WHERE holder=?').run(this.holder);
   }
 }
 /** Demonstration is explicit and cannot reach a carrier. It deliberately returns no fabricated success. */
 export async function simulate(m,{signal,onEvent}) {
   onEvent({type:'call.connected'});
-  const turns=[{id:'sim-1',source:'caller',text:`${m.product.name}についてAIアシスタントからご案内です。`},{id:'sim-2',source:'callee',text:'資料を送ってください。日程はまだ決められません。'}];
+  const turns=[{id:'sim-1',source:'caller',text:`${m.product?.name ?? '新しいサービス'}についてAIアシスタントからご案内です。`},{id:'sim-2',source:'callee',text:'資料を送ってください。日程はまだ決められません。'}];
   for(const t of turns) { if(signal.aborted) break; await new Promise(r=>setTimeout(r,200)); onEvent({type:'transcript.final',turnId:t.id,...t}); }
   return {transcript:turns,result:{simulation:true}};
 }

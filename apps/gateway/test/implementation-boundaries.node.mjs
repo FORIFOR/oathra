@@ -19,6 +19,8 @@ function fixture() {
   const config = configuration({
     OATHRA_USERS_JSON: JSON.stringify(users), OATHRA_DATA_KEY: randomBytes(32).toString('hex'),
     OATHRA_DB: ':memory:', OATHRA_DEPLOYMENT: 'managed', OATHRA_CREDITS_PER_CALL: '3',
+    // These boundaries are about approval and reservation, at whatever hour the suite runs.
+    OATHRA_SALES_CALL_HOURS: 'off',
   });
   const store = new Store(':memory:', config.dataKey, () => now);
   return { config, store, users: config.users, tokens, advance(ms) { now += ms; } };

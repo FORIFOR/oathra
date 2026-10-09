@@ -1,0 +1,40 @@
+{
+  "at": "2026-10-01T17:59:48.525Z",
+  "method": "Real Chrome, existing operator credentials, native session cookies, actual pointer input; no business-record mutations",
+  "sourceHashes": {
+    "apps/gateway/public/index.html": "381788cbf6441a09890d03a989b60788dbf1be29c72e96d48971534c366c998d",
+    "apps/gateway/public/app.js": "5ecb1cc5a864f28a1f87da1125a70fc748adf08c76b44b2a8a674a7362b203d9",
+    "apps/gateway/public/style.css": "9b46c3e75ac2191cb7ec767777d263360f24a9dca28f81429ea2f72785f145bc"
+  },
+  "checks": [
+    "Unauthenticated user has a login path",
+    "Email login returns to the shared login screen",
+    "Credential input cleared after session creation",
+    "Native cookie authenticates without a Bearer header",
+    "Reload inherits the existing app session without token re-entry",
+    "Paused prerelease is visible",
+    "Preparation does not claim calling is available",
+    "Workspace has no horizontal overflow at 1440px",
+    "Workspace has no horizontal overflow at 390px",
+    "Return to app settings retains authentication",
+    "Logout revokes the shared server session",
+    "Existing operator can authenticate again",
+    "Session invalidation comes from the actual server",
+    "Expired session returns to shared login",
+    "No runtime exceptions",
+    "Workspace source remained unchanged during verification"
+  ],
+  "screenshots": [
+    {
+      "file": "workspace-after-1440.png",
+      "width": 1440,
+      "privacy": "Inputs, selects, transcript/history content hidden only for this screenshot. Actual API data and layout retained; not evidence of data typography."
+    },
+    {
+      "file": "workspace-after-390.png",
+      "width": 390,
+      "privacy": "Inputs, selects, transcript/history content hidden only for this screenshot. Actual API data and layout retained; not evidence of data typography."
+    }
+  ],
+  "runtimeExceptions": []
+}

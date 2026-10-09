@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#ffffff">
+  <title>AIツールとつなぐ — Oathra</title>
+  <link rel="icon" type="image/png" href="/app/mark.png">
+  <link rel="stylesheet" href="/app/style.css">
+  <link rel="stylesheet" href="/phone/public-service.css">
+  <link rel="stylesheet" href="/connect/connect.css">
+  <script type="module" src="/connect/connect.js"></script>
+</head>
+<body data-connect-mode="setup">
+  <a class="skip" href="#connect-main">本文へ移動</a>
+  <header class="bar connect-bar">
+    <a class="brand" href="/app/"><img src="/app/mark.png" width="28" height="28" alt=""><span>Oathra</span></a>
+    <a class="plain" href="/app/">アプリへ戻る</a>
+    <div class="bar-right" id="account-bar" hidden>
+      <span class="connect-account" id="account-label"></span>
+      <button type="button" class="btn" id="logout">ログアウト</button>
+    </div>
+  </header>
+  <main class="page connect-page" id="connect-main" tabindex="-1">
+    <div class="connect-heading">
+      <p class="connect-eyebrow">Oathra と AIツールの連携</p>
+      <h1 id="connect-title">いつものAIから、<br>電話の下書きを。</h1>
+      <p id="connect-intro">Claude Code・ChatGPTで用件をまとめ、Oathraで内容と費用を確認。発信するかどうかは、毎回あなたが決めます。</p>
+      <ol class="connect-path" id="connect-path" aria-label="連携してから発信まで">
+        <li><span aria-hidden="true">01</span><strong>AIツールを接続</strong><small>許可した情報だけを共有</small></li>
+        <li><span aria-hidden="true">02</span><strong>電話の下書き</strong><small>商品・相手・用件をまとめる</small></li>
+        <li><span aria-hidden="true">03</span><strong>あなたが確認・承認</strong><small>確認前に発信しません</small></li>
+      </ol>
+    </div>
+    <p id="page-error" class="public-error" role="alert" hidden></p>
+    <p id="page-status" class="public-status" role="status" hidden></p>
+
+    <section id="authorize-panel" class="connect-panel connect-priority" aria-labelledby="authorize-title" hidden>
+      <p class="connect-eyebrow">接続の確認</p>
+      <h2 id="authorize-title" tabindex="-1">アクセス許可を確認</h2>
+      <p id="authorize-loading" role="status">Oathraにログインすると、接続先と許可内容を確認できます。</p>
+      <div id="authorize-content" hidden>
+        <dl class="connect-facts" id="authorize-facts"></dl>
+        <h3>この接続に許可すること</h3>
+        <ul class="connect-permissions" id="authorize-scopes"></ul>
+        <p class="connect-boundary">この許可では電話を発信できません。下書きの発信には、Oathra上で毎回の内容・費用確認と本人の同意が必要です。</p>
+        <p class="note">接続先は、あなたが許可した情報を取得できます。接続したいツールと戻り先のURLが一致していることを確認してください。接続はこの画面で解除できます。</p>
+        <div class="connect-actions">
+          <button type="button" class="btn primary" id="authorize-approve">この接続を許可</button>
+          <button type="button" class="btn" id="authorize-deny">許可しない</button>
+        </div>
+      </div>
+      <p id="authorize-error" class="public-error" role="alert" hidden></p>
+      <p id="authorize-status" class="public-status" role="status" hidden></p>
+    </section>
+
+    <section id="mission-panel" class="connect-panel connect-priority" aria-labelledby="mission-title" hidden>
+      <p class="connect-eyebrow">AIツールが作成した下書き</p>
+      <h2 id="mission-title" tabindex="-1">発信内容を確認</h2>
+      <p id="mission-loading" role="status">Oathraにログインして下書きを確認してください。</p>
+      <div id="mission-content" hidden>
+        <p class="connect-state" id="mission-state"></p>
+        <dl class="connect-facts" id="mission-facts"></dl>
+        <p id="mission-summary" class="connect-boundary" hidden></p>
+        <p id="mission-readiness" class="public-status" role="status"></p>
+        <p id="mission-result" hidden></p>
+        <details id="mission-policy">
+          <summary>電話・保存・送信先の説明</summary>
+          <p id="mission-disclosure"></p>
+        </details>
+        <form id="mission-policy-form" hidden>
+          <label class="public-check" for="mission-policy-consent">
+            <input type="checkbox" id="mission-policy-consent" required>
+            <span>上記の通話・保存・送信先の説明を確認し、同意します。</span>
+          </label>
+          <button type="submit" class="btn" id="mission-policy-save" disabled>電話サービスへの同意を保存</button>
+        </form>
+        <form id="mission-approval" hidden>
+          <label class="public-check" for="mission-consent">
+            <input type="checkbox" id="mission-consent" required>
+            <span>宛先・用件・上限を確認しました。AIが代理と名乗り、電話・音声AIの提供者へ情報を送信して通話を保存することと、表示されたクレジットの使用に同意し、この1件の発信を許可します。</span>
+          </label>
+          <button type="submit" class="btn primary" id="mission-start" disabled>同意して、この1件を発信</button>
+        </form>
+        <div class="connect-actions">
+          <button type="button" class="btn primary" id="mission-review" hidden>発信内容・費用を確認</button>
+          <button type="button" class="btn" id="mission-refresh">状況を更新</button>
+          <a class="btn" id="mission-open" hidden>アプリで状況を見る</a>
+        </div>
+      </div>
+      <p id="mission-error" class="public-error" role="alert" hidden></p>
+      <p id="mission-status" class="public-status" role="status" hidden></p>
+    </section>
+
+    <div class="connect-workbench" id="connect-workbench">
+    <section class="connect-panel connect-setup" aria-labelledby="setup-title" id="setup-panel">
+      <div class="connect-section-header"><h2 id="setup-title">使うAIツールを選ぶ</h2><span class="connect-protocol">MCP / OAuth</span></div>
+      <p class="connect-setup-intro">追加したあと、Oathraの画面で接続を許可します。</p>
+      <p id="service-status" class="public-status" role="status">接続設定を確認しています…</p>
+      <div class="connect-tabs" role="tablist" aria-label="接続するAIツール">
+        <button type="button" id="client-claude" role="tab" aria-selected="true" aria-controls="claude-panel">Claude Code</button>
+        <button type="button" id="client-chatgpt" role="tab" aria-selected="false" aria-controls="chatgpt-panel" tabindex="-1">ChatGPT</button>
+      </div>
+      <div class="connect-clients">
+        <div id="claude-panel" role="tabpanel" aria-labelledby="client-claude" tabindex="0">
+          <h3>コマンドをコピーして追加</h3>
+          <p>ターミナルで実行し、Claude Codeの <code>/mcp</code> からOathraを認証します。</p>
+          <label class="connect-label" for="claude-command">ターミナルに貼り付けるコマンド</label>
+          <textarea id="claude-command" class="connect-command" rows="3" readonly spellcheck="false"></textarea>
+          <button type="button" class="btn primary" id="copy-command" disabled>コマンドをコピー</button>
+          <p class="note"><a href="https://code.claude.com/docs/en/mcp" target="_blank" rel="noopener noreferrer">Claude Codeの公式手順</a></p>
+        </div>
+        <div id="chatgpt-panel" role="tabpanel" aria-labelledby="client-chatgpt" tabindex="0" hidden>
+          <h3>ChatGPTの設定から追加</h3>
+          <p id="chatgpt-note" class="note">利用できるかどうかは、ChatGPTのプランとワークスペースの設定によって異なります。</p>      <div class="connect-endpoint">
+      <label class="connect-label" for="mcp-endpoint">このOathraの接続URL</label>
+      <div class="connect-copy">
+        <input id="mcp-endpoint" type="url" readonly spellcheck="false" aria-describedby="endpoint-note" value="">
+        <button type="button" class="btn" id="copy-endpoint" disabled>URLをコピー</button>
+      </div>
+      <p id="endpoint-note" class="note">サーバーの設定から接続URLを読み込んでいます。</p>
+      </div>
+
+          <ol class="connect-steps">
+            <li>Web版ChatGPTで開発者モードを有効にし、MCPサーバーを追加する画面を開きます。</li>
+            <li>上のMCPサーバーURLを入力し、認証方式はOAuthを選びます。</li>
+            <li>Oathraにログインして接続を許可し、ChatGPTに戻ります。</li>
+          </ol>
+          <p class="note"><a href="https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt" target="_blank" rel="noopener noreferrer">ChatGPTの公式手順と利用条件</a></p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="connect-aside">
+    <section id="login-panel" class="connect-panel connect-login" aria-label="Oathraにログイン">
+      <div id="access"></div>
+      <p class="note">Oathraのパスワードを入力するのはこの画面だけです。AIツール側にAPIキーやパスワードを貼り付ける必要はありません。</p>
+    </section>
+
+    <section class="connect-preparation" aria-labelledby="prepare-title">
+      <h2 id="prepare-title">下書きの前に、登録を。</h2>
+      <p>ご自身の商品と、連絡する根拠のある相手をOathraに登録しておくと、AIツールから営業電話の下書きを作成できます。</p>
+      <div class="connect-actions">
+        <a class="btn" href="/app/#/settings/products">商品を登録</a>
+        <a class="btn" href="/app/#/contacts">連絡先を登録</a>
+      </div>
+    </section>
+
+    </aside>
+    </div>
+
+    <section id="connections-panel" class="connect-panel" aria-labelledby="connections-title" hidden>
+      <div class="connect-section-header"><h2 id="connections-title">許可した接続</h2><button type="button" class="btn" id="connections-refresh">一覧を更新</button></div>
+      <p class="note">接続を解除すると、そのツールは新たにOathraの情報を取得したり、下書きを作成したりできなくなります。すでに取得済みの情報は接続先に残る場合があります。</p>
+      <div id="connections-list" aria-live="polite"></div>
+      <p id="connections-error" class="public-error" role="alert" hidden></p>
+      <p id="connections-status" class="public-status" role="status" hidden></p>
+    </section>
+    <footer class="connect-footer"><span>AIの報告を、相手の言葉で確かめる。</span><a href="https://forifor.github.io/oathra/check.html" target="_blank" rel="noopener noreferrer">公開のログ検証を試す <span aria-hidden="true">↗</span></a></footer>
+    <noscript><p class="public-error">ログインと接続の確認にはJavaScriptが必要です。ブラウザーで有効にしてから再読み込みしてください。</p></noscript>
+  </main>
+  <dialog id="revoke-dialog" aria-labelledby="revoke-title">
+    <form id="revoke-form">
+      <h2 id="revoke-title">接続を解除しますか？</h2>
+      <p id="revoke-name"></p>
+      <p>もう一度使うには、接続先から認証をやり直す必要があります。</p>
+      <p id="revoke-error" class="public-error" role="alert" hidden></p>
+      <div class="connect-actions"><button type="submit" class="btn danger" id="revoke-confirm">この接続を解除</button><button type="button" class="btn" id="revoke-cancel">戻る</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

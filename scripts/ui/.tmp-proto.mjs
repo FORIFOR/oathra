@@ -1,0 +1,12 @@
+import { launch, sleep } from "./cdp.mjs";
+const page = await launch({ width: 1440, height: 900 });
+await page.goto("file:///private/tmp/claude-501/-Users-horioshuuhei-Projects-RingZero/fdc5f09a-d0b9-4de1-aa5e-9ebc890f56fb/scratchpad/rz/oathra-ringzero-patch/design/Oathra%20App.dc.html"); await sleep(2500);
+const click = async (txt) => page.js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>(b.textContent||'').replace(/\\s+/g,'').includes(${JSON.stringify(txt)}));if(b)b.click();return !!b})()`);
+await click("依頼2"); await sleep(600); await click("確かめる"); await sleep(500); await click("通話が終わったことを確かめました"); await sleep(600);
+await click("電話を頼む"); await sleep(800);
+await page.js("{const c=[...document.querySelectorAll('input[type=checkbox]')].pop();if(c&&!c.checked)c.click()}"); await sleep(300);
+console.log(await click("この内容で電話をかける")); await sleep(6000);
+await page.screenshot("/private/tmp/claude-501/-Users-horioshuuhei-Projects-RingZero/fdc5f09a-d0b9-4de1-aa5e-9ebc890f56fb/scratchpad/rz/oathra-ringzero-patch/design/shots/7-live.png");
+await sleep(45000);
+await page.screenshot("/private/tmp/claude-501/-Users-horioshuuhei-Projects-RingZero/fdc5f09a-d0b9-4de1-aa5e-9ebc890f56fb/scratchpad/rz/oathra-ringzero-patch/design/shots/8-after.png", { fullPage: true });
+await page.close();

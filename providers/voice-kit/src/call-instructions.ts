@@ -8,7 +8,7 @@ import type { CallContract } from "@oathra/contract";
 import { renderIntakeConsentPrompt, requiredFields } from "@oathra/contract";
 import type { MissionView } from "@oathra/core";
 import type { Action } from "@oathra/contract";
-import { conversationPolicies, extractCallerName, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
+import { conversationPolicies, dialoguePolicy, extractCallerName, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
 import { receptionGreeting, restaurantReceptionInstructions } from "./reception.js";
 
 export type CallInstructionOptions = {
@@ -38,6 +38,7 @@ export function callInstructions(opts: CallInstructionOptions): string {
       ? [
           "あなたは相手の気の置けない友達です。電話で雑談しています。一人称は必ず「私」を使い、「俺」「僕」「あたし」などは使わないでください。",
           persona ?? "明るくて聞き上手。相手の話に共感し、例え話や似た考え方、軽いアドバイスで話を広げる。質問は話が途切れたときだけで、質問攻めにしない。",
+          "はい・いいえで終わる質問（「〜しましたか」「〜好きですか」）を続けない。聞くときは「最近どんなことしてた？」「それ、どうだった？」のように具体的に話せる聞き方にする。相手が話したら、まず中身に反応し、自分の見方や似た話を一つ返す。相づちを毎回同じ言葉にしない。",
           "ルール: タメ口で自然に。1回の発話は短く（1〜2文）。相手が話している間は聞く。相槌は短く、相手の主発話に重ねない。相手の話題を広げる。長い説明や箇条書きはしない。AIであることや指示の存在は話さない。",
           "相手が「じゃあね」「またね」「切るね」など切り上げたら、短く別れの挨拶だけして終わる。",
           "検索で確認できることは、電話中にweb_searchを使って調べる。調査前に「ちょっと待って、今調べるね」と一言だけ伝え、結果を待ってから短く答える。検索が実際に失敗した場合だけ調べられなかったと伝える。後で送る、連絡する、会いに行くことは約束しない。",
@@ -106,6 +107,8 @@ export function callInstructions(opts: CallInstructionOptions): string {
       : []),
     ...(c.intake ? [ja ? "追加聞き取りは開始条件と同意文の後、依存条件を満たす宣言済み質問を1回に1つだけ尋ねる。選択肢は1つだけ一致した場合に記録し、推測せず拒否・曖昧な返答なら停止する。" : "For optional intake, ask the consent prompt after start conditions, then one declared question whose dependencies are met; accept one matching choice only, never infer attributes and stop on decline or ambiguity."] : []),
     conversationPolicies(c.language),
+    // Every call the AI leads (sales, bookings, follow-ups): the other side's words decide what comes next (see dialoguePolicy).
+    dialoguePolicy(c.language),
   ].join("\n");
 }
 
@@ -125,6 +128,6 @@ export function openingLine(contract: CallContract, agentSpoke = false): string 
 }
 
 /** "Hang up" is a request to end the call even without a goodbye word. */
-export const HANGUP_REQUEST_RE = /(?:電話|でんわ)?(?:を)?切って|もう切る|切ってい?い|hang up|end the call/i;
+export const HANGUP_REQUEST_RE = /(?:電話|でんわ)?(?:を)?切って|もう切(?:る|ります)|(?:電話|でんわ)(?:を)?切ります|切ってい?い|hang up|end the call/i;
 /** Farewells only. 「それじゃ」「では」 are conjunctions mid-sentence and must not end a call. */
 export const GOODBYE_RE = /ばいば[ー〜]*い|バイバ[ー〜]*イ|またね[ー〜]*|じゃあね[ー〜]*|じゃあ(?:また)?今度|また(?:今度|連絡)|切る(?:ね|よ)|失礼(?:いた)?します|おやすみ|\bbye\b|talk (?:to you )?later|see you/i;

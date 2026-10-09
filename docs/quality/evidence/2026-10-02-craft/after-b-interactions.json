@@ -1,0 +1,330 @@
+{
+  "capturedAt": "2026-10-01T17:16:28.086Z",
+  "origin": "http://127.0.0.1:59140",
+  "method": "Real Chrome pointer/key events; no business-data mutation",
+  "checks": [
+    {
+      "id": "chatgpt_pointer_tab",
+      "status": "PASS",
+      "observed": {
+        "selected": "true",
+        "claudeHidden": true,
+        "chatHidden": false,
+        "localUrlCopyDisabled": true
+      }
+    },
+    {
+      "id": "local_chatgpt_url_copy_is_disabled",
+      "status": "PASS",
+      "observed": {
+        "selected": "true",
+        "claudeHidden": true,
+        "chatHidden": false,
+        "localUrlCopyDisabled": true
+      }
+    },
+    {
+      "id": "tab_arrow_left",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_end",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_home",
+      "status": "PASS"
+    },
+    {
+      "id": "tab_wrap",
+      "status": "PASS"
+    },
+    {
+      "id": "chatgpt_tab_overflow_1440",
+      "status": "PASS"
+    },
+    {
+      "id": "chatgpt_tab_overflow_390",
+      "status": "PASS"
+    },
+    {
+      "id": "chatgpt_tab_overflow_320",
+      "status": "PASS"
+    },
+    {
+      "id": "copy_command_real_pointer_feedback",
+      "status": "PASS",
+      "observed": {
+        "notice": "Claude Codeの追加コマンドをコピーしました。"
+      }
+    },
+    {
+      "id": "empty_native_validation_managed-root",
+      "status": "PASS",
+      "observed": {
+        "activeBefore": "BODY",
+        "required": true,
+        "focused": true,
+        "authRequests": 0
+      }
+    },
+    {
+      "id": "keyboard_order_managed-root",
+      "status": "OBSERVED",
+      "observed": [
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "通話ログの完了判定を試すログイン・インス",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Claude Code・ChatGPTと",
+          "outline": true
+        },
+        {
+          "id": "managed-email",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "managed-password",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "managed-login-submit",
+          "tag": "BUTTON",
+          "text": "ログイン",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "BODY",
+          "text": "本文へ移動\n\n  \n    ← 戻る\n ",
+          "outline": false
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "empty_native_validation_app",
+      "status": "PASS",
+      "observed": {
+        "activeBefore": "BODY",
+        "required": true,
+        "focused": true,
+        "authRequests": 0
+      }
+    },
+    {
+      "id": "keyboard_order_app",
+      "status": "OBSERVED",
+      "observed": [
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Oathra",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "ログ検証を試す公開ページ · ログイン不",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "AIとの接続を設定するClaude Co",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "SUMMARY",
+          "text": "利用上限・着信について",
+          "outline": true
+        },
+        {
+          "id": "public-email",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "public-password",
+          "tag": "INPUT",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "public-login-submit",
+          "tag": "BUTTON",
+          "text": "ログイン",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "empty_native_validation_connect",
+      "status": "PASS",
+      "observed": {
+        "activeBefore": "BODY",
+        "required": true,
+        "focused": true,
+        "authRequests": 0
+      }
+    },
+    {
+      "id": "keyboard_order_connect",
+      "status": "OBSERVED",
+      "observed": [
+        {
+          "id": "",
+          "tag": "A",
+          "text": "本文へ移動",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Oathra",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "アプリへ戻る",
+          "outline": true
+        },
+        {
+          "id": "client-claude",
+          "tag": "BUTTON",
+          "text": "Claude Code",
+          "outline": true
+        },
+        {
+          "id": "claude-panel",
+          "tag": "DIV",
+          "text": "コマンドをコピーして追加\n       ",
+          "outline": true
+        },
+        {
+          "id": "claude-command",
+          "tag": "TEXTAREA",
+          "text": "",
+          "outline": true
+        },
+        {
+          "id": "copy-command",
+          "tag": "BUTTON",
+          "text": "コマンドをコピー",
+          "outline": true
+        },
+        {
+          "id": "",
+          "tag": "A",
+          "text": "Claude Codeの公式手順",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "reduced_motion_preference",
+      "status": "PASS",
+      "observed": {
+        "matches": true,
+        "tabTransition": "0s"
+      }
+    },
+    {
+      "id": "reduced_motion_tabs",
+      "status": "PASS"
+    },
+    {
+      "id": "desktop_200_percent_equivalent_reflow_managed-root",
+      "status": "PASS"
+    },
+    {
+      "id": "css_200_percent_zoom_managed-root",
+      "status": "PASS",
+      "observed": {
+        "condition": "CSS zoom 2, desktop viewport 1440; not OS/browser zoom"
+      }
+    },
+    {
+      "id": "desktop_200_percent_equivalent_reflow_app",
+      "status": "PASS"
+    },
+    {
+      "id": "css_200_percent_zoom_app",
+      "status": "PASS",
+      "observed": {
+        "condition": "CSS zoom 2, desktop viewport 1440; not OS/browser zoom"
+      }
+    },
+    {
+      "id": "desktop_200_percent_equivalent_reflow_connect",
+      "status": "PASS"
+    },
+    {
+      "id": "css_200_percent_zoom_connect",
+      "status": "PASS",
+      "observed": {
+        "condition": "CSS zoom 2, desktop viewport 1440; not OS/browser zoom"
+      }
+    },
+    {
+      "id": "malformed_oauth_query_has_error",
+      "status": "PASS",
+      "observed": {
+        "error": "接続の確認情報が正しくありません。接続するツールから認証をやり直してください。",
+        "privatePanelVisible": false
+      }
+    },
+    {
+      "id": "invalid_mission_has_error",
+      "status": "PASS",
+      "observed": {
+        "error": "下書きのURLを確認してください。",
+        "missionContentVisible": false
+      }
+    },
+    {
+      "id": "authenticated_pause_copy_consistency",
+      "status": "PASS",
+      "observed": {
+        "paused": true,
+        "liveReadyClaim": false,
+        "practiceClaim": true,
+        "phoneReadyClaim": false
+      }
+    }
+  ],
+  "limitations": [
+    "Clipboard write uses a real pointer gesture and success feedback; clipboard contents were not independently read.",
+    "720 CSS-pixel reflow and CSS zoom=2 are recorded separately; this is not real-device or native browser zoom validation."
+  ],
+  "runtimeExceptions": 0
+}

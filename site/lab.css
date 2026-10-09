@@ -1,0 +1,5 @@
+/* The existing working lab stays reachable from old links and the new homepage. */
+.lab-boundary{background:#e4eee5;border-bottom:1px solid #c7d7ca;color:#24583f;font:13px/1.8 system-ui,sans-serif;padding:14px 0}
+.lab-boundary a{font-weight:600;white-space:nowrap;color:inherit}
+.lab-boundary+.wrap{padding-top:0}
+@media(max-width:600px){.lab-boundary{font-size:12px;padding-block:13px}.lab-boundary .wrap{padding-inline:20px}}

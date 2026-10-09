@@ -5,7 +5,7 @@
  * does not produce an offer for 19:00 while the following clause
  * ("19時半なら空いております") does.
  */
-import { parseDates, parsePartySize, parsePhoneNumbers, parsePrices, parseSerials, parseTimes } from "./normalize.js";
+import { parseDates, parsePartySize, parsePhoneNumbers, parsePrices, parseQuantities, parseSerials, parseTimes } from "./normalize.js";
 import type { Language, Speaker, Utterance } from "./types.js";
 
 export type Polarity = "positive" | "negative";
@@ -21,8 +21,10 @@ export type Claim = {
   ambiguous?: boolean;
 };
 
+// 「問題ありません」「間違いございません」「相違ありません」「差し支えありません」 are agreements in negative form (the allow-list
+// in shape.ts); every other 「…ありません/ございません」 is a refusal.
 const NEGATIVE_JA =
-  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!問題(?:は)?)ございません|(?<!問題(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|定休日|休業|お休みを?(?:いただ|頂)|できまへん|でけへん|あきまへん|あかん/;
+  /いっぱい|満席|満室|空い(?:て|ており)(?:ません|おりません|ない)|できません|できかねます|難しい|無理|(?<!(?:問題|間違い|相違|差し支え)(?:は)?)ございません|(?<!(?:問題|間違い|相違|差し支え)(?:は)?)ありません|承れません|お受けできません|いたしかねます|致しかねます|お断り|なりません|なりかねます|かねます|承ることができません|不可|別の(?:会議|予定|用事|打ち?合わせ)|予定が(?:入って|あり|ござい)|先約|出張|都合が(?:悪|つきま|つかな)|埋まって|定休日|休業|お休みを?(?:いただ|頂)|できまへん|でけへん|あきまへん|あかん/;
 const NEGATIVE_EN =
   /\b(not available|fully booked|no availability|unavailable|can't|cannot|unable|no longer|sold out|full\b|isn't possible|not possible|don't have|do not have|already have (?:a|another) (?:meeting|appointment)|doesn't work|does not work|won't work|(?:we're|we are|is|are) closed|not (?:yet )?confirmed|not confirmed yet|(?:is|are|remains?) (?:still )?(?:pending|tentative))\b/i;
 
@@ -46,7 +48,7 @@ export const COMMIT_RE = /(?:ご)?予約(?:を)?(?:いたします|させてい�
 
 /** Callee agrees to a value the caller proposed. */
 export const AGREEMENT_RE =
-  /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly|\ball set\b|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)/i;
+  /かしこまりました|(?:取|と)っといた|入れといた|押さえといた|(?:取|と)ったで|入れたで|押さえたで|ええよ|ええで|大丈夫やで|合うてる|合うとる|承知(?:いたし|し)ました|大丈夫です|問題ございません|問題ありません|差し支え(?:ありません|ございません)|構いません|空いております|空いています|ご用意できます|お取りできます|承りました|了解|合っております|合っています|その通りです|間違いございません|間違いありません|相違(?:ございません|ありません)|正しいです|certainly|of course|sure\b|available|we can do|no problem|that works|absolutely|yes\b|sounds good|correct|that.s right|exactly|\ball set\b|(?:we|I) (?:have|'ve) (?:you|your (?:table|room|party)) (?:down|booked|reserved)/i;
 
 /** "承知しました、ですが…": an agreement followed by a contrast is not a clean yes. */
 export const CONTRAST_RE = /ですが|ますが|けど|けれど|しかし|ただし|ただ(?!いま|今|ちに)|とはいえ|と言いたいところ|\bbut\b|however|although/i;
@@ -143,6 +145,9 @@ export function extractClaims(u: Utterance, opts: ExtractOptions): Claim[] {
     for (const p of parsePrices(text)) {
       claims.push({ field: "price", value: p.value, span: p.span, semantic: 0.94, polarity: clause.polarity });
     }
+    for (const q of parseQuantities(text)) {
+      claims.push({ field: "quantity", value: q.value, span: q.span, semantic: 0.93, polarity: clause.polarity });
+    }
     for (const p of parsePhoneNumbers(text)) {
       claims.push({ field: "phone", value: p.value, span: p.span, semantic: 0.9, polarity: clause.polarity });
     }
@@ -223,6 +228,19 @@ export const UNAVAILABLE_RE =
  * the callee commits to it. 「9月25日の15時でお願いします」 from the callee is that commitment; in a
  * reservation the same words from a shop would only be an offer.
  */
+/**
+ * Appointment mode: words that say the proposed terms cannot be met, or that the line is not an answer at all
+ * (a hold, a request to repeat, "I can hear you"). 「はい、その日は不在です」 opens with yes and is a no.
+ */
+export const UNABLE_RE = /不在|お?休み(?:です|を|で|いただ|にな)|留守|厳し|きびし|足り(?:な|ませ)|扱って(?:い|お)?(?:な|ませ|りませ)|取り扱(?:って|い)(?:が)?(?:な|ませ|ござ)|間に合って|無理|会議|予定が(?:あ|入|ござ)|都合が(?:悪|つか|つき)|先約|出張|外出|難し|むずかし|(?:でき|いたし|お受けし)かね|いっぱい|埋まって|もう一度|もういちど|聞こえ|聞き取れ|在庫を(?:見|確|調)|見てき|調べ(?:て|ま)|確認して(?:き|まい|み)|お待ち(?:くだ|いただ)|わかりかね|分かりかね|担当(?:者)?(?:が|は)|out of (?:office|stock)|can't make|cannot make|not (?:available|possible)|say that again|can you hear/i;
+/** What may follow a bare opening 「はい」 for it to be a yes to the terms: nothing, courtesy, or the terms themselves. */
+const AFTER_YES_RE = /^(?:(?:よろしく)?お願い(?:します|いたします|致します)|ありがとうございます|わかりました|分かりました|結構です|それで|そちらで|その(?:日|時間|日程|内容)|では|please|thank you|thanks)/i;
+
+/** Something else that a callee may be agreeing to instead of the proposed terms. */
+export const OTHER_MATTER_RE = /資料|見積|カタログ|パンフレット|メール|ファッ?クス|FAX|送付|郵送|送って|折り返し|申し伝え|伝えて|伝えます|伝えておき|担当(?:者|の者)?(?:に|へ|から)|上(?:司|長|の者)(?:に|へ)|検討|の件|brochure|quote|e-?mail|pass (?:it|that) on|get back to you/i;
+/** Words that tie an agreement to the terms themselves: a date, a time, the meeting, the delivery, a number. */
+export const TERMS_RE = /日程|日時|時間|その日|当日|打ち?合わ?せ|商談|面談|お約束|ご?予約|納期|納品|数量|[0-9０-９]|[一二三四五六七八九十]+(?:日|時|月)|曜|that (?:time|day|date)|the (?:meeting|date|time)/i;
+
 export const CALLEE_COMMIT_RE =
   /でお願い(?:します|いたします)|で大丈夫です|で結構です|で構いません|で問題(?:ありません|ございません)|伺います|お待ちして(?:おり)?ます|お約束(?:します|いたします)|確定です|絶対(?:に)?行く|行く行く|行きます|空けと(?:く|きます)|空けてお(?:く|きます)|(?:それ|そこ)で(?:いい|オッケー|おっけー|OK)|I'm in|count me in|I'll be there|works for me|that works|see you then|sounds good|confirmed|let's do (?:that|it)/i;
 
@@ -231,8 +249,20 @@ export function isCalleeCommitment(text: string, source: Speaker): boolean {
   if (source !== "callee") return false;
   const t = text.trim();
   if (REFUSAL_RE.test(t) || HEDGE_RE.test(t) || CONTRAST_RE.test(t) || RETRACTION_RE.test(t)) return false;
+  // 「はい、少々お待ちください」 (checking the stock, fetching someone) is a hold, not a yes.
+  if (HOLD_RE.test(t)) return false;
   if (/[?？]|でしょうか|ですか|ますか|ませんか/.test(t)) return false;
-  return CALLEE_COMMIT_RE.test(t) || AGREEMENT_RE.test(t) || AFFIRMATIVE_RE.test(t);
+  if (UNABLE_RE.test(t)) return false;
+  if (CALLEE_COMMIT_RE.test(t)) return true;
+  // 「資料の送付は承知しました」「担当に伝えておきます、承知しました」 agrees to something, but not to the slot or the
+  // order on the table. A bare yes that names another matter and says nothing of the terms is not a commitment to them.
+  if (OTHER_MATTER_RE.test(t) && !TERMS_RE.test(t)) return false;
+  if (AGREEMENT_RE.test(t)) return true;
+  if (!AFFIRMATIVE_RE.test(t)) return false;
+  // A bare opening yes commits only when what follows is nothing, a courtesy, or the terms: 「はい、どうも。」 and
+  // 「ええ、聞こえています」 answer something, but not the proposal.
+  const rest = t.replace(AFFIRMATIVE_RE, "").replace(/^[\s、,。.!！」]+/, "").trim();
+  return rest === "" || AFTER_YES_RE.test(rest) || TERMS_RE.test(rest);
 }
 
 /** "…で合っておりますでしょうか？" is the callee asking back, not agreeing. */

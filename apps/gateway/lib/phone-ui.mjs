@@ -38,7 +38,7 @@ export function phonePage() {
   // The Arena's icons live under assets/; the gateway serves its own copies at the root.
   patch(/href="assets\/oathra-mark-original\.png"/, 'href="/oathra-mark-original.png"');
   patch(/href="assets\/oathra-mark-white\.png"/, 'href="/oathra-mark.png"');
-  patch('</head>', '<link rel="stylesheet" href="/managed-phone.css"></head>');
+  patch('</head>', '<link rel="stylesheet" href="/managed-phone.css"><link rel="stylesheet" href="/phone/public-service.css"></head>');
   patch(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   patch(/<section id="phone-review"([\s\S]*?)<\/section>/, (_, inside) =>
     '<dialog id="phone-review"' + actions(inside.replace(/<label class="phone-consent">[\s\S]*?<\/label>/, '')) + '</dialog>');

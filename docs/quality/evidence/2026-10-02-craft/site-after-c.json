@@ -1,0 +1,461 @@
+{
+  "capturedAt": "2026-10-01T17:28:44.689Z",
+  "stage": "after-c",
+  "source": "Public saved Arena negotiation only; no invented data or real phone call.",
+  "checks": [
+    {
+      "name": "ja_home_local_links_and_media_exist",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_main_text_contrast_4_5",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_720_reflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_360_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_recorded_offer_is_incomplete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_recorded_confirmation_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_story_keyboard_operable",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_reduced_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_no_autoplay",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_checker_local_links_and_media_exist",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_current_values_show_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_real_raw_record_schema_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_validation_recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_legacy_replay_link",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_lab_local_links_and_media_exist",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_existing_lab_and_saved_replay_loaded",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_lab_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ja_legacy_lab_link",
+      "status": "PASS"
+    },
+    {
+      "name": "en_home_local_links_and_media_exist",
+      "status": "PASS"
+    },
+    {
+      "name": "en_main_text_contrast_4_5",
+      "status": "PASS"
+    },
+    {
+      "name": "en_desktop_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_720_reflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_360_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_recorded_offer_is_incomplete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_recorded_confirmation_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_story_keyboard_operable",
+      "status": "PASS"
+    },
+    {
+      "name": "en_reduced_motion",
+      "status": "PASS"
+    },
+    {
+      "name": "en_no_autoplay",
+      "status": "PASS"
+    },
+    {
+      "name": "en_checker_local_links_and_media_exist",
+      "status": "PASS"
+    },
+    {
+      "name": "en_saved_record_checks_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "en_check_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_current_values_show_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "en_clear_invalidates_result",
+      "status": "PASS"
+    },
+    {
+      "name": "en_real_raw_record_schema_rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "en_validation_recovery",
+      "status": "PASS"
+    },
+    {
+      "name": "en_legacy_replay_link",
+      "status": "PASS"
+    },
+    {
+      "name": "en_lab_local_links_and_media_exist",
+      "status": "PASS"
+    },
+    {
+      "name": "en_existing_lab_and_saved_replay_loaded",
+      "status": "PASS"
+    },
+    {
+      "name": "en_lab_mobile_no_overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "en_legacy_lab_link",
+      "status": "PASS"
+    },
+    {
+      "name": "no_failed_local_assets",
+      "status": "PASS"
+    },
+    {
+      "name": "no_console_errors",
+      "status": "PASS"
+    },
+    {
+      "name": "no_browser_runtime_exceptions",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-story-complete-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-story-complete-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-availability.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-check-result.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-check-result-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-check-schema-error.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-ja-lab-replay-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-story-complete-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-story-complete-desktop.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-availability.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-check-empty.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-check-result.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-check-result-mobile.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-check-schema-error.png",
+    "<repo>/docs/quality/evidence/2026-10-02-craft/site-after-c-en-lab-replay-mobile.png"
+  ],
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+  "platform": "darwin",
+  "ja": {
+    "heading": "完了には、相手の言葉を。",
+    "initialResources": [
+      {
+        "path": "/craft.css",
+        "bytes": 17240,
+        "durationMs": 6
+      },
+      {
+        "path": "/media/oathra-intake-ja-poster.png",
+        "bytes": 426608,
+        "durationMs": 13
+      },
+      {
+        "path": "/mark.png",
+        "bytes": 110296,
+        "durationMs": 14
+      },
+      {
+        "path": "/legacy.js",
+        "bytes": 621,
+        "durationMs": 7
+      },
+      {
+        "path": "/story.js",
+        "bytes": 98328,
+        "durationMs": 10
+      },
+      {
+        "path": "/portfolio.js",
+        "bytes": 6521,
+        "durationMs": 13
+      },
+      {
+        "path": "/media/oathra-intake-ja.vtt",
+        "bytes": 468,
+        "durationMs": 2
+      },
+      {
+        "path": "/data/recorded-check.json",
+        "bytes": 4042,
+        "durationMs": 1
+      },
+      {
+        "path": "/mark.png",
+        "bytes": 110296,
+        "durationMs": 2
+      }
+    ],
+    "contrast": [
+      {
+        "selector": ".hero h1",
+        "color": "rgb(24, 43, 38)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "66px",
+        "ratio": 13.93
+      },
+      {
+        "selector": ".hero-detail",
+        "color": "rgb(70, 89, 81)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "15px",
+        "ratio": 7.01
+      },
+      {
+        "selector": ".hero-copy>.micro",
+        "color": "rgb(99, 117, 108)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "12px",
+        "ratio": 4.58
+      },
+      {
+        "selector": ".story-tag",
+        "color": "rgb(99, 117, 108)",
+        "background": "rgb(255, 255, 255)",
+        "fontSize": "9px",
+        "ratio": 4.89
+      },
+      {
+        "selector": ".story-source",
+        "color": "rgb(99, 117, 108)",
+        "background": "rgb(252, 253, 251)",
+        "fontSize": "12px",
+        "ratio": 4.8
+      },
+      {
+        "selector": ".story-verdict code",
+        "color": "rgb(136, 91, 31)",
+        "background": "rgb(251, 247, 238)",
+        "fontSize": "10px",
+        "ratio": 5.51
+      },
+      {
+        "selector": ".button",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(24, 43, 38)",
+        "fontSize": "14px",
+        "ratio": 14.87
+      },
+      {
+        "selector": ".text-link",
+        "color": "rgb(24, 43, 38)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "14px",
+        "ratio": 13.93
+      }
+    ]
+  },
+  "en": {
+    "heading": "Evidencebefore complete.",
+    "initialResources": [
+      {
+        "path": "/craft.css",
+        "bytes": 17240,
+        "durationMs": 2
+      },
+      {
+        "path": "/legacy.js",
+        "bytes": 621,
+        "durationMs": 2
+      },
+      {
+        "path": "/media/oathra-intake-poster.png",
+        "bytes": 456961,
+        "durationMs": 13
+      },
+      {
+        "path": "/mark.png",
+        "bytes": 110296,
+        "durationMs": 13
+      },
+      {
+        "path": "/portfolio.js",
+        "bytes": 6521,
+        "durationMs": 12
+      },
+      {
+        "path": "/story.js",
+        "bytes": 98328,
+        "durationMs": 12
+      },
+      {
+        "path": "/media/oathra-intake-en.vtt",
+        "bytes": 417,
+        "durationMs": 8
+      },
+      {
+        "path": "/data/recorded-check.json",
+        "bytes": 4042,
+        "durationMs": 3
+      }
+    ],
+    "contrast": [
+      {
+        "selector": ".hero h1",
+        "color": "rgb(24, 43, 38)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "73px",
+        "ratio": 13.93
+      },
+      {
+        "selector": ".hero-detail",
+        "color": "rgb(70, 89, 81)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "15px",
+        "ratio": 7.01
+      },
+      {
+        "selector": ".hero-copy>.micro",
+        "color": "rgb(99, 117, 108)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "12px",
+        "ratio": 4.58
+      },
+      {
+        "selector": ".story-tag",
+        "color": "rgb(99, 117, 108)",
+        "background": "rgb(255, 255, 255)",
+        "fontSize": "9px",
+        "ratio": 4.89
+      },
+      {
+        "selector": ".story-source",
+        "color": "rgb(99, 117, 108)",
+        "background": "rgb(252, 253, 251)",
+        "fontSize": "12px",
+        "ratio": 4.8
+      },
+      {
+        "selector": ".story-verdict code",
+        "color": "rgb(136, 91, 31)",
+        "background": "rgb(251, 247, 238)",
+        "fontSize": "10px",
+        "ratio": 5.51
+      },
+      {
+        "selector": ".button",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(24, 43, 38)",
+        "fontSize": "14px",
+        "ratio": 14.87
+      },
+      {
+        "selector": ".text-link",
+        "color": "rgb(24, 43, 38)",
+        "background": "rgb(246, 248, 246)",
+        "fontSize": "14px",
+        "ratio": 13.93
+      }
+    ]
+  },
+  "localNetworkFailures": [],
+  "consoleErrors": 0,
+  "runtimeExceptions": 0,
+  "sourceHashes": {
+    "site/index.html": "f3b1d7cb5ee2a7c64329580ac86be7775a1b8469e3b5a78ebedf82b6686d84aa",
+    "site/en/index.html": "fbf4b159164dc6ac6e574bda304497dd6d1761b20bdcae0c6a7fd52bc5343e93",
+    "site/check.html": "1d3032e71a19de8f51712ea007f2c88ed60b82dbb276da01c718cf3e1eef1bc2",
+    "site/en/check.html": "42b34b7096bff20493e6333407d4d83cea7a4450caac2ba0d8b5afa74ad926c1",
+    "site/check.css": "b47a1a6558298448982696fd19602c979f12df19cb315e5d2ad785d78784404f",
+    "site/craft.css": "653f4f0f5caec476666236b0d1f0cbba4d4e56dde4e6b17115c7b9552e9f2cd4",
+    "site/src/story.ts": "eca5f1cd13a5ac06539abfdf56d4bc14da2b35fb27372c2f37e21e150c3df185",
+    "site/src/check.ts": "6c184ff233f45e913e965564d87987c2236d4f20808851d522f0246728e1b180",
+    "site/lab.html": "8cf4d1b0e98c1c69c1e658bb4c33abf69410c57495b6544d274a547c9dfc876e",
+    "site/en/lab.html": "6dd9e43be7d0d43e06751b0e24229d9a92de37c1fa604f84fba2ea04cdbdd925",
+    "site/legacy.js": "d31df0a5784aa7cfc03da7c183bf80f8da5b298f4f5dad2ad9e8f8fe09a83cc6",
+    "site/mark.png": "350e7ecb2aee2735a14116b3046bc59fdcc4dfc43ad3e983cea4ec45a33ed16a",
+    "site/check.js": "97567062f3ba889757f79faf08e87db87201f06fd922afbf81e0cf43e84c7d47",
+    "site/story.js": "b632231695286efbf9cd56db24c1ef6d9262cea4745ae579d7e9f4d484e9b7c3",
+    "site/lab.css": "b7527267293d97371b1cd9d7f6090d75d7d419af7698dc453d4a6594bd5af83c",
+    "scripts/build-site.mjs": "a77b36f09df6a3dba9ef4d4de6efbe7b12cf202fd64f38a459663cb9629e7921",
+    "scripts/ui/site-craft.mjs": "e29d138bf385a3046d76721e3b65f8a4ba3e7b76da2e0005d48384577ef67813"
+  },
+  "status": "PASS"
+}

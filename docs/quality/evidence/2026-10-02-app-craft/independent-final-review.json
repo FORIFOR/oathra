@@ -1,0 +1,303 @@
+{
+  "recordedAt": "2026-10-01T18:23:49.239Z",
+  "reviewer": "独立サブエージェント。製品コードの編集なし。AIによるレビューであり、外部初心者や審査員ではない。",
+  "environment": {
+    "preview": "preview.json",
+    "revision": "db56271fd4b6a01ae51f577ed2692c7f89b3b7a2",
+    "browser": "Google Chrome 154.0.8037.58 / headless CDP",
+    "node": "v25.2.1",
+    "os": "darwin 27.0.0",
+    "sourceHashes": {
+      "apps/gateway/public/app/app.js": "1003cccdbf85f8be694f0d3c9cb1b067bc138778fa74a2552e5ede6b64c9e80e",
+      "apps/gateway/public/app/style.css": "eac00754ff659d6ef0f5c2cd8acb79eb5c474b261b5c64a6653b036f8717ed69",
+      "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129",
+      "apps/gateway/public/phone/public-service.js": "c242e6fe64f59c0af097aeeb06802dcc4a7d535cbcb8f3c57595c9720ed3a6c8",
+      "apps/gateway/public/phone/public-service.css": "e5935dff73451319d10e96914b3326da092d1db67179ed11558b536abf1b2dd3",
+      "apps/gateway/public/phone/account.js": "e78da7e61133c35d8385b36eed9639cd5235c3a2bef2157f6ecc70f1828e546e",
+      "apps/gateway/public/app.js": "770619fbb70ea840c33b6f8cb513f57065d20a3f13d152d204f92ebc9fa2ad14",
+      "apps/gateway/public/index.html": "381788cbf6441a09890d03a989b60788dbf1be29c72e96d48971534c366c998d",
+      "apps/gateway/public/style.css": "9b46c3e75ac2191cb7ec767777d263360f24a9dca28f81429ea2f72785f145bc",
+      "apps/gateway/public/phone/account.html": "5f58b32d869916838c6547470a94a6dc6d38151a20eb2092bce4b4b4b710a8c2",
+      "apps/gateway/public/managed-phone.css": "ffbfa4409f7207b0d893c5264f2142af74215e44f503dd496c4121487f5f1310"
+    },
+    "realExistingDatabaseBackup": true,
+    "workerStarted": false,
+    "providerCredentialsCopied": false,
+    "registrationPurchaseCallPaused": true
+  },
+  "scope": {
+    "appRoutes": [
+      "ホーム",
+      "電話を頼む",
+      "依頼一覧",
+      "既存の通話報告",
+      "予定",
+      "練習の選択画面",
+      "連絡先",
+      "設定:かける",
+      "設定:かけられた時",
+      "設定:商品",
+      "設定:費用とクレジット",
+      "設定:声とAI",
+      "設定:記録と表示"
+    ],
+    "routeWidths": [
+      1440,
+      390,
+      320
+    ],
+    "observations": 39,
+    "additionalReport": "未確認の判定項目を持つ既存報告1件を1440/390で追加",
+    "other": [
+      "旧workspaceの既存cookie継承と実際の設定画面への往復",
+      "managed電話画面のaccount/creditsを320で独立操作",
+      "作者撮影のaccount/credits9画像を独立目視"
+    ]
+  },
+  "checks": [
+    {
+      "id": "route-layout",
+      "method": "実ページ13画面×3幅、clientWidth/requestedWidth/scrollWidth比較",
+      "expected": "表示幅に収まりラベル関連付けを持つ",
+      "observed": "39観測で横溢れ0、関連付けのない入力0、上部ナビ欠け0、JS例外0。撮影中source不変。",
+      "status": "PASS",
+      "evidence": [
+        "final-routes.json"
+      ]
+    },
+    {
+      "id": "report-hierarchy",
+      "method": "既存会話専用報告と未確認項目付き報告を読み取り、実画像10枚を開いた",
+      "expected": "長い依頼より報告を先に読み、会話を上から探せる",
+      "observed": "依頼文は閉じたdetails、終了報告会話はflex-start。1440幅の最初の行は会話領域上端から8px。新しい完了実績は作成していない。",
+      "status": "PASS",
+      "evidence": [
+        "final-routes.json",
+        "final-unverified-routes.json",
+        "transcript-layout-observation.json"
+      ]
+    },
+    {
+      "id": "async-navigation",
+      "method": "実800ms遅延、実クリック、全Fetch完了待ち",
+      "expected": "最後に選んだホームを古い描画が上書きしない",
+      "observed": "修正前new→homeでURLと画面不一致。最終版のnew/cost→homeは両方PASS、未完了Fetch0、source不変。",
+      "status": "PASS",
+      "evidence": [
+        "navigation-race-observed.json",
+        "navigation-race-final-fixed.json"
+      ]
+    },
+    {
+      "id": "offline-recovery",
+      "method": "Chromeを実際にoffline/onlineにし読み取り経路を遷移",
+      "expected": "日本語エラーと読み取り再試行で復帰",
+      "observed": "修正前はFailed to fetchだけ。最終版は日本語と再試行ボタンがあり、直接再試行で依頼フォームに復帰。",
+      "status": "PASS",
+      "evidence": [
+        "app-independent-interactions.json",
+        "app-independent-interactions-final.json"
+      ]
+    },
+    {
+      "id": "workspace-session",
+      "method": "実cookieでworkspaceへ進み戻るリンクをクリック",
+      "expected": "再ログイン不要で実際の記録と表示パネルへ戻れる",
+      "observed": "workspace表示・login非表示を確認。戻った先の.settings-contentが記録と表示を含むまで確認。",
+      "status": "PASS",
+      "evidence": [
+        "app-independent-interactions-final.json"
+      ]
+    },
+    {
+      "id": "keyboard-and-validation",
+      "method": "実Enter/Tab、実空フォームのネイティブ検証、通信method監視",
+      "expected": "キーボードで開閉し空の商品を送信しない",
+      "observed": "報告detailsの開閉とフォーカス輪郭PASS。商品名未入力でnative validationがフォーカスし、次のTabは事実欄。業務書込み0。",
+      "status": "PASS",
+      "evidence": [
+        "app-accessibility-narrow.json"
+      ]
+    },
+    {
+      "id": "reflow-and-reduced-motion",
+      "method": "720px再配置、別途CSS zoom=2、reduced-motion media",
+      "expected": "対象の読み取り表示が横にはみ出さず抑制設定が適用される",
+      "observed": "依頼/商品/報告の720pxで横溢れなし。商品設定のCSS200%で横溢れなし。reduced-motion時に既存indicator animationなし。ネイティブ200%の保証ではない。",
+      "status": "PASS",
+      "evidence": [
+        "app-accessibility-narrow.json"
+      ]
+    },
+    {
+      "id": "managed-dialogs",
+      "method": "実320px account/credits開閉、既存状態の読み取り",
+      "expected": "閉じる操作と残高が読め、休止中に購入を誘導しない",
+      "observed": "4項目PASS。Escape開閉、閉じる位置、残高がheaderより下、購入フォーム非表示を独立確認。作者の46+10項目は独立実行と区別。",
+      "status": "PASS",
+      "evidence": [
+        "phone-independent.json",
+        "phone-account-after.json",
+        "phone-account-final-delta.json"
+      ]
+    },
+    {
+      "id": "booking-ledger",
+      "method": "実managed画面の入口状態",
+      "expected": "実店舗の予約台帳を読める",
+      "observed": "実operatorに受付台帳入口がない。店舗・予約を新設していないため未検証。",
+      "status": "BLOCKED",
+      "evidence": [
+        "phone-independent.json"
+      ]
+    },
+    {
+      "id": "verified-booking-proof",
+      "method": "既存履歴の集計だけ",
+      "expected": "実記録で確認済み根拠付きの成功報告を確認",
+      "observed": "既存26件中、判定項目がある記録8、verified項目のある記録0。未確認報告まで確認し、成功画面の状態を捏造していない。",
+      "status": "BLOCKED",
+      "evidence": [
+        "report-coverage.json",
+        "final-unverified-routes.json"
+      ]
+    },
+    {
+      "id": "new-business-success",
+      "method": "副作用を実行しない",
+      "expected": "新依頼保存→本人承認→実電話結果/有効決済",
+      "observed": "新規の実電話・課金・メール・顧客・商品・業務記録を作成していないため全経路の成功は未検証。",
+      "status": "BLOCKED",
+      "evidence": [
+        "preview.json"
+      ]
+    }
+  ],
+  "resolvedFindings": [
+    {
+      "id": "mobile-global-navigation",
+      "priority": "P2",
+      "resolution": "6項目が320/390で見える"
+    },
+    {
+      "id": "mobile-settings-density",
+      "priority": "P2",
+      "resolution": "2列設定メニューへ整理、13画面レビュー内で確認"
+    },
+    {
+      "id": "report-evidence-priority",
+      "priority": "P2",
+      "resolution": "依頼文を折畳み、終了会話を上揃え"
+    },
+    {
+      "id": "navigation-race",
+      "priority": "P2",
+      "resolution": "最終固定版で再現せず"
+    },
+    {
+      "id": "practice-horizontal-overflow",
+      "priority": "P2",
+      "resolution": "390要求に対し509だったscrollWidthを390に修正、320も一致"
+    },
+    {
+      "id": "offline-no-retry",
+      "priority": "P2",
+      "resolution": "日本語エラーと読み取り再試行で復帰"
+    }
+  ],
+  "remainingObservedP1P2": [],
+  "imagesVisuallyOpened": [
+    {
+      "path": "final-home-1440-redacted.png",
+      "sha256": "8d859f29c0ff04d900678cb7a51d1f38202c10454bbf9b3f7fd2e366b6e16725"
+    },
+    {
+      "path": "final-home-390-redacted.png",
+      "sha256": "e83dd28fedb95d22b20c224f6d84081442f9d372d7cc6f28b2afc786a9e621d2"
+    },
+    {
+      "path": "final-new-1440-redacted.png",
+      "sha256": "498421e8a8da8ed67f2bc1363039ced93af518a14968ae52fccade4e8f70affe"
+    },
+    {
+      "path": "final-new-390-redacted.png",
+      "sha256": "9d7487c54b442b151c8f114fdb1fbbf0a49dde4bf212ecf9bc415e3f008f2061"
+    },
+    {
+      "path": "final-report-1440-redacted.png",
+      "sha256": "266d27d80dbbb874523d6309a8e537322d77066108d028b9d21adb8817ca9938"
+    },
+    {
+      "path": "final-report-390-redacted.png",
+      "sha256": "356dd7e54b451d05c01fbb425e54386d5c55824ac1efaef5a6141f7eac5e28e9"
+    },
+    {
+      "path": "final-practice-1440-redacted.png",
+      "sha256": "03ec2b0b6cf72cb81f06b80b0b311a29c9be58793eab6a60a799d004d87aa979"
+    },
+    {
+      "path": "final-practice-390-redacted.png",
+      "sha256": "7cf31432f0cfc16fa8d37efa5892ee0dc4e091fa23b0b99dcd443210e58a504d"
+    },
+    {
+      "path": "final-unverified-report-1440-redacted.png",
+      "sha256": "559809e31cf20d8aaed9841f2763e257840790f711961913037c99d075300301"
+    },
+    {
+      "path": "final-unverified-report-390-redacted.png",
+      "sha256": "90a83acc0646bee993c1b3d7645622902b4557983973a7abe33eee752737591f"
+    },
+    {
+      "path": "phone-account-after-desktop.png",
+      "sha256": "7b732231c4315dcd07000c4d74b0b3a065bdce36d1319348e028ee0f378cf517"
+    },
+    {
+      "path": "phone-credits-after-desktop.png",
+      "sha256": "022c21be683598f9d6f0ffeab1a536d98b606ca1e77102106f7432b44aea82e4"
+    },
+    {
+      "path": "phone-account-after-mobile.png",
+      "sha256": "baab81acadf64a2c2c8518f836706a87735d4aca8902c0edf03c640c934e9817"
+    },
+    {
+      "path": "phone-password-after-mobile.png",
+      "sha256": "003c2131ad8df9edd5585d32a6d610241aef337d11aecac1379a2c3d61e472e7"
+    },
+    {
+      "path": "phone-credits-after-mobile.png",
+      "sha256": "f6c346a83c23015370622657e692700abfc27bebfad40dda7707e8983e0cfaf1"
+    },
+    {
+      "path": "phone-credits-after-small.png",
+      "sha256": "bb222877d6b92cf1f57e706b803e01d0869e908f61ed9ee0690bda2b9fb7886b"
+    },
+    {
+      "path": "phone-credits-offline-mobile.png",
+      "sha256": "4c670a135989def6bd30636bfec5312b97ac6ff717e27b9400f65907edc0a1bd"
+    },
+    {
+      "path": "phone-credits-final-small.png",
+      "sha256": "bfb3ed7b36c54514ec3ddeaa6bc985e04ae6d3c3c0b5c65425a69c66480facd7"
+    },
+    {
+      "path": "phone-credits-final-dark.png",
+      "sha256": "f43a9f61a16c3261004fe452d6ac14f062386d3dc5de40531f1679da3054c20d"
+    }
+  ],
+  "roundAImagesVisuallyOpened": 26,
+  "privacy": "実記録の氏名・番号・用件・会話・値はCSSOMで透明化または非表示にしてから保存。置換データなし。一部固定文言も保守的に隠れており、画像だけで全コピー品質は判断しない。初期のCSPによりマスク失敗した画像は直ちに削除・適用検証後に再撮影し、残っているbefore6枚は中間版と明記。",
+  "measurementCorrections": [
+    "Round A初期noSidewaysScrollはinnerWidth比較のためmobile viewport拡大を見落とした。mobile-layout-width.jsonとfinalのclientWidth/requestedWidth比較を採用。",
+    "views.errorNodeExists相当の旧emptyErrorフィールドはhidden要素を含む存在判定であり、表示エラーの件数ではない。",
+    "navigation-race-final.jsonは走行中source変更のため最終根拠から除外し、final-fixedを採用。"
+  ],
+  "limits": [
+    "初見は同じAIの独立サブエージェントであり外部人間ではない。Awwwards/Webby/FWA受賞水準や受賞を自己認定しない。",
+    "実機スマートフォン、スクリーンリーダー、日本語IME、ネイティブブラウザ200%拡大は未検証。",
+    "練習は既存選択UIまで。開始/会話/新記録保存は実行していない。",
+    "連絡先・商品は空の実状態。保存・編集・削除は未実行。予定は直近予定なし。",
+    "既存結果の読取は外部実利用や予約成功の新規実績ではない。",
+    "原本DB書込みなし。preview一時DBの終了時35業務行hash照合と削除は親がpreview.jsonへ追記予定。"
+  ],
+  "decision": "今回の読み取りUI範囲で残る観測P1/P2はなし。アプリ全体の新規業務成功・本番公開・有効決済の完了判定には使わない。"
+}

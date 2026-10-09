@@ -211,6 +211,7 @@ describe("PhoneTransport", () => {
   const carrierTransport = (dialed: DialOptions[]): CarrierTransport => ({
     providerId: "twilio",
     path: "direct",
+    playsNotice: true,
     describe: () => "fake",
     dial: async (opts) => {
       dialed.push(opts);
@@ -241,5 +242,147 @@ describe("PhoneTransport", () => {
     expect(dialed).toEqual([{ to: "+819012345678", language: "ja", contract, callerId: "+815012345678", recordDir: "/tmp/rec" }]);
     expect(t.lastSession).toBe(session);
     expect(engine.startedWith?.calleeName).toBe("テスト店");
+  });
+});
+
+// Every carrier that does not announce the call itself (Plivo, custom SIP, LiveKit): the notice is the bridge's.
+describe("the recording / transcript notice on carriers that do not play it", () => {
+  const NOTICE = "この通話は記録されています。";
+  /** A speech-to-speech session: it has no `speak`, so it cannot be handed fixed words. */
+  class LiveVoice implements VoiceSession {
+    readonly queue = new OutputQueue<VoiceOutput>();
+    readonly output: AsyncIterable<VoiceOutput> = this.queue;
+    input(): void {}
+    interrupt(): void {}
+    async close(): Promise<void> {}
+    now(): number {
+      return 0;
+    }
+  }
+  const silentCarrier = (carrier: FakeCarrier, dialed: DialOptions[] = [], playsNotice?: boolean): CarrierTransport => ({
+    providerId: "plivo",
+    path: "sip",
+    ...(playsNotice ? { playsNotice } : {}),
+    describe: () => "fake sip",
+    dial: async (opts) => {
+      dialed.push(opts);
+      return carrier;
+    },
+  });
+  /** 60 ms of μ-law standing in for the synthesized notice. */
+  const noticeChunk: AudioChunk = { ...MULAW_8K, data: new Uint8Array(480).fill(0x55) };
+  const target = { phone: "+819012345678" };
+  const say = (text: string) => ({ text, language: "ja" as const });
+
+  it("a runtime-brain engine says it once, at the start of the first reply that is actually played", async () => {
+    const voice = new FakeVoice();
+    const engine = fakeEngine(voice, false);
+    const t = new PhoneTransport(silentCarrier(new FakeCarrier()), engine, { recordDir: "/tmp/rec" });
+    const session = await t.connect(target, { language: "ja", contract });
+    await session.speak(say("予約をお願いします。"));
+    await session.speak(say("2名です。"));
+    expect(voice.said).toEqual([`${NOTICE}予約をお願いします。`, "2名です。"]);
+    expect(voice.said.join("").split(NOTICE)).toHaveLength(2);
+    await session.hangup();
+  });
+
+  it("a reply dropped unplayed does not use the notice up, and it is never said twice", async () => {
+    const voice = new FakeVoice();
+    let skip = true;
+    voice.speak = async (text: string) => {
+      if (skip) return { startMs: 0, endMs: 0, interrupted: true, skipped: true };
+      voice.said.push(text);
+      return { startMs: 10, endMs: 20, interrupted: false };
+    };
+    const t = new PhoneTransport(silentCarrier(new FakeCarrier()), fakeEngine(voice, false), { transcriptNotice: true });
+    const session = await t.connect(target, { language: "ja", contract });
+    await session.speak(say("もしもし。"));
+    skip = false;
+    await session.speak(say("お電話失礼します。"));
+    await session.speak(say("予約をお願いします。"));
+    expect(voice.said).toEqual([`${NOTICE}お電話失礼します。`, "予約をお願いします。"]);
+    await session.hangup();
+  });
+
+  it("English gets the English words and a space", async () => {
+    const voice = new FakeVoice();
+    const t = new PhoneTransport(silentCarrier(new FakeCarrier()), fakeEngine(voice, false), { transcriptNotice: true });
+    const session = await t.connect(target, { language: "en", contract });
+    await session.speak({ text: "Hello.", language: "en" });
+    expect(voice.said).toEqual(["This call is being transcribed. Hello."]);
+    await session.hangup();
+  });
+
+  it("a speech-to-speech engine: the bridge plays the notice audio once when the line connects, and the engine's audio waits behind it", async () => {
+    const voice = new LiveVoice();
+    const carrier = new FakeCarrier();
+    const asked: string[] = [];
+    const t = new PhoneTransport(silentCarrier(carrier), fakeEngine(voice), { recordDir: "/tmp/rec", noticeAudio: async (text) => (asked.push(text), noticeChunk) });
+    const session = await t.connect(target, { language: "ja", contract });
+    expect(asked).toEqual([NOTICE]);
+    expect(carrier.sent).toHaveLength(0); // nothing before the line is up
+
+    carrier.queue.push({ type: "connected" });
+    carrier.queue.push({ type: "audio", chunk: { ...MULAW_8K, data: new Uint8Array(160) } });
+    await tick();
+    expect(carrier.sent).toEqual([noticeChunk]);
+
+    // The model starts talking and the callee barges in while the notice is still playing.
+    voice.queue.push({ type: "audio", chunk: { ...MULAW_8K, data: new Uint8Array(160).fill(1) } });
+    voice.queue.push({ type: "clear" });
+    voice.queue.push({ type: "audio", chunk: { ...MULAW_8K, data: new Uint8Array(160).fill(2) } });
+    await tick();
+    session.interrupt();
+    voice.queue.push({ type: "audio", chunk: { ...MULAW_8K, data: new Uint8Array(160).fill(3) } });
+    await tick();
+    expect(carrier.sent).toEqual([noticeChunk]);
+    expect(carrier.clears).toBe(0); // the notice is never cut
+
+    await new Promise((res) => setTimeout(res, 90));
+    expect(carrier.sent.map((c) => c.data[0])).toEqual([0x55, 3]);
+    voice.queue.push({ type: "audio", chunk: { ...MULAW_8K, data: new Uint8Array(160).fill(4) } });
+    voice.queue.push({ type: "clear" });
+    await tick();
+    expect(carrier.sent.map((c) => c.data[0])).toEqual([0x55, 3, 4]);
+    expect(carrier.clears).toBe(1);
+    expect(carrier.sent.filter((c) => c === noticeChunk)).toHaveLength(1);
+    await session.hangup();
+  });
+
+  it("a speech-to-speech engine with no notice audio is not dialled at all", async () => {
+    const dialed: DialOptions[] = [];
+    const t = new PhoneTransport(silentCarrier(new FakeCarrier(), dialed), fakeEngine(new LiveVoice()), { recordDir: "/tmp/rec" });
+    await expect(t.connect(target, { language: "ja", contract })).rejects.toThrow(/noticeAudio/);
+    expect(dialed).toHaveLength(0);
+  });
+
+  it("a carrier that plays the notice itself is never given a second one", async () => {
+    const voice = new FakeVoice();
+    const carrier = new FakeCarrier();
+    const dialed: DialOptions[] = [];
+    let synthesized = 0;
+    const t = new PhoneTransport(silentCarrier(carrier, dialed, true), fakeEngine(voice, false), { recordDir: "/tmp/rec", noticeAudio: async () => (synthesized++, noticeChunk) });
+    const session = await t.connect(target, { language: "ja", contract });
+    carrier.queue.push({ type: "connected" });
+    await tick();
+    await session.speak(say("予約をお願いします。"));
+    expect(voice.said).toEqual(["予約をお願いします。"]);
+    expect(carrier.sent).toHaveLength(0);
+    expect(synthesized).toBe(0);
+    expect(dialed[0]?.recordDir).toBe("/tmp/rec"); // the carrier still learns what to announce
+    await session.hangup();
+  });
+
+  it("a call that keeps nothing says nothing", async () => {
+    const voice = new FakeVoice();
+    const carrier = new FakeCarrier();
+    const t = new PhoneTransport(silentCarrier(carrier), fakeEngine(voice, false));
+    const session = await t.connect(target, { language: "ja", contract });
+    carrier.queue.push({ type: "connected" });
+    await tick();
+    await session.speak(say("予約をお願いします。"));
+    expect(voice.said).toEqual(["予約をお願いします。"]);
+    expect(carrier.sent).toHaveLength(0);
+    await session.hangup();
   });
 });

@@ -84,6 +84,8 @@ export async function launch({ width = 1440, height = 900 } = {}) {
     },
     focused: () => page.js("(()=>{const n=document.activeElement;if(!n)return null;const cs=getComputedStyle(n);return {id:n.id,tag:n.tagName,text:(n.textContent||'').trim().slice(0,20),outline:cs.outlineStyle!=='none'&&parseFloat(cs.outlineWidth)>0}})()"),
     emulateReducedMotion: () => send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }),
+    /** The browser's colour scheme, as the OS would report it ("dark" or "light"). */
+    emulateColorScheme: (scheme) => send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] }),
     viewport,
     handleDialog: (accept) => send('Page.handleJavaScriptDialog', { accept }),
     /** Saves what is on screen. `fullPage` grows the viewport to the document first. */

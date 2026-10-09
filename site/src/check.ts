@@ -14,7 +14,7 @@ function invalidate() {
   revision++;
   output = undefined;
   download.disabled = true;
-  el('check-summary').textContent = say('入力を検証すると、ここに結果が表示されます。', 'Check the input to see its result here.');
+  el('check-summary').textContent = say('発言から、完了の根拠へ。入力を検証すると、ここに結果が表示されます。', 'From words to a verifiable result. Check a transcript to begin.');
   el('check-summary').className = 'summary';
   el('field-results').replaceChildren();
   el('evidence-results').replaceChildren();
@@ -47,7 +47,8 @@ function show(result: ReturnType<typeof verifyTranscript>): void {
   el('raw-result').textContent = output;
   el('check-summary').className = 'summary ' + (result.complete ? 'complete' : 'incomplete');
   const status = { completed: say('完了条件を満たしています', 'Completion conditions satisfied'), incomplete: say('未完了', 'Incomplete'), constraint_violation: say('条件に違反しています', 'Constraints not satisfied'), failed: say('接続が失敗しています', 'Connection failed') }[result.status];
-  el('check-summary').textContent = `${result.complete ? '✓' : '○'} ${status} · complete: ${result.complete}`;
+  el('check-summary').textContent = `${result.complete ? '✓' : '○'} ${status}`;
+  const code = document.createElement('code'); code.className = 'verdict-code'; code.textContent = `complete: ${result.complete}`; el('check-summary').append(code);
   const details = document.createElement('p');
   details.textContent = say('未確認の必須項目：', 'Missing required fields: ') + (result.missing.join(', ') || say('なし', 'none'));
   el('field-results').append(details);
@@ -61,9 +62,19 @@ function show(result: ReturnType<typeof verifyTranscript>): void {
   }
   for (const [key, value] of Object.entries(result.fields)) {
     const row = document.createElement('div'); row.className = 'field';
-    const label = document.createElement('code'); label.textContent = key;
-    const val = document.createElement('strong'); val.textContent = String(value);
-    row.append(label, val); el('field-results').append(row);
+    const names: Record<string, string> = { date: say('日付', 'Date'), time: say('時刻', 'Time'), partySize: say('人数', 'Party size'), price: say('価格', 'Price'), breakfast: say('朝食付き', 'Breakfast'), smoking: say('喫煙', 'Smoking'), confirmed: say('予約の確定', 'Confirmation'), name: say('予約名', 'Name') };
+    const label = document.createElement('span'); label.className = 'field-label'; label.textContent = names[key] || key;
+    const field = document.createElement('code'); field.textContent = key; label.append(field);
+    const val = document.createElement('strong'); val.textContent = typeof value === 'boolean' ? value ? say('あり', 'Yes') : say('なし', 'No') : String(value);
+    row.append(label, val);
+    // Match the current engine-selected value to the latest verified utterance, never an AI summary.
+    const proof = [...result.evidence].reverse().find(item => item.verified && item.field === key && item.value === value);
+    if (proof) {
+      const quote = document.createElement('p'); quote.className = 'field-proof';
+      quote.textContent = `${(proof.t / 1000).toFixed(1)}s · ${proof.span || proof.transcript}`;
+      row.append(quote);
+    }
+    el('field-results').append(row);
   }
   for (const violation of result.constraints.violations) {
     const row = document.createElement('p'); row.className = 'error';
@@ -84,6 +95,12 @@ function show(result: ReturnType<typeof verifyTranscript>): void {
     const quote = document.createElement('blockquote'); quote.textContent = evidence.transcript;
     const note = document.createElement('small'); note.textContent = `${evidence.utteranceId} · ${evidence.verified ? say('確認根拠あり', 'Evidence verified') : say('未確認', 'Unverified')}${evidence.note ? ' · ' + evidence.note : ''}`;
     block.append(title, quote, note); el('evidence-results').append(block);
+  }
+  // A submitted result sits below the input on narrow screens. Reveal it only
+  // when it falls outside the viewport; desktop and validation errors stay put.
+  const summaryBounds = el('check-summary').getBoundingClientRect();
+  if (matchMedia('(max-width: 760px)').matches && (summaryBounds.top < 0 || summaryBounds.bottom > innerHeight)) {
+    document.querySelector<HTMLElement>('.result-panel')?.scrollIntoView({ block: 'start', behavior: 'instant' });
   }
 }
 

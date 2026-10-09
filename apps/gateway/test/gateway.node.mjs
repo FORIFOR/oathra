@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -127,14 +127,14 @@ test('phone input selects a registered contact and refuses conflicting or repeat
   assert.throws(()=>f.service.prepare(f.u,{request:`${f.contact.name}に案内`,phone:f.service.account(f.u).verifiedPhone}),/phone_target_conflict/);
   assert.throws(()=>f.service.prepare(f.u,{request:`${f.contact.phone}と${f.contact.phone}に案内`}),/multiple_phone_numbers/);
 }));
-test('unregistered phone draft never creates a consented contact or a start grant',withFixture(f=>{
+test('an unregistered number can be drafted and reviewed (2026-10-04): no consent is invented and nothing is saved at draft',withFixture(f=>{
   const count=f.store.list('contact',f.u.id).length;
-  const m=f.service.prepare(f.u,{request:'資料を案内',phone:f.service.account(f.u).verifiedPhone});
-  assert.equal(m.target.registrationRequired,true);assert.equal(f.store.list('contact',f.u.id).length,count);
-  assert.throws(()=>f.service.review(f.u,m.id),/contact_registration_required/);
-  assert.throws(()=>f.service.checkPolicy(f.u,m),/contact_registration_required/);
+  const m=f.service.prepare(f.u,{request:'資料を案内',phone:'+81312340099',name:'山田商店'});
+  assert.equal(m.target.registrationRequired,undefined);assert.equal(m.target.id,null);assert.equal(m.target.name,'山田商店');assert.equal(f.store.list('contact',f.u.id).length,count);
+  assert.ok(f.service.review(f.u,m.id).approvalToken,'a review can be granted');
   assert.equal(f.service.edit(f.u,m.id,{request:'商品を案内'}).target.phone,m.target.phone);
   assert.equal(f.store.list('mission',undefined,'QUEUED').length,0);
+  assert.ok(!f.store.list('contact',f.u.id).some(c=>c.relationship==='consented'&&c.phone==='+81312340099'),'no consent is ever recorded on its own');
 }));
 for(const kind of ['line','slack'])test(`${kind} accepts a phone request without a product and cannot approve a call`,withFixture(async f=>{
   f.store.db.prepare("DELETE FROM records WHERE kind='product'").run();
@@ -173,14 +173,12 @@ test('general contacts retain company and call notes without a phone or permissi
   assert.equal(company.name,'');assert.equal(company.company,f.product.name);
   assert.throws(()=>f.service.prepare(f.u,{request:f.product.name,productId:f.product.id}),/contact_phone_required/);
 }));
-test('general contact permissions are required at review and rechecked before execution',withFixture(f=>{
+test('a contact without a relationship or basis can be called (2026-10-04); a contact changed after the review is rechecked',withFixture(f=>{
   f.service.contact(f.u,{...f.contact,relationship:'',basis:''});
-  const m=f.draft();assert.throws(()=>f.service.review(f.u,m.id),/contact_relationship_required/);
-  f.service.contact(f.u,{...f.contact,basis:''});
-  assert.throws(()=>f.service.review(f.u,f.draft().id),/contact_basis_required/);
+  assert.ok(f.service.review(f.u,f.draft().id).approvalToken,'no relationship or basis needed');
   f.service.contact(f.u,f.contact);const valid=f.draft(),r=f.service.review(f.u,valid.id);
   f.service.contact(f.u,{...f.contact,basis:''});
-  assert.throws(()=>f.service.start(f.u,r.approvalToken,'one',true),/contact_basis_required/);
+  assert.throws(()=>f.service.start(f.u,r.approvalToken,'one',true),/contact_changed_review_again/);
   assert.equal(f.store.list('mission',undefined,'QUEUED').length,0);
 }));
 test('LINE refuses a registered name without a phone and returns an actionable message',withFixture(async f=>{
@@ -203,4 +201,22 @@ test('a monthly cap stops a call whose estimate would pass it, per Japanese cale
   assert.throws(()=>f.service.saveMonthlyCap(f.u,-1),/invalid_monthly_cap/);
   // The next month starts from zero (JST month boundary).
   f.advance(40*86400_000); assert.equal(f.service.monthUsage(f.u).usedUsd,0);
+}));
+test('contacts accept a number as people write it and save it as E.164',withFixture(f=>{assert.equal(f.service.contact(f.u,{name:'山田',phone:'090-1234-5678'}).phone,'+819012345678');assert.equal(f.service.contact(f.u,{name:'店',phone:'03-5555-0142'}).phone,'+81355550142');assert.throws(()=>f.service.contact(f.u,{name:'x',phone:'12345'}),/invalid_contact_phone/);assert.throws(()=>f.service.contact(f.u,{name:'x',phone:'+81 090-1234-5678'}),/phone_has_trunk_prefix/);}));
+test('contacts can be edited in place and deleted; deletion keeps the do-not-contact list and waits for a call on its way',withFixture(f=>{
+  const c=f.service.contact(f.u,{name:'佐藤',phone:'090-1111-2222',notes:'memo'});
+  const edited=f.service.contact(f.u,{id:c.id,name:'佐藤さん',phone:'090-1111-3333',notes:''});
+  assert.equal(edited.id,c.id);assert.equal(edited.name,'佐藤さん');assert.equal(edited.phone,'+819011113333');assert.equal(edited.notes,'');
+  assert.throws(()=>f.service.removeContact(f.config.users.find(x=>x.role==='viewer'),c.id),/read_only_account/);
+  assert.throws(()=>f.service.removeContact(f.config.users[1],c.id),/not_found/);
+  f.store.suppress('one',edited.phone);assert.deepEqual(f.service.removeContact(f.u,c.id),{deleted:true});
+  assert.equal(f.store.get('contact',c.id),null);assert(f.store.suppressed('one','+819011113333'));assert.throws(()=>f.service.removeContact(f.u,c.id),/not_found/);
+  approve(f,f.draft());assert.throws(()=>f.service.removeContact(f.u,f.contact.id),/contact_has_active_call/);
+}));
+test('a phone request (no contact id) to the number, or an unknown outcome, also holds a contact deletion',withFixture(f=>{
+  const c=f.service.contact(f.u,{name:'鈴木',phone:'090-2222-3333'});
+  const call=status=>f.store.put('mission',{id:randomUUID(),owner:f.u.id,team:'one',status,kind:'phone-request',target:{name:'鈴木',phone:'+819022223333'}});
+  const live=call('ACTIVE');assert.throws(()=>f.service.removeContact(f.u,c.id),/contact_has_active_call/);
+  f.store.put('mission',{...live,status:'UNKNOWN'});assert.throws(()=>f.service.removeContact(f.u,c.id),/contact_has_active_call/);
+  f.store.put('mission',{...live,status:'COMPLETED'});call('DRAFT');assert.deepEqual(f.service.removeContact(f.u,c.id),{deleted:true});
 }));

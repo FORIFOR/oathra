@@ -343,6 +343,8 @@ export class TwilioDirectSession implements CarrierMediaSession {
 export class TwilioDirectTransport implements CarrierTransport {
   readonly providerId = "twilio";
   readonly path = "direct" as const;
+  /** Said by Twilio (`<Say>`) before the media stream opens; the bridge must not add another. */
+  readonly playsNotice = true;
   lastSession: TwilioDirectSession | undefined;
 
   constructor(private readonly opts: TwilioDirectOptions) {}

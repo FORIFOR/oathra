@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-10-01T17:59:24.872Z",
+  "origin": "http://127.0.0.1:61758",
+  "method": "Actual Chrome pointer navigation with real existing operator; no business mutations",
+  "sourceHashes": {
+    "apps/gateway/public/app/app.js": "6af111323e07cb25a9c551087288b63866ab1965d8770f42b5488167f7ae7ea3",
+    "apps/gateway/public/app/style.css": "96250c59d828c2a3495e77a6a2f9b45dca43b2fc058cb7ebb9789a73035ed01f",
+    "apps/gateway/public/app/index.html": "e597cf6f6fc443b510b403906f10621c6ef050a64b781e73395b34573ba38129"
+  },
+  "views": [
+    {
+      "name": "home",
+      "width": 1440,
+      "screenshot": "before-home-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "mode": "CSSOM text masking; static whitelist retained, original text/layout not replaced",
+        "maskedTextNodes": 37
+      }
+    },
+    {
+      "name": "home",
+      "width": 390,
+      "screenshot": "before-home-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "mode": "CSSOM text masking; static whitelist retained, original text/layout not replaced",
+        "maskedTextNodes": 37
+      }
+    },
+    {
+      "name": "report",
+      "width": 1440,
+      "screenshot": "before-report-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "mode": "CSSOM text masking; static whitelist retained, original text/layout not replaced",
+        "maskedTextNodes": 20
+      }
+    },
+    {
+      "name": "report",
+      "width": 390,
+      "screenshot": "before-report-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "mode": "CSSOM text masking; static whitelist retained, original text/layout not replaced",
+        "maskedTextNodes": 20
+      }
+    },
+    {
+      "name": "settings",
+      "width": 1440,
+      "screenshot": "before-settings-1440-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "mode": "CSSOM text masking; static whitelist retained, original text/layout not replaced",
+        "maskedTextNodes": 27
+      }
+    },
+    {
+      "name": "settings",
+      "width": 390,
+      "screenshot": "before-settings-390-redacted.png",
+      "horizontalOverflow": false,
+      "privacy": {
+        "mode": "CSSOM text masking; static whitelist retained, original text/layout not replaced",
+        "maskedTextNodes": 27
+      }
+    }
+  ],
+  "actions": [
+    {
+      "task": "Read existing result and evidence",
+      "status": "PASS",
+      "observed": "Existing report and two transcript lines accessible; no new record created. This does not establish that the record represents a successful production call."
+    },
+    {
+      "task": "Find configuration",
+      "status": "PASS",
+      "observed": "Desktop header Settings opens settings; no setting was saved."
+    }
+  ],
+  "runtimeExceptions": 0,
+  "sourceUnchanged": true,
+  "phase": "Intermediate Round A: compact pause notice and partial settings markup were already changed; this is not a complete unchanged-before baseline.",
+  "privacyCorrection": "Earlier two home captures with ineffective style-tag masking were deleted and replaced by verified CSSOM redactions; only the corrected images listed here are evidence.",
+  "imagesVisuallyReviewed": true
+}

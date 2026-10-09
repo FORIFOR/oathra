@@ -1,0 +1,109 @@
+{
+  "observedAt": "2026-10-01T18:08:56.273Z",
+  "method": "Actual Chrome mobile viewport; metadata only, no sensitive text",
+  "observations": [
+    {
+      "path": "#/practice",
+      "requestedWidth": 390,
+      "innerWidth": 509,
+      "clientWidth": 390,
+      "scrollWidth": 509,
+      "visualViewportWidth": 390,
+      "scale": 1,
+      "wideElements": [
+        {
+          "tag": "DIV",
+          "class": "stack",
+          "right": 508,
+          "width": 492
+        },
+        {
+          "tag": "DIV",
+          "class": "page-h",
+          "right": 508,
+          "width": 492
+        },
+        {
+          "tag": "P",
+          "class": "note",
+          "right": 508,
+          "width": 492
+        },
+        {
+          "tag": "DIV",
+          "class": "list",
+          "right": 508,
+          "width": 492
+        },
+        {
+          "tag": "BUTTON",
+          "class": "item",
+          "right": 507,
+          "width": 490
+        },
+        {
+          "tag": "SPAN",
+          "class": "grow",
+          "right": 445,
+          "width": 412
+        },
+        {
+          "tag": "B",
+          "class": "",
+          "right": 445,
+          "width": 412
+        },
+        {
+          "tag": "SPAN",
+          "class": "",
+          "right": 445,
+          "width": 412
+        },
+        {
+          "tag": "SPAN",
+          "class": "muted small",
+          "right": 491,
+          "width": 35
+        },
+        {
+          "tag": "BUTTON",
+          "class": "item",
+          "right": 507,
+          "width": 490
+        },
+        {
+          "tag": "SPAN",
+          "class": "grow",
+          "right": 419,
+          "width": 386
+        },
+        {
+          "tag": "B",
+          "class": "",
+          "right": 419,
+          "width": 386
+        }
+      ]
+    },
+    {
+      "path": "#/contacts",
+      "requestedWidth": 390,
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "visualViewportWidth": 390,
+      "scale": 1,
+      "wideElements": []
+    },
+    {
+      "path": "#/schedule",
+      "requestedWidth": 390,
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "visualViewportWidth": 390,
+      "scale": 1,
+      "wideElements": []
+    }
+  ]
+}

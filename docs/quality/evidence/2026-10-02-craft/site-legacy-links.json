@@ -1,0 +1,254 @@
+{
+  "capturedAt": "2026-10-01T17:30:23.826Z",
+  "baseline": "db56271fd4b6a01ae51f577ed2692c7f89b3b7a2",
+  "checks": [
+    {
+      "language": "ja",
+      "previous": "#verdict-video",
+      "target": "/lab.html#verdict-video",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#integrate",
+      "target": "/#integrate",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#intake",
+      "target": "/#intake-video",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#intake-video",
+      "target": "/#intake-video",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#demo-video",
+      "target": "/lab.html#demo-video",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#real",
+      "target": "/lab.html#real",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#why",
+      "target": "/lab.html#why",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#screen",
+      "target": "/lab.html#screen",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#play",
+      "target": "/lab.html#play",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#call",
+      "target": "/lab.html#call",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#log",
+      "target": "/lab.html#log",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#prove",
+      "target": "/lab.html#prove",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#carriers",
+      "target": "/lab.html#carriers",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#howto",
+      "target": "/lab.html#howto",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#setup",
+      "target": "/lab.html#setup",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#readiness",
+      "target": "/#availability",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#start",
+      "target": "/lab.html#start",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#scope",
+      "target": "/lab.html#scope",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#business",
+      "target": "/#business",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#sim",
+      "target": "/lab.html#sim",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#rec",
+      "target": "/lab.html#rec",
+      "status": "PASS"
+    },
+    {
+      "language": "ja",
+      "previous": "#player",
+      "target": "/lab.html#player",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#verdict-video",
+      "target": "/en/lab.html#verdict-video",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#integrate",
+      "target": "/en/#integrate",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#intake",
+      "target": "/en/#intake-video",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#intake-video",
+      "target": "/en/#intake-video",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#demo-video",
+      "target": "/en/lab.html#demo-video",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#real",
+      "target": "/en/lab.html#real",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#screen",
+      "target": "/en/lab.html#screen",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#play",
+      "target": "/en/lab.html#play",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#call",
+      "target": "/en/lab.html#call",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#prove",
+      "target": "/en/lab.html#prove",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#carriers",
+      "target": "/en/lab.html#carriers",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#setup",
+      "target": "/en/lab.html#setup",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#readiness",
+      "target": "/en/#availability",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#start",
+      "target": "/en/lab.html#start",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#scope",
+      "target": "/en/lab.html#scope",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#business",
+      "target": "/en/#business",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#sim",
+      "target": "/en/lab.html#sim",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#rec",
+      "target": "/en/lab.html#rec",
+      "status": "PASS"
+    },
+    {
+      "language": "en",
+      "previous": "#player",
+      "target": "/en/lab.html#player",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "legacySha256": "adc26803a44649aaeaaf2b78f5c3a97eca6993a39ff18298ea7210ad0f74f211"
+}

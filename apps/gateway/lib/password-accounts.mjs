@@ -9,7 +9,7 @@ export function loginEmail(value) {
   const email=value.trim().toLowerCase();
   assert(/^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/.test(email),'invalid_email');return email;
 }
-function password(value) {
+export function validatePassword(value) {
   assert(typeof value==='string'&&[...value].length>=8&&[...value].length<=128&&Buffer.byteLength(value)<=1024,'password_length');return value;
 }
 
@@ -18,13 +18,26 @@ export class PasswordAccounts {
   constructor(store,config) {
     this.store=store;this.config=config;this.hashing=0;
     this.store.db.exec('CREATE TABLE IF NOT EXISTS password_accounts(owner TEXT PRIMARY KEY,email_key TEXT NOT NULL UNIQUE,body TEXT NOT NULL)');
+    this.store.db.exec('CREATE TABLE IF NOT EXISTS public_users(owner TEXT PRIMARY KEY,body TEXT NOT NULL)');
+    this.loadPublicUsers();
     this.unknownSalt=randomBytes(16).toString('hex');
+  }
+  // Public registration adds durable identities without editing operator configuration or restarting.
+  // Every new customer owns a separate team; encrypted database records cannot elevate configured roles.
+  loadPublicUsers() {
+    for(const row of this.store.db.prepare('SELECT owner,body FROM public_users').all()) {
+      const u=this.store.open(row.body);
+      assert(u.id===row.owner&&/^customer_[a-f0-9-]{36}$/.test(u.id)&&u.team===u.id&&u.role==='operator'&&u.publicSignup===true&&Number.isSafeInteger(u.emailVerifiedAt)&&u.emailVerifiedAt>0&&/^[a-f0-9]{64}$/.test(u.tokenHash),'invalid_public_account',500);
+      const existing=this.config.users.find(x=>x.id===u.id||x.tokenHash===u.tokenHash);
+      if(existing)assert(existing.id===u.id&&existing.tokenHash===u.tokenHash&&existing.team===u.team&&existing.role===u.role&&existing.publicSignup===true,'public_account_conflict',500);
+      else this.config.users.push(u);
+    }
   }
   user(owner) { const user=this.config.users.find(u=>u.id===owner);assert(user,'unlinked_account',403);return user; }
   get(owner) { const r=this.store.db.prepare('SELECT body FROM password_accounts WHERE owner=?').get(owner);return r?this.store.open(r.body):null; }
   emailKey(email) { return mac(this.store.cipherKey,'login:'+email); }
   byEmail(email) { const r=this.store.db.prepare('SELECT body FROM password_accounts WHERE email_key=?').get(this.emailKey(email));return r?this.store.open(r.body):null; }
-  profile(owner) { const record=this.get(owner);return {email:record?.email??null,passwordLogin:!!record}; }
+  profile(owner) { const record=this.get(owner);return {email:record?.email??null,passwordLogin:!!record,emailVerified:!!record?.emailVerifiedAt}; }
   version(owner) { return this.get(owner)?.version??null; }
   async digest(value,salt) {
     assert(this.hashing<2,'login_busy',503);this.hashing++;
@@ -72,12 +85,12 @@ export class PasswordAccounts {
   }
   async enroll(input,ip) {
     this.throttle(ip,'setup:'+String(input.code??'').slice(0,64));
-    this.invitation(input.code);const email=loginEmail(input.email),value=password(input.password),salt=randomBytes(16).toString('hex'),digest=await this.digest(value,salt);
+    this.invitation(input.code);const email=loginEmail(input.email),value=validatePassword(input.password),salt=randomBytes(16).toString('hex'),digest=await this.digest(value,salt);
     return this.store.tx(()=>{
       const {invite,u}=this.invitation(input.code),old=this.get(u.id),used=this.byEmail(email);
       assert(!used||used.owner===u.id,'email_already_registered',409);
       assert(!old||old.email===email,'login_email_mismatch',409);
-      const record={owner:u.id,email,salt,digest,version:randomUUID()};
+      const record={...old,owner:u.id,email,salt,digest,version:randomUUID()};
       this.store.db.prepare('INSERT INTO password_accounts VALUES(?,?,?) ON CONFLICT(owner) DO UPDATE SET email_key=excluded.email_key,body=excluded.body').run(u.id,this.emailKey(email),this.store.seal(record));
       this.store.delKey('password-invite',hash(input.code));this.store.delKey('password-invite-owner',invite.owner);
       this.store.audit(u.id,old?'password.reset':'password.enrolled',u.id);return {user:u,version:record.version};
@@ -86,7 +99,7 @@ export class PasswordAccounts {
   async change(u,input,ip) {
     const old=this.get(u.id);assert(old,'password_not_configured',409);
     const authenticated=await this.authenticate({email:old.email,password:input.currentPassword},ip);assert(authenticated.user.id===u.id&&authenticated.version===old.version,'invalid_login',401);
-    const value=password(input.newPassword),salt=randomBytes(16).toString('hex'),digest=await this.digest(value,salt);
+    const value=validatePassword(input.newPassword),salt=randomBytes(16).toString('hex'),digest=await this.digest(value,salt);
     return this.store.tx(()=>{
       assert(this.version(u.id)===old.version,'login_changed_retry',409);
       const version=randomUUID();

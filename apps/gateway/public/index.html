@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f1f4f2">
-  <title>Oathra — 電話を、任せる。</title>
+  <title>詳細設定と連携 — Oathra</title>
   <link rel="icon" type="image/png" href="/oathra-mark-original.png" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/png" href="/oathra-mark.png" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="/style.css">
@@ -12,7 +12,8 @@
 </head>
 <body>
 <header>
-  <a class="brand" href="/"><span class="brand-icon" aria-hidden="true"></span>oathra<span class="brand-dot">.</span></a>
+  <a class="brand" href="/app/" aria-label="Oathra ホーム"><span class="brand-icon" aria-hidden="true"></span>oathra<span class="brand-dot">.</span></a>
+  <a class="workspace-back" href="/app/#settings/view">アプリの設定へ戻る</a>
   <span id="mode" class="badge" hidden></span>
   <button id="credit-balance" class="quiet small" hidden></button>
   <button id="open-settings" class="quiet small" hidden>設定</button>
@@ -20,10 +21,13 @@
 </header>
 
 <main>
+  <p id="session-check" class="hint" role="status">ログイン状態を確認しています…</p>
+  <button id="retry-session" class="quiet" hidden>再読み込み</button>
   <!-- Signed out -->
-  <section id="login" class="card welcome">
-    <h1>電話を、任せる。</h1>
-    <p class="lead">お願いを書く。内容を確かめる。<br>決まったことを、相手の言葉で受け取る。</p>
+  <section id="login" class="card welcome" hidden>
+    <h1>詳細設定と連携</h1>
+    <p class="lead">連携するサービスや電話番号を確認します。</p>
+    <a class="workspace-login" href="/app/#login">メールアドレスでログイン</a>
     <form id="login-form">
       <label for="token">アクセストークン</label>
       <input id="token" type="password" autocomplete="off" required placeholder="管理者から受け取ったトークンを貼り付け">
@@ -36,7 +40,7 @@
       <p><b>だれかが用意したサーバーを使う場合：</b>そのサーバーの管理者から受け取ってください。</p>
       <p class="hint">トークンはパスワードと同じです。人に見せたり、チャットに貼ったりしないでください。</p>
     </details>
-    <p class="hint">トークンはこのページを開いている間だけ保持します。電話会社やAIのAPIキーを入力する必要はありません。</p>
+    <p class="hint">アプリと同じログイン状態を使います。入力したトークンは保存せず、ログイン後に消去します。電話会社やAIのAPIキーは不要です。</p>
   </section>
 
   <!-- Signed in: one screen. Ask on the left, what is happening on the right, settings in a panel. -->

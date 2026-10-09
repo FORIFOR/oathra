@@ -1,15 +1,31 @@
 import { Credits } from './credits.mjs';
 import { PasswordAccounts } from './password-accounts.mjs';
+import { checkPrereleaseCall } from './prerelease.mjs';
 import { randomUUID } from 'node:crypto';
 import { normalizePhoneNumber, extractPhoneNumber, preparePhoneRequest } from '../../../packages/contract/dist/index.js';
 import { assert, Fault, hash, phone, random, text } from './security.mjs';
 
 export const terminal = s => ['COMPLETED','INCOMPLETE','DECLINED','FAILED','CANCELLED','UNKNOWN'].includes(s);
+/** The settings for the number that was rung: one of the extra business lines (OATHRA_INBOUND_LINES_JSON), else the main line. */
+export const inboundLine = (config, to) => (to && config.inboundLines && Object.hasOwn(config.inboundLines, to) ? config.inboundLines[to] : config.inbound);
+/** Japan time. `{from:'09:00',to:'20:00'}`; a window that crosses midnight (22:00-06:00) is the hours outside the day. */
+export function withinHours(ms, h) { const t = new Date(ms + 9 * 3600_000), m = t.getUTCHours() * 60 + t.getUTCMinutes(), mm = v => Number(v.slice(0, 2)) * 60 + Number(v.slice(3)); const a = mm(h.from), b = mm(h.to); return a < b ? m >= a && m < b : m >= a || m < b; }
 export class Service {
   constructor(store, config) { this.store = store; this.config = config; this.credits = new Credits(store, config); this.passwords = new PasswordAccounts(store,config); }
-  user(id) { const u = this.config.users.find(u => u.id === id); assert(u, 'unlinked_account', 403); return u; }
-  auth(token) { const u = this.config.users.find(u => u.tokenHash === hash(token ?? '')); assert(u, 'unauthorized', 401); return u; }
-  write(u) { assert(['admin','operator'].includes(u.role), 'read_only_account', 403); }
+  user(id) {
+    const configured = this.config.users.find(u => u.id === id); if (configured) return configured;
+    const u = typeof id === 'string' ? this.store.get('agent-identity',id) : null;
+    const owner = u && this.config.users.find(o => o.id === u.owner);
+    assert(u?.status === 'ACTIVE' && u.role === 'agent' && owner && ['admin','manager','operator'].includes(owner.role) && owner.team === u.team, 'unlinked_account',403);
+    return u;
+  }
+  auth(token) {
+    const digest = hash(token ?? ''), configured = this.config.users.find(u => u.tokenHash === digest); if (configured) return configured;
+    const id = this.store.key('agent-token',digest); assert(id,'unauthorized',401);
+    const u = this.user(id); assert(u.tokenHash === digest,'unauthorized',401); return u;
+  }
+  // A manager is an operator who also sees their own team's calls (lib/team.mjs); an admin runs the deployment.
+  write(u) { assert(['admin','manager','operator'].includes(u.role), 'read_only_account', 403); }
   own(kind, id, u) { const r = this.store.get(kind, id); assert(r && r.owner === u.id, 'not_found', 404); return r; }
   account(u) { return this.store.get('account', u.id) ?? { id: u.id, owner: u.id, consentVersion: null, verifiedPhone: null }; }
   // A monthly cap on what this person's approved calls may cost at most (their estimated maximums, which are
@@ -17,7 +33,10 @@ export class Service {
   saveMonthlyCap(u, value) { this.write(u); const cap = value === null || value === '' || value === undefined ? null : Number(value); assert(cap === null || (Number.isFinite(cap) && cap >= 0.01 && cap <= 100000), 'invalid_monthly_cap'); this.store.audit(u.id, 'account.monthly_cap_saved', u.id, { cap }); return this.store.put('account', { ...this.account(u), monthlyCapUsd: cap }); }
   monthUsage(u) {
     const tokyo = new Date(this.store.now() + 9 * 3600_000), start = Date.UTC(tokyo.getUTCFullYear(), tokyo.getUTCMonth(), 1) - 9 * 3600_000;
-    const usedUsd = this.store.list('reservation', u.id).filter(x => x.approvedAt >= start).reduce((n, x) => n + x.estimatedMaximumUsd, 0);
+    const reservations=new Map(this.store.all('reservation',u.id).map(x=>[x.id,x]));
+    // Earlier releases pruned reservations after 48 hours. Recover retained real approvals without double counting.
+    for(const m of this.store.all('mission',u.id))if(m.direction!=='inbound'&&m.approvedAt>=start&&!reservations.has(m.id))reservations.set(m.id,m);
+    const usedUsd = [...reservations.values()].filter(x => x.approvedAt >= start).reduce((n, x) => n + x.estimatedMaximumUsd, 0);
     return { usedUsd: Math.round(usedUsd * 100) / 100, capUsd: this.account(u).monthlyCapUsd ?? null, since: new Date(start).toISOString() };
   }
   // How calls to this person's number are answered (the server still decides whether incoming calls are on and whose
@@ -35,6 +54,32 @@ export class Service {
   }
   // The name the AI gives on this person's calls (their company or their own name). Each account sets its own.
   saveCallerName(u, value) { this.write(u); const name = String(value ?? '').trim(); assert(name.length <= 40 && !/[\d@<>{}\r\n]|https?:/i.test(name), 'invalid_caller_name'); this.store.audit(u.id, 'account.caller_name_saved', u.id, {}); return this.store.put('account', { ...this.account(u), callerName: name || null }); }
+  // What this person asked the service to remember about them (company, role, a call-back number, how they describe
+  // their work). It goes with every call they approve, as facts the AI may use; an empty value forgets it.
+  saveProfile(u, value) {
+    this.write(u); const profile = String(value ?? '').trim(); assert(profile.length <= 2000, 'profile_too_long');
+    this.store.audit(u.id, 'account.profile_saved', u.id, { length: profile.length });
+    return this.store.put('account', { ...this.account(u), profile: profile || null });
+  }
+  /** The person's own presets: a named request they can start again with one press. As many as they like, up to 200. */
+  presets(u) { return this.store.list('preset', u.id).sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)); }
+  savePreset(u, input) {
+    this.write(u); const old = input?.id ? this.own('preset', input.id, u) : null;
+    const title = String(input?.title ?? '').trim(), instruction = String(input?.instruction ?? '').trim();
+    assert(title && title.length <= 40, 'preset_title_required'); assert(instruction && instruction.length <= 2000, 'preset_instruction_required');
+    assert(old || this.store.list('preset', u.id).length < 200, 'too_many_presets', 409);
+    const pick = (v, ok) => ok.includes(v) ? v : undefined;
+    const record = { id: old?.id ?? randomUUID(), owner: u.id, title, instruction, createdAt: old?.createdAt ?? this.store.now(), updatedAt: this.store.now(),
+      ...(pick(input.pace, ['gentle']) ? { pace: 'gentle' } : {}), ...(pick(input.conversationMode, ['chat']) ? { conversationMode: 'chat' } : {}), ...(pick(input.task, ['reservation']) ? { task: 'reservation' } : {}) };
+    this.store.audit(u.id, old ? 'preset.updated' : 'preset.created', record.id); return this.store.put('preset', record);
+  }
+  removePreset(u, id) { this.write(u); const p = this.own('preset', id, u); this.store.remove('preset', p.id); this.store.audit(u.id, 'preset.deleted', p.id); return { deleted: true }; }
+  /** A number called on an approved request becomes a contact, so the next request can name the person instead. */
+  rememberContact(u, target) {
+    if (!target?.phone || target.id === 'self' || this.store.list('contact', u.id).some(c => c.phone === target.phone)) return null;
+    const name = String(target.name ?? '').trim().slice(0, 100); if (!name || name === '未登録の電話番号') return null;
+    try { return this.contact(u, { name, phone: target.phone, notes: '' }); } catch { return null; }
+  }
   saveConsent(u, version) { this.write(u); assert(version === this.config.consentVersion, 'review_current_privacy_notice'); this.store.audit(u.id, 'consent.saved', u.id, { version }); return this.store.put('account', { ...this.account(u), consentVersion: version, consentAt: this.store.now() }); }
   product(u, input) {
     this.write(u); assert(input.reviewed === true, 'product_facts_require_review');
@@ -69,14 +114,29 @@ export class Service {
     assert(name || company, 'contact_name_or_company_required');
     const relationship = optional(input.relationship, 30);
     assert(!relationship || ['inquiry','customer','consented'].includes(relationship), 'contact_relationship_required');
-    const record = { id: old?.id ?? randomUUID(), owner: u.id, name, company, phone: input.phone == null || (typeof input.phone === 'string' && !input.phone.trim()) ? '' : phone(input.phone), relationship,
+    // The number as people write it (090-1234-5678) is saved as E.164, as the call form does.
+    let contactPhone = '';
+    if (!(input.phone == null || (typeof input.phone === 'string' && !input.phone.trim()))) {
+      try { contactPhone = phone(normalizePhoneNumber(String(input.phone))); }
+      catch (error) { if (error instanceof Fault) throw error; throw new Fault(400, 'invalid_contact_phone'); }
+    }
+    const record = { id: old?.id ?? randomUUID(), owner: u.id, name, company, phone: contactPhone, relationship,
       notes: optional(input.notes, 4000), lastCallNotes: optional(input.lastCallNotes, 4000), basis: optional(input.basis, 1000), email: String(input.email ?? '').trim(), crmId: String(input.crmId ?? '').trim(), simulationOnly: input.simulationOnly === undefined ? (old?.simulationOnly ?? false) : input.simulationOnly === true };
     assert(!record.crmId || /^\d{1,30}$/.test(record.crmId), 'invalid_crm_contact_id');
     assert(!record.email || /^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/.test(record.email), 'invalid_email');
     this.store.audit(u.id, 'contact.saved', record.id); return this.store.put('contact', record);
   }
+  // Deleting a contact keeps the team's do-not-contact list (keyed by number) and past calls; a call on its way is not orphaned.
+  // Phone requests carry no contact id, so a call is matched by the contact or its number, as recipient_has_active_call is.
+  removeContact(u, id) {
+    this.write(u); const c = this.own('contact', id, u);
+    assert(!this.store.all('mission', u.id).some(m => (m.target?.id === c.id || (c.phone && m.target?.phone === c.phone))
+      && ((m.status !== 'DRAFT' && !terminal(m.status)) || m.status === 'UNKNOWN' || m.stopNeedsReconciliation)), 'contact_has_active_call', 409);
+    this.store.tx(() => { this.store.remove('contact', c.id); this.store.audit(u.id, 'contact.deleted', c.id); });
+    return { deleted: true };
+  }
   phoneRequest(u, input, origin, sourceKey) {
-    assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);
+    assert(['admin','manager','operator','agent'].includes(u.role), 'read_only_account', 403);
     const namespace = `phone-request:${u.id}`;
     const existing = this.store.key(namespace, sourceKey);
     if (existing) return this.store.open(existing);
@@ -93,13 +153,13 @@ export class Service {
     this.store.audit(u.id, 'phone_request.drafted', draft.id, { target: this.store.phoneRef(request.phone), via: origin.channel });
     return draft;
   }
-  prepare(u, input, origin = null, sourceKey = null, record = true) {
-    assert(['admin','operator','agent'].includes(u.role), 'read_only_account', 403);
+  prepare(u, input, origin = null, sourceKey = null, record = true, withinTransaction = false) {
+    assert(['admin','manager','operator','agent'].includes(u.role), 'read_only_account', 403);
     if (sourceKey) { const found = this.store.key(`draft:${u.id}`, sourceKey); if (found) return this.own('mission', found, u); }
     const request = text(input.request, 2000), products = this.store.list('product', u.id), contacts = this.store.list('contact', u.id);
     const matchingProducts = products.filter(p => request.includes(p.name));
-    const product = input.productId ? this.own('product', input.productId, u) : matchingProducts.length === 1 ? matchingProducts[0] : products.length === 1 ? products[0] : null;
-    assert(product, 'select_one_reviewed_product');
+    // A product is optional: without one the AI speaks only from the request itself and invents no product facts.
+    const product = input.productId ? this.own('product', input.productId, u) : matchingProducts.length === 1 ? matchingProducts[0] : null;
     let requestedPhone;
     try {
       const extracted = extractPhoneNumber(request);
@@ -121,7 +181,7 @@ export class Service {
         assert(!target || target.phone === requestedPhone, 'phone_target_conflict');
         const byPhone = contacts.filter(c => c.phone === requestedPhone);
         assert(target || byPhone.length <= 1, 'select_one_contact');
-        target ??= byPhone[0] ?? { id: null, name: '未登録の電話番号', phone: requestedPhone, registrationRequired: true };
+        target ??= byPhone[0] ?? { id: null, name: String(input.name ?? '').trim().slice(0, 100) || '相手', phone: requestedPhone };
       }
       assert(target, 'select_one_contact');
       target = { ...target, name: target.name || target.company };
@@ -136,14 +196,16 @@ export class Service {
     const estimate = this.config.mode === 'simulator' ? 0 : Math.ceil((seconds + 30) / 60) * this.config.rateCeilingUsd * 2 + this.config.setupFeeUsd;
     assert(estimate <= maxUsd, 'estimated_cost_exceeds_budget');
     const m = { id: randomUUID(), owner: u.id, team: u.team, revision: 1, status: 'DRAFT', product, target, request, goal,
-      candidateSlots: slots, testOnMe: self, mode: this.config.mode, callerName: this.account(u).callerName || this.config.businessName || null, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
+      candidateSlots: slots, testOnMe: self, mode: this.config.mode, callerName: this.account(u).callerName || this.config.businessName || null, callerProfile: this.account(u).profile || null, maxSeconds: seconds, maxUsd, estimatedMaximumUsd: estimate,
       creditQuote: this.credits.quote(this.config.mode,target.phone), callerId: this.config.callerId ?? 'simulator', callPluginIdentity: this.config.callPluginIdentity ?? null, createdAt: this.store.now(), origin, sourceKey, result: null };
-    this.store.tx(() => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); });
+    const persist = () => { this.store.put('mission', m); if (sourceKey) this.store.setKey(`draft:${u.id}`, sourceKey, m.id); if (record) this.store.audit(u.id, 'mission.drafted', m.id, { mission: m.id, target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, via: origin?.channel ?? 'api' }); };
+    // Internal composition only: MCP couples its durable idempotency record to the draft in one transaction.
+    if (withinTransaction) persist(); else this.store.tx(persist);
     return m;
   }
   edit(u, id, input) {
     const m = this.own('mission', id, u); this.write(u); assert(m.kind !== 'phone-request','recreate_phone_request',409); assert(m.status === 'DRAFT', 'mission_already_started', 409);
-    const replacement = this.prepare(u, { request: input.request ?? m.request, productId: m.product.id, ...(m.testOnMe ? { testOnMe: true } : (m.target.registrationRequired ? { phone: input.phone ?? m.target.phone } : { contactId: m.target.id })),
+    const replacement = this.prepare(u, { request: input.request ?? m.request, ...(m.product ? { productId: m.product.id } : {}), ...(m.testOnMe ? { testOnMe: true } : (!m.target.id || m.target.registrationRequired ? { phone: input.phone ?? m.target.phone, name: m.target.name } : { contactId: m.target.id })),
       goal: input.goal ?? m.goal, maxSeconds: input.maxSeconds ?? m.maxSeconds, maxUsd: input.maxUsd ?? m.maxUsd, candidateSlots: input.candidateSlots ?? m.candidateSlots }, null, null, false);
     // The replacement only exists to reuse prepare()'s validation; it is not a mission anyone drafted or deleted.
     this.store.removeMission(replacement, false);
@@ -155,12 +217,11 @@ export class Service {
     if (m.kind === 'phone-request') return;
     assert(!m.target.registrationRequired, 'contact_registration_required', 409);
     assert(m.target.phone, 'contact_phone_required');
-    if (m.testOnMe) return;
+    if (m.testOnMe || !m.target.id) return;
+    // A saved contact must still be the one approved. Its relationship and basis are kept as notes, not required.
     const current = this.own('contact', m.target.id, u);
     assert(current.phone, 'contact_phone_required');
     assert(current.phone === m.target.phone, 'contact_changed_review_again', 409);
-    assert(['inquiry','customer','consented'].includes(current.relationship), 'contact_relationship_required');
-    assert(current.basis?.trim(), 'contact_basis_required');
     assert(current.relationship === m.target.relationship && current.basis === m.target.basis && current.simulationOnly === m.target.simulationOnly, 'contact_changed_review_again', 409);
   }
   grant(u, m, action = 'start', extra = {}) {
@@ -178,29 +239,38 @@ export class Service {
     return { grant, m };
   }
   checkPolicy(u, m) {
+    // Real calls to other people keep to the hours the operator set: sales calls by default, ordinary requests when configured.
+    if (m.mode === 'live' && !m.testOnMe && m.direction !== 'inbound') { const hours = this.config.callHours?.[m.kind === 'phone-request' ? 'request' : 'sales']; assert(!hours || withinHours(this.store.now(), hours), 'outside_calling_hours', 409); }
+    checkPrereleaseCall(this.store,this.config,m);
     this.checkContact(u, m);
     assert(JSON.stringify(m.creditQuote ?? (this.credits.enabled ? null : this.credits.quote(m.mode,m.target?.phone))) === JSON.stringify(this.credits.currentQuote(m)), 'credit_price_changed_review_again', 409);
     const account = this.account(u);
+    assert(!account.purchaseBlocked, 'purchase_account_blocked', 403);
     assert((m.callPluginIdentity??null)===(this.config.callPluginIdentity??null),'call_plugin_changed_review_again',409);
     assert(account.consentVersion === this.config.consentVersion, 'privacy_consent_required', 403);
     assert(!this.store.suppressed(u.team, m.target.phone), 'recipient_suppressed', 403);
-    if(m.kind !== 'phone-request') { const p = this.own('product', m.product.id, u); assert(p.revision === m.product.revision, 'product_changed_review_again', 409); }
+    if(m.kind !== 'phone-request' && m.product) { const p = this.own('product', m.product.id, u); assert(p.revision === m.product.revision, 'product_changed_review_again', 409); }
     if (m.testOnMe) { assert(account.verifiedPhone === m.target.phone, 'verified_phone_changed', 409); if (m.mode === 'live') assert(account.phoneVerificationProvider === 'twilio-verify', 'real_phone_verification_required', 403); }
-    else if(m.kind !== 'phone-request') assert(this.own('contact', m.target.id, u).phone === m.target.phone, 'contact_changed_review_again', 409);
+    else if(m.kind !== 'phone-request' && m.target.id) assert(this.own('contact', m.target.id, u).phone === m.target.phone, 'contact_changed_review_again', 409);
     assert(m.mode === this.config.mode && m.callerId === (this.config.callerId ?? 'simulator'), 'configuration_changed', 409);
     if (m.mode === 'live') assert(!m.target.simulationOnly, 'simulator_contact_not_valid_for_live',403);
     if(m.kind === 'phone-request') assert(m.mode === 'live','phone_service_preview_only',409);
     if (m.mode === 'live') assert(this.config.liveReady, 'live_provider_not_configured', 503);
   }
   start(u, token, idempotencyKey, acknowledged, expectedMissionId = null) {
+    return this.store.tx(() => this.startTx(u, token, idempotencyKey, acknowledged, expectedMissionId));
+  }
+  // Internal composition point: caller must hold Store.tx (agent dispatch creates draft + queue atomically).
+  startTx(u, token, idempotencyKey, acknowledged, expectedMissionId = null) {
     this.write(u); assert(acknowledged === true, 'explicit_call_approval_required', 403);
+    // An approval is good for five minutes; one accepted during a restart would expire in the queue.
+    assert(!this.config.draining, 'service_restarting_try_again_shortly', 503);
     const key = text(idempotencyKey, 150), tokenHash = hash(text(token, 200));
-    return this.store.tx(() => {
       const previous = this.store.key(`start:${u.id}`, key);
       if (previous) { const old = JSON.parse(previous); assert(old.tokenHash === tokenHash && (!expectedMissionId || old.id === expectedMissionId), 'idempotency_conflict', 409); return this.own('mission', old.id, u); }
       const { m } = this.validGrant(u, token, 'start'); assert(!expectedMissionId || m.id === expectedMissionId, 'approval_scope_mismatch', 403); assert(m.status === 'DRAFT', 'mission_already_started', 409);
       this.checkPolicy(u, m);
-      const recent = this.store.list('reservation', u.id).filter(x => x.approvedAt > this.store.now() - 86400_000);
+      const recent = this.store.all('reservation', u.id).filter(x => x.approvedAt > this.store.now() - 86400_000);
       assert((this.config.dailyCalls===0||recent.length < this.config.dailyCalls) && (this.config.dailyUsd===0||recent.reduce((n,x) => n + x.estimatedMaximumUsd, 0) + m.estimatedMaximumUsd <= this.config.dailyUsd), 'daily_limit_reached', 429);
       const month = this.monthUsage(u);
       assert(month.capUsd === null || month.usedUsd + m.estimatedMaximumUsd <= month.capUsd + 1e-9, 'monthly_cap_reached', 429);
@@ -208,11 +278,11 @@ export class Service {
       assert(!this.store.some('mission', x => x.id !== m.id && x.target.phone === m.target.phone && ((x.status !== 'DRAFT' && !terminal(x.status)) || x.status === 'UNKNOWN' || x.stopNeedsReconciliation)), 'recipient_has_active_call', 409);
       this.credits.reserveTx(m);
       m.status = 'QUEUED'; m.approvedAt = this.store.now(); m.approvalExpiresAt = this.store.now() + 300_000;
+      if (!m.testOnMe) this.rememberContact(u, m.target);
       this.store.put('mission', m); this.store.put('reservation',{id:m.id,owner:u.id,approvedAt:m.approvedAt,estimatedMaximumUsd:m.estimatedMaximumUsd}); this.store.delKey('approval', tokenHash);
       this.store.setKey(`start:${u.id}`, key, JSON.stringify({ id: m.id, tokenHash }));
       this.store.audit(u.id, 'call.approved', m.id, { mission: m.id, revision: m.revision, fingerprint: this.fingerprint(m), target: this.store.phoneRef(m.target.phone), goal: m.goal, mode: m.mode, callerId: m.callerId, via: key.startsWith('channel:') ? (m.origin?.channel ?? 'channel') : 'api', actor: key.startsWith('channel:') ? hash(m.origin?.actor ?? '') : null });
       this.store.event(m, { type: 'status', status: m.status }); return m;
-    });
   }
   cancel(u, id) {
     this.write(u);
@@ -244,7 +314,7 @@ export function reviewText(m) {
   if(m.creditQuote?.policy==='provider-cost-v1')return `${m.target.name} ${m.target.phone}\n${m.request}\n最大${m.creditQuote.amount}クレジットを確保（1クレジット=$${m.creditQuote.creditUsd}）。通話上限${m.maxSeconds}秒。${m.creditQuote.tariff?.carrierFx?`1 USD = ${m.creditQuote.tariff.carrierFx.unitsPerUsdNano/1e9}円（${m.creditQuote.tariff.carrierFx.date} 基準）。`:''}終了後に回線料金と音声AI使用量で精算し、差額を返却します。文字起こし・中継費等は運営者負担。AI代理・文字保存・送信先を確認して承認してください。`;
   if(m.kind==='phone-request')return `${m.target.name} ${m.target.phone}\n${m.request}\n${m.creditQuote?.amount??0}クレジット。実行確定時に消費（接続前の障害も対象）。実行前の取消は返却。AI代理・文字保存・送信先を確認して承認してください。`;
   const goals = { meeting: '商談日程の合意', materials: '資料送付の了承', introduce: '商品説明' };
-  return `${m.mode === 'simulator' ? '【模擬・実際には発信しません】\n' : ''}${m.target.name} ${m.target.phone}\n${m.target.registrationRequired ? '番号を下書きに保存しました。Webの設定でこの番号・関係・連絡する根拠を登録し、依頼を作成し直してください。登録までは発信できません。\n' : ''}発信元: ${m.callerId}\n商品: ${m.product.name}\n目的: ${goals[m.goal]}\n依頼: ${m.request}\n上限: ${m.maxSeconds}秒${m.creditQuote?.mode==='credits' ? '' : ` / $${m.maxUsd}\n概算最大: $${m.estimatedMaximumUsd.toFixed(2)}（設定した料金単価による推定）`}\n${m.creditQuote?.mode==='credits' ? `消費: ${m.creditQuote.amount}クレジット。承認時に確保し、実行確定時に消費（接続前の障害・不応答も対象）。実行前の取消は返却。\n` : ''}値引き・契約・支払い不可。AIであることを名乗ります。\n詳細と個人情報の送信先を確認してから承認してください。`;
+  return `${m.mode === 'simulator' ? '【模擬・実際には発信しません】\n' : ''}${m.target.name} ${m.target.phone}\n${m.target.registrationRequired ? '番号を下書きに保存しました。Webの設定でこの番号・関係・連絡する根拠を登録し、依頼を作成し直してください。登録までは発信できません。\n' : ''}発信元: ${m.callerId}\n商品: ${m.product?.name ?? '指定なし（依頼文の範囲で話します）'}\n目的: ${goals[m.goal]}\n依頼: ${m.request}\n上限: ${m.maxSeconds}秒${m.creditQuote?.mode==='credits' ? '' : ` / $${m.maxUsd}\n概算最大: $${m.estimatedMaximumUsd.toFixed(2)}（設定した料金単価による推定）`}\n${m.creditQuote?.mode==='credits' ? `消費: ${m.creditQuote.amount}クレジット。承認時に確保し、実行確定時に消費（接続前の障害・不応答も対象）。実行前の取消は返却。\n` : ''}値引き・契約・支払い不可。AIであることを名乗ります。\n詳細と個人情報の送信先を確認してから承認してください。`;
 }
 export function resultText(m) {
   const labels = { COMPLETED:'目的の合意を会話で確認', INCOMPLETE:'未確定の項目があります', DECLINED:'辞退・再連絡停止', FAILED:'実行失敗', UNKNOWN:'実行状態の照合が必要', CANCELLED:'キャンセル' };
