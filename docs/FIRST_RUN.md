@@ -10,17 +10,17 @@
 2. Run the check and inspect the field values and the utterances used as evidence. Compare the full transcript with a prefix before the callee confirms. The documented behavior is completion for the full record and an incomplete result for that prefix.
 3. For your own examples, use synthetic or appropriately de-identified final transcripts. Input is processed in the tab; the public guide states there is no upload or automatic storage. Do not publish real call text, phone numbers, credentials or customer details in an issue.
 
-This page is a first-run guide, not a newly executed test report. The browser interaction and CLI replay were not re-run while preparing it.
+This page is a first-run guide, not a newly executed test report. On 2026-10-10 the CLI steps below were run with the v0.1.19 release asset on the public recording (exit 0), its first two utterances (exit 2) and an empty object (exit 1). The browser checker was not re-run.
 
 ## Use the published SDK or CLI
 
-Node.js 22+ is required. The verified release listing on 2026-09-21 identifies v0.1.18. The repository's installation guide warns that the npm registry version 0.1.0 does not contain this checker. Pin the GitHub release asset:
+Node.js 22+ is required. The release listing checked on 2026-10-10 identifies v0.1.19 as the latest. The repository's installation guide warns that the npm registry version 0.1.0 does not contain this checker. Pin the GitHub release asset:
 
 ```bash
 mkdir oathra-first-check
 cd oathra-first-check
 npm init -y
-npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.18/oathra-0.1.18.tgz
+npm install https://github.com/FORIFOR/oathra/releases/download/v0.1.19/oathra-0.1.19.tgz
 ```
 
 Prepare input using the [documented transcript schema](INTEGRATION.md#check-your-saved-final-transcripts), then run the installed binary directly:
@@ -61,7 +61,7 @@ Oathraは、保存した文字起こしから、宣言した会話上の完了�
 
 [インストール不要のチェッカー](https://forifor.github.io/oathra/check.html?utm_source=github&utm_medium=docs&utm_campaign=first_run)で公開サンプルを読み込み、結果と根拠の発言を確認してください。サンプルはモデルとシミュレーターの交渉記録であり、実店舗への電話ではありません。
 
-ローカル検査の手順は[日本語ガイド](INTEGRATION.ja.md)にあります。上記のv0.1.18配布物を使い、終了コード `0`（会話上の完了条件を満たした）、`2`（未完了など）、`1`（入力・実行エラー）を区別してください。この資料の作成時にCLI・ブラウザ操作を再実行したわけではありません。
+ローカル検査の手順は[日本語ガイド](INTEGRATION.ja.md)にあります。上記のv0.1.19配布物を使い、終了コード `0`（会話上の完了条件を満たした）、`2`（未完了など）、`1`（入力・実行エラー）を区別してください。2026-10-10にv0.1.19でCLIの手順を実行し、終了コード0・2・1を確認しました。ブラウザ操作は再実行していません。
 
 相手の了承と予約台帳への登録は別です。希望条件との照合、音声認識の誤り、未対応の表現なども残ります。実通話や個人情報を公開Issueへ貼らないでください。
 
