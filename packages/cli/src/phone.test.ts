@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GeminiTTS } from "@oathra/gemini";
 import { OpenAITTS } from "@oathra/openai";
+import { ElevenLabsTTS } from "@oathra/elevenlabs";
 import { definePhoneRequest, preparePhoneRequest } from "@oathra/contract";
 import { buildEngine, CHARACTER_TTS_STYLE, engineBrain, parseEngineSpec, phoneRequestSystemPrompt, pipelineTTS } from "./phone.js";
 
@@ -20,6 +21,19 @@ describe("pipeline TTS choice (character prototype)", () => {
   it("the default pipeline voice is unchanged", () => {
     expect(pipelineTTS(undefined).tts).toBeInstanceOf(OpenAITTS);
     expect(pipelineTTS("openai", "character-female").tts).toBeInstanceOf(OpenAITTS);
+  });
+  it("elevenlabs speaks with the deployment's voice and names itself in the engine label", () => {
+    const saved = { id: process.env.ELEVENLABS_VOICE_ID, model: process.env.ELEVENLABS_MODEL };
+    process.env.ELEVENLABS_VOICE_ID = "voice-123"; delete process.env.ELEVENLABS_MODEL;
+    try {
+      const choice = pipelineTTS("elevenlabs");
+      expect(choice.tts).toBeInstanceOf(ElevenLabsTTS);
+      expect(choice.voice).toBe("voice-123");
+      expect((choice.tts as ElevenLabsTTS).model).toBe("eleven_flash_v2_5");
+      expect(buildEngine({ id: "pipeline", brain: "ollama", tts: "elevenlabs" }).label).toMatch(/ElevenLabs \(eleven_flash_v2_5\)/);
+    } finally {
+      for (const [k, v] of [["ELEVENLABS_VOICE_ID", saved.id], ["ELEVENLABS_MODEL", saved.model]] as const) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
   });
 });
 

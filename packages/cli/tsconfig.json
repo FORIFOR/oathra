@@ -43,6 +43,9 @@
       "path": "../../providers/gemini"
     },
     {
+      "path": "../../providers/elevenlabs"
+    },
+    {
       "path": "../../providers/ollama"
     },
     {
