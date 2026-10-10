@@ -20,7 +20,7 @@ function oathraAlias() {
 export default defineConfig({
   resolve: { alias: [oathraAlias()] },
   test: {
-    include: ["packages/**/*.test.ts", "providers/**/*.test.ts", "apps/**/*.test.ts"],
+    include: ["packages/**/*.test.ts", "providers/**/*.test.ts", "apps/**/*.test.ts", "site/**/*.test.ts"],
     passWithNoTests: false,
     testTimeout: 20000,
   },
