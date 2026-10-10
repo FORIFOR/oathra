@@ -18,7 +18,7 @@ LINE / Slack / Telegram / custom channel
        CallContract / durable worker
                  |
        Capability SDK + Registry
-          call / email / calendar / sms / crm
+          call / email / calendar / sms / crm / whatsapp
                  |
           Oathraの証拠・結果判定
 ```
@@ -32,6 +32,8 @@ LINE / Slack / Telegram / custom channel
 | `sdk/plugin-kit` | Manifest・設定・権限検証、Registry、ローカルの明示的ロード |
 | `plugins/line`, `plugins/slack` | 既存チャネルの実装を移した参照実装 |
 | `plugins/call`, `email`, `calendar`, `sms`, `crm` | 既存実行処理を移した参照実装 |
+| `plugins/whatsapp` | Twilio経由のWhatsApp送信。宛先が電話番号なので `sms` effect の安全条件で動きます（新しいeffectは追加していません） |
+| `plugins/twilio-messaging` | SMS・WhatsAppの受信チャネル。Twilio署名を検証し、下書きまで。`approval:request` は持たず、発信の承認はWebで行います |
 | `plugins/telegram` | 本体コードを変更せず追加する任意のチャネル例。既定では未ロード |
 | `apps/gateway/plugins.mjs` | create / inspect / pin / add / list / doctor / enable / disable |
 
