@@ -236,6 +236,11 @@ describe("blind set B: settled exactly when it was agreed", () => {
     lines.forEach(([who, text], i) => engine.ingest({ id: `t${i}`, source: who === "A" ? "caller" : "callee", text, t: i }));
     expect(evaluate(contracts[shape], engine, "completed").complete).toBe(agreed);
   });
-  it.todo("known miss (the unit 丁 is not a quantity unit): o A:豆腐を40丁、10月8日納品でお願いします。 / B:かしこまりました。ご注文ありがとうございます。10月8日に豆腐40丁、納品いたします。");
+  it("was a known miss, now settled: tofu counted in 丁", () => {
+    const engine = new EvidenceEngine({ language: "ja", now: NOW, confirmation: "callee_acceptance" });
+    [["caller", "豆腐を40丁、10月8日納品でお願いします。"], ["callee", "かしこまりました。ご注文ありがとうございます。10月8日に豆腐40丁、納品いたします。"]]
+      .forEach(([source, text], i) => engine.ingest({ id: `t${i}`, source: source as "caller" | "callee", text: text!, t: i }));
+    expect(evaluate(contracts.o, engine, "completed").complete).toBe(true);
+  });
   it.todo("known miss (the product is written in kana (コーヒーまめ) and cannot be matched to the caller s コーヒー豆): o A:コーヒー豆を10kg、10月9日納品でお願いしたいのですが。 / B:おせわになってます はい コーヒーまめ 10キロ 10月9日に のうひんします");
 });

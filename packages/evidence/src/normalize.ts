@@ -356,6 +356,8 @@ const QUANTITY_UNIT_TABLE: Array<[QuantityUnit, string, string?]> = [
   ["式", "式", "場|典|次|辞"],
   ["反", "反", "対|応|映|省|面|則|発|論|射|転|復"],
   ["俵", "俵"],
+  // Tofu and konnyaku come by the 丁. 「3丁目」 is an address (目 ends it); 「八丁堀」「八丁味噌」 are names.
+  ["丁", "丁", "堀|味|畷|寧|度|重|字|番|場|稚"],
   ["pieces", "\\s?(?:pieces?|pcs)\\b"],
   ["units", "\\s?units?\\b"],
   ["cases", "\\s?cases?\\b"],

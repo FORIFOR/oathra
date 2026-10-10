@@ -737,7 +737,7 @@ async function ask() {
   const usesScope = () => form.kind === '' || form.kind === 'reserve';
   // 相手の言葉で確かめる条件 (納期を確認, 見積・在庫と価格): an optional quantity and date the other side must say back.
   // The units are the contract's QUANTITY_UNITS in their one spelling; no unit is converted into another.
-  const UNITS = [['数える', ['個', 'ケース', '箱', '台', '本', '枚', '袋', '缶', '束', 'セット', 'ダース', 'パック', '点', '冊', '着', '足', '脚', '基', '式', 'ロット', '反', '俵', '梱包']], ['重さ・量・長さ', ['kg', 'g', 't', 'L', 'm']], ['英語', ['units', 'pieces', 'cases', 'boxes', 'cartons', 'pallets']]];
+  const UNITS = [['数える', ['個', 'ケース', '箱', '台', '本', '枚', '袋', '缶', '束', 'セット', 'ダース', 'パック', '点', '冊', '着', '足', '脚', '基', '式', 'ロット', '丁', '反', '俵', '梱包']], ['重さ・量・長さ', ['kg', 'g', 't', 'L', 'm']], ['英語', ['units', 'pieces', 'cases', 'boxes', 'cartons', 'pallets']]];
   const usesTerms = () => ['delivery-date', 'quote-request'].includes(form.kind);
   const wanted = /^(\d+(?:\.\d+)?)(.+)$/.exec(pre.success?.expected?.quantity ?? '');
   const qtyAmount = el('input', { type: 'text', id: 'ask-qty', inputmode: 'decimal', autocomplete: 'off', placeholder: '例：50', value: wanted?.[1] ?? '', 'aria-describedby': 'ask-terms-note' });
