@@ -1,0 +1,12 @@
+graph TD
+    source["ソース\napps/gateway/lib/schedules.mjs"]
+    n-node-crypto-c7dfc5["node:crypto\n外部・別名・未解決"]
+    source -->|"字句抽出: import／export"| n-node-crypto-c7dfc5
+    n-packages-contract-dist-index-js-6a2376["../../../packages/contract/dist/index.js\n外部・別名・未解決"]
+    source -->|"字句抽出: import／export"| n-packages-contract-dist-index-js-6a2376
+    n-phone-service-mjs-707f58["./phone-service.mjs\napps/gateway/lib/phone-service.mjs"]
+    source -->|"字句抽出: import／export"| n-phone-service-mjs-707f58
+    n-service-mjs-20d286["./service.mjs\napps/gateway/lib/service.mjs"]
+    source -->|"字句抽出: import／export"| n-service-mjs-20d286
+    n-security-mjs-7b9f61["./security.mjs\napps/gateway/lib/security.mjs"]
+    source -->|"字句抽出: import／export"| n-security-mjs-7b9f61

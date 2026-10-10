@@ -1,0 +1,19 @@
+実在パス: `providers/simulator`。17ファイル。
+
+- `providers/simulator/package.json`
+- `providers/simulator/src/agent.ts`
+- `providers/simulator/src/character.ts`
+- `providers/simulator/src/characters/friend.test.ts`
+- `providers/simulator/src/characters/friend.ts`
+- `providers/simulator/src/characters/hotel.ts`
+- `providers/simulator/src/characters/index.ts`
+- `providers/simulator/src/characters/llm.test.ts`
+- `providers/simulator/src/characters/llm.ts`
+- `providers/simulator/src/characters/restaurant.ts`
+- `providers/simulator/src/characters/serial.ts`
+- `providers/simulator/src/characters/shop.ts`
+- `providers/simulator/src/index.ts`
+- `providers/simulator/src/rng.ts`
+- `providers/simulator/src/simulator.test.ts`
+- `providers/simulator/src/transport.ts`
+- `providers/simulator/tsconfig.json`

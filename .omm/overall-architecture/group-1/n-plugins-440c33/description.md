@@ -1,0 +1,20 @@
+確認したパス: `plugins`。配下の登録ファイルは18件。
+
+- `plugins/_shared/http.mjs`（一覧のみ）
+- `plugins/calendar/index.mjs`（内容確認済み）
+- `plugins/calendar/oathra.plugin.json`（一覧のみ）
+- `plugins/call/index.mjs`（内容確認済み）
+- `plugins/call/oathra.plugin.json`（一覧のみ）
+- `plugins/crm/index.mjs`（一覧のみ）
+- `plugins/crm/oathra.plugin.json`（一覧のみ）
+- `plugins/email/index.mjs`（一覧のみ）
+- `plugins/email/oathra.plugin.json`（一覧のみ）
+- `plugins/line/index.mjs`（一覧のみ）
+- `plugins/line/oathra.plugin.json`（一覧のみ）
+- `plugins/slack/index.mjs`（一覧のみ）
+- `plugins/slack/oathra.plugin.json`（一覧のみ）
+- `plugins/sms/index.mjs`（一覧のみ）
+- `plugins/sms/oathra.plugin.json`（一覧のみ）
+- `plugins/telegram/README.md`（一覧のみ）
+- `plugins/telegram/index.mjs`（一覧のみ）
+- `plugins/telegram/oathra.plugin.json`（一覧のみ）

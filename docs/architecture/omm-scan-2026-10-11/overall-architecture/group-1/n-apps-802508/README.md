@@ -1,0 +1,122 @@
+# overall-architecture/group-1/n-apps-802508
+
+[解析トップへ戻る](../../../README.md)
+
+確認したパス: `apps`。配下の登録ファイルは163件。
+
+- `apps/desktop/README.md`（一覧のみ）
+- `apps/desktop/src-tauri/.gitignore`（一覧のみ）
+- `apps/desktop/src-tauri/Cargo.lock`（一覧のみ）
+- `apps/desktop/src-tauri/Cargo.toml`（一覧のみ）
+- `apps/desktop/src-tauri/build.rs`（一覧のみ）
+- `apps/desktop/src-tauri/capabilities/default.json`（一覧のみ）
+- `apps/desktop/src-tauri/icons/128x128.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/128x128@2x.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/32x32.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square107x107Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square142x142Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square150x150Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square284x284Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square30x30Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square310x310Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square44x44Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square71x71Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/Square89x89Logo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/StoreLogo.png`（一覧のみ）
+- `apps/desktop/src-tauri/icons/icon.icns`（一覧のみ）
+- `apps/desktop/src-tauri/icons/icon.ico`（一覧のみ）
+- `apps/desktop/src-tauri/icons/icon.png`（一覧のみ）
+- `apps/desktop/src-tauri/src/lib.rs`（一覧のみ）
+- `apps/desktop/src-tauri/src/main.rs`（一覧のみ）
+- `apps/desktop/src-tauri/tauri.conf.json`（一覧のみ）
+- `apps/desktop/ui/index.html`（一覧のみ）
+- `apps/gateway/.env.example`（一覧のみ）
+- `apps/gateway/.gitignore`（一覧のみ）
+- `apps/gateway/README.md`（一覧のみ）
+- `apps/gateway/agent-mcp.mjs`（一覧のみ）
+- `apps/gateway/backup.mjs`（一覧のみ）
+- `apps/gateway/connect-agent.mjs`（一覧のみ）
+- `apps/gateway/demo.mjs`（一覧のみ）
+- `apps/gateway/deploy/Caddyfile`（一覧のみ）
+- `apps/gateway/deploy/Dockerfile`（一覧のみ）
+
+
+```mermaid
+graph TD
+    n-apps-desktop-27ce27["desktop\napps/desktop"]
+    n-apps-gateway-c8b195["gateway\napps/gateway"]
+    n-apps-ios-9162a8["ios\napps/ios"]
+```
+
+## 要素の説明
+
+### n-apps-desktop-27ce27
+
+実在パス: `apps/desktop`。26ファイル。
+
+- `apps/desktop/README.md`
+- `apps/desktop/src-tauri/.gitignore`
+- `apps/desktop/src-tauri/Cargo.lock`
+- `apps/desktop/src-tauri/Cargo.toml`
+- `apps/desktop/src-tauri/build.rs`
+- `apps/desktop/src-tauri/capabilities/default.json`
+- `apps/desktop/src-tauri/icons/128x128.png`
+- `apps/desktop/src-tauri/icons/128x128@2x.png`
+- `apps/desktop/src-tauri/icons/32x32.png`
+- `apps/desktop/src-tauri/icons/Square107x107Logo.png`
+- `apps/desktop/src-tauri/icons/Square142x142Logo.png`
+- `apps/desktop/src-tauri/icons/Square150x150Logo.png`
+- `apps/desktop/src-tauri/icons/Square284x284Logo.png`
+- `apps/desktop/src-tauri/icons/Square30x30Logo.png`
+- `apps/desktop/src-tauri/icons/Square310x310Logo.png`
+- `apps/desktop/src-tauri/icons/Square44x44Logo.png`
+- `apps/desktop/src-tauri/icons/Square71x71Logo.png`
+- `apps/desktop/src-tauri/icons/Square89x89Logo.png`
+- `apps/desktop/src-tauri/icons/StoreLogo.png`
+- `apps/desktop/src-tauri/icons/icon.icns`
+- `apps/desktop/src-tauri/icons/icon.ico`
+- `apps/desktop/src-tauri/icons/icon.png`
+- `apps/desktop/src-tauri/src/lib.rs`
+- `apps/desktop/src-tauri/src/main.rs`
+- `apps/desktop/src-tauri/tauri.conf.json`
+
+### n-apps-gateway-c8b195
+
+実在パス: `apps/gateway`。132ファイル。
+
+- `apps/gateway/.env.example`
+- `apps/gateway/.gitignore`
+- `apps/gateway/README.md`
+- `apps/gateway/agent-mcp.mjs`
+- `apps/gateway/backup.mjs`
+- `apps/gateway/connect-agent.mjs`
+- `apps/gateway/demo.mjs`
+- `apps/gateway/deploy/Caddyfile`
+- `apps/gateway/deploy/Dockerfile`
+- `apps/gateway/deploy/Dockerfile.dockerignore`
+- `apps/gateway/deploy/compose.yml`
+- `apps/gateway/inbound-setup.mjs`
+- `apps/gateway/lib/agent-phone.mjs`
+- `apps/gateway/lib/alerts.mjs`
+- `apps/gateway/lib/batches.mjs`
+- `apps/gateway/lib/billing.mjs`
+- `apps/gateway/lib/browser-session.mjs`
+- `apps/gateway/lib/channels.mjs`
+- `apps/gateway/lib/credit-guard.mjs`
+- `apps/gateway/lib/credits.mjs`
+- `apps/gateway/lib/followups.mjs`
+- `apps/gateway/lib/mcp-oauth.mjs`
+- `apps/gateway/lib/mcp-sales.mjs`
+- `apps/gateway/lib/password-accounts.mjs`
+- `apps/gateway/lib/paths.mjs`
+
+### n-apps-ios-9162a8
+
+実在パス: `apps/ios`。5ファイル。
+
+- `apps/ios/.gitignore`
+- `apps/ios/Oathra/API.swift`
+- `apps/ios/Oathra/OathraApp.swift`
+- `apps/ios/README.md`
+- `apps/ios/project.yml`
+

@@ -1,0 +1,27 @@
+実在パス: `docs/media`。49ファイル。
+
+- `docs/media/arena-confirmed.png`
+- `docs/media/arena-negotiating.png`
+- `docs/media/battle-impossible-hotel.png`
+- `docs/media/battle-impossible-hotel.svg`
+- `docs/media/oathra-battle-en-poster.png`
+- `docs/media/oathra-battle-en-square.mp4`
+- `docs/media/oathra-battle-en-vertical.mp4`
+- `docs/media/oathra-battle-en.gif`
+- `docs/media/oathra-battle-en.mp4`
+- `docs/media/oathra-battle-ja-poster.png`
+- `docs/media/oathra-battle-ja-square.mp4`
+- `docs/media/oathra-battle-ja-vertical.mp4`
+- `docs/media/oathra-battle-ja.gif`
+- `docs/media/oathra-battle-ja.mp4`
+- `docs/media/oathra-evidence-en-poster.jpg`
+- `docs/media/oathra-evidence-en.mp4`
+- `docs/media/oathra-evidence-en.vtt`
+- `docs/media/oathra-evidence-ja-poster.jpg`
+- `docs/media/oathra-evidence-ja.mp4`
+- `docs/media/oathra-evidence-ja.vtt`
+- `docs/media/oathra-intake-en.vtt`
+- `docs/media/oathra-intake-ja-poster.png`
+- `docs/media/oathra-intake-ja-square.mp4`
+- `docs/media/oathra-intake-ja.gif`
+- `docs/media/oathra-intake-ja.mp4`

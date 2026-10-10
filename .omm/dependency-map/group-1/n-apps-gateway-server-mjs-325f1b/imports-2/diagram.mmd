@@ -1,0 +1,18 @@
+graph TD
+    source["ソース\napps/gateway/server.mjs"]
+    n-node-path-78811c["node:path\n外部・別名・未解決"]
+    source -->|"字句抽出: import／export"| n-node-path-78811c
+    n-lib-store-mjs-f9e0c4["./lib/store.mjs\napps/gateway/lib/store.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-store-mjs-f9e0c4
+    n-lib-browser-session-mjs-292d49["./lib/browser-session.mjs\napps/gateway/lib/browser-session.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-browser-session-mjs-292d49
+    n-lib-alerts-mjs-b2bd73["./lib/alerts.mjs\napps/gateway/lib/alerts.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-alerts-mjs-b2bd73
+    n-lib-schedules-mjs-d7ac26["./lib/schedules.mjs\napps/gateway/lib/schedules.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-schedules-mjs-d7ac26
+    n-lib-batches-mjs-5c2d45["./lib/batches.mjs\napps/gateway/lib/batches.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-batches-mjs-5c2d45
+    n-lib-team-mjs-b8ac8c["./lib/team.mjs\napps/gateway/lib/team.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-team-mjs-b8ac8c
+    n-lib-public-accounts-mjs-2774f1["./lib/public-accounts.mjs\napps/gateway/lib/public-accounts.mjs"]
+    source -->|"字句抽出: import／export"| n-lib-public-accounts-mjs-2774f1

@@ -1,0 +1,9 @@
+確認済みファイル: `apps/gateway/lib/team.mjs`
+
+解析: 字句抽出。静的なimport／export参照です。関数の実行順序やHTTP通信は表していません。
+
+宣言: `outcomeOf`, `callRow`, `teamMissions`, `names`, `teamNotPlaced`, `teamUndeliveredAlerts`, `teamCalls`, `teamRecord`, `teamSummary`, `contactHistory`, `teamPeople`, `callsCsv`, `teamCallsCsv`, `ownCallsCsv`, `importContacts`
+
+- `../../../packages/contract/dist/index.js` → 外部・標準ライブラリ・別名など。ローカル対応先は未確定
+- `./phone-service.mjs` → `apps/gateway/lib/phone-service.mjs`（内容確認済み）
+- `./security.mjs` → `apps/gateway/lib/security.mjs`（一覧確認・内容未読）
