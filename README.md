@@ -1,5 +1,22 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
+## 操作できる3つの構想デモ
+
+[ブラウザで試す](https://forifor.github.io/oathra/demos/) · [予約の操作動画](docs/media/use-case-restaurant.mp4) · [在庫・取り置き](docs/media/use-case-stock.mp4) · [予約変更](docs/media/use-case-modify.mp4)
+
+**構想デモ・実際の発信/予約は行いません。** 架空の店舗・番号・商品・予約を使い、条件入力 → 本人承認 → 模擬通話 → 結果まで操作できます。不通・拒否・条件外料金・曖昧な成立・相手の訂正も選べます。予約変更が不成立ならデモ台帳の元予約を維持。検索・会話・台帳は合成データ、判定は実装済みの `defineCall` / `EvidenceEngine` / `evaluate` を利用します。外部API・電話回線・課金には接続しません。
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build:site
+python3 -m http.server 4318 --bind 127.0.0.1 --directory site
+# http://127.0.0.1:4318/demos/
+pnpm test:use-cases
+```
+
+[実装範囲・安全境界・公開手順](docs/quality/use-case-demos.md) · [動画制作手順](docs/use-case-video-production.md)
+
+
 <p align="center">
   <a href="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/FORIFOR/oathra/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FORIFOR/oathra?display_name=tag&sort=semver"></a>
