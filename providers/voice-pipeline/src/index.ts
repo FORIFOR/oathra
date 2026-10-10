@@ -9,15 +9,15 @@ import type { Language } from "@oathra/evidence";
 import type { BrainProvider, SessionEvent, SpeechContext } from "@oathra/core";
 import { frameMulaw, MULAW_FRAME_BYTES, mulawDurationMs } from "@oathra/audio-kit";
 import { DeepgramSTT, type DeepgramLiveEvent, type DeepgramLiveSession } from "@oathra/deepgram";
-import { OpenAITTS } from "@oathra/openai";
+import { createOpenAITTS } from "@oathra/openai";
 import { convert, MULAW_8K, OutputQueue, type AudioChunk, type VoiceEngine, type VoiceOutput, type VoiceSession, type VoiceSessionContext } from "@oathra/voice";
 
 export type LiveSTTSession = Pick<DeepgramLiveSession, "open" | "send" | "on" | "close" | "finalize">;
 
 export type PipelineSTT = { live(context: SpeechContext): LiveSTTSession };
 export type PipelineTTS = {
-  synthesizeMulaw8k(text: string, opts: { language: Language }): Promise<Uint8Array>;
-  synthesizeMulaw8kStream?(text: string, opts: { language: Language }): AsyncIterable<Uint8Array>;
+  synthesizeMulaw8k(text: string, opts: { language: Language; signal?: AbortSignal }): Promise<Uint8Array>;
+  synthesizeMulaw8kStream?(text: string, opts: { language: Language; signal?: AbortSignal }): AsyncIterable<Uint8Array>;
 };
 
 export type PipelineEngineOptions = {
@@ -58,6 +58,8 @@ class PipelineVoiceSession implements VoiceSession {
   private segmentFinals: Array<{ text: string; endMs: number; confidence: number }> = [];
   // Playback state
   private playing = false;
+  private ttsAbort: AbortController | undefined;
+  private readonly lifetimeAbort = new AbortController();
   private interrupted = false;
   private stopSending = false;
   private playStartMs: number | undefined;
@@ -91,8 +93,9 @@ class PipelineVoiceSession implements VoiceSession {
   private async prepareFillers(): Promise<void> {
     const texts = this.language === "ja" ? ["はい。", "ええ。"] : ["Sure.", "Okay."];
     for (const t of texts) {
+      if (this.closed) break;
       try {
-        this.fillers.push(await this.opts.tts.synthesizeMulaw8k(t, { language: this.language }));
+        this.fillers.push(await this.opts.tts.synthesizeMulaw8k(t, { language: this.language, signal: this.lifetimeAbort.signal }));
       } catch {
         /* fillers are optional */
       }
@@ -215,6 +218,8 @@ class PipelineVoiceSession implements VoiceSession {
     const stale = () => opts.inputUntilMs !== undefined && this.calleeWordsAtMs !== undefined && this.calleeWordsAtMs > opts.inputUntilMs;
     if (stale()) return { startMs: this.now(), endMs: this.now(), interrupted: true, skipped: true };
     const tts = this.opts.tts;
+    const abort = new AbortController();
+    this.ttsAbort = abort;
     const lead = this.opts.leadMs ?? 400;
     this.playing = true;
     this.interrupted = false;
@@ -234,10 +239,10 @@ class PipelineVoiceSession implements VoiceSession {
       }
     };
     const source: AsyncIterable<Uint8Array> = tts.synthesizeMulaw8kStream
-      ? tts.synthesizeMulaw8kStream(text, { language: this.language })
-      : (async function* (t, txt, language) {
-          yield await t.synthesizeMulaw8k(txt, { language });
-        })(tts, text, this.language);
+      ? tts.synthesizeMulaw8kStream(text, { language: this.language, signal: abort.signal })
+      : (async function* (t, txt, language, signal) {
+          yield await t.synthesizeMulaw8k(txt, { language, signal });
+        })(tts, text, this.language, abort.signal);
 
     try {
       for await (const chunk of source) {
@@ -262,7 +267,13 @@ class PipelineVoiceSession implements VoiceSession {
         sendFrames(last);
       }
     } catch (e) {
-      this.emit({ type: "error", message: `tts: ${(e as Error).message}`, fatal: false });
+      skipped = firstFrameMs === undefined;
+      this.interrupted = true;
+      this.stopSending = true;
+      if (firstFrameMs !== undefined) this.queue.push({ type: "clear" });
+      if (!abort.signal.aborted) this.emit({ type: "error", message: `tts: ${(e as Error).message}`, fatal: false });
+    } finally {
+      if (this.ttsAbort === abort) this.ttsAbort = undefined;
     }
     // No carrier mark at this layer: wait until the queued audio has played out.
     if (!this.stopSending && firstFrameMs !== undefined) {
@@ -283,6 +294,7 @@ class PipelineVoiceSession implements VoiceSession {
     }
     const endMs = this.now();
     this.playing = false;
+    if (firstFrameMs === undefined) skipped = true;
     if (skipped) return { startMs: endMs, endMs, interrupted: true, skipped: true };
     return { startMs: firstFrameMs ?? startMs, endMs, interrupted: this.interrupted };
   }
@@ -291,6 +303,7 @@ class PipelineVoiceSession implements VoiceSession {
     if (!this.playing) return;
     this.interrupted = true;
     this.stopSending = true;
+    this.ttsAbort?.abort();
     this.queue.push({ type: "clear" });
   }
 
@@ -298,6 +311,8 @@ class PipelineVoiceSession implements VoiceSession {
     if (this.closed) return;
     this.closed = true;
     this.stopSending = true;
+    this.ttsAbort?.abort();
+    this.lifetimeAbort.abort();
     try {
       this.stt?.close();
     } catch {
@@ -309,7 +324,7 @@ class PipelineVoiceSession implements VoiceSession {
 
 export function pipelineEngine(opts: PipelineEngineOptions): VoiceEngine {
   const stt = opts.stt ?? new DeepgramSTT();
-  const tts = opts.tts ?? new OpenAITTS();
+  const tts = opts.tts ?? createOpenAITTS();
   return {
     id: "pipeline",
     label: `Pipeline (Deepgram + ${opts.brain.name} + ${opts.ttsLabel ?? "OpenAI TTS"})`,
