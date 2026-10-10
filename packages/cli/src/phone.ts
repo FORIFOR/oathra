@@ -13,6 +13,7 @@ import type { BrainProvider } from "@oathra/core";
 import { recordingNotice, transcriptNotice } from "@oathra/core";
 import { DeepgramSTT } from "@oathra/deepgram";
 import { GeminiTTS } from "@oathra/gemini";
+import { ElevenLabsTTS } from "@oathra/elevenlabs";
 import { LiveKitSipGateway } from "@oathra/gateway-livekit";
 import { OpenAIBrain, OpenAITTS } from "@oathra/openai";
 import { gptLiveEngine } from "@oathra/openai-realtime";
@@ -62,12 +63,16 @@ export function buildRegistry(env: NodeJS.ProcessEnv = process.env): PhoneRegist
 
 export type EngineSpec = { id: "gpt-live" | "gemini-live" | "character-tts" | "pipeline"; model?: string; brain?: string; tts?: PipelineTTSChoice };
 
-/** Pipeline voices. `gemini-lite` is the character-call prototype: Flash-Lite TTS with the character preset's voice. */
-export type PipelineTTSChoice = "openai" | "gemini-lite";
+/**
+ * Pipeline voices. `gemini-lite` is the character-call prototype: Flash-Lite TTS with the character preset's voice.
+ * `elevenlabs` speaks with ELEVENLABS_VOICE_ID (ELEVENLABS_MODEL, default eleven_flash_v2_5).
+ */
+export type PipelineTTSChoice = "openai" | "gemini-lite" | "elevenlabs";
 const CHARACTER_TTS_VOICES: Record<string, string> = { "character-female": PRESET_VOICES["character-tts"]["character-female"], "character-male": PRESET_VOICES["character-tts"]["character-male"] };
 
 /** The pipeline's TTS; `gemini-lite` only for the character presets, since the style is a character's. */
-export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?: string): { tts: OpenAITTS | GeminiTTS; voice?: string; style?: string } {
+export function pipelineTTS(choice: PipelineTTSChoice | undefined, voicePreset?: string): { tts: OpenAITTS | GeminiTTS | ElevenLabsTTS; voice?: string; style?: string } {
+  if (choice === "elevenlabs") { const tts = new ElevenLabsTTS(); return { tts, ...(tts.voiceId ? { voice: tts.voiceId } : {}) }; }
   if (choice !== "gemini-lite") return { tts: new OpenAITTS() };
   const voice = voicePreset ? CHARACTER_TTS_VOICES[voicePreset] : undefined;
   if (!voice) throw new Error(`--tts gemini-lite is for the character presets only: add --voice-preset ${Object.keys(CHARACTER_TTS_VOICES).join("|")}`);
@@ -112,7 +117,8 @@ export function buildEngine(spec: EngineSpec, env: NodeJS.ProcessEnv = process.e
     return { ...pipelineEngine({ brain: engineBrainPlaceholder, stt: new DeepgramSTT(), tts, acknowledgements: false, ttsLabel: `Gemini TTS (${tts.voice})` }), id: "character-tts", requires: ENGINE_CREDENTIALS["character-tts"] };
   }
   const brain: BrainProvider = resolveBrain(spec.brain ?? "openai");
-  return pipelineEngine({ brain, stt: new DeepgramSTT(), tts: pipelineTTS(spec.tts, voicePreset).tts });
+  const { tts } = pipelineTTS(spec.tts, voicePreset);
+  return pipelineEngine({ brain, stt: new DeepgramSTT(), tts, ...(tts instanceof ElevenLabsTTS ? { ttsLabel: `ElevenLabs (${tts.model})` } : {}) });
 }
 
 export function engineChoices(): Array<{ id: string; label: string; note: string }> {
@@ -134,6 +140,8 @@ type CredentialGuide = { label: string; url?: string; secret?: boolean; note?: s
 const CREDENTIAL_GUIDES: Record<string, CredentialGuide> = {
   OPENAI_API_KEY: { label: "OpenAI API key", url: "https://platform.openai.com/api-keys", secret: true },
   GEMINI_API_KEY: { label: "Gemini API key", url: "https://aistudio.google.com/apikey", secret: true },
+  ELEVENLABS_API_KEY: { label: "ElevenLabs API key", url: "https://elevenlabs.io/app/settings/api-keys", secret: true },
+  ELEVENLABS_VOICE_ID: { label: "ElevenLabs voice ID", note: "The voice that speaks for the agent (Voice Library → ID)", url: "https://elevenlabs.io/app/voice-library", secret: false },
   DEEPGRAM_API_KEY: { label: "Deepgram API key", url: "https://console.deepgram.com/", secret: true },
   TWILIO_ACCOUNT_SID: { label: "Twilio Account SID", url: "https://console.twilio.com/", note: "starts with AC" },
   TWILIO_AUTH_TOKEN: { label: "Twilio Auth Token", url: "https://console.twilio.com/", secret: true },
@@ -566,10 +574,11 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
     ]));
   const engineSpec = parseEngineSpec(flags.engine, undefined, config.voice.engine);
   if (flags.tts) {
-    if (flags.tts !== "openai" && flags.tts !== "gemini-lite") throw new Error(`Unknown --tts "${flags.tts}". Use openai or gemini-lite`);
+    if (flags.tts !== "openai" && flags.tts !== "gemini-lite" && flags.tts !== "elevenlabs") throw new Error(`Unknown --tts "${flags.tts}". Use openai, gemini-lite or elevenlabs`);
     if (engineSpec.id !== "pipeline") throw new Error("--tts applies to --engine pipeline");
     if (level !== "local") throw new Error("--tts is a prototype: only --level local for now");
     engineSpec.tts = flags.tts;
+    if (flags.tts === "elevenlabs") await ensureEnvKeys(["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"]);
   }
   if (level === "conversation") {
     await localConversationTest(flags);

@@ -51,6 +51,9 @@ importers:
       '@oathra/deepgram':
         specifier: workspace:*
         version: link:../../providers/deepgram
+      '@oathra/elevenlabs':
+        specifier: workspace:*
+        version: link:../../providers/elevenlabs
       '@oathra/eval':
         specifier: workspace:*
         version: link:../eval
@@ -255,6 +258,8 @@ importers:
       '@oathra/evidence':
         specifier: workspace:*
         version: link:../../packages/evidence
+
+  providers/elevenlabs: {}
 
   providers/gateway-livekit:
     dependencies:

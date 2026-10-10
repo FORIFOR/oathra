@@ -25,6 +25,7 @@ const LAYER = {
   "@oathra/gateway-livekit": 5.5,
   "@oathra/openai": 5,
   "@oathra/gemini": 5,
+  "@oathra/elevenlabs": 5,
   "@oathra/ollama": 5,
   "@oathra/replay": 6,
   "@oathra/eval": 6,
