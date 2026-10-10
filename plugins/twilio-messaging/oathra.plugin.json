@@ -1,0 +1,33 @@
+{
+  "id": "twilio-messaging",
+  "name": "Twilio SMS / WhatsApp",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "channel",
+  "entry": "./index.mjs",
+  "permissions": [
+    "mission:draft",
+    "mission:read",
+    "channel:send"
+  ],
+  "environment": [
+    "OATHRA_MESSAGING_CHANNEL_ENABLED",
+    "OATHRA_PUBLIC_URL",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_PHONE_NUMBER",
+    "TWILIO_WHATSAPP_NUMBER"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "features": {
+    "text": true,
+    "audio": false,
+    "interactiveApproval": false,
+    "progress": true,
+    "result": true
+  }
+}

@@ -8,8 +8,10 @@ import email from '../../../plugins/email/index.mjs';
 import calendar from '../../../plugins/calendar/index.mjs';
 import sms from '../../../plugins/sms/index.mjs';
 import crm from '../../../plugins/crm/index.mjs';
+import whatsapp from '../../../plugins/whatsapp/index.mjs';
+import twilioMessaging from '../../../plugins/twilio-messaging/index.mjs';
 import { repoUrl } from './paths.mjs';
-const factories={line,slack,call,email,calendar,sms,crm};
+const factories={line,slack,call,email,calendar,sms,crm,whatsapp,'twilio-messaging':twilioMessaging};
 export function builtinRegistry(env={}, {now=Date.now,fetchImpl=fetch,executeCall,disabled=[]}={}) {
  const r=new PluginRegistry();
  requirePlugin(Array.isArray(disabled)&&disabled.every(id=>Object.hasOwn(factories,id)), 'invalid_builtin_disable');
