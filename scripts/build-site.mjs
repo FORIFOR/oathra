@@ -33,7 +33,7 @@ function syncMediaForLocalPreview() {
 }
 
 const result = await build({
-  entryPoints: ['site/src/playground.ts', 'site/src/check.ts', 'site/src/story.ts'],
+  entryPoints: ['site/src/playground.ts', 'site/src/check.ts', 'site/src/story.ts', 'site/src/use-cases.ts'],
   bundle: true,
   format: 'esm',
   platform: 'browser',

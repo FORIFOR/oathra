@@ -1,0 +1,71 @@
+{
+  "dateUTC": "2026-10-10",
+  "baseCommit": "5164eef4e7b1bdf52787830062e7aa3d0d785d2c",
+  "environment": {
+    "os": "macOS",
+    "browser": "Chrome 155.0.8059.39",
+    "scope": "local synthetic data; no live calls or paid API"
+  },
+  "checks": {
+    "modelTests": 52,
+    "browserCases": 51,
+    "unitTestsPassed": 4285,
+    "unitSkipped": 1,
+    "unitTodo": 5,
+    "gatewayTestsPassed": 619,
+    "existingGatewayUICases": 348,
+    "adversarialFalseCompletion": 0,
+    "adversarialRuns": 10000,
+    "productionSourceTypecheck": "passed",
+    "dependencyDirection": "passed"
+  },
+  "videos": {
+    "count": 3,
+    "durationSecondsEach": 50,
+    "width": 1440,
+    "height": 900,
+    "fps": 25,
+    "framesEach": 1250,
+    "fullDecode": "passed",
+    "audio": "none",
+    "visualReview": "opening/middle/ending and approval poster, 12 images reviewed"
+  },
+  "files": [
+    {
+      "file": "docs/media/use-case-restaurant.mp4",
+      "sizeBytes": 809292,
+      "sha256": "e77550764a22150bbd8a541fc0ffce7e2b6fef94271eaeefaa89370f96e28fe4"
+    },
+    {
+      "file": "docs/media/use-case-restaurant-poster.jpg",
+      "sizeBytes": 148714,
+      "sha256": "0c4f2f9696df17c63526f7bb23f0b6a393983d29d5ad70406e6cb9566e6fa5ef"
+    },
+    {
+      "file": "docs/media/use-case-stock.mp4",
+      "sizeBytes": 847897,
+      "sha256": "209850cf8cba048f6b9267433848ac958d0eee69a780768fbbfa7979c303497a"
+    },
+    {
+      "file": "docs/media/use-case-stock-poster.jpg",
+      "sizeBytes": 149580,
+      "sha256": "178c57226353895789fe359b64f2a0ebaf56957e2b958689680718511494af19"
+    },
+    {
+      "file": "docs/media/use-case-modify.mp4",
+      "sizeBytes": 785713,
+      "sha256": "228d9426330c12c238840dacf14243fd7ad441f9fbf109f0cdc39a358e9b913c"
+    },
+    {
+      "file": "docs/media/use-case-modify-poster.jpg",
+      "sizeBytes": 152937,
+      "sha256": "adee0e1528cdaf074c578c1cce0f6409e247b4a091f7e45b085ec4da66c76b12"
+    }
+  ],
+  "limitations": [
+    "Actual carriers, stores, inventory, booking systems and speech recognition are not connected.",
+    "Free hold and no purchase obligation are synthetic script conditions.",
+    "Mobile Safari, assistive technologies and real-user usability study are unverified.",
+    "Supplementary transcript details summary height is 38px; primary actions meet44px."
+  ]
+}
