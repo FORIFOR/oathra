@@ -1,7 +1,7 @@
 // Drives the locally installed Google Chrome over CDP. No dependencies.
 // Shared by the UI flow checks: they operate the real page, assert, and save PNGs a person (or reviewer) then opens.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -28,13 +28,36 @@ export function checklist(name) {
   };
 }
 
+/**
+ * Starts headless Chrome on a port it picks itself (read back from DevToolsActivePort), so no other process can take
+ * the port between choosing and binding it. Chrome's stderr is kept so a failed start says why.
+ */
+async function startChrome(attempt) {
+  const profile = mkdtempSync(join(tmpdir(), "oathra-ui-"));
+  // GitHub's Ubuntu runners restrict unprivileged user namespaces, which Chrome's sandbox needs; /dev/shm is small there.
+  const ci = process.env.CI ? ["--no-sandbox", "--disable-dev-shm-usage"] : [];
+  const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${profile}`, "--hide-scrollbars", "--force-device-scale-factor=1", ...ci, "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
+  let stderr = "", exited = null;
+  chrome.stderr.on("data", (d) => { stderr = (stderr + d).slice(-4000); });
+  chrome.once("exit", (code, signal) => { exited = signal ?? code; });
+  const portFile = join(profile, "DevToolsActivePort");
+  let targets;
+  for (let i = 0; i < 120 && !targets && exited === null; i++) {
+    try { const port = Number(readFileSync(portFile, "utf8").split("\n")[0]); if (port) targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json(); } catch { await sleep(250); }
+  }
+  if (targets) return { chrome, profile, targets, failure: "" };
+  chrome.kill(); try { rmSync(profile, { recursive: true, force: true }); } catch { /* temp dir; the OS cleans it */ }
+  const failure = `attempt ${attempt}: ${exited === null ? "no port after 30s" : `exited (${exited})`}\n${stderr.trim().split("\n").slice(-15).join("\n")}`;
+  console.error(`Chrome start failed — ${failure}`);
+  return { chrome: null, profile: null, targets: null, failure };
+}
+
 export async function launch({ width = 1440, height = 900 } = {}) {
   if (!CHROME) throw new Error("Google Chrome / Chromium was not found. Set CHROME_PATH.");
-  const port = await freePort(), profile = mkdtempSync(join(tmpdir(), "oathra-ui-"));
-  const chrome = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${port}`, "--no-first-run", "--no-default-browser-check", `--user-data-dir=${profile}`, "--hide-scrollbars", "--force-device-scale-factor=1", "about:blank"], { stdio: "ignore" });
-  let targets;
-  for (let i = 0; i < 60 && !targets; i++) { try { targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json(); } catch { await sleep(250); } }
-  if (!targets) { chrome.kill(); throw new Error("Chrome did not open its debugging port."); }
+  let chrome, profile, targets, failure = "";
+  // A cold CI runner sometimes starts Chrome slowly or not at all; give it time, then one fresh attempt.
+  for (let attempt = 1; attempt <= 2 && !targets; attempt++) ({ chrome, profile, targets, failure } = await startChrome(attempt));
+  if (!targets) throw new Error(`Chrome did not open its debugging port.${failure ? `\n--- Chrome stderr (last lines) ---\n${failure}` : ""}`);
   const ws = new WebSocket(targets.find((t) => t.type === "page").webSocketDebuggerUrl);
   await new Promise((r) => (ws.onopen = r));
   let id = 0; const pending = new Map(), pageErrors = [];
