@@ -46,6 +46,8 @@ describe("parseQuantities", () => {
     ["3ロット", ["3ロット"]],
     ["2反", ["2反"]],
     ["30俵", ["30俵"]],
+    ["豆腐40丁", ["40丁"]],
+    ["四十丁", ["40丁"]],
     ["5梱包", ["5梱包"]],
     ["5梱", ["5梱包"]],
     ["50 units", ["50units"]],
@@ -80,7 +82,7 @@ describe("parseQuantities", () => {
     // model numbers and codes
     "A-100", "A-100を", "型番ABC123", "注文番号 4567", "RZ-7K3Q", "03-1234-5678", "ABC123個", "A-50ケース",
     // a unit character inside another word
-    "本日3本目", "2台目です", "3個人", "5本社", "2点確認させてください", "1点ご質問があります", "3点ほど確認です", "台数は未定です", "5キロメートル", "3トンネル", "5G回線", "5mm", "at 5 tomorrow", "table for 4 tomorrow", "7 pm",
+    "本日3本目", "2台目です", "3個人", "5本社", "2点確認させてください", "1点ご質問があります", "3点ほど確認です", "台数は未定です", "3丁目", "銀座四丁目", "八丁堀", "八丁味噌", "5キロメートル", "3トンネル", "5G回線", "5mm", "at 5 tomorrow", "table for 4 tomorrow", "7 pm",
     // unit prices and pack sizes describe the goods, not how many are ordered
     "1個2,000円", "1ケースあたり", "1箱につき", "24本入り", "1個ずつ",
     // zero is not an order

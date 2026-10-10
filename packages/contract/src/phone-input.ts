@@ -154,7 +154,7 @@ export function resolvePhoneVoice(engine: string, request: { voice?: string | un
  * (「五十ケース」「50ｹｰｽ」「50 kg」) into `<amount><unit>` with exactly these units, so an expected quantity written
  * the same way compares by plain equality. No unit is converted into another: 1ダース is not 12個.
  */
-export const QUANTITY_UNITS = ["個", "ケース", "箱", "台", "本", "枚", "袋", "缶", "束", "セット", "ダース", "パック", "点", "冊", "着", "足", "脚", "基", "式", "ロット",
+export const QUANTITY_UNITS = ["個", "ケース", "箱", "台", "本", "枚", "袋", "缶", "束", "セット", "ダース", "パック", "点", "冊", "着", "足", "脚", "基", "式", "ロット", "丁",
   "kg", "g", "t", "L", "m", "反", "俵", "梱包", "units", "pieces", "cases", "boxes", "cartons", "pallets"] as const;
 export type QuantityUnit = (typeof QUANTITY_UNITS)[number];
 /** The canonical text of a quantity: "50ケース", "1.5t". The amount is a positive plain decimal with no padding. */
