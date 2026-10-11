@@ -78,7 +78,13 @@ node apps/gateway/test/runtime-smoke.mjs
 
 `OATHRA_INTEGRATION_OWNER` に指定した1アカウントにだけ、サーバー上の外部連携資格情報を紐づけます。Googleの認可済みClient ID/Secret/Refresh Token、必要ならHubSpotのトークンを設定します。認可画面・トークン取得そのものをこの実装が代行することはありません。
 
-通話後にWebで宛先と本文を確認し、通話とは別に承認します。SMSは追加で `OATHRA_SMS_ENABLED=true` と連絡方法の了承根拠が必要です。予定作成は `needsAction` とし、招待作成を相手の承諾とは表示しません。メールのAPI受付も到達・開封の証明ではありません。通信結果が不明な送信は `UNKNOWN` とし、自動再送しません。
+通話後にWebで宛先と本文を確認し、通話とは別に承認します。SMSは追加で `OATHRA_SMS_ENABLED=true` と連絡方法の了承根拠が必要です。WhatsAppは `OATHRA_WHATSAPP_ENABLED=true` と `TWILIO_WHATSAPP_NUMBER` で使え、SMSと同じ条件（通話の証拠と了承根拠）が要ります。24時間の会話期間外は承認済みテンプレート（`TWILIO_WHATSAPP_CONTENT_SID`）が必要です。予定作成は `needsAction` とし、招待作成を相手の承諾とは表示しません。メールのAPI受付も到達・開封の証明ではありません。通信結果が不明な送信は `UNKNOWN` とし、自動再送しません。
+
+## AI用の番号とSMS・WhatsAppの受信
+
+`node --env-file=<env> apps/gateway/number-setup.mjs --country JP --type local` で購入できる番号を一覧します（変更・課金なし）。`--buy <番号> --yes` で購入し、着信（`/hooks/twilio/voice`）とSMS（`/hooks/channels/twilio-messaging`）のwebhookをこのgatewayへ向けます。日本の番号は、Twilio上で承認済みの規制バンドル（`--bundle BU...`）と住所（`--address AD...`）が要ります。番号は月額課金です。2026-10-11時点のTwilioでは、日本の番号（050・市外局番・0800）はすべて `sms:no` でした。SMSの受信・送信には米国など海外のSMS対応番号を使い、日本国内向けのやり取りはWhatsAppかLINEを使ってください。既にある番号は `inbound-setup.mjs --apply --messaging` でSMSのwebhookも設定できます。
+
+`OATHRA_MESSAGING_CHANNEL_ENABLED=true` にすると、SMS・WhatsAppで「連携 <コード>」を送ってアカウントを紐づけ、電話依頼の下書きを作れます。送信元の番号は偽装できるため、このチャネルには承認ボタンを出しません。発信の承認はWebで行います。返信はSMSにはSMSで、WhatsAppにはWhatsAppで返し、同じ電話番号でもSMSとWhatsAppは別の本人として扱います。Twilioの署名は `OATHRA_PUBLIC_URL` から作ったURLで検証するため、公開URLを変えたらwebhookも設定し直してください。
 
 ## 認証・API・MCP
 

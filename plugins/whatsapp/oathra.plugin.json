@@ -1,0 +1,24 @@
+{
+  "id": "whatsapp",
+  "name": "Twilio WhatsApp",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "kind": "capability",
+  "entry": "./index.mjs",
+  "permissions": [
+    "followup:execute"
+  ],
+  "environment": [
+    "OATHRA_WHATSAPP_ENABLED",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_WHATSAPP_NUMBER",
+    "TWILIO_WHATSAPP_CONTENT_SID"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "effect": "sms"
+}

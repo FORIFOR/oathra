@@ -40,7 +40,7 @@ function lineJob(id,user,text,action){return {id,payload:{kind:'line',event:{typ
 
 test('all bundled manifests are valid and registry exposes no provider secrets',()=>{
  const r=builtinRegistry({LINE_CHANNEL_SECRET:'topsecret',OPENAI_API_KEY:'do-not-expose'});
- assert.equal(r.list().length,7);assert(!JSON.stringify(r.list()).includes('topsecret'));assert(!JSON.stringify(r.list()).includes('do-not-expose'));
+ assert.equal(r.list().length,9);assert(!JSON.stringify(r.list()).includes('topsecret'));assert(!JSON.stringify(r.list()).includes('do-not-expose'));
  for(const p of r.list())assert.equal(p.apiVersion,1);
 });
 for(const [name,change] of [
