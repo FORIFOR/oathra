@@ -3,6 +3,14 @@
   Give AI agents a phone — and proof of what happened.
 </p>
 
+## A 24-second illustration, in English and Japanese
+
+[English narration & captions](https://forifor.github.io/oathra/en/#concept-film) · [日本語ナレーション・字幕](https://forifor.github.io/oathra/#concept-film) · [Oathra on Reachmade](https://reachmade.com/en/products/oathra/#experience-film)
+
+Share a request → approve the call and its conditions → simulated call → check the result in your conversation. **People and screens are staged; no actual call or booking was made.** This is an illustrative film, not evidence of a completed booking or a publicly available hosted calling service.
+
+[English MP4](docs/media/oathra-voiced-en-v3.mp4) · [Japanese MP4](docs/media/oathra-voiced-ja-v3.mp4) · [Production and voice credits](docs/media/oathra-voiced-v3-credits.txt) · [Try the existing 3 interactive demos (Japanese)](https://forifor.github.io/oathra/demos/)
+
 <p align="center">
   <a href="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/FORIFOR/oathra/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/FORIFOR/oathra/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/FORIFOR/oathra?display_name=tag&sort=semver"></a>
