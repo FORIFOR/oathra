@@ -1,5 +1,13 @@
 <p align="center"><strong>Oathra</strong><br>AIが電話をかけて、予約を取る。予約できたかどうかは、AIではなく相手の発言で判定する。</p>
 
+## 24秒の利用イメージ（日英）
+
+[日本語ナレーション・字幕](https://forifor.github.io/oathra/#concept-film) · [English narration & captions](https://forifor.github.io/oathra/en/#concept-film) · [Reachmadeの紹介](https://reachmade.com/products/oathra/#experience-film)
+
+希望を伝える → 電話先と条件を承認 → 模擬電話 → 会話で結果を確認する流れを紹介します。**人物・画面は演出した利用イメージで、実際の発信・予約は行っていません。** 実績や一般公開済みの電話サービスを示す映像ではありません。
+
+[日本語MP4](docs/media/oathra-voiced-ja-v3.mp4) · [English MP4](docs/media/oathra-voiced-en-v3.mp4) · [制作・音声クレジット](docs/media/oathra-voiced-v3-credits.txt)
+
 ## 操作できる3つの構想デモ
 
 [ブラウザで試す](https://forifor.github.io/oathra/demos/) · [予約の操作動画](docs/media/use-case-restaurant.mp4) · [在庫・取り置き](docs/media/use-case-stock.mp4) · [予約変更](docs/media/use-case-modify.mp4)

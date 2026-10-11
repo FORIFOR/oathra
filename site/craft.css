@@ -482,6 +482,30 @@ nav a:hover,.text-link:hover {
   color:var(--jade);
   white-space:nowrap
 }
+#concept-film .film figcaption {
+  font-size:16px
+}
+#concept-film .film figcaption span {
+  font-size:11px
+}
+.film-language-links {
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 20px
+}
+.film-language-links a {
+  display:inline-flex;
+  align-items:center;
+  min-height:44px
+}
+#concept-film summary {
+  cursor:pointer;
+  min-height:44px;
+  padding-block:10px
+}
+#concept-film details p {
+  line-height:1.8
+}
 .availability {
   margin:24px 0 25px
 }
