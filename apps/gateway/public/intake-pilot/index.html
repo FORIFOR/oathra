@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>見積相談の受付練習 · Oathra</title>
+  <link rel="stylesheet" href="/app/style.css">
+  <link rel="stylesheet" href="/intake-pilot/style.css">
+  <script src="/intake-pilot/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#case-detail">相談内容へ</a>
+  <header class="pilot-header">
+    <a class="brand" href="/app#/practice">oathra <span>練習に戻る</span></a>
+    <span class="pilot-label">合成データ専用 · 電話接続なし</span>
+  </header>
+  <main class="pilot">
+    <div class="pilot-heading"><div><p class="eyebrow">見積相談の取りこぼしを減らすための、運用の試作</p><h1>受付から、折り返しまで。</h1></div><button id="refresh" class="btn" type="button">保存内容を更新</button></div>
+    <p class="pilot-notice">架空の3例だけで練習します。着信・録音・AI抽出・電話発信は行いません。確認済みは担当者の確認記録で、見積や訪問の成立を意味しません。</p>
+    <p id="feedback" class="feedback" role="status" aria-live="polite">保存内容を読み込んでいます…</p>
+    <section id="workspace" class="pilot-board" hidden>
+      <aside class="queue-pane" aria-label="相談の一覧">
+        <h2>相談の一覧 <span id="case-count"></span></h2>
+        <label class="lbl" for="filter">対応状況で絞り込む</label>
+        <select id="filter"><option value="all">すべて</option><option value="unhandled">未対応</option><option value="callback_pending">折り返し待ち</option><option value="done">対応記録済み</option></select>
+        <div id="case-list" class="case-list"></div>
+        <div class="fixture-picker"><label class="lbl" for="fixture">練習用の相談を追加</label><select id="fixture"></select><button class="btn primary" id="add" type="button">この合成例を取り込む</button><p class="note">同じ例を再度選んでも重複しません。番号や顧客情報は入力しません。</p></div>
+      </aside>
+      <section id="case-detail" class="detail-pane" tabindex="-1" aria-label="選択した相談"></section>
+    </section>
+    <div id="unavailable" hidden><a class="btn" href="/app">Oathraでログインする</a></div>
+  </main>
+</body>
+</html>
