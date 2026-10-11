@@ -1,1 +1,1 @@
-構成図の配置関係と、実際の通信・呼び出し関係を区別してください。README上の機能や精度の記述は動作検証済みという意味ではありません。
+Gateway の Twilio 発信は providers/phone-twilio を通らず、apps/gateway/lib/phone.mjs が自前で行う。CLI と Gateway で電話の経路が二系統ある。

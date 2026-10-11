@@ -1,0 +1,1 @@
+configuration(env) で設定を検証し、createGateway() が Store・Service・Worker・Phone・Channels・Followups・プラグイン登録を組み立てる。node:http で /v1/*、/hooks/twilio/*、/hooks/channels/:id、/webhooks/stripe、/mcp、/oauth/* を処理し、/healthz と /readyz を返す。SIGTERM では進行中の通話を待ってから終了する。

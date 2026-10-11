@@ -1,0 +1,24 @@
+graph LR
+    http-entry["HTTP入口<br/>apps/gateway/server.mjs"]:::entry
+    auth-accounts["認証・アカウント・MCP<br/>apps/gateway/lib/"]
+    mission-worker["依頼・承認・ワーカー<br/>apps/gateway/lib/service.mjs"]
+    phone-execution["電話実行・判定<br/>apps/gateway/lib/phone.mjs"]
+    channels-plugins["チャネル・後続送信・プラグイン<br/>apps/gateway/lib/channels.mjs"]
+    billing-credits["課金・クレジット<br/>apps/gateway/lib/credits.mjs"]
+    storage-security["保存・セキュリティ<br/>apps/gateway/lib/store.mjs"]:::store
+    gateway-ui["アプリ画面<br/>apps/gateway/public/"]
+    ops-scripts["運用スクリプト<br/>apps/gateway/*.mjs"]
+    http-entry -->|"セッション・OAuth の処理を任せる"| auth-accounts
+    http-entry -->|"/v1/missions・/v1/phone を Service に渡す"| mission-worker
+    http-entry -->|"/hooks/twilio/* を Phone.callback に渡す"| phone-execution
+    http-entry -->|"/hooks/channels/:id と /v1/followups"| channels-plugins
+    http-entry -->|"/v1/credits と /webhooks/stripe"| billing-credits
+    http-entry -->|"画面と静的ファイルを配信"| gateway-ui
+    mission-worker -->|"Worker が通話を実行し evaluateSales で判定"| phone-execution
+    mission-worker -->|"承認時に予約し、完了時に確定・解放"| billing-credits
+    mission-worker -->|"結果を元のチャネルへ通知"| channels-plugins
+    channels-plugins -->|"メッセージから下書きを作る"| mission-worker
+    mission-worker -->|"すべての状態を暗号化して保存"| storage-security
+    ops-scripts -->|"バックアップ・復元・初期化"| storage-security
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    classDef store fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e

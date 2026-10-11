@@ -1,0 +1,32 @@
+graph LR
+    gw-phone["Gateway の電話<br/>apps/gateway/lib/phone.mjs"]:::entry
+    gw-messaging["メッセージ<br/>plugins/twilio-messaging ・ sms ・ whatsapp"]:::entry
+    gw-business["後続送信・チャネル<br/>plugins/ ・ apps/gateway/lib/"]:::entry
+    gw-billing["購入<br/>apps/gateway/lib/purchases.mjs"]:::entry
+    engines["音声エンジン・Brain<br/>providers/"]:::entry
+    cli-carriers["CLI のキャリア<br/>providers/phone-*"]:::entry
+    twilio["Twilio<br/>REST ・ Media Streams ・ Messaging"]:::external
+    plivo-livekit["Plivo ・ LiveKit<br/>SIP ・ WebRTC"]:::external
+    openai["OpenAI<br/>REST ・ WebSocket"]:::external
+    gemini["Google Gemini<br/>REST ・ WebSocket"]:::external
+    deepgram["Deepgram<br/>WebSocket"]:::external
+    elevenlabs["ElevenLabs<br/>REST"]:::external
+    stripe["Stripe<br/>REST ・ Webhook"]:::external
+    google["Google（Gmail ・ Calendar）<br/>OAuth ・ REST"]:::external
+    hubspot["HubSpot<br/>REST"]:::external
+    chat["LINE ・ Slack ・ Telegram<br/>Webhook ・ REST"]:::external
+    gw-phone -->|"発信・状態フック・番号確認"| twilio
+    gw-messaging -->|"SMS・WhatsApp の送受信"| twilio
+    gw-business -->|"メールと予定"| google
+    gw-business -->|"CRM ノート"| hubspot
+    gw-business -->|"受付と通知"| chat
+    gw-business -->|"LINE 音声の文字起こし"| openai
+    gw-billing -->|"Checkout と Webhook"| stripe
+    engines -->|"GPT-Live・Brain・TTS"| openai
+    engines -->|"Gemini Live・Brain・TTS"| gemini
+    engines -->|"STT"| deepgram
+    engines -->|"TTS"| elevenlabs
+    cli-carriers -->|"Media Streams で直接"| twilio
+    cli-carriers -->|"SIP 経由"| plivo-livekit
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    classDef external fill:#585b70,stroke:#585b70,color:#cdd6f4

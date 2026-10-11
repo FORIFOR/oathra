@@ -1,0 +1,8 @@
+graph LR
+    billing["billing<br/>apps/gateway/lib/billing.mjs"]
+    credits["Credits<br/>apps/gateway/lib/credits.mjs"]
+    credit-guard["credit-guard<br/>apps/gateway/lib/credit-guard.mjs"]
+    purchases["Purchases<br/>apps/gateway/lib/purchases.mjs"]
+    purchases -->|"支払い確認後に一度だけ付与"| credits
+    credits -->|"料金単位を使う"| billing
+    credit-guard -->|"同じ単位で見積もる"| billing

@@ -1,0 +1,11 @@
+created: 2026-10-11T02:01:12.066Z
+updated: 2026-10-11T02:01:12.123Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: storage-security
+children:
+  - security
+  - store
+parentPath:
+  - gateway

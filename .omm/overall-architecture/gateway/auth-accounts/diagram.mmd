@@ -1,0 +1,8 @@
+graph LR
+    browser-session["BrowserSessions<br/>apps/gateway/lib/browser-session.mjs"]
+    password-accounts["PasswordAccounts<br/>apps/gateway/lib/password-accounts.mjs"]
+    public-accounts["PublicAccounts<br/>apps/gateway/lib/public-accounts.mjs"]
+    mcp-oauth["McpOAuth<br/>apps/gateway/lib/mcp-oauth.mjs"]
+    mcp-sales["salesRpc<br/>apps/gateway/lib/mcp-sales.mjs"]
+    team["Team<br/>apps/gateway/lib/team.mjs"]
+    mcp-sales -->|"OAuth トークンで呼び出し元を確認"| mcp-oauth

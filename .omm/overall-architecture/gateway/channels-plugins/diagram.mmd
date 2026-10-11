@@ -1,0 +1,6 @@
+graph LR
+    channels["Channels<br/>apps/gateway/lib/channels.mjs"]
+    followups["Followups<br/>apps/gateway/lib/followups.mjs"]
+    plugin-loader["builtinRegistry<br/>apps/gateway/lib/plugins.mjs"]
+    channels -->|"registry.channel() を呼ぶ"| plugin-loader
+    followups -->|"registry.capability() を呼ぶ"| plugin-loader

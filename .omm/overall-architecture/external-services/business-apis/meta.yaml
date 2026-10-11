@@ -1,0 +1,9 @@
+created: 2026-10-11T02:01:17.313Z
+updated: 2026-10-11T02:01:17.314Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: business-apis
+children: []
+parentPath:
+  - external-services

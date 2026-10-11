@@ -1,0 +1,9 @@
+graph LR
+    contract["@oathra/contract<br/>layer 0"]
+    evidence["@oathra/evidence<br/>layer 1"]
+    core["@oathra/core<br/>layer 2"]
+    scenario["@oathra/scenario<br/>layer 3"]
+    evidence -->|"defineCall・checkConstraints"| contract
+    core -->|"証拠と結果の型"| evidence
+    core -->|"Action・CallContract の型"| contract
+    scenario -->|"制約・Intake のスキーマ"| contract

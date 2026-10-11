@@ -1,0 +1,25 @@
+graph TD
+    contract["@oathra/contract<br/>packages/contract/"]
+    evidence["@oathra/evidence<br/>packages/evidence/"]
+    core["@oathra/core<br/>packages/core/"]
+    scenario["@oathra/scenario<br/>packages/scenario/"]
+    voice["@oathra/voice<br/>packages/voice/"]
+    runtime["@oathra/runtime<br/>packages/runtime/"]
+    phone["@oathra/phone<br/>packages/phone/"]
+    eval["@oathra/eval<br/>packages/eval/"]
+    replay["@oathra/replay<br/>packages/replay/"]
+    cli["oathra（CLI）<br/>packages/cli/"]:::entry
+    evidence -->|"制約チェックと必要項目"| contract
+    core -->|"証拠と判定結果の型"| evidence
+    scenario -->|"契約スキーマを再利用"| contract
+    voice -->|"セッションイベントの型"| core
+    runtime -->|"EvidenceEngine と evaluate()"| evidence
+    runtime -->|"Brain / Transport / Permission"| core
+    phone -->|"VoiceEngine と音声変換"| voice
+    eval -->|"CallOutcome を採点"| runtime
+    eval -->|"シナリオを読み込む"| scenario
+    replay -->|"保存した通話を再実行"| runtime
+    cli -->|"oathra eval"| eval
+    cli -->|"oathra phone"| phone
+    cli -->|"oathra replay"| replay
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e

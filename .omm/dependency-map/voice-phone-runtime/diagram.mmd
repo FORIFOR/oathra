@@ -1,0 +1,10 @@
+graph LR
+    audio-kit["@oathra/audio-kit<br/>layer 3.5"]
+    voice["@oathra/voice<br/>layer 3.8"]
+    runtime["@oathra/runtime<br/>layer 4"]
+    brain-kit["@oathra/brain-kit<br/>layer 4.5"]
+    voice-kit["@oathra/voice-kit<br/>layer 4.5"]
+    phone["@oathra/phone<br/>layer 4.6"]
+    voice -->|"μ-law 変換とリサンプル"| audio-kit
+    voice-kit -->|"VoiceSession を実装"| voice
+    phone -->|"VoiceEngine と音声変換"| voice

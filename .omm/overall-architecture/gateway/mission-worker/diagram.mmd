@@ -1,0 +1,11 @@
+graph LR
+    service["Service<br/>apps/gateway/lib/service.mjs"]
+    worker["Worker<br/>apps/gateway/lib/worker.mjs"]
+    schedules["Schedules<br/>apps/gateway/lib/schedules.mjs"]
+    batches["Batches<br/>apps/gateway/lib/batches.mjs"]
+    alerts["Alerts<br/>apps/gateway/lib/alerts.mjs"]
+    prerelease["prerelease<br/>apps/gateway/lib/prerelease.mjs"]
+    schedules -->|"回ごとに下書きを作る"| service
+    batches -->|"一括承認した依頼を流す"| service
+    service -->|"承認で QUEUED にする"| worker
+    worker -->|"要通知の結果を enqueue"| alerts

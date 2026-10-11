@@ -1,3 +1,22 @@
-graph TD
-    group-1["要素 1–8\n一覧"]
-    group-2["要素 9–14\n一覧"]
+graph LR
+    cli["CLI<br/>packages/cli/"]:::entry
+    gateway["Gateway<br/>apps/gateway/"]:::entry
+    core-packages["コアパッケージ<br/>packages/"]
+    providers["Providers<br/>providers/"]
+    plugins-sdk["プラグインと SDK<br/>plugins/ ・ sdk/"]
+    clients["クライアントと公開物<br/>apps/ ・ site/"]
+    tooling["検証・制作ツール<br/>scenarios/ ・ scripts/ ・ tests/"]
+    external-services["外部サービス<br/>（リポジトリ外）"]:::external
+    clients -->|"HTTPS で依頼・承認・結果取得"| gateway
+    cli -->|"契約・実行・評価を呼ぶ"| core-packages
+    cli -->|"キャリアとエンジンを組み立てる"| providers
+    cli -->|"oathra demo で起動"| gateway
+    gateway -->|"dist を読み込む（runtime・evidence・phone・voice・contract）"| core-packages
+    gateway -->|"音声エンジンを dist から読み込む"| providers
+    gateway -->|"プラグインを登録して呼ぶ"| plugins-sdk
+    providers -->|"interface を実装する"| core-packages
+    tooling -->|"eval とシナリオで検証"| core-packages
+    gateway -->|"発信・決済・通知"| external-services
+    providers -->|"音声・AI・電話回線"| external-services
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    classDef external fill:#585b70,stroke:#585b70,color:#cdd6f4

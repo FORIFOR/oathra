@@ -1,0 +1,6 @@
+graph LR
+    replay["@oathra/replay<br/>layer 6"]
+    eval["@oathra/eval<br/>layer 6"]
+    cli-pkg["oathra（CLI）<br/>layer 8"]
+    cli-pkg -->|"oathra eval"| eval
+    cli-pkg -->|"oathra replay"| replay

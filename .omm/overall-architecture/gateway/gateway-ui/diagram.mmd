@@ -1,0 +1,5 @@
+graph LR
+    phone-ui["phone-ui.mjs<br/>apps/gateway/lib/phone-ui.mjs"]
+    phone-pages["public/phone<br/>apps/gateway/public/phone/"]
+    app-pages["public/app.js ほか<br/>apps/gateway/public/"]
+    phone-ui -->|"マークアップを検査して配信"| phone-pages

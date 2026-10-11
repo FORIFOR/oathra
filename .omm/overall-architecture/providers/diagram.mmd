@@ -1,0 +1,12 @@
+graph LR
+    carriers["キャリア<br/>providers/phone-*"]
+    voice-engines["音声エンジン<br/>providers/"]
+    speech-parts["STT・TTS<br/>providers/"]
+    brains["Brain<br/>providers/"]
+    shared-kits["共有キット<br/>providers/*-kit"]
+    simulator["Simulator<br/>providers/simulator/"]
+    voice-engines -->|"プロンプト・ツール・音声変換を共有"| shared-kits
+    voice-engines -->|"pipeline が STT と TTS を使う"| speech-parts
+    voice-engines -->|"pipeline が応答を作らせる"| brains
+    brains -->|"brain-kit を共有"| shared-kits
+    carriers -->|"audio-kit で音声を変換"| shared-kits

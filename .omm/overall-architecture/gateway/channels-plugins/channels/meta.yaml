@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:11.570Z
+updated: 2026-10-11T02:01:11.571Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: channels
+children: []
+parentPath:
+  - gateway
+  - channels-plugins

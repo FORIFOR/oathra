@@ -1,0 +1,8 @@
+graph LR
+    phone["Phone<br/>apps/gateway/lib/phone.mjs"]
+    sales["evaluateSales<br/>apps/gateway/lib/sales.mjs"]
+    phone-service["phone-service<br/>apps/gateway/lib/phone-service.mjs"]
+    agent-phone["agent-phone<br/>apps/gateway/lib/agent-phone.mjs"]
+    practice["practice<br/>apps/gateway/lib/practice.mjs"]
+    phone -->|"通話後の発話を判定に渡す"| sales
+    agent-phone -->|"準備状況と記録を使う"| phone-service

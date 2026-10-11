@@ -1,1 +1,3 @@
-内容確認したソースの静的依存関係。PythonはAST、JavaScript／TypeScriptはimport文の字句抽出です。型だけのimport、再export、コメントや動的importの扱いには制限があり、ランタイム依存の完全なグラフではありません。
+# パッケージの依存方向
+
+scripts/check-deps.mjs（pnpm lint:deps）が強制する層の構成。各パッケージは自分より低い層にだけ依存でき、同じ層どうしも禁止される。矢印は「依存する側 → 依存される側」。

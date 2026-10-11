@@ -1,0 +1,21 @@
+graph LR
+    intake["受付<br/>public/ ・ plugins/ ・ /mcp"]:::entry
+    draft-review["下書きと確認<br/>Service.prepare / phoneRequest / review"]
+    approval["承認<br/>Service.start"]
+    dispatch["ワーカー<br/>Worker.tick / claimNext / run"]
+    phone-call["通話<br/>Phone.execute"]
+    carrier-hooks["Twilio フック<br/>/hooks/twilio/*"]:::external
+    verdict["判定<br/>evaluateSales → evaluate()"]:::store
+    settle["精算と通知<br/>Credits ・ Alerts ・ Service.notify"]
+    followup["後続送信<br/>Followups.preview / execute"]
+    intake -->|"依頼"| draft-review
+    draft-review -->|"承認トークン"| approval
+    approval -->|"QUEUED"| dispatch
+    dispatch -->|"run"| phone-call
+    carrier-hooks -->|"状態と同意"| phone-call
+    phone-call -->|"発話"| verdict
+    verdict -->|"結果"| settle
+    settle -.->|"別承認で送信"| followup
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    classDef external fill:#585b70,stroke:#585b70,color:#cdd6f4
+    classDef store fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e

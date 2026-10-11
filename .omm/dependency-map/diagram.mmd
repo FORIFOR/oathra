@@ -1,3 +1,13 @@
 graph TD
-    group-1["要素 1–8\n一覧"]
-    group-2["要素 9–16\n一覧"]
+    foundation["基盤（layer 0〜3）<br/>packages/"]
+    voice-phone-runtime["音声・電話・実行（layer 3.5〜4.6）<br/>packages/ ・ providers/*-kit"]
+    provider-packages["プロバイダ（layer 5〜5.6）<br/>providers/"]
+    top["評価と CLI（layer 6〜8）<br/>packages/"]
+    outside-workspace["workspace 外（素の ESM）<br/>apps/gateway ・ sdk ・ plugins"]
+    voice-phone-runtime -->|"contract・core・evidence を使う"| foundation
+    provider-packages -->|"phone・voice・kit を実装に使う"| voice-phone-runtime
+    provider-packages -->|"core の interface を実装"| foundation
+    top -->|"runtime の結果を扱う"| voice-phone-runtime
+    top -->|"eval が simulator、CLI がキャリアとエンジンを使う"| provider-packages
+    outside-workspace -->|"Gateway が dist を読み込む"| voice-phone-runtime
+    outside-workspace -->|"Gateway が contract・evidence の dist を読み込む"| foundation

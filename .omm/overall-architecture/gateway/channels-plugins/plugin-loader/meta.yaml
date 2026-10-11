@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:11.680Z
+updated: 2026-10-11T02:01:11.681Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: plugin-loader
+children: []
+parentPath:
+  - gateway
+  - channels-plugins

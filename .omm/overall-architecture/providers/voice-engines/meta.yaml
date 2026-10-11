@@ -1,0 +1,12 @@
+created: 2026-10-11T02:01:15.052Z
+updated: 2026-10-11T02:01:15.109Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: voice-engines
+children:
+  - gemini-live
+  - openai-realtime
+  - voice-pipeline
+parentPath:
+  - providers

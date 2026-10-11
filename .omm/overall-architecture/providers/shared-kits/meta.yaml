@@ -1,0 +1,12 @@
+created: 2026-10-11T02:01:15.931Z
+updated: 2026-10-11T02:01:15.989Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: shared-kits
+children:
+  - audio-kit
+  - brain-kit
+  - voice-kit
+parentPath:
+  - providers

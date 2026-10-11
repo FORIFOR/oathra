@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:11.351Z
+updated: 2026-10-11T02:01:11.352Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: agent-phone
+children: []
+parentPath:
+  - gateway
+  - phone-execution

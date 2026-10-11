@@ -1,0 +1,9 @@
+created: 2026-10-11T02:01:13.614Z
+updated: 2026-10-11T02:01:13.615Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: scenario
+children: []
+parentPath:
+  - core-packages

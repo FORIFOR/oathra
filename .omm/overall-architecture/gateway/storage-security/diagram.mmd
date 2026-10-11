@@ -1,0 +1,5 @@
+graph LR
+    store["Store<br/>apps/gateway/lib/store.mjs"]:::store
+    security["security<br/>apps/gateway/lib/security.mjs"]
+    store -->|"エラー型とハッシュを使う"| security
+    classDef store fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e

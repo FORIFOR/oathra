@@ -1,1 +1,15 @@
-{"kind": "perspective", "title": "overall-architecture", "created": "2026-10-11T03:38:22+09:00", "updated": "2026-10-11T03:38:22+09:00", "update_count": 1, "last_field": "description"}
+created: 2026-10-11T02:01:09.377Z
+updated: 2026-10-11T02:01:09.641Z
+update_count: 5
+last_field: concern
+git_commit: 7088b97
+git_branch: docs/omm-rescan-20261011
+children:
+  - cli
+  - clients
+  - core-packages
+  - external-services
+  - gateway
+  - plugins-sdk
+  - providers
+  - tooling

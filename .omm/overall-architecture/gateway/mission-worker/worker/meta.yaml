@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:10.806Z
+updated: 2026-10-11T02:01:10.807Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: worker
+children: []
+parentPath:
+  - gateway
+  - mission-worker

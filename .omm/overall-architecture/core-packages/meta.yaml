@@ -1,0 +1,18 @@
+created: 2026-10-11T02:01:13.005Z
+updated: 2026-10-11T02:01:13.062Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: core-packages
+children:
+  - cli
+  - contract
+  - core
+  - eval
+  - evidence
+  - phone
+  - replay
+  - runtime
+  - scenario
+  - voice
+parentPath: []
