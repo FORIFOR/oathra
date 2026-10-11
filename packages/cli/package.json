@@ -43,6 +43,7 @@
     "@oathra/eval": "workspace:*",
     "@oathra/evidence": "workspace:*",
     "@oathra/gemini": "workspace:*",
+    "@oathra/elevenlabs": "workspace:*",
     "@oathra/ollama": "workspace:*",
     "@oathra/openai": "workspace:*",
     "@oathra/replay": "workspace:*",
