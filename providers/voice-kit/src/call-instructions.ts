@@ -8,7 +8,7 @@ import type { CallContract } from "@oathra/contract";
 import { renderIntakeConsentPrompt, requiredFields } from "@oathra/contract";
 import type { MissionView } from "@oathra/core";
 import type { Action } from "@oathra/contract";
-import { conversationPolicies, dialoguePolicy, extractCallerName, phoneInboundInstructions, phoneMessageInstructions } from "./phone-message.js";
+import { conversationPolicies, dialoguePolicy, extractCallerName, phoneInboundInstructions, phoneMessageInstructions, bookingOpening } from "./phone-message.js";
 import { receptionGreeting, restaurantReceptionInstructions } from "./reception.js";
 
 export type CallInstructionOptions = {
@@ -117,6 +117,10 @@ export function openingLine(contract: CallContract, agentSpoke = false): string 
   const ja = contract.language === "ja";
   const goal = contract.goal;
   const caller = extractCallerName(contract);
+  // A booking opens in business keigo: whose behalf (「堀尾様」 even when typed 「堀尾」), that we are an AI, what for.
+  if (goal === "phone.message" && contract.input.task === "reservation") return ja
+    ? bookingOpening(caller, agentSpoke)
+    : `${agentSpoke ? "" : "Hello, sorry to bother you. "}This is an AI assistant calling ${caller ? `on behalf of ${caller}` : "on behalf of a customer"} to make a booking. Could you help me with that?`;
   if (goal === "phone.message") return ja
     ? `${agentSpoke ? "" : "もしもし。"}${caller ? `${caller}さんの代わりにお電話しているAIです。` : "知り合いの方の代わりにお電話しているAIです。"}今、少しお話しできますか？`
     : `${agentSpoke ? "" : "Hello. "}This is an AI calling on behalf of ${caller ?? "someone you know"}. Is now a good time to talk?`;
