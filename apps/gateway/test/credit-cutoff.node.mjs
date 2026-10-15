@@ -96,7 +96,7 @@ test('JPY conversion and a six-second carrier increment use the same cutoff and 
 test('balance-limited calls honor the configured ten minutes instead of the legacy three-minute cap',using(f=>{
  f.config.maxSeconds=600;f.config.rateCeilingUsd=1;const m=f.draft();assert.equal(m.estimatedMaximumUsd,3.77);assert.equal(m.maxSeconds,600);assert.equal(m.creditQuote.amount,377);assert.equal(m.creditQuote.spendingLimit,'balance-v1');
  f.config.maxSeconds=60;assert.equal(f.draft().maxSeconds,60);assert.equal(f.store.get('mission',m.id).maxSeconds,600);
- f.config.maxSeconds=600;delete f.config.billing.settlement;assert.throws(()=>f.draft(),/estimated_cost_exceeds_budget/);f.config.rateCeilingUsd=0.1;assert.equal(f.draft().maxSeconds,180);
+ f.config.maxSeconds=600;delete f.config.billing.settlement;assert.throws(()=>f.draft(),/estimated_cost_exceeds_budget/);f.config.rateCeilingUsd=0.1;assert.equal(f.draft().maxSeconds,600);
 }));
 test('carrier duration at the reviewed limit explains the end without mislabeling other stops',using(f=>{
  const m=f.draft();m.maxSeconds=60;m.status='INCOMPLETE';m.carrierStatus='completed';m.billing={carrier:{durationSeconds:60}};

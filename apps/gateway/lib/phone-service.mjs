@@ -129,8 +129,10 @@ export function prepareManagedPhone(service,u,input,limits={}) {
  // An engine this deployment cannot run is refused at the draft, not discovered at dial time.
  if(request.engine)assert((config.voiceEngines??[]).some(e=>e.id===request.engine&&e.ready),'voice_engine_unavailable',400);
  const balanceLimited=service.credits.enabled&&config.mode==='live'&&config.billing?.settlement==='usage-rate-v1';
- const maxSeconds=Math.min(config.maxSeconds,limits.maxSeconds??(balanceLimited?config.maxSeconds:180));
  const maxUsd=Math.min(config.maxCallUsd,limits.maxUsd??config.maxCallUsd);
+ // The operator's OATHRA_MAX_SECONDS is the call length whenever its cost ceiling fits the per-call budget; otherwise the legacy three minutes.
+ const fits=s=>config.mode!=='live'||Math.ceil((s+30)/60)*config.rateCeilingUsd*2+config.setupFeeUsd<=maxUsd;
+ const maxSeconds=Math.min(config.maxSeconds,limits.maxSeconds??(balanceLimited||fits(config.maxSeconds)?config.maxSeconds:180));
  const currentQuote=service.credits.quote(config.mode,request.phone);
  const spendingAmount=balanceLimited?Math.min(service.credits.balance(u.id).available,limits.maxUsd===undefined?Infinity:Math.floor(maxUsd/currentQuote.creditUsd)):undefined;
  const m={id:crypto.randomUUID(),owner:u.id,team:u.team,revision:1,status:'DRAFT',kind:'phone-request',phoneRequest:request,
