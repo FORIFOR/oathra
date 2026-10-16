@@ -57,6 +57,14 @@ try {
   const scopedDraft = await draft("喫茶 ひかり", "10月8日の15時に3名で席を取ってほしい。\n\n【任せる範囲】\nその場で決めてよい：席の種類はどれでも\n決めずに持ち帰る（相手に「確認して折り返します」と伝える）：日付を変える案\nしない：支払い・カード番号を伝える、AIであることを隠す");
   const partial = (await api("/phone/draft", { phone: "+81355550142", name: "焼肉 たけ", instruction: "10月5日の18時に3名で予約を取ってほしい。", task: "reservation" })).mission.id;
   put(partial, "INCOMPLETE", [["caller", "10月5日の18時に3名で予約をお願いできますか。"], ["callee", "10月5日ですね、その日は空いております。お時間は確認しますので少々お待ちください。"]]);
+  // A booking the AI took back (the prompt's fixed 「一度本人に確認いたしまして」), written as the app writes a 予約を取る request.
+  const backDay = jstDay(2), backText = `${+backDay.slice(5, 7)}月${+backDay.slice(8)}日`;
+  const takeBack = (await api("/phone/draft", { phone: "+81355550142", name: "焼肉 たけ", task: "reservation", success: { required: ["date", "time", "partySize", "confirmed"], expected: { date: backDay, time: "12:45", partySize: 6 } },
+    instruction: `田中の代理として、${backText}の12時45分に6名で予約を取ってください。予約の名前は田中です。希望の時間が空いていない場合は、任せる範囲の中なら別の時間で予約し、範囲の外のことは決めずに持ち帰ってください。` })).mission.id;
+  const takeBack2 = (await api("/phone/draft", { phone: "+81355550142", name: "焼肉 たけ", task: "reservation", success: { required: ["date", "time", "partySize", "confirmed"], expected: { date: backDay, time: "12:45", partySize: 6 } },
+    instruction: `先ほどお電話し、持ち帰った件の折り返しのお電話です。前回、相手は「空いてないです」と話しました。\n田中の代理として、${backText}の12時45分に6名で予約を取ってください。予約の名前は田中です。希望の時間が空いていない場合は、任せる範囲の中なら別の時間で予約し、範囲の外のことは決めずに持ち帰ってください。` })).mission.id;
+  put(takeBack2, "INCOMPLETE", [["caller", "先ほどの件で折り返しのお電話です。"], ["callee", "その時間も難しいです"], ["caller", "恐れ入ります。一度本人に確認いたしまして、改めてご連絡いたします。"]]);
+  put(takeBack, "INCOMPLETE", [["caller", "ご予約をお願いしたいのですが、よろしいでしょうか。"], ["callee", "はい、大丈夫です"], ["caller", `${backText}の12時45分に6名でお願いできますでしょうか。`], ["callee", "空いてないです"], ["caller", "どの時間帯でしたらご案内可能でしょうか。"], ["callee", "えー、その日は空いてないです"], ["caller", "恐れ入ります。一度本人に確認いたしまして、改めてご連絡いたします。"], ["callee", "はい"], ["caller", "失礼いたします。"]]);
 
   page = await launchQuiet({ width: 1440, height: 900 });
   await page.goto(base + "/");
@@ -69,6 +77,7 @@ try {
   await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
   catch (e) { console.log("VIEW:", await page.text("#view"), "ERR:", page.pageErrors.join(" | ")); throw e; }
+  c.ok((await page.js("[...document.querySelectorAll('#tabs a')].map(a=>a.textContent.trim()).join('|')")).replace(/\d+/g, "") === "ホーム|履歴|予定|連絡先", "the menu is ホーム・履歴・予定・連絡先 (設定 sits at the top right)", await page.js("[...document.querySelectorAll('#tabs a')].map(a=>a.textContent.trim()).join('|')"));
   await page.js("location.hash='#/new'"); await page.until("!!document.querySelector('#ask-engine')", { label: "engine select" });
   const engines = await page.js("[...document.querySelectorAll('#ask-engine option')].map(o=>o.textContent)");
   c.ok(engines.some(t => /gpt-live-1/.test(t)) && engines.some(t => /gemini-3\.8-live/.test(t)), "電話を頼む: 音声AI names the model (gpt-live-1 / gemini-3.8-live)", engines.join(" | "));
@@ -123,7 +132,7 @@ try {
   await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.page-actions a[href$=standing]')");
   const req = await page.text("#view");
   c.ok(/電話が終わったか確かめられていません/.test(req) && /発信前の確認待ち/.test(req) && /進行中/.test(req) && /終了した電話/.test(req), "依頼: needs-you cards, in progress and done", req.slice(0, 300));
-  c.ok(await page.js("[...document.querySelectorAll('.rows .row')].filter(r=>/話しました|決まりました|決まりませんでした|応答がありません|かけられません|確かめ/.test(r.textContent)&&!/電話中|発信前/.test(r.textContent)).every(r=>!!r.querySelector('.credit-mini'))"), "依頼: every finished call in the list shows its credits");
+  c.ok(await page.js("[...document.querySelectorAll('.rows .row')].filter(r=>/話しました|決まりました|決まりませんでした|応答がありません|かけられません|確かめ/.test(r.textContent)&&!/電話中|発信前/.test(r.textContent)).some(r=>/クレジット/.test(r.textContent))") === false, "依頼: a server without credits shows no credit column");
   await page.screenshot(join(out, "gateway-app-requests.png"), { fullPage: true });
 
   await page.js(`location.hash='#/call/${running}'`); await page.until("/通話を終える/.test(document.querySelector('#view').textContent)");
@@ -159,8 +168,8 @@ try {
   const report = await page.text("#view");
   c.ok(/決まりました/.test(report) && await page.js("!!document.querySelector('.ring')") && /ご予約承りました/.test(report), "報告: the ring, the settled fields with the callee's words", report.slice(0, 160));
   c.ok(!/phone\.|phone_|undefined|NaN/.test(report), "no internal ids or undefined on the report");
-  // Every finished call says what it used in credits: a server without credits says so instead of leaving it out.
-  c.ok(/^消費 0 クレジット(（練習の電話）)?$/.test(await page.text(".credit-used")), "報告: the credits used are always stated, here that this server does not use credits", await page.text(".credit-used"));
+  // A server without credits shows no credit line (its calls are paid to the carrier and the voice AI directly).
+  c.ok(await page.js("!document.querySelector('.credit-used')") && !/クレジット/.test(report), "報告: no credit line on a server without credits");
   for (const [usage, expect, label] of [[{ status: "settled", consumed: 3, held: 0, released: 2 }, /^消費 3 クレジット（確保した分のうち 2 クレジットを返却）$/, "settled"], [{ status: "pending", consumed: 0, held: 5, released: 0 }, /^精算待ち（5 クレジットを確保中/, "pending"]]) {
     await page.js(`window.__creditFetch=window.fetch;window.fetch=async(u,o)=>{const r=await window.__creditFetch(u,o);if(!/\\/v1\\/(phone\\/calls\\/${done}|bootstrap)$/.test(String(u)))return r;const j=await r.json();if(j.credits)j.credits.enabled=true;else{j.creditUsage=${JSON.stringify(usage)};j.creditQuote={mode:'credits',amount:5,unit:'credit'};j.practice=false;}return new Response(JSON.stringify(j),{status:r.status,headers:{'content-type':'application/json'}})}`);
     await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.rows .row')");
@@ -304,6 +313,29 @@ try {
   await page.js(`location.hash='#/call/${partial}'`); await page.until("!!document.querySelector('.report-top')");
   c.ok(await page.js("document.querySelector('.ring text')?.textContent") !== "4/4" && !/決まりました/.test(await page.text(".headline")), "a partly confirmed call: the ring stays open and the headline does not say settled", await page.js("document.querySelector('.ring text')?.textContent"));
   await page.screenshot(join(out, "gateway-app-report-partial.png"));
+  c.ok(await page.js("!document.querySelector('.taken-back')") && await page.js("[...document.querySelectorAll('.call-foot a')].every(a=>a.textContent!=='お店に折り返す')"), "a call the AI did not take back has no 持ち帰ったこと and no お店に折り返す");
+
+  // 持ち帰ったこと: the callee's last words before the AI said it would check, quoted; お店に折り返す opens the same booking.
+  await page.js(`location.hash='#/call/${takeBack}'`); await page.until("!!document.querySelector('.taken-back')", { label: "taken back" });
+  const backShown = await page.text(".taken-back");
+  c.ok(/^持ち帰ったこと/.test(backShown) && /「空いてないです」/.test(backShown) && /「えー、その日は空いてないです」/.test(backShown) && !/「はい/.test(backShown) && !/null|undefined/.test(backShown), "持ち帰ったこと: the callee's two last lines before the take-back, quoted, not the acknowledgements", backShown);
+  c.ok(await page.js("[...document.querySelectorAll('.call-foot a')].map(a=>a.textContent+(a.classList.contains('primary')?'*':'')).join('|')") === "お店に折り返す*|同じ相手にまた頼む", "持ち帰ったこと: お店に折り返す is the main button, 同じ相手にまた頼む beside it", await page.js("[...document.querySelectorAll('.call-foot a')].map(a=>a.textContent).join('|')"));
+  await page.screenshot(join(out, "gateway-app-report-taken-back.png"), { fullPage: true });
+  await page.js("[...document.querySelectorAll('.call-foot a')].find(a=>a.textContent==='お店に折り返す').click()");
+  await page.until("!!document.querySelector('#ask-res-date') && document.querySelector('#ask-instruction').value.length>0", { label: "callback form" });
+  const backForm = await page.js("({d:document.querySelector('#ask-res-date').value,t:document.querySelector('#ask-res-time').value,p:document.querySelector('#ask-res-party').value,i:document.querySelector('#ask-instruction').value,phone:document.querySelector('#ask-phone').value})");
+  c.ok(backForm.d === backDay && backForm.t === "12:45" && backForm.p === "6" && /^先ほどお電話し、持ち帰った件の折り返しのお電話です。前回（.*?・12時45分・6名）、相手は「空いてないです」「えー、その日は空いてないです」と話しました。\n田中の代理として、/.test(backForm.i) && /予約の名前は田中です/.test(backForm.i) && /5555-?0142/.test(backForm.phone), "お店に折り返す: the same booking, opened by what was taken back", JSON.stringify(backForm));
+  const newDay = jstDay(5), newDayText = `${+newDay.slice(5, 7)}月${+newDay.slice(8)}日`;
+  await page.js(`(()=>{const d=document.querySelector('#ask-res-date');d.value=${JSON.stringify(newDay)};d.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+  const backChanged = await page.js("document.querySelector('#ask-instruction').value");
+  c.ok(backChanged.includes(newDayText) && !backChanged.includes(`${backText}の12時45分`) && /^先ほどお電話し/.test(backChanged), "お店に折り返す: a new date in the picker reaches the request's words", backChanged);
+  await page.screenshot(join(out, "gateway-app-ask-callback.png"), { fullPage: true });
+  // A callback that was itself taken back: the second callback still carries the booking, with one callback line.
+  await page.js(`location.hash='#/call/${takeBack2}'`); await page.until("!!document.querySelector('.taken-back')", { label: "taken back twice" });
+  await page.js("[...document.querySelectorAll('.call-foot a')].find(a=>a.textContent==='お店に折り返す').click()");
+  await page.until("!!document.querySelector('#ask-res-date') && document.querySelector('#ask-instruction').value.length>0", { label: "second callback form" });
+  const backTwice = await page.js("({d:document.querySelector('#ask-res-date').value,p:document.querySelector('#ask-res-party').value,i:document.querySelector('#ask-instruction').value})");
+  c.ok(backTwice.d === backDay && backTwice.p === "6" && backTwice.i.split("先ほどお電話し").length === 2 && /「その時間も難しいです」/.test(backTwice.i) && !/（希望日時）|（人数）|（予約の名前）/.test(backTwice.i) && /予約の名前は田中です/.test(backTwice.i), "a second お店に折り返す keeps the booking and one callback line", JSON.stringify(backTwice));
 
   // 見守り・定期・チーム・連絡停止 (2026-10-02). As above: fixtures for rendering, written the way the worker writes them
   // (the check-in comes from the real checkInReport over the fixture's lines); never a claim that such a call took place.
@@ -705,7 +737,7 @@ try {
   const ranks = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.team-table tbody tr')].map(r=>r.querySelector('td .lvl.emergency')?0:r.classList.contains('need-concern')?1:2))"));
   c.ok(ranks[0] === 0 && ranks.every((v, i) => i === 0 || ranks[i - 1] <= v) && ranks.filter((v) => v < 2).length === 7, "the unfiltered list puts what needs a look first: 緊急, then 要確認, then the rest", ranks.join(""));
   const tableText = await page.text(".team-table");
-  c.ok(!/確認済み|未確定/.test(tableText) && (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")).split(",").sort().join() === "決まっていません,決まっていません,決まっていません,決まりました,決まりました" && !/応答の記録なし/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table tbody th .tag')].filter(t=>t.textContent==='名簿').length") === 2 && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined");
+  c.ok(!/確認済み|未確定/.test(tableText) && (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")).split(",").sort().join() === "決まっていません,決まっていません,決まっていません,決まっていません,決まっていません,決まりました,決まりました" && !/応答の記録なし/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table tbody th .tag')].filter(t=>t.textContent==='名簿').length") === 2 && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined", (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")) + " | " + tableText.slice(0, 900));
   const undeliveredText = await page.text(".undelivered-block") ?? "", unplacedText = await page.text(".team-block.need-concern") ?? "";
   c.ok(/届いていない通知が 1 件あります/.test(undeliveredText) && /要確認/.test(undeliveredText) && /山本 ハル/.test(undeliveredText) && /応答なし・自分が頼んだ電話・送信を3回試みました/.test(undeliveredText) && await page.js(`document.querySelector('.undelivered-block a')?.getAttribute('href')`) === `#/team/${noAnswer}`, "チームの電話: each undelivered notice with its level, person, when, attempts and the report; the person still needs a look", undeliveredText);
   const unplacedApi = (await api("/team/calls")).notPlaced;
@@ -727,7 +759,7 @@ try {
   await page.js("[...document.querySelectorAll('.team-table tbody th a')].find(a=>a.textContent==='田村 節子').click()");
   await page.until(`location.hash==='#/team/${mateCall}' && !!document.querySelector('.band')`, { label: "teammate's report" });
   const mateReport = await page.text("#view");
-  c.ok(/^依頼 › チームの電話 › 田村 節子/.test(await page.text(".crumb")) && /頼んだ人：鈴木/.test(mateReport) && !/開いたことは記録されます/.test(mateReport) && await page.js("!!document.querySelector('.band.concern') && !document.querySelector('.band .lvl.emergency')") && /「食欲がなくて、朝から何も食べていません。」/.test(mateReport), "a teammate's report opens with its 要確認 banner (not 緊急)");
+  c.ok(/^履歴 › チームの電話 › 田村 節子/.test(await page.text(".crumb")) && /頼んだ人：鈴木/.test(mateReport) && !/開いたことは記録されます/.test(mateReport) && await page.js("!!document.querySelector('.band.concern') && !document.querySelector('.band .lvl.emergency')") && /「食欲がなくて、朝から何も食べていません。」/.test(mateReport), "a teammate's report opens with its 要確認 banner (not 緊急)");
   c.ok(!/同じ相手にまた頼む|通話を終える|カレンダーに入れる/.test(mateReport) && /チームの電話に戻る/.test(mateReport) && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "team.record_viewed"), "it is read-only, and opening it was recorded");
   await page.screenshot(join(out, "gateway-app-team-report.png"), { fullPage: true });
   // The previous report has a check-in table too: wait for this one's name, not just for a table.
