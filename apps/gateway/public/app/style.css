@@ -222,11 +222,8 @@ main:focus, main:focus-visible { outline: none; }
 /* The words that settled a field, in the conversation (jade: the other party's words only). */
 mark.proof { background: none; color: inherit; text-decoration: underline 2px var(--ok); text-underline-offset: 5px; }
 mark.proof sup { margin-left: 1px; font-size: 10px; font-weight: 700; color: var(--ok); }
-.tab-narrow { display: none !important; }
 @media (max-width: 979px) {
-  /* Two rows on a phone: the mark and the main action, then the menu (設定 joins it). */
-  .tab-narrow { display: flex !important; }
-  .bar-right .plain { display: none; }
+  /* Two rows on a phone: the mark, 設定 and the main action, then the menu. */
   .live-pill { padding: 4px 10px; }
 }
 
@@ -894,9 +891,11 @@ mark.proof mark.proof { text-underline-offset: 2px; }
 .preset-confirm-actions { display: flex; gap: 8px; margin-left: auto; }
 .preset-msg:empty, .preset-note:empty { display: none; }
 .preset-msg, .preset-note { margin: 0; }
-.link.preset-open { display: inline-block; min-height: 44px; margin-top: 4px; }
-.preset-save { margin-top: 10px; }
-.preset-save .play-row .btn { flex: none; }
+.link.preset-open, .link.call-contact-open { display: inline-block; min-height: 44px; margin-top: 4px; }
+.preset-save, .call-contact-save { margin-top: 10px; }
+.preset-save .play-row .btn, .call-contact-save .play-row .btn { flex: none; }
+.call-contact { margin-top: 20px; }
+.call-contact-save .note { margin: 8px 0 0; }
 .target-found { padding: 12px 14px; margin-bottom: 8px; background: var(--panel); border: 1px solid var(--ink); border-radius: 10px; line-height: 1.6; }
 .target-k { display: block; font-size: 12px; color: var(--muted); }
 .target-who { margin: 2px 0 0; font-size: 18px; overflow-wrap: anywhere; }
@@ -910,7 +909,23 @@ mark.proof mark.proof { text-underline-offset: 2px; }
   .home-prompt-foot { flex-direction: column; align-items: stretch; }
   .home-prompt-foot .btn { width: 100%; }
   .preset .chip { max-width: 220px; }
-  .preset-save .play-row { flex-wrap: wrap; }
-  .preset-save .play-row input { flex-basis: 100%; }
+  .preset-save .play-row, .call-contact-save .play-row { flex-wrap: wrap; }
+  .preset-save .play-row input, .call-contact-save .play-row input { flex-basis: 100%; }
   .preset-confirm-actions { margin-left: 0; }
 }
+/* Booking date, time and party size (2026-10-15): one height for every blank, whatever padding Chrome puts inside a
+   date or time field; a spacer keeps 日付｜時刻 on one row and the two names together on a wide screen. */
+.blanks input { height: 44px; }
+.blanks input[type=date], .blanks input[type=time] { padding-block: 0; }
+.blanks .blank-gap { visibility: hidden; }
+@media (max-width: 560px) { .blanks .blank-gap { display: none; } }
+/* Booking party size (2026-10-15): a short digits-only box with its unit. */
+.blanks .party input { flex: 0 1 96px; width: 96px; min-width: 0; }
+.blanks .party span { align-self: center; flex: none; }
+/* 2026-10-15: the notes under the report rows are gone, so the next heading needs its own room. */
+.report-rows + .page-h { margin-top: 28px; }
+/* 持ち帰ったこと: the callee's last words before the AI said it would check, quoted one per line. */
+.taken-back-lines { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 8px; }
+.taken-back-lines li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.taken-back-lines .span { color: var(--muted); }
+.report-rows + .taken-back { margin-top: 28px; }

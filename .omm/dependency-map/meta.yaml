@@ -1,1 +1,12 @@
-{"kind": "perspective", "title": "dependency-map", "created": "2026-10-11T03:38:22+09:00", "updated": "2026-10-11T03:38:22+09:00", "update_count": 1, "last_field": "diagram"}
+created: 2026-10-11T02:01:17.370Z
+updated: 2026-10-11T02:01:17.575Z
+update_count: 4
+last_field: note
+git_commit: 7088b97
+git_branch: docs/omm-rescan-20261011
+children:
+  - foundation
+  - outside-workspace
+  - provider-packages
+  - top
+  - voice-phone-runtime

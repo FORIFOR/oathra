@@ -1,0 +1,13 @@
+created: 2026-10-11T02:01:13.778Z
+updated: 2026-10-11T02:01:13.836Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: phone
+children:
+  - bridge
+  - doctor-pricing
+  - registry
+  - types
+parentPath:
+  - core-packages

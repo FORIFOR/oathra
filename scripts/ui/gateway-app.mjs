@@ -57,6 +57,14 @@ try {
   const scopedDraft = await draft("喫茶 ひかり", "10月8日の15時に3名で席を取ってほしい。\n\n【任せる範囲】\nその場で決めてよい：席の種類はどれでも\n決めずに持ち帰る（相手に「確認して折り返します」と伝える）：日付を変える案\nしない：支払い・カード番号を伝える、AIであることを隠す");
   const partial = (await api("/phone/draft", { phone: "+81355550142", name: "焼肉 たけ", instruction: "10月5日の18時に3名で予約を取ってほしい。", task: "reservation" })).mission.id;
   put(partial, "INCOMPLETE", [["caller", "10月5日の18時に3名で予約をお願いできますか。"], ["callee", "10月5日ですね、その日は空いております。お時間は確認しますので少々お待ちください。"]]);
+  // A booking the AI took back (the prompt's fixed 「一度本人に確認いたしまして」), written as the app writes a 予約を取る request.
+  const backDay = jstDay(2), backText = `${+backDay.slice(5, 7)}月${+backDay.slice(8)}日`;
+  const takeBack = (await api("/phone/draft", { phone: "+81355550142", name: "焼肉 たけ", task: "reservation", success: { required: ["date", "time", "partySize", "confirmed"], expected: { date: backDay, time: "12:45", partySize: 6 } },
+    instruction: `田中の代理として、${backText}の12時45分に6名で予約を取ってください。予約の名前は田中です。希望の時間が空いていない場合は、任せる範囲の中なら別の時間で予約し、範囲の外のことは決めずに持ち帰ってください。` })).mission.id;
+  const takeBack2 = (await api("/phone/draft", { phone: "+81355550142", name: "焼肉 たけ", task: "reservation", success: { required: ["date", "time", "partySize", "confirmed"], expected: { date: backDay, time: "12:45", partySize: 6 } },
+    instruction: `先ほどお電話し、持ち帰った件の折り返しのお電話です。前回、相手は「空いてないです」と話しました。\n田中の代理として、${backText}の12時45分に6名で予約を取ってください。予約の名前は田中です。希望の時間が空いていない場合は、任せる範囲の中なら別の時間で予約し、範囲の外のことは決めずに持ち帰ってください。` })).mission.id;
+  put(takeBack2, "INCOMPLETE", [["caller", "先ほどの件で折り返しのお電話です。"], ["callee", "その時間も難しいです"], ["caller", "恐れ入ります。一度本人に確認いたしまして、改めてご連絡いたします。"]]);
+  put(takeBack, "INCOMPLETE", [["caller", "ご予約をお願いしたいのですが、よろしいでしょうか。"], ["callee", "はい、大丈夫です"], ["caller", `${backText}の12時45分に6名でお願いできますでしょうか。`], ["callee", "空いてないです"], ["caller", "どの時間帯でしたらご案内可能でしょうか。"], ["callee", "えー、その日は空いてないです"], ["caller", "恐れ入ります。一度本人に確認いたしまして、改めてご連絡いたします。"], ["callee", "はい"], ["caller", "失礼いたします。"]]);
 
   page = await launchQuiet({ width: 1440, height: 900 });
   await page.goto(base + "/");
@@ -69,6 +77,7 @@ try {
   await page.js(`document.querySelector('#token').value=${JSON.stringify(token)};document.querySelector('form').requestSubmit()`);
   try { await page.until("!document.querySelector('#tabs').hidden && /ホーム/.test(document.querySelector('#view').textContent)", { timeout: 8000, label: "home" }); }
   catch (e) { console.log("VIEW:", await page.text("#view"), "ERR:", page.pageErrors.join(" | ")); throw e; }
+  c.ok((await page.js("[...document.querySelectorAll('#tabs a')].map(a=>a.textContent.trim()).join('|')")).replace(/\d+/g, "") === "ホーム|履歴|予定|連絡先", "the menu is ホーム・履歴・予定・連絡先 (設定 sits at the top right)", await page.js("[...document.querySelectorAll('#tabs a')].map(a=>a.textContent.trim()).join('|')"));
   await page.js("location.hash='#/new'"); await page.until("!!document.querySelector('#ask-engine')", { label: "engine select" });
   const engines = await page.js("[...document.querySelectorAll('#ask-engine option')].map(o=>o.textContent)");
   c.ok(engines.some(t => /gpt-live-1/.test(t)) && engines.some(t => /gemini-3\.8-live/.test(t)), "電話を頼む: 音声AI names the model (gpt-live-1 / gemini-3.8-live)", engines.join(" | "));
@@ -107,7 +116,7 @@ try {
   await page.js("location.hash='#/new';location.reload()"); await sleep(1200); await page.until("!!document.querySelector('[data-group=\"people\"]')", { label: "ask form" });
   await page.js("[...document.querySelectorAll('[data-group]')].find(b=>b.dataset.group==='people').click();document.querySelector('[data-kind=\"ai-news\"]').click()");
   const noLive = await page.js("({check:[...document.querySelectorAll('button')].find(b=>b.textContent==='内容を確かめる').disabled,warn:[...document.querySelectorAll('.warnbox')].map(w=>w.textContent).join('|')})");
-  c.ok(noLive.check && /GPT-Live が使えないため/.test(noLive.warn), "AIニュース without GPT-Live: 内容を確かめる is off and the reason is shown", noLive.warn);
+  c.ok(noLive.check && /この種類の電話はかけられません/.test(noLive.warn), "AIニュース without GPT-Live: 内容を確かめる is off and the reason is shown", noLive.warn);
   await page.js("document.querySelector('[data-kind=\"chat\"]').click()");
   c.ok(await page.js("![...document.querySelectorAll('.warnbox')].some(w=>/GPT-Live が使えないため/.test(w.textContent))"), "another kind drops that warning");
   config.mode = "simulator"; config.liveReady = false;
@@ -123,7 +132,7 @@ try {
   await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.page-actions a[href$=standing]')");
   const req = await page.text("#view");
   c.ok(/電話が終わったか確かめられていません/.test(req) && /発信前の確認待ち/.test(req) && /進行中/.test(req) && /終了した電話/.test(req), "依頼: needs-you cards, in progress and done", req.slice(0, 300));
-  c.ok(await page.js("[...document.querySelectorAll('.rows .row')].filter(r=>/話しました|決まりました|決まりませんでした|応答がありません|かけられません|確かめ/.test(r.textContent)&&!/電話中|発信前/.test(r.textContent)).every(r=>!!r.querySelector('.credit-mini'))"), "依頼: every finished call in the list shows its credits");
+  c.ok(await page.js("[...document.querySelectorAll('.rows .row')].filter(r=>/話しました|決まりました|決まりませんでした|応答がありません|かけられません|確かめ/.test(r.textContent)&&!/電話中|発信前/.test(r.textContent)).some(r=>/クレジット/.test(r.textContent))") === false, "依頼: a server without credits shows no credit column");
   await page.screenshot(join(out, "gateway-app-requests.png"), { fullPage: true });
 
   await page.js(`location.hash='#/call/${running}'`); await page.until("/通話を終える/.test(document.querySelector('#view').textContent)");
@@ -159,8 +168,8 @@ try {
   const report = await page.text("#view");
   c.ok(/決まりました/.test(report) && await page.js("!!document.querySelector('.ring')") && /ご予約承りました/.test(report), "報告: the ring, the settled fields with the callee's words", report.slice(0, 160));
   c.ok(!/phone\.|phone_|undefined|NaN/.test(report), "no internal ids or undefined on the report");
-  // Every finished call says what it used in credits: a server without credits says so instead of leaving it out.
-  c.ok(/^消費 0 クレジット（(このサーバーはクレジットを使わない設定です|練習の電話)）$/.test(await page.text(".credit-used")), "報告: the credits used are always stated, here that this server does not use credits", await page.text(".credit-used"));
+  // A server without credits shows no credit line (its calls are paid to the carrier and the voice AI directly).
+  c.ok(await page.js("!document.querySelector('.credit-used')") && !/クレジット/.test(report), "報告: no credit line on a server without credits");
   for (const [usage, expect, label] of [[{ status: "settled", consumed: 3, held: 0, released: 2 }, /^消費 3 クレジット（確保した分のうち 2 クレジットを返却）$/, "settled"], [{ status: "pending", consumed: 0, held: 5, released: 0 }, /^精算待ち（5 クレジットを確保中/, "pending"]]) {
     await page.js(`window.__creditFetch=window.fetch;window.fetch=async(u,o)=>{const r=await window.__creditFetch(u,o);if(!/\\/v1\\/(phone\\/calls\\/${done}|bootstrap)$/.test(String(u)))return r;const j=await r.json();if(j.credits)j.credits.enabled=true;else{j.creditUsage=${JSON.stringify(usage)};j.creditQuote={mode:'credits',amount:5,unit:'credit'};j.practice=false;}return new Response(JSON.stringify(j),{status:r.status,headers:{'content-type':'application/json'}})}`);
     await page.js("location.hash='#/requests'"); await page.until("!!document.querySelector('.rows .row')");
@@ -168,9 +177,9 @@ try {
     c.ok(expect.test(await page.text(".credit-used")), `報告 with credits (${label}): ${expect}`, await page.text(".credit-used"));
     await page.js("window.fetch=window.__creditFetch");
   }
-  c.ok(await page.js("!!document.querySelector('.report-top .verdict') && document.querySelectorAll('.rrow').length===4") && /確かめたのは、電話での合意までです/.test(report) && /会話の \d\d:\d\d/.test(report) && !/\d\d:\d\d\.\d{3}/.test(report), "報告 as in the film: verdict with summary, one row per field with the callee's words and their time, the caveat");
+  c.ok(await page.js("!!document.querySelector('.report-top .verdict') && document.querySelectorAll('.rrow').length===4") && !/確かめたのは、電話での合意までです/.test(report) && !/null|undefined/.test(await page.text("#view")) && /会話の \d\d:\d\d/.test(report) && !/\d\d:\d\d\.\d{3}/.test(report), "報告 as in the film: verdict with summary, one row per field with the callee's words and their time, the caveat");
   c.ok(/AIの発言・判定に数えません/.test(await page.text(".transcript")) && /会話の記録/.test(await page.text(".side-top")), "the AI's own 「できました」 is marked as not counted; the side is the evidence");
-  c.ok(/AIが判断したこと/.test(report) && /20時半で予約をお願いしました/.test(report) && /任せた範囲「時間は第一希望から2時間以内」の中です/.test(report) && /AIの報告です/.test(report), "報告: AIが判断したこと, marked as the AI's own account");
+  c.ok(/AIが判断したこと/.test(report) && /20時半で予約をお願いしました/.test(report) && /範囲：時間は第一希望から2時間以内/.test(report) && !/AIの報告です/.test(report), "報告: AIが判断したこと, with the scope it was within");
   await page.screenshot(join(out, "gateway-app-report.png"));
 
   await page.js("location.hash='#/new'"); await page.until("document.querySelector('#ask-phone')");
@@ -181,15 +190,19 @@ try {
   const scope = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.scope')].map(s=>[...s.querySelectorAll('.scope-item')].map(i=>i.firstChild.textContent)))"));
   c.ok(scope[0].length === 0 && scope[1].length === 2 && scope[2].length === 2, "任せる範囲: nothing decided for the AI by default, two to bring back, two it never does", JSON.stringify(scope));
   await page.js("document.querySelector('.scope.ok .scope-add').click()");
-  c.ok(/その場で決めてよいこと：時間は第一希望から2時間以内/.test(await page.text(".ask-side")), "adding a ○ item shows in the AI's brief");
+  c.ok(/任せる：時間は第一希望から2時間以内/.test(await page.text(".ask-side")), "adding a ○ item shows in the AI's brief");
   await page.js("document.querySelector('[data-group=people]').click();document.querySelector('[data-kind=chat]').click()");
   c.ok(await page.js("document.querySelector('.scopes').closest('.field').hidden"), "a chat has no 任せる範囲");
   // 予約を取る: the blanks become fields (the names filled from the account), the request is written from them.
   await page.js("document.querySelector('[data-group=shop]').click();document.querySelector('[data-kind=reserve]').click()"); await sleep(150);
   const blanks = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('[data-blank]')].map(i=>[i.dataset.blank,i.value]))"));
-  c.ok(blanks.length === 4 && blanks.find(([k]) => k === "自分の名前")?.[1] === "田中", "予約を取る: its blanks as fields, your name filled in", JSON.stringify(blanks));
-  await page.js("for (const [k,v] of [['希望日時','10月10日の19時'],['人数','2名']]) { const i=document.querySelector(`[data-blank='${k}']`); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); }");
-  c.ok(/10月10日の19時に2名で予約を取ってください/.test(await page.js("document.querySelector('#ask-instruction').value")) && /AIが予約を取ります/.test(await page.text(".ask-side")) && !(await page.js("document.querySelector('.scopes').closest('.field').hidden")), "the request is written from the fields; the brief says the AI books; 任せる範囲 is there");
+  c.ok(blanks.length === 2 && blanks.find(([k]) => k === "自分の名前")?.[1] === "田中", "予約を取る: its name blanks as fields, your name filled in", JSON.stringify(blanks));
+  // 希望日時 and 人数 are the standard date and time pickers and a digits-only party size (2026-10-15).
+  const pickers = await page.js("JSON.stringify(['ask-res-date','ask-res-time','ask-res-party'].map(id=>{const n=document.getElementById(id);return n&&[n.type,n.inputMode,n.closest('.blanks')?'in':'out']}))");
+  c.ok(pickers === '[["date","","in"],["time","","in"],["text","numeric","in"]]' && await page.js("document.querySelector('label[for=ask-res-date]')?.textContent") === "日付" && await page.js("document.querySelector('label[for=ask-res-party]')?.textContent") === "人数", "予約を取る: 希望日 is a date picker, 時刻 a time picker, 人数 a numeric box, each labelled, in the blanks", pickers);
+  await page.js("{const d=document.getElementById('ask-res-date'),t=document.getElementById('ask-res-time'),p=document.getElementById('ask-res-party');d.value='2026-10-10';d.dispatchEvent(new Event('change',{bubbles:true}));t.value='19:00';t.dispatchEvent(new Event('change',{bubbles:true}));p.value='２a名-';p.dispatchEvent(new Event('input',{bubbles:true}))}");
+  c.ok(await page.js("document.getElementById('ask-res-party').value") === "2", "人数: full-width digits become digits; letters, 名 and signs are dropped");
+  c.ok(/10月10日（土）の19時に2名で予約を取ってください/.test(await page.js("document.querySelector('#ask-instruction').value")) && /予約を取る/.test(await page.text(".ask-side .brief")) && !(await page.js("document.querySelector('.scopes').closest('.field').hidden")), "the request is written from the fields; the brief says the AI books; 任せる範囲 is there");
   await page.screenshot(join(out, "gateway-app-ask-reserve.png"));
   await page.js("document.querySelector('[data-group=free]').click()");
   c.ok(/確かめるまで、発信できません/.test(await page.text(".ask-side")) && await page.js("document.querySelector('.ask-side .btn.big').disabled"), "an unknown outcome blocks a new call, and the side says where to fix it");
@@ -225,7 +238,7 @@ try {
   await page.until("!/山田/.test(document.querySelector('#view').textContent)", { label: "contact deleted" });
   c.ok(!(await api("/contacts")).some((x) => /山田/.test(x.name)) && /焼肉 たけ/.test(await page.text("#view")), "連絡先: 削除 removes it and shows the rest");
   await page.js("location.hash='#/settings/out'"); await page.until("/かける設定/.test(document.querySelector('#view').textContent)");
-  c.ok(/田中の代わりにお電話している/.test(await page.text("#view")) && /常にオン/.test(await page.text("#view")), "設定: the name the AI gives, and approval that cannot be turned off");
+  c.ok(!/田中の代わりにお電話している/.test(await page.text("#view")) && /常にオン/.test(await page.text("#view")), "設定: the name the AI gives, and approval that cannot be turned off");
   await page.screenshot(join(out, "gateway-app-settings.png"));
   // かけられた時の設定: saved per account and shown again.
   await page.js("location.hash='#/settings/in'"); await page.until("/かかってきたとき/.test(document.querySelector('#view').textContent)");
@@ -300,6 +313,29 @@ try {
   await page.js(`location.hash='#/call/${partial}'`); await page.until("!!document.querySelector('.report-top')");
   c.ok(await page.js("document.querySelector('.ring text')?.textContent") !== "4/4" && !/決まりました/.test(await page.text(".headline")), "a partly confirmed call: the ring stays open and the headline does not say settled", await page.js("document.querySelector('.ring text')?.textContent"));
   await page.screenshot(join(out, "gateway-app-report-partial.png"));
+  c.ok(await page.js("!document.querySelector('.taken-back')") && await page.js("[...document.querySelectorAll('.call-foot a')].every(a=>a.textContent!=='お店に折り返す')"), "a call the AI did not take back has no 持ち帰ったこと and no お店に折り返す");
+
+  // 持ち帰ったこと: the callee's last words before the AI said it would check, quoted; お店に折り返す opens the same booking.
+  await page.js(`location.hash='#/call/${takeBack}'`); await page.until("!!document.querySelector('.taken-back')", { label: "taken back" });
+  const backShown = await page.text(".taken-back");
+  c.ok(/^持ち帰ったこと/.test(backShown) && /「空いてないです」/.test(backShown) && /「えー、その日は空いてないです」/.test(backShown) && !/「はい/.test(backShown) && !/null|undefined/.test(backShown), "持ち帰ったこと: the callee's two last lines before the take-back, quoted, not the acknowledgements", backShown);
+  c.ok(await page.js("[...document.querySelectorAll('.call-foot a')].map(a=>a.textContent+(a.classList.contains('primary')?'*':'')).join('|')") === "お店に折り返す*|同じ相手にまた頼む", "持ち帰ったこと: お店に折り返す is the main button, 同じ相手にまた頼む beside it", await page.js("[...document.querySelectorAll('.call-foot a')].map(a=>a.textContent).join('|')"));
+  await page.screenshot(join(out, "gateway-app-report-taken-back.png"), { fullPage: true });
+  await page.js("[...document.querySelectorAll('.call-foot a')].find(a=>a.textContent==='お店に折り返す').click()");
+  await page.until("!!document.querySelector('#ask-res-date') && document.querySelector('#ask-instruction').value.length>0", { label: "callback form" });
+  const backForm = await page.js("({d:document.querySelector('#ask-res-date').value,t:document.querySelector('#ask-res-time').value,p:document.querySelector('#ask-res-party').value,i:document.querySelector('#ask-instruction').value,phone:document.querySelector('#ask-phone').value})");
+  c.ok(backForm.d === backDay && backForm.t === "12:45" && backForm.p === "6" && /^先ほどお電話し、持ち帰った件の折り返しのお電話です。前回（.*?・12時45分・6名）、相手は「空いてないです」「えー、その日は空いてないです」と話しました。\n田中の代理として、/.test(backForm.i) && /予約の名前は田中です/.test(backForm.i) && /5555-?0142/.test(backForm.phone), "お店に折り返す: the same booking, opened by what was taken back", JSON.stringify(backForm));
+  const newDay = jstDay(5), newDayText = `${+newDay.slice(5, 7)}月${+newDay.slice(8)}日`;
+  await page.js(`(()=>{const d=document.querySelector('#ask-res-date');d.value=${JSON.stringify(newDay)};d.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+  const backChanged = await page.js("document.querySelector('#ask-instruction').value");
+  c.ok(backChanged.includes(newDayText) && !backChanged.includes(`${backText}の12時45分`) && /^先ほどお電話し/.test(backChanged), "お店に折り返す: a new date in the picker reaches the request's words", backChanged);
+  await page.screenshot(join(out, "gateway-app-ask-callback.png"), { fullPage: true });
+  // A callback that was itself taken back: the second callback still carries the booking, with one callback line.
+  await page.js(`location.hash='#/call/${takeBack2}'`); await page.until("!!document.querySelector('.taken-back')", { label: "taken back twice" });
+  await page.js("[...document.querySelectorAll('.call-foot a')].find(a=>a.textContent==='お店に折り返す').click()");
+  await page.until("!!document.querySelector('#ask-res-date') && document.querySelector('#ask-instruction').value.length>0", { label: "second callback form" });
+  const backTwice = await page.js("({d:document.querySelector('#ask-res-date').value,p:document.querySelector('#ask-res-party').value,i:document.querySelector('#ask-instruction').value})");
+  c.ok(backTwice.d === backDay && backTwice.p === "6" && backTwice.i.split("先ほどお電話し").length === 2 && /「その時間も難しいです」/.test(backTwice.i) && !/（希望日時）|（人数）|（予約の名前）/.test(backTwice.i) && /予約の名前は田中です/.test(backTwice.i), "a second お店に折り返す keeps the booking and one callback line", JSON.stringify(backTwice));
 
   // 見守り・定期・チーム・連絡停止 (2026-10-02). As above: fixtures for rendering, written the way the worker writes them
   // (the check-in comes from the real checkInReport over the fixture's lines); never a claim that such a call took place.
@@ -379,7 +415,7 @@ try {
   const careKinds = await page.js("[...document.querySelectorAll('[data-kind]')].map(b=>b.dataset.kind).join()");
   c.ok(groups.includes("見守り・介護") && groups.includes("取引先への確認") && careKinds === "wellbeing-check,medication-reminder,visit-notice" && tradeKinds === "delivery-date,quote-request", "電話を頼む: the new kinds sit under 見守り・介護 and 取引先への確認", `${careKinds} | ${tradeKinds}`);
   const gentleOn = () => page.js("document.querySelector('#ask-gentle').checked");
-  c.ok(!(await gentleOn()) && /高齢の方や、耳の遠い方に/.test(await page.text("#ask-gentle-note")), "ゆっくり・やさしく話す: off to begin with, with one line saying who it is for");
+  c.ok(!(await gentleOn()) && !(await page.js("!!document.querySelector('#ask-gentle-note')")), "ゆっくり・やさしく話す: off to begin with, with one line saying who it is for");
   await page.js("document.querySelector('[data-kind=wellbeing-check]').click()");
   c.ok(await gentleOn(), "choosing 見守り switches ゆっくり・やさしく話す on");
   await page.js("document.querySelector('[data-kind=visit-notice]').click()");
@@ -396,7 +432,7 @@ try {
   c.ok(/「施設名や依頼者の名前」を入れてください/.test(await page.text(".ask-side .errbox")) && !(await page.js("!!document.querySelector('#ask-ack')")) && !app.store.list("mission", user.id).some((m) => m.status === "DRAFT" && m.target.name === "佐々木 ミツ"), "a wellbeing request whose （施設名や依頼者の名前） is still in the text is refused before any draft is made", await page.text(".ask-side .errbox"));
   await page.js("document.querySelector('[data-kind=visit-notice]').click();document.querySelector('[data-kind=wellbeing-check]').click()");
   await page.js("{const i=document.querySelector('[data-blank]');i.value='ひかり苑';i.dispatchEvent(new Event('input',{bubbles:true}))}");
-  c.ok(/ひかり苑の代わりであること/.test(await page.text(".ask-side")) && !/田中の代わり/.test(await page.text(".ask-side")), "the brief names one caller: the facility the request speaks for");
+  c.ok(!/田中の代わり/.test(await page.text(".ask-side")), "the brief names one caller: the facility the request speaks for");
   await page.js("document.querySelector('#ask-gentle').scrollIntoView({block:'center'})"); await sleep(200);
   await page.screenshot(join(out, "gateway-app-ask-gentle.png"));
   await small("電話を頼む (gentle)");
@@ -409,7 +445,7 @@ try {
   const reviewed = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.target.name === "佐々木 ミツ");
   c.ok(/話す速さ/.test(await page.text(".ask-side")) && /ゆっくり・やさしく話す/.test(await page.text(".ask-side .defs")) && reviewed?.phoneRequest.pace === "gentle" && reviewed.phoneRequest.callerName === "ひかり苑" && !/gpt-live-1/.test(await page.text(".ask-side .defs")), "the review shows 話す速さ and no model id; the draft carries the gentle pace and the one caller name", String(reviewed?.phoneRequest.pace));
   // The confirmation says until when it holds; an expired one goes back to 内容を確かめる, says nothing was dialled, and dials nothing.
-  c.ok(/\d{2}:\d{2} まで有効です/.test(await page.text(".ask-side")), "the confirmation says until when it is valid");
+  c.ok(/この内容で発信を承認します/.test(await page.text(".ask-side")) && !/まで有効です/.test(await page.text(".ask-side")), "the approval reads in one line, with no note under it");
   const placedBefore = app.store.list("mission", user.id).filter((m) => m.target?.name === "佐々木 ミツ" && m.status !== "DRAFT").length;
   await page.js("document.querySelector('#ask-ack').click()");
   await page.js("window.__askFetch=window.fetch;window.fetch=(u,o)=>/\\/start$/.test(String(u))?Promise.resolve(new Response(JSON.stringify({error:'approval_expired_or_used'}),{status:409,headers:{'content-type':'application/json'}})):window.__askFetch(u,o)");
@@ -466,7 +502,7 @@ try {
   await page.js("for (const [s,v] of [['#ask-phone','090-9999-0001'],['#ask-name','名簿にない人'],['#ask-instruction','折り返しの電話をお願いしてください。']]) { const i=document.querySelector(s); i.value=v; i.dispatchEvent(new Event('input',{bubbles:true})); }");
   await clickText("内容を確かめる", ".ask-side");
   try { await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review (not a contact)" }); } catch (e) { console.log("SIDE:", await page.text(".ask-side"), "HASH:", await page.js("location.hash"), "VALS:", await page.js("[document.querySelector('#ask-phone').value,document.querySelector('#ask-name').value]")); throw e; }
-  c.ok(!(await page.js("!!document.querySelector('#rep-on')")) && /連絡先に保存した相手だけ/.test(await page.text(".rep")), "a number that is not a saved contact cannot be made a standing request, and the screen says why");
+  c.ok(!(await page.js("!!document.querySelector('#rep-on')")) && /連絡先の相手だけ/.test(await page.text(".rep")), "a number that is not a saved contact cannot be made a standing request, and the screen says why");
   // ---- 2026-10-04: calling from a prompt. The words alone find who to call (a saved contact or a number in the text),
   // the confirmation names them with the full number before approval, presets are the person's own, and 覚えておくこと
   // is kept in 設定. As on a live server; nothing is dialled (the worker never runs and nothing is approved here).
@@ -475,14 +511,14 @@ try {
   const placedAtStart = placed();
   await go("#/", "!!document.querySelector('#home-prompt')");
   await go("#/new", "!!document.querySelector('#ask-phone') && !!document.querySelector('.presets') && !document.querySelector('#ask-phone').value");
-  c.ok(/空けておくと、文中の番号か連絡先の名前から探します/.test(await page.text(".ask-form .field")) && /あなたのプリセット/.test(await page.text(".presets")) && /まだありません/.test(await page.text(".presets")), "電話を頼む: だれに says it may be left empty, and あなたのプリセット starts empty with how to add one");
+  c.ok(!/空けておくと/.test(await page.text(".ask-form .field")) && /あなたのプリセット/.test(await page.text(".presets")) && /まだありません。$/.test(await page.text(".presets")), "電話を頼む: だれに says it may be left empty, and あなたのプリセット starts empty with how to add one");
   await setVal("#ask-instruction", "佐藤さんに、来週の打ち合わせの候補日を聞いてください。");
-  c.ok(/相手は、内容を確かめるときに探します/.test(await page.text(".ask-side .brief")), "with no number or name, the column says the words will be searched");
+  c.ok(/相手：未指定/.test(await page.text(".ask-side .brief")), "with no number or name, the column says the words will be searched");
   await clickText("内容を確かめる", ".ask-side");
   try { await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "prompt-only review" }); } catch (e) { console.log("SIDE:", await page.text(".ask-side")); throw e; }
   const promptDraft = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.phoneRequest?.instruction?.startsWith("佐藤さんに、来週"));
   const foundText = await page.text(".ask-side .target-found");
-  c.ok(/佐藤（03-1234-5678）/.test(foundText) && /連絡先で見つけました/.test(foundText) && /選び直してください/.test(foundText) && promptDraft?.target.phone === "+81312345678" && promptDraft.target.name === "佐藤" && promptDraft.phoneRequest.callerName === "田中", "prompt only: the saved contact named in the words is found, and the confirmation shows the name, the full number and how it was found before approval", foundText);
+  c.ok(/佐藤（03-1234-5678）/.test(foundText) && /連絡先で見つけました/.test(foundText) && !/選び直してください/.test(foundText) && promptDraft?.target.phone === "+81312345678" && promptDraft.target.name === "佐藤" && promptDraft.phoneRequest.callerName === "田中", "prompt only: the saved contact named in the words is found, and the confirmation shows the name, the full number and how it was found before approval", foundText);
   await page.js("window.scrollTo(0,0)"); await sleep(200);
   await page.screenshot(join(out, "gateway-app-ask-prompt.png"));
   await small("電話を頼む (相手を文から)");
@@ -549,7 +585,7 @@ try {
   if (salesDraft) await fetch(`${base}/v1/missions/${salesDraft.id}`, { method: "DELETE", headers: { authorization: "Bearer " + token } });
   // 覚えておくこと: saved in 設定, read back after a reload, and named in the confirmation.
   await go("#/settings/out", "!!document.querySelector('#set-profile')");
-  c.ok(/会社名、担当者名、業種、折り返しの番号、よく使う説明など。電話のたびにAIに渡し、聞かれたときや必要なときだけ使います。/.test(await page.text(".settings-content")) && await page.text("#set-profile-count") === "0 / 2000", "設定: 覚えておくこと explains what goes with each call, with a counter");
+  c.ok(!/電話のたびにAIに渡し/.test(await page.text(".settings-content")) && await page.text("#set-profile-count") === "0 / 2000", "設定: 覚えておくこと explains what goes with each call, with a counter");
   const profileText = "株式会社たなか 営業部の田中です。業務用の食材を扱っています。折り返しは 03-1234-5678（平日10〜18時）。";
   await setVal("#set-profile", profileText);
   c.ok(await page.text("#set-profile-count") === `${profileText.length} / 2000`, "the counter follows the text");
@@ -561,7 +597,7 @@ try {
   await small("設定 (覚えておくこと)");
   // ホーム: write it, press 内容を確かめる, and the same review runs; nothing is dialled without the approval.
   await go("#/", "!!document.querySelector('#home-prompt')");
-  c.ok(/電話の内容を書くだけで頼めます/.test(await page.text(".home-prompt")) && /入力だけでは電話しません/.test(await page.text(".home-prompt")), "ホーム: the prompt box at the top says writing alone does not call");
+  c.ok(/電話の内容/.test(await page.text(".home-prompt")) && !/入力だけでは電話しません/.test(await page.text(".home-prompt")), "ホーム: the prompt box at the top says writing alone does not call");
   await clickText("内容を確かめる", ".home-prompt");
   c.ok(/電話の内容を書いてください/.test(await page.text(".home-prompt .errbox")) && await page.js("location.hash") === "#/", "an empty prompt stays on ホーム and says what to write");
   await setVal("#home-prompt", "佐藤さんに、来週の打ち合わせの候補日を聞いてください。");
@@ -594,7 +630,43 @@ try {
   await clickText("内容を確かめる", ".ask-side");
   await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review (terms)" });
   const termsDraft = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.phoneRequest?.success);
-  c.ok(/確かめる条件/.test(await page.text(".ask-side .defs")) && /数量 50ケース・納期 /.test(await page.text(".ask-side .defs")) && termsDraft?.phoneRequest.success.expected.quantity === "50ケース" && termsDraft.phoneRequest.success.expected.date === day(18) && termsDraft.phoneRequest.success.required.join() === "quantity,date,confirmed" && /確かめる条件：数量 50ケース・納期 /.test(termsDraft.phoneRequest.instruction) && /確かめる条件：数量 50ケース/.test(await page.text(".ask-side .brief")), "the conditions show in the confirmation and go with the draft as the contract writes them (50ケース)", JSON.stringify(termsDraft?.phoneRequest.success));
+  c.ok(/確かめる条件/.test(await page.text(".ask-side .defs")) && /数量 50ケース・納期 /.test(await page.text(".ask-side .defs")) && termsDraft?.phoneRequest.success.expected.quantity === "50ケース" && termsDraft.phoneRequest.success.expected.date === day(18) && termsDraft.phoneRequest.success.required.join() === "quantity,date,confirmed" && /確かめる条件：数量 50ケース・納期 /.test(termsDraft.phoneRequest.instruction) && !/確かめる条件/.test(await page.text(".ask-side .brief")), "the conditions show once in the confirmation and go with the draft as the contract writes them (50ケース)", JSON.stringify(termsDraft?.phoneRequest.success));
+  // 予約を取る with the pickers: what was entered is held to the callee's words, unless 任せる範囲 lets the AI change it.
+  const bookingDraft = async (label) => {
+    await go("#/new", "!!document.querySelector('#ask-phone')");
+    await page.js("document.querySelector('[data-group=shop]').click();document.querySelector('[data-kind=reserve]').click()"); await sleep(150);
+    await page.js("[...document.querySelectorAll('.chip[data-id]')].find(b=>b.textContent==='山本 ハル').click()");
+    await page.js(`{const d=document.getElementById('ask-res-date'),t=document.getElementById('ask-res-time'),p=document.getElementById('ask-res-party');d.value=${JSON.stringify(day(18))};d.dispatchEvent(new Event('change',{bubbles:true}));t.value='19:30';t.dispatchEvent(new Event('change',{bubbles:true}));p.value='3';p.dispatchEvent(new Event('input',{bubbles:true}))}`);
+    return label;
+  };
+  await bookingDraft("held");
+  const resEmpty = await page.js("(()=>{const p=document.getElementById('ask-res-party');p.value='';p.dispatchEvent(new Event('input',{bubbles:true}));return document.querySelector('#ask-instruction').value})()");
+  await clickText("内容を確かめる", ".ask-side"); await sleep(300);
+  c.ok(/（人数）/.test(resEmpty) && /人数/.test(await page.text(".ask-side .errbox")) && !(await page.js("!!document.querySelector('#ask-ack')")), "予約を取る: an empty 人数 is asked for before anything is sent", await page.text(".ask-side .errbox"));
+  await page.js("{const p=document.getElementById('ask-res-party');p.value='3';p.dispatchEvent(new Event('input',{bubbles:true}))}");
+  await page.js("document.getElementById('ask-res-date').scrollIntoView({block:'center'})"); await sleep(200);
+  await page.screenshot(join(out, "gateway-app-ask-reserve-pickers.png"));
+  const rows = JSON.parse(await page.js("JSON.stringify(['ask-res-date','ask-res-time','ask-res-party'].map(id=>{const r=document.getElementById(id).getBoundingClientRect();return [Math.round(r.top),Math.round(r.height)]}).concat([...document.querySelectorAll('.blanks [data-blank]')].map(n=>{const r=n.getBoundingClientRect();return [Math.round(r.top),Math.round(r.height)]})))"));
+  c.ok(rows[0][0] === rows[1][0] && rows[2][0] > rows[0][0] && rows[3][0] === rows[4][0] && new Set(rows.map(([, h]) => h)).size === 1, "予約を取る at 1440: 日付｜時刻 on one row, 人数 below, the two names together, every field the same height", JSON.stringify(rows));
+  await small("電話を頼む (予約の日時と人数)");
+  await clickText("内容を確かめる", ".ask-side");
+  await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review (booking)" });
+  const heldDraft = app.store.list("mission", user.id).find((m) => m.status === "DRAFT" && m.phoneRequest?.task === "reservation" && m.phoneRequest.success);
+  c.ok(JSON.stringify(heldDraft?.phoneRequest.success) === JSON.stringify({ required: ["date", "time", "partySize", "confirmed"], expected: { date: day(18), time: "19:30", partySize: 3 } }) && /の19時30分に3名で予約を取ってください/.test(heldDraft.phoneRequest.instruction) && /予約の希望：/.test(await page.text(".ask-side")) && /人数 3名/.test(await page.text(".ask-side .defs")), "予約を取る: the date, time and party size are held to the callee's words and shown before approval", JSON.stringify(heldDraft?.phoneRequest.success));
+  await page.screenshot(join(out, "gateway-app-ask-reserve-review.png"));
+  await bookingDraft("released");
+  await page.js("document.querySelector('.scope.ok .scope-add').click()"); await sleep(100);
+  await clickText("内容を確かめる", ".ask-side");
+  await page.until("!!document.querySelector('#ask-ack')", { timeout: 8000, label: "review (booking, time released)" });
+  const freeDraft = app.store.list("mission", user.id).filter((m) => m.status === "DRAFT" && m.phoneRequest?.task === "reservation" && m.id !== heldDraft.id).at(-1);
+  c.ok(JSON.stringify(freeDraft?.phoneRequest.success?.expected) === JSON.stringify({ date: day(18), partySize: 3 }) && /時間は第一希望から2時間以内/.test(freeDraft.phoneRequest.instruction), "予約を取る: with 時間は第一希望から2時間以内 allowed, the time is asked for but not held", JSON.stringify(freeDraft?.phoneRequest.success));
+  await page.viewport(390, 844); await sleep(300); await bookingDraft("mobile");
+  await page.js("document.getElementById('ask-res-date').scrollIntoView({block:'center'})"); await sleep(200);
+  await page.screenshot(join(out, "gateway-app-ask-reserve-mobile.png"));
+  c.ok(await page.js("document.documentElement.scrollWidth <= innerWidth") && await page.js("(()=>{const r=document.getElementById('ask-res-party').getBoundingClientRect();return r.width>=60&&r.right<=innerWidth})()"), "予約を取る at 390px: the pickers fit with no sideways scroll");
+  await small("電話を頼む (予約・390px)");
+  await page.viewport(1440, 900); await sleep(300);
+  for (const m of [heldDraft, freeDraft]) if (m) await fetch(`${base}/v1/missions/${m.id}`, { method: "DELETE", headers: { authorization: "Bearer " + token } });
   config.mode = "simulator"; config.liveReady = false;
 
   // 定期の電話: status, next and past runs in plain words, pause / resume / end.
@@ -627,25 +699,25 @@ try {
   const band = await page.text(".band"), reportText = await page.text("#view");
   c.ok(await page.js("!!document.querySelector('.band.emergency h2 .lvl.emergency') && !!(document.querySelector('.band').compareDocumentPosition(document.querySelector('.headline, .verdict')) & 4)") && /緊急/.test(band) && /ご本人の様子を、すぐに確かめてください/.test(band), "報告: an emergency banner above the headline, asking for the person to be checked");
   c.ok(/「昨日の夜に廊下で転んでしまって、起き上がれなくて大変でした。」/.test(band) && /「腰が痛いので、だれかに見てもらいたいです。」/.test(band) && await page.js("document.querySelectorAll('.band-lines .lvl.emergency').length===1 && document.querySelectorAll('.band-lines .lvl.concern').length===2"), "the banner quotes the flagged lines from the conversation, each marked 緊急 or 要確認", band.slice(0, 160));
-  c.ok(/AIが気になった発言（AIが聞き取った内容で、確かめられた事実ではありません）/.test(band) && /「声がいつもより弱く、途中で何度も咳をしていた」/.test(band) && await page.js("!document.querySelector('.band li.by-model time')"), "the voice model's own report is shown as what the AI heard, quoted, with no line in the record and never as a fact");
+  c.ok(/AIが気になった発言/.test(band) && !/確かめられた事実/.test(band) && /「声がいつもより弱く、途中で何度も咳をしていた」/.test(band) && await page.js("!document.querySelector('.band li.by-model time')"), "the voice model's own report is shown as what the AI heard, quoted, with no line in the record and never as a fact");
   c.ok(/ほかに要確認が2件あります（下の表）。/.test(band) && await page.js("document.querySelectorAll('.checkin-table tbody .lvl').length") === 4, "the banner quotes the flagged lines and counts the other 要確認 rows of the table (two flagged, two more)", band.slice(-120));
-  c.ok(/これは診断ではありません/.test(band) && await page.text(".band-act") === "AIはどこにも連絡していません。ご本人の様子は、人が確かめてください。" && await page.js("(()=>{const a=getComputedStyle(document.querySelector('.band-act')),n=getComputedStyle(document.querySelector('.band-note'));return parseFloat(a.fontSize)>parseFloat(n.fontSize)&&a.color!==n.color})()"), "the banner says on a line of its own that the AI contacted nobody and a person must check; and that it is not a diagnosis");
+  c.ok(!/これは診断ではありません/.test(band) && !(await page.js("!!document.querySelector('.band-act')")) && !/どこにも連絡/.test(band), "the banner carries no caveat line");
   const rowsSaid = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.checkin-table tbody tr')].map(r=>[r.children[0].textContent,r.children[1].firstChild.textContent,r.children[2].textContent]))"));
   c.ok(rowsSaid.map((r) => r[0]).join() === "体調,食事,服薬,睡眠,相談や困りごと" && rowsSaid[1][1] === "食べたと話しました" && rowsSaid[2][1] === "まだ飲んでいないと話しました" && rowsSaid[2][2] === "「まだです。あとで飲みます。」" && rowsSaid[3][1] === "はっきりしない返事でした" && rowsSaid[4][1] === "相談や困りごとを話しました", "見守りの聞き取り: five topics, what was said, and the person's own words", JSON.stringify(rowsSaid));
-  c.ok(rowsSaid.every((r) => /話しました$|返事でした$|^返答なし$|^聞いていません$/.test(r[1])) && /実際の様子を確かめたものではありません/.test(reportText), "no answer is worded as a fact: each one is something said");
+  c.ok(rowsSaid.every((r) => /話しました$|返事でした$|^返答なし$|^聞いていません$/.test(r[1])) && !/実際の様子を確かめたものではありません/.test(reportText), "no answer is worded as a fact: each one is something said");
   c.ok(await page.js("(()=>{const row=document.querySelector('.checkin-table tbody tr'),lines=[...document.querySelectorAll('.transcript .flag-line .lvl')].map(n=>n.className+':'+n.textContent).join();return !!row.querySelector('.lvl.emergency')&&lines==='lvl emergency:緊急の発言,lvl concern:要確認の発言,lvl concern:要確認の発言,lvl concern:要確認の発言'})()"), "the same line carries the same level in the banner, the check-in row and the conversation");
   c.ok(/\d+\/\d+\(.\) \d\d:\d\d/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.transcript .span')")), "the report says when the call was (Japan time); a wellbeing report carries no millisecond ranges", await page.text(".call-when"));
   c.ok(!/self_harm|no_answer|not_asked|undefined|NaN|emergency|concern/.test(reportText), "the flagged lines are marked in the conversation; no internal words on the report");
   await page.js("document.querySelector('.family-note summary').click()");
   const famText = await page.text(".family-note");
-  c.ok(/サービスからは送りません。職員が読んで確かめてから、自分で送ってください。/.test(famText) && /山本 ハル/.test(famText) && await page.js("[...document.querySelectorAll('.family-note button')].some(b=>b.textContent==='文をコピー')"), "ご家族への報告文: the server's text, a copy button, and that a person sends it after reading", famText.slice(0, 200));
+  c.ok(!/サービスからは送りません/.test(famText) && /山本 ハル/.test(famText) && await page.js("[...document.querySelectorAll('.family-note button')].some(b=>b.textContent==='文をコピー')"), "ご家族への報告文: the server's text, a copy button, and that a person sends it after reading", famText.slice(0, 200));
   await page.screenshot(join(out, "gateway-app-report-care.png"), { fullPage: true });
   await go(`#/call/${noAnswer}`, "/応答がありませんでした/.test(document.querySelector('.headline')?.textContent)");
   const missedBand = await page.text(".band");
-  c.ok(await page.js("!!document.querySelector('.band.concern h2 .lvl.concern') && !document.querySelector('.no-answer')") && /ご本人の様子を確かめてください/.test(missedBand) && /電話に出なかったか、何も話しませんでした。3回目の電話で、この回のかけ直しはここまでです。/.test(missedBand) && /AIはどこにも連絡していません。/.test(missedBand) && /定期の電話・3回目/.test(await page.text(".call-when")) && /10:01/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.checkin-table')")) && await page.js("(()=>{const f=document.querySelector('.call-foot').getBoundingClientRect(),d=[...document.querySelectorAll('.request-details')].pop().getBoundingClientRect();return f.top-d.bottom<80})()"), "a wellbeing call nobody answered: the same 要確認 banner form, which try it was, at a time a schedule could ring; the button sits under the content", missedBand);
+  c.ok(await page.js("!!document.querySelector('.band.concern h2 .lvl.concern') && !document.querySelector('.no-answer')") && /ご本人の様子を確かめてください/.test(missedBand) && /電話に出なかったか、何も話しませんでした。3回目の電話で、この回のかけ直しはここまでです。/.test(missedBand) && !/どこにも連絡/.test(missedBand) && /定期の電話・3回目/.test(await page.text(".call-when")) && /10:01/.test(await page.text(".call-when")) && !(await page.js("!!document.querySelector('.checkin-table')")) && await page.js("(()=>{const f=document.querySelector('.call-foot').getBoundingClientRect(),d=[...document.querySelectorAll('.request-details')].pop().getBoundingClientRect();return f.top-d.bottom<80})()"), "a wellbeing call nobody answered: the same 要確認 banner form, which try it was, at a time a schedule could ring; the button sits under the content", missedBand);
   await page.js("document.querySelector('.family-note summary').click()"); await sleep(200);
   const unansweredNote = await page.text(".family-note .request-text");
-  c.ok(/^山本 ハルさんへの電話（10月\d+日 \d+時ごろ）のご報告です。田中の代わりに、AIがおかけしました。/.test(unansweredNote) && /AIがかけた電話の記録として/.test(await page.text(".family-note summary")), "the family note on an unanswered call: the new opening, under a heading that says an AI made the call", unansweredNote.slice(0, 80));
+  c.ok(/^山本 ハルさんへの電話（10月\d+日 \d+時ごろ）のご報告です。田中の代わりに、AIがおかけしました。/.test(unansweredNote) && await page.text(".family-note summary") === "ご家族への報告文", "the family note on an unanswered call: the new opening, under a short heading", unansweredNote.slice(0, 80));
   await page.screenshot(join(out, "gateway-app-report-unanswered.png"), { fullPage: true });
 
   // チームの電話 (manager / admin): rows at a glance, 要確認 only, a teammate's report read-only, CSV.
@@ -665,9 +737,9 @@ try {
   const ranks = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.team-table tbody tr')].map(r=>r.querySelector('td .lvl.emergency')?0:r.classList.contains('need-concern')?1:2))"));
   c.ok(ranks[0] === 0 && ranks.every((v, i) => i === 0 || ranks[i - 1] <= v) && ranks.filter((v) => v < 2).length === 7, "the unfiltered list puts what needs a look first: 緊急, then 要確認, then the rest", ranks.join(""));
   const tableText = await page.text(".team-table");
-  c.ok(!/確認済み|未確定/.test(tableText) && (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")).split(",").sort().join() === "決まっていません,決まっていません,決まっていません,決まりました,決まりました" && !/応答の記録なし/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table tbody th .tag')].filter(t=>t.textContent==='名簿').length") === 2 && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined");
+  c.ok(!/確認済み|未確定/.test(tableText) && (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")).split(",").sort().join() === "決まっていません,決まっていません,決まっていません,決まっていません,決まっていません,決まりました,決まりました" && !/応答の記録なし/.test(tableText) && await page.js("[...document.querySelectorAll('.team-table tbody th .tag')].filter(t=>t.textContent==='名簿').length") === 2 && await page.js("(()=>{const r=[...document.querySelectorAll('.team-table tbody tr')].find(r=>r.querySelector('td .lvl.emergency'));const g=r.querySelector('.glance');return g.querySelectorAll('.lvl.emergency').length===1&&g.querySelectorAll('.lvl.concern').length===3})()") && await page.js("[...document.querySelectorAll('.glance b')].every(b=>getComputedStyle(b).textDecorationLine==='none')"), "電話の結果 uses call words for every row; the verdict is a separate small label on the sales call only; the answers are not underlined", (await page.js("[...document.querySelectorAll('.team-table .verdict-tag')].map(n=>n.textContent).join()")) + " | " + tableText.slice(0, 900));
   const undeliveredText = await page.text(".undelivered-block") ?? "", unplacedText = await page.text(".team-block.need-concern") ?? "";
-  c.ok(/届いていない通知が 1 件あります/.test(undeliveredText) && /その電話の相手には確認が必要です/.test(undeliveredText) && /要確認/.test(undeliveredText) && /山本 ハル/.test(undeliveredText) && /応答なし・自分が頼んだ電話・送信を3回試みました/.test(undeliveredText) && await page.js(`document.querySelector('.undelivered-block a')?.getAttribute('href')`) === `#/team/${noAnswer}`, "チームの電話: each undelivered notice with its level, person, when, attempts and the report; the person still needs a look", undeliveredText);
+  c.ok(/届いていない通知が 1 件あります/.test(undeliveredText) && /要確認/.test(undeliveredText) && /山本 ハル/.test(undeliveredText) && /応答なし・自分が頼んだ電話・送信を3回試みました/.test(undeliveredText) && await page.js(`document.querySelector('.undelivered-block a')?.getAttribute('href')`) === `#/team/${noAnswer}`, "チームの電話: each undelivered notice with its level, person, when, attempts and the report; the person still needs a look", undeliveredText);
   const unplacedApi = (await api("/team/calls")).notPlaced;
   c.ok(new RegExp(`かけられなかった定期の電話　${unplacedApi.length}件`).test(unplacedText) && /山本 ハル/.test(unplacedText) && /時刻を過ぎたため、かけていません/.test(unplacedText) && /クレジットが足りなかったため、かけていません/.test(unplacedText) && await page.js(`[...document.querySelectorAll('.team-block.need-concern a')].every(a=>/^#\\/team\\/(person\\/[a-f0-9-]{36}|people)$|^#\\/standing$/.test(a.getAttribute('href')))`) && teamAll.needsAttention === 7 + unplacedApi.length, "チームの電話: the scheduled calls never placed are rows that need a look, linking to the person, and counted", unplacedText.slice(0, 200));
   const sumText = await page.text(".team-sum");
@@ -687,7 +759,7 @@ try {
   await page.js("[...document.querySelectorAll('.team-table tbody th a')].find(a=>a.textContent==='田村 節子').click()");
   await page.until(`location.hash==='#/team/${mateCall}' && !!document.querySelector('.band')`, { label: "teammate's report" });
   const mateReport = await page.text("#view");
-  c.ok(/^依頼 › チームの電話 › 田村 節子/.test(await page.text(".crumb")) && /頼んだ人：鈴木/.test(mateReport) && /開いたことは記録されます/.test(mateReport) && await page.js("!!document.querySelector('.band.concern') && !document.querySelector('.band .lvl.emergency')") && /「食欲がなくて、朝から何も食べていません。」/.test(mateReport), "a teammate's report opens with its 要確認 banner (not 緊急)");
+  c.ok(/^履歴 › チームの電話 › 田村 節子/.test(await page.text(".crumb")) && /頼んだ人：鈴木/.test(mateReport) && !/開いたことは記録されます/.test(mateReport) && await page.js("!!document.querySelector('.band.concern') && !document.querySelector('.band .lvl.emergency')") && /「食欲がなくて、朝から何も食べていません。」/.test(mateReport), "a teammate's report opens with its 要確認 banner (not 緊急)");
   c.ok(!/同じ相手にまた頼む|通話を終える|カレンダーに入れる/.test(mateReport) && /チームの電話に戻る/.test(mateReport) && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "team.record_viewed"), "it is read-only, and opening it was recorded");
   await page.screenshot(join(out, "gateway-app-team-report.png"), { fullPage: true });
   // The previous report has a check-in table too: wait for this one's name, not just for a table.
@@ -718,7 +790,7 @@ try {
   await small("相手ごとの様子");
   await page.js("[...document.querySelectorAll('.people-table tbody th a')].find(a=>a.textContent==='田村 節子').click()");
   await page.until(`location.hash==='#/team/person/${tamuraContact.id}' && document.querySelectorAll('.past-rows li').length===1`, { label: "teammate's person history" });
-  c.ok(/開いたことは記録されます/.test(await page.text("#view")) && await page.js(`document.querySelector('.past-rows a').getAttribute('href')`) === `#/team/${mateCall}` && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "team.history_viewed"), "a teammate's person opens これまでの電話, says it is recorded, links to the read-only report, and the server recorded it");
+  c.ok(!/開いたことは記録されます/.test(await page.text("#view")) && await page.js(`document.querySelector('.past-rows a').getAttribute('href')`) === `#/team/${mateCall}` && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "team.history_viewed"), "a teammate's person opens これまでの電話, says it is recorded, links to the read-only report, and the server recorded it");
   await page.screenshot(join(out, "gateway-app-person.png"));
   await go("#/team/people", "!!document.querySelector('.people-table')");
   await page.js("[...document.querySelectorAll('.people-table tbody th a')].find(a=>a.textContent==='山本 ハル').click()");
@@ -743,14 +815,14 @@ try {
   c.ok(await page.js("document.querySelectorAll('.list .item .tag.stopped').length") === 2 && /連絡停止中/.test(await page.text(".stopped-box")) && !/この相手に電話を頼む/.test(await page.text(".contact-detail")), "連絡先: 連絡停止中 on the list and the contact; no call button for it");
   c.ok(new RegExp(`${Number(day(0).slice(5, 7))}月${Number(day(0).slice(8))}日、職員が止めました。`).test(await page.text(".stop-how")), "a stop made by the team says how and when it was stopped", await page.text(".stop-how"));
   await clickText("連絡停止を解除", ".stopped-box");
-  c.ok((await page.focused()).id === "release-reason" && /記録されます/.test(await page.text(".release-form")), "連絡停止を解除 (stopped by the team): asks for a reason and says it is recorded");
+  c.ok((await page.focused()).id === "release-reason" && await page.visible(".release-form"), "連絡停止を解除 (stopped by the team): asks for a reason and says it is recorded");
   const release = (reason, ack) => page.js(`(()=>{const f=document.querySelector('.release-form');f.elements.reason.value=${JSON.stringify(reason)};f.elements.ack.checked=${ack};f.requestSubmit();})()`);
   await release("短い", true); await sleep(200);
   await page.screenshot(join(out, "gateway-app-contact-stopped.png"));
   c.ok(/5〜300文字/.test(await page.text(".release-form .errbox")) && (await api("/contacts")).find((x) => x.id === stoppedContact.id).suppressed, "a reason under 5 characters is refused before anything is sent");
   await release("本人から電話で、連絡を再開してよいと言われた（10/2）", true);
   await page.until("/連絡停止を解除しました/.test(document.querySelector('#toast').textContent) && !document.querySelector('.stopped-box')", { label: "released" });
-  c.ok(!(await api("/contacts")).find((x) => x.id === stoppedContact.id).suppressed && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "contact.suppression_released") && /この相手に電話を頼む/.test(await page.text(".contact-detail")) && /連絡停止を解除しました。解除した理由は記録されました。/.test(await page.text(".released")), "released: recorded, said on the contact, and the contact can be called again");
+  c.ok(!(await api("/contacts")).find((x) => x.id === stoppedContact.id).suppressed && app.store.audits({ after: 0, limit: 500 }).some((a) => a.action === "contact.suppression_released") && /この相手に電話を頼む/.test(await page.text(".contact-detail")) && /連絡停止を解除しました。/.test(await page.text(".released")), "released: recorded, said on the contact, and the contact can be called again");
   await sleep(3300);
   await page.screenshot(join(out, "gateway-app-contact-released.png"));
   await go(`#/contacts/${optedOut.id}`, "/高橋 花/.test(document.querySelector('.headline')?.textContent)");
@@ -760,7 +832,7 @@ try {
   const setFile = (parts) => page.js(`(()=>{const i=document.querySelector('#contact-csv');const dt=new DataTransfer();dt.items.add(new File([${parts}],'contacts.csv',{type:'text/csv'}));i.files=dt.files;i.dispatchEvent(new Event('change',{bubbles:true}));})()`);
   await go("#/contacts", "!!document.querySelector('.contacts-page')");
   await clickText("CSVから取り込む", ".page-actions");
-  c.ok(await page.visible(".import-card") && (await page.focused()).id === "contact-csv" && /Shift_JIS のファイルは読めません/.test(await page.text("#contact-csv-help")) && await page.js("document.querySelector('.import-card .btn.primary').disabled"), "CSVから取り込む: the help names the columns and says Shift_JIS is not read; nothing to import yet");
+  c.ok(await page.visible(".import-card") && (await page.focused()).id === "contact-csv" && /列：名前、会社、電話番号/.test(await page.text("#contact-csv-help")) && await page.js("document.querySelector('.import-card .btn.primary').disabled"), "CSVから取り込む: the help names the columns and says Shift_JIS is not read; nothing to import yet");
   await setFile("new Uint8Array([0x96,0xBC,0x91,0x4F,0x2C,0x93,0x64,0x98,0x62,0x94,0xD4,0x8D,0x86,0x0D,0x0A])");
   await page.until("!document.querySelector('.import-card .errbox').hidden", { label: "not UTF-8" });
   c.ok(/UTF-8 として読めませんでした/.test(await page.text(".import-card .errbox")) && await page.js("document.querySelector('.import-card .btn.primary').disabled"), "a Shift_JIS file is refused with what to do about it");
@@ -844,7 +916,7 @@ try {
   await page.js("document.querySelector('.page-actions a[href=\"#/callbacks\"]').click()");
   await page.until("location.hash==='#/callbacks' && document.querySelectorAll('.row.callback').length===3", { label: "callbacks" });
   const cbRows = JSON.parse(await page.js("JSON.stringify([...document.querySelectorAll('.row.callback')].map(r=>r.textContent))"));
-  c.ok(/03-5555-0199受付時間の外でした。折り返しました/.test(cbRows[0]) && /090-8888-7777回線がふさがっていて、つながりませんでした。/.test(cbRows[1]) && /090-6666-5555着信が多く、受けられませんでした。折り返し済み（鈴木・/.test(cbRows[2]) && /折り返すことは約束していません/.test(await page.text(".callback-note")), "折り返しの依頼: newest first, the number as written in Japan, why they could not get through, who already called back; no call back was promised", cbRows.join(" | "));
+  c.ok(/03-5555-0199受付時間の外でした。折り返しました/.test(cbRows[0]) && /090-8888-7777回線がふさがっていて、つながりませんでした。/.test(cbRows[1]) && /090-6666-5555着信が多く、受けられませんでした。折り返し済み（鈴木・/.test(cbRows[2]) && !(await page.js("!!document.querySelector('.callback-note')")), "折り返しの依頼: newest first, the number as written in Japan, why they could not get through, who already called back; no call back was promised", cbRows.join(" | "));
   await page.screenshot(join(out, "gateway-app-callbacks.png"));
   await small("折り返しの依頼");
   await page.js("document.querySelector('.row.callback button').click()");
@@ -956,7 +1028,7 @@ try {
   // 2026-10-04 at 390: the presets row stays inside the width, the prompt-only confirmation, 覚えておくこと and ホーム's prompt box.
   await at390("ask-presets", "#/new", "document.querySelectorAll('[data-preset]').length===10");
   await page.js("scrollTo(0, document.querySelector('.presets').closest('.field').getBoundingClientRect().top + scrollY - 72)"); await sleep(200);
-  c.ok(await page.js("(()=>{const r=document.querySelector('.preset-chips').getBoundingClientRect();return r.right<=innerWidth&&[...document.querySelectorAll('.preset')].every(p=>p.getBoundingClientRect().right<=r.right+1)})()") && await page.visible(".preset-more"), "390 あなたのプリセット: every preset sits inside the width (the row wraps, then scrolls, and says so)");
+  c.ok(await page.js("(()=>{const r=document.querySelector('.preset-chips').getBoundingClientRect();return r.right<=innerWidth&&[...document.querySelectorAll('.preset')].every(p=>p.getBoundingClientRect().right<=r.right+1)})()") && !(await page.js("!!document.querySelector('.preset-more')")), "390 あなたのプリセット: every preset sits inside the width (the row wraps, then scrolls, and says so)");
   await page.screenshot(join(out, "gateway-app-ask-presets-mobile.png"));
   await page.js("document.querySelector('.preset-x').click()");
   c.ok(await page.noSidewaysScroll() && /を削除しますか/.test(await page.text(".preset-confirm")), "390: the delete confirmation fits the width");
@@ -1029,6 +1101,39 @@ try {
   };
   await darkShots(1440, 900, ["team", "people", "report-care", "report-unanswered", "standing", "list-new", "callbacks", "contact-stopped", "ask-repeat-end"]);
   await darkShots(390, 844, ["team", "people", "report-care", "report-unanswered"]);
+  // 連絡先に登録 from a finished call's report (last, so the contact it adds changes no screen above). Fixture calls as above.
+  const unsaved = async (phone, name) => { const id = (await api("/phone/draft", { phone, name, instruction: "明日の10時に花束を1つ取り置きしてほしい。" })).mission.id; put(id, "COMPLETED", [["callee", "はい、花屋みどりです。"], ["caller", "明日の10時に花束を1つ取り置きできますか。"]]); return id; };
+  const flowerCall = await unsaved("+819048260357", "花屋 みどり"), kept = (phone) => app.store.list("contact", user.id).filter((x) => x.phone === phone).length;
+  page = await launchQuiet({ width: 1440, height: 900 }); await signIn(page, token);
+  await page.js(`location.hash='#/call/${partial}'`); await page.until("!!document.querySelector('.report-top')", { label: "kept contact report" });
+  c.ok(await page.js("document.querySelector('p.call-contact')?.textContent") === "連絡先：焼肉 たけ" && await page.js("!document.querySelector('.call-contact-open')"), "報告: a number already in 連絡先 links to it and offers no second registration", await page.js("document.querySelector('.call-contact')?.textContent"));
+  await page.js(`location.hash='#/call/${flowerCall}'`); await page.until("!!document.querySelector('.call-contact-open')", { label: "register entry" });
+  c.ok(await page.text(".call-contact-open") === "＋ 090-4826-0357 を連絡先に登録" && !/この番号は連絡先にありません/.test(await page.text("#view")), "報告: a number not in 連絡先 says so and offers to register it", await page.text(".call-contact"));
+  await page.js("document.querySelector('.call-contact-open').click()"); await page.until("document.activeElement?.id==='call-contact-name'", { label: "name field focused" });
+  c.ok(await page.js("document.querySelector('#call-contact-name').value") === "花屋 みどり", "the name field starts with the name the call was made to");
+  await page.screenshot(join(out, "gateway-app-call-contact.png"));
+  await page.js("{const i=document.querySelector('#call-contact-name');i.value='  ';i.dispatchEvent(new Event('input'))}");
+  await page.js("[...document.querySelectorAll('.call-contact-save button')].find(b=>b.textContent==='登録する').click()");
+  c.ok(await page.text(".call-contact-save .note.warn") === "名前を入れてください。" && kept("+819048260357") === 0, "an empty name is refused in place and nothing is saved");
+  await page.js("{const i=document.querySelector('#call-contact-name');i.value='花屋 みどり（駅前店）';i.dispatchEvent(new Event('input'))}");
+  await page.js("{const b=[...document.querySelectorAll('.call-contact-save button')].find(b=>b.textContent==='登録する');b.click();b.click()}");
+  await page.until("document.querySelector('p.call-contact')?.textContent==='連絡先：花屋 みどり（駅前店）'", { timeout: 8000, label: "registered" });
+  c.ok(kept("+819048260357") === 1, "a double press registers the number once", String(kept("+819048260357")));
+  c.ok(await page.js("document.activeElement===document.querySelector('p.call-contact a')"), "after registering, the focus is on the new 連絡先 link");
+  await page.js("document.querySelector('p.call-contact a').click()"); await page.until("location.hash.startsWith('#/contacts/') && /花屋 みどり（駅前店）/.test(document.querySelector('#view').textContent)", { label: "contact opened" });
+  c.ok(/090-4826-0357/.test(await page.text("#view")), "the link opens the new contact with its number");
+  await page.js(`location.hash='#/call/${flowerCall}'`); await page.until("!!document.querySelector('p.call-contact')");
+  await page.screenshot(join(out, "gateway-app-call-contact-saved.png"));
+  c.ok(page.pageErrors.length === 0, "no page errors (連絡先に登録)", page.pageErrors.join(" "));
+  await page.close();
+  const noName = await unsaved("+819048260358", "未登録の電話番号");
+  page = await launchQuiet({ width: 390, height: 844 }); await signIn(page, token);
+  await page.js(`location.hash='#/call/${noName}'`); await page.until("!!document.querySelector('.call-contact-open')", { label: "register entry (mobile)" });
+  await page.js("document.querySelector('.call-contact-open').click()"); await page.until("document.activeElement?.id==='call-contact-name'");
+  c.ok(await page.js("document.querySelector('#call-contact-name').value") === "" && await page.noSidewaysScroll(), "390: a call made without a name starts with an empty name field, no sideways scroll");
+  await page.js("document.querySelector('.call-contact').scrollIntoView({block:'center'})"); await sleep(200);
+  await page.screenshot(join(out, "gateway-app-call-contact-mobile.png"));
+  await page.close();
 } finally {
   await page?.close(); app.server.closeAllConnections?.(); await new Promise((r) => app.server.close(r)); rmSync(dir, { recursive: true, force: true });
 }

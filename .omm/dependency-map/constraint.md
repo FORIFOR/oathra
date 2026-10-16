@@ -1,0 +1,3 @@
+- package.json の dependencies / peerDependencies と、src/*.ts（テスト以外）の import の両方を検査する。
+- 層の表にない新しいパッケージはエラーになる（追加時は check-deps.mjs に登録する）。
+- packages/* と providers/* は sdk・plugins・apps/gateway を import してはいけない。

@@ -1,0 +1,5 @@
+- id は英小文字とハイフン、apiVersion は 1 固定。kind は channel か capability。
+- channel は channel:send が必須。approval:request を持つなら mission:read も必須。
+- capability の effect は email / calendar / sms / crm / call のどれか。新しい effect の追加は本体側のレビューが必要。
+- OATHRA_DATA_KEY などの秘密は environment に宣言できない。
+- 外部プラグインは明示したパスだけを読み、sha256 の整合性が合わなければ拒否する。

@@ -338,6 +338,8 @@ function classifyJa(raw: string, opts: Opts): ShapedClause {
     if (c === "確定で") return clause(raw, "commit");
     if (PART_OF_DAY_DELIVER_JA.test(c)) return clause(raw, "commit");
     if (/^(?:結構|けっこう)ですよ?$/.test(c)) return clause(raw, "commit", { bareFine: true });
+    // 「よろしいです」 answers 「…でよろしいでしょうか」 and also means "never mind": like 結構です, only after a yes to a read-back.
+    if (/^(?:よろしい|宜しい)です$/.test(c)) return clause(raw, "commit", { bareFine: true });
     if (lead && ELLIPSIS_JA.test(c)) return clause(raw, "commit");
     if (/オンライン/.test(c) && COMMIT_CLAUSE_JA.test(c)) return clause(raw, "commit", { names: ["オンライン"] });
     if (POINTER_JA.test(c)) return clause(raw, "echo");
@@ -521,7 +523,7 @@ const GENERIC_Q_JA =
 const ANAPHORIC_CONFIRM_JA =
   /^(?:はい[、。\s]*)?(?:では|それでは)?[、\s]*(?:それ|そちら|その内容|この内容|以上(?:の内容)?|こちら(?:の内容)?|上記(?:の内容)?|その(?:日程|日時|条件))で(?:ご?予約を?|ご?注文を?)?(?:確定(?:して(?:も)?|で)?|お願いして(?:も)?)?(?:よろしい|お間違い(?:ない|ございません)|大丈夫|問題(?:ない|ございません|ありません))(?:でしょうか|ですか)[。？?\s]*$/;
 /** Questions about something other than the terms, even when the terms are in the same sentence. */
-const OTHER_Q_JA = /変更|キャンセル|中止|延期|それとも|または|あるいは|どちら|いずれ|迷惑|難しい|厳しい|無理|悪い|だめ|ダメ|駄目|不都合|お忙しい|確認(?:して)?(?:いただ|もら|くださ)|伝え|聞いて|ご検討|相談|折り返|教えて|ご連絡|いらっしゃいますか|今(?:、|少し|少々)?(?:お時間|よろしい|大丈夫|お話)|お時間(?:は)?よろしい|聞こえ|お電話口|ご?担当|お名前|資料|メール|ファッ?クス|FAX|カタログ|録音|お送り|ご存じ|ご存知/i;
+const OTHER_Q_JA = /変更|キャンセル|中止|延期|それとも|または|あるいは|どちら|いずれ|迷惑|難しい|厳しい|無理|悪い|だめ|ダメ|駄目|不都合|お忙しい|確認(?:して)?(?:いただ|もら|くださ)|伝え|聞いて|ご検討|相談|折り返|教えて|ご連絡|いらっしゃいますか|今(?:、|少し|少々)?(?:お時間|よろしい|大丈夫|お話)|お時間(?:は)?よろしい|聞こえ|お電話口|ご?担当|お名前(?!は[^、,。？?!！\sで]{1,12}(?:様|さま)?で(?:よろしい|お間違い))|資料|メール|ファッ?クス|FAX|カタログ|録音|お送り|ご存じ|ご存知/i;
 const QUESTION_END_JA = /[?？]\s*$|(?:か|かね|かな)[。]?\s*$|どう[!！?？。\s]*$|いかが(?:でしょう)?[。？?\s]*$/;
 const STATEMENT_END_JA = /(?:ます|です|で|ください(?:ませ)?|ました)[。！!\s]*$/;
 /** A yes/no question about the terms: its plain yes is 「大丈夫です」. 「いかがでしょうか」「どう？」 are open questions. */
@@ -579,7 +581,7 @@ export function callerAsk(text: string, opts: Opts): AskKind {
 
 /** What may stand between the last term and the question: the occasion itself, never another subject. */
 const ASK_FILL =
-  "から|より|に|で|は|を|の|も|と|[、,\\s]|\\d{1,3}分(?:間)?(?:ほど)?|[月火水木金土日]曜日?|ご都合|席|まで|届けて|商談|お?打ち?合わ?せ|面談|ご?訪問|お伺い|お時間|ご説明|機会|オンライン|ご?予約|納品|納期|お届け|ご?注文|発注|お席|お部屋|ご?来店|コース|確定(?:して(?:も)?)?";
+  "から|より|に|で|は|を|の|も|と|[、,\\s]|\\d{1,3}分(?:間)?(?:ほど)?|[月火水木金土日]曜日?|ご都合|席|まで|届けて|商談|お?打ち?合わ?せ|面談|ご?訪問|お伺い|お時間|ご説明|機会|オンライン|ご?予約|納品|納期|お届け|ご?注文|発注|お席|お部屋|ご?来店|コース|確定(?:して(?:も)?)?|(?:ご?予約の)?お?名前(?:は|が)[^、,。？?!！\\sで]{1,12}(?:様|さま)?(?=で|、|,)";
 /** The questions a proposal ends in. Any other ending (「…は急でしょうか」「…駐車場をお借りしてもよろしいでしょうか」) is another question. */
 const PROPOSAL_Q =
   "いかが(?:でしょうか?|ですか)?|(?:よろしい|大丈夫|可能)(?:でしょうか|ですか)|お間違い(?:ない|ございません)(?:でしょうか|ですか)|(?:お願い|お取り|ご?用意|お伺い|ご?対応)?(?:でき|いただけ|願え|もらえ)(?:ます(?:でしょう)?か|ませんか|ない(?:でしょう|です)か)|お伺いしても(?:よろしい|いい)(?:でしょうか|ですか)|どう(?:ですか|でしょうか?|かな)?|いける|行ける";

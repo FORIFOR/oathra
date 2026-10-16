@@ -1,0 +1,10 @@
+graph LR
+    normalize["normalize<br/>packages/evidence/src/normalize.ts"]
+    extract["extract<br/>packages/evidence/src/extract.ts"]
+    shape["shape<br/>packages/evidence/src/shape.ts"]
+    engine["EvidenceEngine<br/>packages/evidence/src/engine.ts"]
+    evaluate["evaluate()<br/>packages/evidence/src/evaluate.ts"]
+    extract -->|"値を解析"| normalize
+    engine -->|"主張を抽出"| extract
+    engine -->|"確認の当てはまりを判定"| shape
+    evaluate -->|"証拠グラフを読む"| engine

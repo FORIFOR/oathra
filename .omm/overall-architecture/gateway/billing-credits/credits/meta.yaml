@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:11.902Z
+updated: 2026-10-11T02:01:11.903Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: credits
+children: []
+parentPath:
+  - gateway
+  - billing-credits

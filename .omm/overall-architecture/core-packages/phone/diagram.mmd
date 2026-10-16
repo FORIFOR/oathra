@@ -1,0 +1,7 @@
+graph LR
+    bridge["bridge<br/>packages/phone/src/bridge.ts"]
+    types["types<br/>packages/phone/src/types.ts"]
+    registry["registry<br/>packages/phone/src/registry.ts"]
+    doctor-pricing["doctor / pricing / config<br/>packages/phone/src/"]
+    bridge -->|"キャリアの型を使う"| types
+    registry -->|"PhoneProvider を登録"| types

@@ -1,0 +1,11 @@
+graph LR
+    bin["bin<br/>packages/cli/src/bin.ts"]:::entry
+    commands["commands<br/>packages/cli/src/commands.ts"]
+    phone-cmd["phone<br/>packages/cli/src/phone.ts"]
+    brains["brains<br/>packages/cli/src/brains.ts"]
+    mcp["mcp<br/>packages/cli/src/mcp.ts"]
+    bin -->|"コマンドを呼ぶ"| commands
+    commands -->|"oathra phone"| phone-cmd
+    commands -->|"Brain を選ぶ"| brains
+    bin -->|"oathra mcp"| mcp
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e

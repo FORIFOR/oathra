@@ -1,0 +1,12 @@
+created: 2026-10-11T02:01:16.765Z
+updated: 2026-10-11T02:01:16.822Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: tooling
+children:
+  - examples
+  - scenarios
+  - scripts
+  - tests
+parentPath: []

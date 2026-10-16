@@ -1,0 +1,8 @@
+graph LR
+    phone-twilio["phone-twilio<br/>providers/phone-twilio/"]:::external
+    phone-plivo["phone-plivo<br/>providers/phone-plivo/"]:::external
+    phone-sip["phone-sip<br/>providers/phone-sip/"]
+    gateway-livekit["gateway-livekit<br/>providers/gateway-livekit/"]:::external
+    phone-plivo -->|"SipCarrierTransport を再利用"| phone-sip
+    phone-sip -.->|"SipGateway として使う（登録経由で、import はしない）"| gateway-livekit
+    classDef external fill:#585b70,stroke:#585b70,color:#cdd6f4

@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:12.508Z
+updated: 2026-10-11T02:01:12.509Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: app-pages
+children: []
+parentPath:
+  - gateway
+  - gateway-ui

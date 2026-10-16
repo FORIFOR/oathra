@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { definePhoneInbound, definePhoneRequest, preparePhoneRequest, PHONE_PURPOSE_TEMPLATES } from "@oathra/contract";
-import { conversationPolicies, GOODBYE_RE, HANGUP_REQUEST_RE, phoneInboundInstructions, phoneMessageInstructions } from "./index.js";
+import { conversationPolicies, GOODBYE_RE, HANGUP_REQUEST_RE, openingLine, phoneInboundInstructions, phoneMessageInstructions } from "./index.js";
 
 const news = PHONE_PURPOSE_TEMPLATES.find((t) => t.id === "ai-news")!;
 const contract = (language: "ja") => definePhoneRequest(preparePhoneRequest({ phone: "+819012345678", name: "山田", instruction: news.instruction[language], conversationMode: "chat" }));
@@ -128,5 +128,53 @@ describe("a two-way call, not a yes-machine (2026-10-04)", () => {
     const text = ask({ conversationMode: "chat" });
     expect(text).toContain("はい・いいえで終わる質問");
     expect(text).toContain("最近どんなことしてた？");
+  });
+});
+
+describe("a booking is made with the shop, not relayed as a message (2026-10-14)", () => {
+  const instruction = "堀尾の代理として、10/14 21時に6名で予約を取ってください。予約の名前は堀尾です。";
+  const booking = (extra = {}) => definePhoneRequest(preparePhoneRequest({ phone: "09012345678", name: "焼肉 たけ", instruction, task: "reservation", ...extra }));
+  it("speaks as the side making the booking, in keigo, the requester named 堀尾様, with no message-relay wording (2026-10-15)", () => {
+    const text = phoneMessageInstructions(booking());
+    expect(text).toContain("お店や施設へ予約のお電話を差し上げるAIアシスタントです");
+    expect(text).toContain("必ず「堀尾様」と呼び");
+    expect(text).toContain("「堀尾様の代理でお電話を差し上げております」「ご予約のお名前は堀尾様でお願いいたします」");
+    expect(text).toContain("ご予約のお名前は堀尾様でよろしいでしょうか");
+    expect(text).toContain("「今お話しできますか」とは聞かず");
+    expect(text).not.toContain("伝言と確認・質問を届けるAI");
+    expect(text).not.toContain("言伝を預かっておりまして");
+    expect(text).not.toContain("堀尾さん");
+    // The verdict still rests on the callee's words: read back, wait for a clear yes, never claim it first.
+    expect(text).toContain("〜でよろしいでしょうか");
+    expect(text).toContain("相手がはっきり了承するまで「予約できました」と言わないでください");
+    expect(text).toContain("購入・支払い・カード番号の提供");
+  });
+  it("opens like a customer ringing a shop", () => {
+    expect(openingLine(booking())).toBe("お忙しいところ恐れ入ります。堀尾様の代理でお電話を差し上げております、AIの音声アシスタントでございます。ご予約をお願いしたいのですが、よろしいでしょうか。");
+    expect(openingLine(booking({ instruction: "10/14 21時に6名で予約を取ってください。" }))).toContain("お客様の代理でお電話を差し上げております");
+    // Typed with or without an honorific, the requester is 堀尾様 once, never 堀尾様様 or 堀尾さん.
+    for (const callerName of ["堀尾", "堀尾さん", "堀尾様"]) expect(openingLine(booking({ callerName }))).toContain("堀尾様の代理で");
+    expect(openingLine(booking({ callerName: "堀尾さん" }))).not.toMatch(/様様|堀尾さん/);
+  });
+  it("gives correct keigo to copy, and stops at an offer outside the scope (a real call, 2026-10-15)", () => {
+    const text = phoneMessageInstructions(booking());
+    // The opening is repeated in the prompt, since Live may paraphrase the words it is handed.
+    expect(text).toContain(`言い換えずに次のとおり言ってください:「${openingLine(booking())}」`);
+    expect(text).toContain("×「予約は可能でいらっしゃいますでしょうか」");
+    expect(text).toContain("○「ご予約をお願いしたいのですが、よろしいでしょうか」");
+    expect(text).toContain("「午前8時でしょうか、それとも夜の8時でしょうか」");
+    expect(text).toContain("その場で予約しないでください");
+    expect(text).toContain("「恐れ入ります。一度本人に確認いたしまして、改めてご連絡いたします」");
+    expect(text).toContain("復唱は一度だけにしてください");
+  });
+  it("leaves an ordinary message as it was", () => {
+    const plain = definePhoneRequest(preparePhoneRequest({ phone: "09012345678", name: "田中", instruction: "堀尾の代理として、明日の集合時間を伝えてください。" }));
+    expect(phoneMessageInstructions(plain)).toContain("伝言と確認・質問を届けるAI");
+    expect(openingLine(plain)).toBe("もしもし。堀尾さんの代わりにお電話しているAIです。今、少しお話しできますか？");
+  });
+  it("an English booking gets the booking rules too", () => {
+    const text = phoneMessageInstructions({ ...booking(), language: "en" });
+    expect(text).toContain("calling a shop or venue to make a booking");
+    expect(text).toContain("Never say it is booked before they clearly agree");
   });
 });

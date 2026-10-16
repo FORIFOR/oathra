@@ -1,98 +1,18 @@
 {
   "repo": "FORIFOR/oathra",
   "branch": "main",
-  "tree_sha": "5164eef4e7b1bdf52787830062e7aa3d0d785d2c",
-  "tree_files": 1031,
-  "read_files": [
-    {
-      "path": "README.md",
-      "sha": "4e6569aee549ecb81117adfa219eef4a634a7435"
-    },
-    {
-      "path": "package.json",
-      "sha": "9e3ca9dc480661ee3ba9f3d0f251864cf46cc5fe"
-    },
-    {
-      "path": "packages/cli/package.json",
-      "sha": "7d6fff9567b14eb1fc9f3c0d917f916c8d85b319"
-    },
-    {
-      "path": "packages/contract/package.json",
-      "sha": "f28a0b1acce7a3f0291da9a4a2a2ff5a324f2c11"
-    },
-    {
-      "path": "packages/core/package.json",
-      "sha": "70eef90e47b42ba832c0aac4a3dc7659323b16b0"
-    },
-    {
-      "path": "packages/eval/package.json",
-      "sha": "d8645a6124bfba68716b99df8be7c91cc79d9d9e"
-    },
-    {
-      "path": "apps/gateway/server.mjs",
-      "sha": "558ea2d70c13ca903ef437d0d9b31df42ff557e8"
-    },
-    {
-      "path": "plugins/calendar/index.mjs",
-      "sha": "f95bcd494d20540c7c17d4f2c1c2370de2d5ee0a"
-    },
-    {
-      "path": "plugins/call/index.mjs",
-      "sha": "19ca59b01cf5056754f695f057092c98243b5439"
-    },
-    {
-      "path": "sdk/gateway-client/connection-file.mjs",
-      "sha": "ffcdb9e2c4f72744a2a80474e9f19dd4ff0cbb79"
-    },
-    {
-      "path": "apps/gateway/lib/phone-ui.mjs",
-      "sha": "77966f6f06242f93191403b86610c8e5962c65d6"
-    },
-    {
-      "path": "apps/gateway/lib/agent-phone.mjs",
-      "sha": "2746f4ea8637d24e7d407f2460a31e2df0876d0f"
-    },
-    {
-      "path": "apps/gateway/lib/practice.mjs",
-      "sha": "01a0e9513b6c3bb9106310b008368627887bcb7f"
-    },
-    {
-      "path": "apps/gateway/lib/phone-service.mjs",
-      "sha": "e2a4d33023643632939bf6a8906668b0488dd19c"
-    },
-    {
-      "path": "apps/gateway/lib/store.mjs",
-      "sha": "cb4b0e26e9abfb781a8e238f9dcf74092fa04978"
-    },
-    {
-      "path": "apps/gateway/lib/browser-session.mjs",
-      "sha": "df83b586c52f0070e85979946dfd2d4ee68693e7"
-    },
-    {
-      "path": "apps/gateway/lib/alerts.mjs",
-      "sha": "895f5edca0c588fb23f24259447c601de780baf6"
-    },
-    {
-      "path": "apps/gateway/lib/schedules.mjs",
-      "sha": "eb97f237fd359623ce150f0e0fe3db7d6ecf9997"
-    },
-    {
-      "path": "apps/gateway/lib/batches.mjs",
-      "sha": "0deb5b9fd76bf0d16ef6e083892234bc5e48964d"
-    },
-    {
-      "path": "apps/gateway/lib/team.mjs",
-      "sha": "eed44050acdb283107efe83f16680abde1e1accf"
-    },
-    {
-      "path": "apps/gateway/lib/public-accounts.mjs",
-      "sha": "7f0bf3283aaf10ab2fc83bfcf1955c203f79289c"
-    },
-    {
-      "path": "apps/gateway/lib/purchases.mjs",
-      "sha": "f1acbfb9d17f3331ed6c479fc9ba614f8afe9499"
-    }
+  "commit": "7088b97580f7bb1a02e1e258dd18bd81b042ea3f",
+  "tree_sha": "d9738f39a65395beb941f8a8cb0d064fb26d3f3e",
+  "tree_files": 1636,
+  "generated": "2026-10-11",
+  "method": "コードを読んで作成（4領域を並行調査し、主要な主張を grep と package.json で照合）",
+  "perspectives": [
+    "dependency-map",
+    "extension-points",
+    "external-integrations",
+    "overall-architecture",
+    "request-lifecycle"
   ],
-  "not_read_count": 1009,
-  "scope": "initial entry-point and direct-import analysis; not exhaustive semantic scan"
+  "elements": 178,
+  "diagrams": 34
 }

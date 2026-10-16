@@ -1,0 +1,4 @@
+graph LR
+    server["server.mjs<br/>apps/gateway/server.mjs"]
+    paths["paths.mjs<br/>apps/gateway/lib/paths.mjs"]
+    server -->|"リポジトリ内のファイル位置を解決"| paths

@@ -1,0 +1,15 @@
+created: 2026-10-11T02:01:12.564Z
+updated: 2026-10-11T02:01:12.625Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: ops-scripts
+children:
+  - backup-restore
+  - demo
+  - deploy
+  - mcp-scripts
+  - number-inbound
+  - setup
+parentPath:
+  - gateway

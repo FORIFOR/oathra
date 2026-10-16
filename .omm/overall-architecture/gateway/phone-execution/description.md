@@ -1,0 +1,1 @@
+Phone が Twilio への発信と着信フック（/hooks/twilio/*）を自前で処理し、packages/runtime・phone・voice と providers の音声エンジン（GPT-Live、Gemini Live、pipeline）を dist から読み込んで通話する。通話の結果は sales.mjs が packages/evidence の EvidenceEngine と evaluate() で判定する。

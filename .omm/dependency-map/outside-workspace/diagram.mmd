@@ -1,0 +1,7 @@
+graph LR
+    sdk-dep["sdk<br/>sdk/"]
+    plugins-dep["plugins<br/>plugins/"]
+    gateway-dep["apps/gateway<br/>apps/gateway/"]
+    plugins-dep -->|"SDK を使う"| sdk-dep
+    gateway-dep -->|"同梱プラグインを登録"| plugins-dep
+    gateway-dep -->|"plugin-kit を使う"| sdk-dep

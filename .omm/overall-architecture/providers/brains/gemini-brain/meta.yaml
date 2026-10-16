@@ -1,0 +1,10 @@
+created: 2026-10-11T02:01:15.822Z
+updated: 2026-10-11T02:01:15.822Z
+update_count: 1
+last_field: description
+kind: nested-class
+title: gemini-brain
+children: []
+parentPath:
+  - providers
+  - brains

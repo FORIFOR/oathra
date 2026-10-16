@@ -1,0 +1,23 @@
+graph LR
+    plugin-kit["plugin-kit<br/>sdk/plugin-kit/index.mjs"]
+    channel-sdk["channel-sdk<br/>sdk/channel-sdk/"]
+    capability-sdk["capability-sdk<br/>sdk/capability-sdk/"]
+    gateway-client["gateway-client<br/>sdk/gateway-client/"]
+    registry-loader["builtinRegistry<br/>apps/gateway/lib/plugins.mjs"]:::entry
+    channels-host["Channels<br/>apps/gateway/lib/channels.mjs"]
+    followups-host["Followups<br/>apps/gateway/lib/followups.mjs"]
+    channel-plugins["チャネル<br/>plugins/line ・ slack ・ twilio-messaging ・ telegram"]
+    capability-plugins["後続送信<br/>plugins/email ・ calendar ・ sms ・ whatsapp ・ crm"]
+    call-plugin["発信<br/>plugins/call/"]
+    shared-http["_shared/http.mjs<br/>plugins/_shared/http.mjs"]
+    channel-sdk -->|"verify・decode・send の契約"| plugin-kit
+    capability-sdk -->|"preview・execute の契約"| plugin-kit
+    registry-loader -->|"PluginRegistry と loadExternal"| plugin-kit
+    registry-loader -->|"同梱を登録"| channel-plugins
+    registry-loader -->|"同梱を登録"| capability-plugins
+    registry-loader -->|"同梱を登録"| call-plugin
+    channels-host -->|"registry.channel()"| registry-loader
+    followups-host -->|"registry.capability()"| registry-loader
+    channel-plugins -->|"共通の検査と HTTP"| shared-http
+    capability-plugins -->|"共通の検査と HTTP"| shared-http
+    classDef entry fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e

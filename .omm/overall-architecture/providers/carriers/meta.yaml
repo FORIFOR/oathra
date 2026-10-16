@@ -1,0 +1,13 @@
+created: 2026-10-11T02:01:14.724Z
+updated: 2026-10-11T02:01:14.781Z
+update_count: 2
+last_field: diagram
+kind: nested-class
+title: carriers
+children:
+  - gateway-livekit
+  - phone-plivo
+  - phone-sip
+  - phone-twilio
+parentPath:
+  - providers
