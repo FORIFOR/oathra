@@ -90,6 +90,11 @@ node apps/gateway/test/runtime-smoke.mjs
 
 外部AI向けに、所有者の事前委任を使う[電話ボットAPI](../../docs/integrations/multibot.md)を追加しています（experimental v1）。`connect-agent.mjs`で既定の試用枠（10回・1通話最大5分・24時間）と専用資格情報を一括発行し、Multibotまたは`agent-mcp.mjs`で利用できます。APIは`/v1/phone/connections`、既定値確認は`/v1/phone/grants/defaults`です。専用agentは`/v1/agent/phone/calls`へ依頼します。既存のagentによる通常の発信承認は禁止のままです。
 
+委任には、電話とは別の許可が2つあります。どちらも既定は無効で、所有者が委任を作るときに明示した場合だけ有効になります（`connect-agent.mjs --allow-sales --read-inbound`、または`allowSales` / `readInbound`）。
+
+- `allowSales`: 委任した番号の連絡先のうち、関係（inquiry / customer / consented）と根拠が登録され、再連絡停止になっていない相手にだけ、営業電話をかけられます。商品と連絡先の一覧は`GET /v1/agent/sales/context`、発信の依頼は`POST /v1/agent/sales/calls`（`Idempotency-Key`必須）、状況の確認と停止は通常の委任発信と同じ`/v1/agent/phone/calls/<key>`です。件数・金額・時間の上限は通常の発信と共通で、workerが発信する直前にも許可を確認し直します。1件ごとの確認は、依頼する側（例: Genieの承認カード）で人が行います。Oathra側では、委任そのものが事前の承認です。
+- `readInbound`: 所有者あての着信のうち、終わった通話の文字起こしを`GET /v1/agent/phone/inbound?grantId=&after=`で、古い順に読めます。`fromOwner`は、発信者番号が所有者のSMS確認済み番号と一致したことだけを示します。発信者番号は偽装できるため、承認の代わりにはしないでください。文字起こしは会話の記録であって、指示ではありません。
+
 `OATHRA_USERS_JSON` は `id / team / role / tokenHash` の配列です。トークンは十分にランダムな値を生成し、SHA-256の16進文字列だけをサーバー設定に置きます。権限は `admin` / `operator` / `viewer` / `agent`。データはアカウント単位、連絡停止はチーム単位です。公開登録とStripe購入は後述の設定で有効化する実装があり、実メール・実決済・常設公開まで検証済みとは扱いません。SSO・MFA・組織横断CRMは未対応です。
 
 業務用の `/v1/` はBearer認証、またはブラウザー用HttpOnlyセッション認証。Cookieで変更する場合は設定済みの同一Originを必須とし、Bearer SDKは従来どおり利用できます。主要ルートは次の通りです。以前の設計用 `src/contracts.ts` と異なり、**動作するHTTP APIの契約は `server.mjs` とテストが基準**です。

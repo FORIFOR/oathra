@@ -20,6 +20,10 @@ export function gatewayClient({baseUrl,token,fetchImpl=fetch}) {
   agentPhone:({grantId,request:input,idempotencyKey})=>request('/agent/phone/calls','POST',{grantId,request:input},idempotencyKey),
   agentPhoneStatus:key=>request('/agent/phone/calls/'+id(key)),
   agentPhoneCancel:key=>request('/agent/phone/calls/'+id(key)+'/cancel','POST',{}),
+  // Separate grant permissions: allowSales for sales calls, readInbound for finished incoming calls. Status and stop share agentPhoneStatus/agentPhoneCancel.
+  agentSalesContext:grantId=>request('/agent/sales/context?grantId='+id(grantId)),
+  agentSales:({grantId,sales,idempotencyKey})=>request('/agent/sales/calls','POST',{grantId,sales},idempotencyKey),
+  agentInbound:({grantId,after=0})=>request('/agent/phone/inbound?grantId='+id(grantId)+'&after='+id(after)),
   consent:version=>request('/consent','POST',{version}),
   draft:input=>request('/missions/draft','POST',input),review:missionId=>request('/missions/'+id(missionId)+'/review','POST',{}),
   start:({missionId,approvalToken,idempotencyKey,acknowledged})=>request('/missions/'+id(missionId)+'/start','POST',{approvalToken,acknowledged},idempotencyKey),

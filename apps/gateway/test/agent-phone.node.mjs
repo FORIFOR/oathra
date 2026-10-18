@@ -51,7 +51,7 @@ let serial=0;const opKey=()=>'operation-'+String(++serial).padStart(4,'0');
 
 test('grant defaults are the server-owned trial: 10 calls, 5 minutes, 24 hours, the verified number only',using(f=>{
   const d=phoneGrantDefaults(f.service,f.alice);
-  assert.deepEqual(d.defaults,{phones:[P1],maxCalls:10,maxSeconds:300,maxCallUsd:3,maxTotalUsd:30,expiresAt:new Date(now+24*3600_000).toISOString(),allowReservation:false});
+  assert.deepEqual(d.defaults,{phones:[P1],maxCalls:10,maxSeconds:300,maxCallUsd:3,maxTotalUsd:30,expiresAt:new Date(now+24*3600_000).toISOString(),allowReservation:false,allowSales:false,readInbound:false});
   assert.equal(d.ready,true);assert.equal(d.needsRecipient,false);assert.equal(d.needsConsent,false);assert.equal(d.budgetBasis,'configured_cost_ceiling');
   // A recipient is never inferred: an operator without a carrier-verified number gets no phone and is not ready.
   const bob=phoneGrantDefaults(f.service,f.by('bob'));

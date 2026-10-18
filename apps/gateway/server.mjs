@@ -1,5 +1,5 @@
 import { phonePage } from './lib/phone-ui.mjs';
-import { grantPhone, phoneGrantDefaults, connectPhoneAgent, agentPhoneConnection, revokePhoneGrant, dispatchPhone, readAgentPhone, cancelAgentPhone } from './lib/agent-phone.mjs';
+import { grantPhone, phoneGrantDefaults, connectPhoneAgent, agentPhoneConnection, revokePhoneGrant, dispatchPhone, readAgentPhone, cancelAgentPhone, agentSalesContext, dispatchSales, agentInbound } from './lib/agent-phone.mjs';
 import { practiceList, practiceRun, practicePlayStart, practicePlayState, practicePlayReply, practicePlayHangup, practiceBrains, practiceRecords, practiceRecord, configurePractice } from './lib/practice.mjs';
 import { parseDeskConfig, tokyoDate } from '../../packages/core/dist/index.js';
 import { phoneReadiness, phoneRecord, carrierChargeTotals, prepareManagedPhone, PHONE_PURPOSE_TEMPLATES,phoneCalendar,PHONE_VOICES} from './lib/phone-service.mjs';
@@ -340,10 +340,16 @@ export async function createGateway(config,options={}){
       if(path==='/v1/phone/grants'&&method==='GET'){service.write(u);return send(res,200,store.all('phone-grant',u.id));}
       const revokeGrant=path.match(/^\/v1\/phone\/grants\/([a-f0-9-]{36})\/revoke$/);
       if(revokeGrant&&method==='POST')return send(res,200,revokePhoneGrant(service,u,revokeGrant[1]));
-      if(path.startsWith('/v1/agent/phone/')){
+      if(path.startsWith('/v1/agent/phone/')||path.startsWith('/v1/agent/sales/')){
         assert(auth?.startsWith('Bearer '),'agent_bearer_required',401);
+        assert(u.role==='agent','agent_identity_required',403);
         const connection=path.match(/^\/v1\/agent\/phone\/grants\/([a-f0-9-]{36})$/);
         if(connection&&method==='GET')return send(res,200,agentPhoneConnection(service,u,connection[1]));
+        const grantParam=()=>{const g=url.searchParams.get('grantId');assert(typeof g==='string'&&/^[a-f0-9-]{36}$/.test(g),'phone_grant_not_found',404);return g;};
+        if(path==='/v1/agent/phone/inbound'&&method==='GET')return send(res,200,agentInbound(service,u,grantParam(),url.searchParams.get('after')??0));
+        if(path==='/v1/agent/sales/context'&&method==='GET')return send(res,200,agentSalesContext(service,u,grantParam()));
+        // Status and stop of a sales call use the same operation key as any delegated call: /v1/agent/phone/calls/<key>.
+        if(path==='/v1/agent/sales/calls'&&method==='POST')return send(res,202,dispatchSales(service,u,data,req.headers['idempotency-key']));
         if(path==='/v1/agent/phone/calls'&&method==='POST'){
           try{return send(res,202,dispatchPhone(service,u,data,req.headers['idempotency-key']));}
           catch(e){if(e.name==='ZodError')throw new Fault(400,'invalid_phone_request');throw e;}
