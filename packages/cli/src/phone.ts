@@ -39,6 +39,8 @@ import { twilio } from "@oathra/phone-twilio";
 import { defaultCallsDir, saveCall } from "@oathra/replay";
 import { runCall } from "@oathra/runtime";
 import { contractFromScenario, loadScenarioDir, loadScenarioFile, type Scenario } from "@oathra/scenario";
+import { AdversarialCharacter } from "@oathra/eval";
+import { createCharacter, mulberry32 } from "@oathra/simulator";
 import { MULAW_8K, type VoiceEngine } from "@oathra/voice";
 import { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt, voiceSettingRecord } from "@oathra/voice-kit";
 
@@ -46,6 +48,9 @@ export { CHARACTER_TTS_STYLE, phoneRequestSystemPrompt };
 import { pipelineEngine } from "@oathra/voice-pipeline";
 import { liveModelOf, resolveBrain } from "./brains.js";
 import { scenariosDir } from "./paths.js";
+import { FAST_SPEECH_RATE, LineConditioner, noiseFromWav, parseCondition, pinkNoise } from "./audio-degrade.js";
+import { planRuns, summarizeRuns, toBatchRun, type BatchRun } from "./conversation-batch.js";
+import type { LocalConversationReport } from "./local-conversation.js";
 import { liveRenderer, resultBox } from "./render.js";
 import { bad, bold, cyan, dim, green, ok, red, warn, yellow } from "./ui.js";
 
@@ -562,7 +567,7 @@ export async function phoneDoctor(flags: { provider?: string; to?: string; engin
 // phone test — Local (telephony ¥0, model API usage) / Gateway (¥0) / PSTN (paid)
 // ---------------------------------------------------------------------------
 
-export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string; tts?: string; voicePreset?: string; out?: string; maxUsd?: string }): Promise<void> {
+export async function phoneTest(flags: { level?: string; provider?: string; to?: string; engine?: string; scenario?: string; tts?: string; voicePreset?: string; out?: string; maxUsd?: string } & ConversationBatchFlags): Promise<void> {
   const config = loadPhoneConfig();
   const level =
     flags.level ??
@@ -581,7 +586,7 @@ export async function phoneTest(flags: { level?: string; provider?: string; to?:
     if (flags.tts === "elevenlabs") await ensureEnvKeys(["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"]);
   }
   if (level === "conversation") {
-    await localConversationTest(flags);
+    await (flags.scenario ? localConversationBatch(flags) : localConversationTest(flags));
     return;
   }
   if (level === "local") {
@@ -639,6 +644,82 @@ async function localConversationTest(flags: { engine?: string; voicePreset?: str
   if (cut) console.log(`  ${cut.stoppedAfterMs !== null && !cut.staleAudioAfterStop ? green("✓") : red("✗")} cut-in: ${cut.agentWasSpeaking ? "while the agent spoke" : "agent was quiet"}, stopped after ${cut.stoppedAfterMs ?? "—"} ms${cut.staleAudioAfterStop ? red(", old reply kept playing") : ""}`);
   console.log(`  ${dim("end")} ${report.endReason ?? report.error ?? "?"}${report.stoppedForBudget ? red(" (stopped at the budget)") : ""}  ${dim("estimated cost")} $${report.usage.estimatedUsd}`);
   console.log(`\n${dim("Saved:")} ${dir}\n${dim("The line is local: no transcript notice is played, and a real line adds carrier latency.")}`);
+}
+
+type ConversationBatchFlags = { mutation?: string; condition?: string; runs?: string; seed?: string; maxUsdTotal?: string; noiseFile?: string };
+
+/**
+ * `--level conversation --scenario <id>`: the scenario's contract through the real runtime and voice engine, against
+ * the scenario's scripted character (optionally an adversarial mutation of it) speaking through TTS under a line
+ * condition. Each run records the verdict and the character's truth; the batch stops before a run that could pass
+ * --max-usd-total. Synthetic voices: compares builds and engines, never counts as a real call.
+ */
+async function localConversationBatch(flags: { engine?: string; scenario?: string; out?: string; maxUsd?: string } & ConversationBatchFlags): Promise<void> {
+  if (!flags.engine) throw new Error("--level conversation needs an explicit --engine (e.g. gpt-live)");
+  const spec = parseEngineSpec(flags.engine);
+  if (spec.id === "pipeline") throw new Error("--level conversation runs the phone-request engines: gpt-live, gemini-live or character-tts");
+  const scenario = findScenario(flags.scenario!);
+  const conditions = (flags.condition ?? "clean").split(",").map((c) => c.trim()).filter(Boolean);
+  for (const c of conditions) parseCondition(c);
+  const seed = flags.seed === undefined ? 1 : Number(flags.seed);
+  if (!Number.isInteger(seed)) throw new Error("--seed must be an integer");
+  const plan = planRuns({ mutations: (flags.mutation ?? "none").split(",").map((m) => m.trim()).filter(Boolean), conditions, runs: flags.runs === undefined ? 1 : Number(flags.runs), seed });
+  const perRun = flags.maxUsd === undefined ? 0.3 : Number(flags.maxUsd);
+  if (!(perRun > 0 && perRun <= 1)) throw new Error("--max-usd must be between 0 and 1");
+  const total = flags.maxUsdTotal === undefined ? 2 : Number(flags.maxUsdTotal);
+  if (!(total >= perRun && total <= 50)) throw new Error("--max-usd-total must be at least --max-usd and at most 50");
+  const noiseBed = flags.noiseFile ? noiseFromWav(readFileSync(flags.noiseFile)) : null;
+  await ensureEnvKeys([...new Set([...ENGINE_CREDENTIALS[spec.id], "OPENAI_API_KEY"])]);
+  const now = typeof scenario.callee.knowledge.now === "string" ? new Date(scenario.callee.knowledge.now) : undefined;
+  let commit = "unknown";
+  try { commit = (await import("node:child_process")).execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a checkout */ }
+  const dir = resolve(flags.out ?? join(defaultCallsDir(), "..", "local-conversations", `batch-${new Date().toISOString().replace(/[:.]/g, "-")}`));
+  mkdirSync(dir, { recursive: true });
+  const { runLocalConversation, wavBytes } = await import("./local-conversation.js");
+  const failedRun = (error: string): LocalConversationReport => ({ replies: [], interruption: null, transcript: [], endReason: null, error, durationMs: 0, agentAudio: new Int16Array(0), mixedAudio: new Int16Array(0), firstSystemPrompt: null, stoppedForBudget: false, verdict: null, truth: null, falseCompletion: false, disagreements: [],
+    usage: { brainCostUsd: 0, brainInputTokens: 0, brainOutputTokens: 0, ttsAudioSeconds: 0, sttAudioSeconds: 0, calleeTtsChars: 0, estimatedUsd: 0 } });
+
+  console.log(`\n${bold("Local conversations")}  ${dim(`${scenario.id} · ${spec.id} · ${plan.length} runs`)}  ${dim(`(no carrier · paid APIs · ≤ $${perRun}/run, stops before passing $${total})`)}\n`);
+  const runs: BatchRun[] = [];
+  let spent = 0;
+  for (const [index, planned] of plan.entries()) {
+    if (spent + perRun > total) { console.log(warn(`  Stopped before run ${index + 1}/${plan.length}: it could pass the total $${total} (spent ≈ $${spent.toFixed(3)}).`)); break; }
+    const condition = parseCondition(planned.condition);
+    const rng = mulberry32(planned.seed);
+    const base = createCharacter(scenario, rng);
+    const character = planned.mutation === "none" ? base : new AdversarialCharacter(base, planned.mutation, rng);
+    const engine = buildEngine(spec, process.env);
+    const contract = defineCall({ ...contractFromScenario(scenario), target: { phone: "+819000000000", name: scenario.callee.persona.name } });
+    const line = new LineConditioner(condition, condition.snrDb === null ? null : noiseBed ?? pinkNoise(8000 * 20, mulberry32(planned.seed + 0x5eed)));
+    let report: LocalConversationReport;
+    try {
+      report = await runLocalConversation({
+      contract, engine, brain: engineBrain(spec, engine), character, rng, line, maxUsd: perRun, maxMs: 180_000,
+      // tts-1: a fixed, plain voice whose rate can be set; the callee's voice is the test's instrument, not its subject.
+      callee: new OpenAITTS({ model: "tts-1", timeoutMs: 30_000, ...(condition.fast ? { speed: FAST_SPEECH_RATE } : {}) }),
+      ...(now ? { now } : {}),
+      });
+    } catch (e) {
+      // Before the call starts (the callee's greeting could not be synthesized): a failed run, not a failed batch.
+      report = failedRun((e as Error).message);
+    }
+    spent += report.usage.estimatedUsd;
+    const runDir = join(dir, `${String(index + 1).padStart(3, "0")}-${planned.mutation}-${planned.condition.replace(/\+/g, "_")}`);
+    mkdirSync(runDir, { recursive: true });
+    writeFileSync(join(runDir, "call-mixed-8k.wav"), wavBytes(report.mixedAudio));
+    const { agentAudio, mixedAudio, ...rest } = report;
+    writeFileSync(join(runDir, "report.json"), JSON.stringify({ createdAt: new Date().toISOString(), commit, engine: spec.id, scenario: scenario.id, ...planned, callee: "openai-tts:tts-1 (scripted character)", ...rest }, null, 2));
+    const run = toBatchRun(planned, index + 1, runDir, contract, report);
+    runs.push(run);
+    const mark = run.falseCompletion ? red("✗ FALSE COMPLETION") : run.asExpected ? green("✓") : yellow("·");
+    console.log(`  ${mark} ${String(index + 1).padStart(3)} ${planned.mutation.padEnd(20)} ${planned.condition.padEnd(16)} ${run.status ?? "—"} ${dim(`(expected ${run.expectedComplete ? "completed" : "not completed"})`)}${run.error ? red(` ${run.error}`) : ""}  ${dim(`$${run.estimatedUsd}`)}`);
+  }
+  const summary = summarizeRuns(runs);
+  writeFileSync(join(dir, "summary.json"), JSON.stringify({ createdAt: new Date().toISOString(), commit, engine: spec.id, scenario: scenario.id, planned: plan.length, maxUsdPerRun: perRun, maxUsdTotal: total, noise: flags.noiseFile ? "file" : "pink", summary, runs }, null, 2));
+  console.log(`\n  ${summary.falseCompletions ? red(`False Completion: ${summary.falseCompletions} / ${summary.runs}`) : green(`False Completion: 0 / ${summary.runs}`)}`);
+  console.log(`  as expected ${summary.asExpected}/${summary.runs}  runtime errors ${summary.runtimeErrors}  reply audio p50 ${summary.replyAudioAfterMs.p50 ?? "—"} ms · p95 ${summary.replyAudioAfterMs.p95 ?? "—"} ms (n=${summary.replyAudioAfterMs.n})  estimated $${summary.estimatedUsd}`);
+  console.log(`\n${dim("Saved:")} ${dir}\n${dim("Synthetic callee voices on a local line: not a real call, and a real line adds carrier latency.")}`);
+  if (summary.falseCompletions || runs.length < plan.length) process.exitCode = 1;
 }
 
 /** Engine loopback: synthesized callee speech → engine → expect agent audio + transcripts. Costs a few yen of API, no telephony. */
