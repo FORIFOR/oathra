@@ -29,7 +29,8 @@ export type CharacterFactory = (scenario: Scenario, rng: () => number) => Callee
 
 // Shared phrase helpers -------------------------------------------------------
 
-export const GOODBYE_RE = /失礼(?:します|いたします)|ありがとうございました|では[、,]?また|さようなら|それでは失礼|goodbye|bye\b|thank you,? (?:that's all|goodbye)/i;
+// "お忙しいところ失礼いたします" opens a call; it is not a goodbye.
+export const GOODBYE_RE = /(?<!(?:お忙しいところ|お忙しい中|夜分(?:遅く)?に?|朝早くに?|突然)(?:大変)?)失礼(?:します|いたします)|ありがとうございました|では[、,]?また|さようなら|それでは失礼|goodbye|bye\b|thank you,? (?:that's all|goodbye)/i;
 export const NAME_ASK_RE = /お名前|ご予約者|your name|name for the/i;
 export const QUESTION_RE = /[?？]|でしょうか|ますか|ませんか|いかがです|いかがでしょう|could you|can you|do you|is there|are there/i;
 

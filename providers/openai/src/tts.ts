@@ -9,6 +9,8 @@ export type OpenAITTSOptions = {
   voice?: string;
   /** Style hint passed as `instructions` (gpt-4o-mini-tts). */
   instructions?: string;
+  /** Speaking rate, 0.25–4 (1 = normal). Absent: the API's default. */
+  speed?: number;
   timeoutMs?: number;
 };
 
@@ -22,6 +24,7 @@ export class OpenAITTS implements TTSProvider {
   private readonly model: string;
   private readonly voice: string;
   private readonly instructions: string | undefined;
+  private readonly speed: number | undefined;
   private readonly timeoutMs: number;
 
   constructor(opts: OpenAITTSOptions = {}) {
@@ -30,6 +33,7 @@ export class OpenAITTS implements TTSProvider {
     this.model = opts.model ?? "gpt-4o-mini-tts";
     this.voice = opts.voice ?? "alloy";
     this.instructions = opts.instructions;
+    this.speed = opts.speed;
     this.timeoutMs = opts.timeoutMs ?? 20_000;
     this.name = `openai-tts:${this.model}`;
   }
@@ -45,6 +49,7 @@ export class OpenAITTS implements TTSProvider {
     };
     const instructions = this.instructions ?? (opts.language === "ja" ? "自然で丁寧な日本語の電話応対。落ち着いた速さで話す。" : undefined);
     if (instructions && this.model.includes("tts") && !this.model.startsWith("tts-1")) body.instructions = instructions;
+    if (this.speed !== undefined) body.speed = this.speed;
     const res = await fetch(`${this.baseUrl}/audio/speech`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },
@@ -99,6 +104,7 @@ export class OpenAITTS implements TTSProvider {
     const body: Record<string, unknown> = { model: this.model, voice: opts.voice ?? this.voice, input: text, response_format: "pcm" };
     const instructions = this.instructions ?? (opts.language === "ja" ? "自然で丁寧な日本語の電話応対。落ち着いた速さで話す。" : undefined);
     if (instructions && this.model.includes("tts") && !this.model.startsWith("tts-1")) body.instructions = instructions;
+    if (this.speed !== undefined) body.speed = this.speed;
     return fetch(`${this.baseUrl}/audio/speech`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },

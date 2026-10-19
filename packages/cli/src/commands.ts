@@ -246,7 +246,7 @@ export async function cmdPhone(positional: string[], flags: Flags): Promise<void
       return;
     }
     case "test":
-      return phoneTest({ ...(str(flags.level) ? { level: str(flags.level)! } : {}), ...(str(flags.provider) ? { provider: str(flags.provider)! } : {}), ...(str(flags.to) ? { to: str(flags.to)! } : {}), ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}), ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}), ...(str(flags.tts) ? { tts: str(flags.tts)! } : {}), ...(str(flags["voice-preset"]) ? { voicePreset: str(flags["voice-preset"])! } : {}), ...(str(flags.out) ? { out: str(flags.out)! } : {}), ...(str(flags["max-usd"]) ? { maxUsd: str(flags["max-usd"])! } : {}) });
+      return phoneTest({ ...(str(flags.level) ? { level: str(flags.level)! } : {}), ...(str(flags.provider) ? { provider: str(flags.provider)! } : {}), ...(str(flags.to) ? { to: str(flags.to)! } : {}), ...(str(flags.engine) ? { engine: str(flags.engine)! } : {}), ...(str(flags.scenario) ? { scenario: str(flags.scenario)! } : {}), ...(str(flags.tts) ? { tts: str(flags.tts)! } : {}), ...(str(flags["voice-preset"]) ? { voicePreset: str(flags["voice-preset"])! } : {}), ...(str(flags.out) ? { out: str(flags.out)! } : {}), ...(str(flags["max-usd"]) ? { maxUsd: str(flags["max-usd"])! } : {}), ...(str(flags.mutation) ? { mutation: str(flags.mutation)! } : {}), ...(str(flags.condition) ? { condition: str(flags.condition)! } : {}), ...(str(flags.runs) ? { runs: str(flags.runs)! } : {}), ...(str(flags.seed) ? { seed: str(flags.seed)! } : {}), ...(str(flags["max-usd-total"]) ? { maxUsdTotal: str(flags["max-usd-total"])! } : {}), ...(str(flags["noise-file"]) ? { noiseFile: str(flags["noise-file"])! } : {}) });
     default:
       throw new Error(`unknown phone subcommand "${sub}" (add | list | doctor | test | remove)`);
   }
@@ -576,6 +576,7 @@ ${bold("Real phone")}
   oathra phone doctor [--to <e164>]  which layer is broken: carrier, gateway, media, engine, latency, cost
   oathra phone test [--level …]      local (telephony ¥0, API usage) · gateway ¥0 · pstn (paid)
                                      ${dim("--level conversation --engine character-tts --voice-preset character-female|character-male [--max-usd 0.05] [--out dir]: whole call, no carrier")}
+                                     ${dim("--level conversation --engine gpt-live --scenario <id> [--mutation none,tentative-hold,…] [--condition clean,quiet,fast,noise-10db] [--runs 5] [--max-usd 0.3] [--max-usd-total 2] [--noise-file wav]: scripted callee, verdict per run")}
   oathra call --request-file <json> --dry-run  review a saved phone request without dialing
   oathra call --request-file <json> --approve-request  explicitly place the reviewed call
   oathra call --to <e164>            place a call through your carrier          ${dim("--scenario <id|yaml>  --engine gpt-live|gemini-live|character-tts|pipeline  --provider <id>")}

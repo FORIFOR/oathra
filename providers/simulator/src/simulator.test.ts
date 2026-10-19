@@ -4,7 +4,7 @@ import { defineCall } from "@oathra/contract";
 import { contractFromScenario, loadScenarioFile } from "@oathra/scenario";
 import { runCall } from "@oathra/runtime";
 import { ScriptedAgent } from "./agent.js";
-import { HumanCharacter, type CalleeContext, type CalleeReply } from "./character.js";
+import { GOODBYE_RE, HumanCharacter, type CalleeContext, type CalleeReply } from "./character.js";
 import { SimulatorTransport } from "./transport.js";
 
 const ROOT = resolve(import.meta.dirname, "../../../scenarios");
@@ -521,4 +521,11 @@ describe("agent hangup with a human callee", () => {
     expect(o.result.status).not.toBe("completed");
     expect(Date.now() - started).toBeLessThan(5000);
   }, 10000);
+});
+
+describe("goodbye detection", () => {
+  it("an opening apology is not a goodbye; a closing 失礼いたします still is", () => {
+    for (const opening of ["お忙しいところ失礼いたします。9月12日の夜に二名で予約をお願いしたいのですが、ご都合いかがでしょうか。", "夜分遅くに失礼します。", "突然失礼いたします。", "お忙しいところ大変失礼いたします。"]) expect(GOODBYE_RE.test(opening)).toBe(false);
+    for (const closing of ["ありがとうございました。失礼いたします。", "では失礼します。", "お忙しいところ失礼いたしました。それでは失礼いたします。"]) expect(GOODBYE_RE.test(closing)).toBe(true);
+  });
 });
